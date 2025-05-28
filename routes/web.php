@@ -49,6 +49,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/sound-check/{testSet}', [ListeningTestController::class, 'soundCheck'])->name('sound-check');
                 Route::get('/instructions/{testSet}', [ListeningTestController::class, 'instructions'])->name('instructions');
             });
+
+            Route::post('/abandon/{attempt}', [ListeningTestController::class, 'abandon'])->name('abandon');
             
             Route::get('/start/{testSet}', [ListeningTestController::class, 'start'])->name('start');
             Route::post('/submit/{attempt}', [ListeningTestController::class, 'submit'])->name('submit');

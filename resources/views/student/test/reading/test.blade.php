@@ -1,4 +1,4 @@
-<x-layout>
+<x-test-layout>
     <x-slot:title>Reading Test - IELTS Mock Test</x-slot>
     
     <div class="min-h-screen bg-gray-50">
@@ -142,4 +142,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>

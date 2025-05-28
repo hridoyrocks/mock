@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StudentAttempt;
 use App\Models\StudentAnswer;
 use App\Models\TestSet;
+use App\Helpers\ScoreCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,43 +51,68 @@ class ReadingTestController extends Controller
      * Submit the reading test answers.
      */
     public function submit(Request $request, StudentAttempt $attempt): RedirectResponse
-    {
-        // Validate the submission
-        $request->validate([
-            'answers' => 'required|array',
-        ]);
-        
-        DB::transaction(function () use ($request, $attempt) {
-            // Save answers
-            foreach ($request->answers as $questionId => $answer) {
-                if (is_array($answer)) {
-                    // For checkbox/multiple selection questions
-                    foreach ($answer as $optionId) {
-                        StudentAnswer::create([
-                            'attempt_id' => $attempt->id,
-                            'question_id' => $questionId,
-                            'selected_option_id' => $optionId,
-                        ]);
-                    }
-                } else {
-                    // For single answer questions (radio, text input)
+{
+    // Validate the submission
+    $request->validate([
+        'answers' => 'required|array',
+    ]);
+    
+    DB::transaction(function () use ($request, $attempt) {
+        // Save answers
+        foreach ($request->answers as $questionId => $answer) {
+            if (is_array($answer)) {
+                // For checkbox/multiple selection questions
+                foreach ($answer as $optionId) {
                     StudentAnswer::create([
                         'attempt_id' => $attempt->id,
                         'question_id' => $questionId,
-                        'selected_option_id' => is_numeric($answer) ? $answer : null,
-                        'answer' => !is_numeric($answer) ? $answer : null,
+                        'selected_option_id' => $optionId,
                     ]);
                 }
+            } else {
+                // For single answer questions (radio, text input)
+                StudentAnswer::create([
+                    'attempt_id' => $attempt->id,
+                    'question_id' => $questionId,
+                    'selected_option_id' => is_numeric($answer) ? $answer : null,
+                    'answer' => !is_numeric($answer) ? $answer : null,
+                ]);
             }
-            
-            // Mark attempt as completed
-            $attempt->update([
-                'end_time' => now(),
-                'status' => 'completed',
-            ]);
-        });
+        }
         
-        return redirect()->route('student.results.show', $attempt)
-            ->with('success', 'Test submitted successfully!');
-    }
+        // Mark attempt as completed
+        $attempt->update([
+            'end_time' => now(),
+            'status' => 'completed',
+        ]);
+        
+        // Calculate automatic band score for reading
+        $correctAnswers = 0;
+        $totalQuestions = 0;
+        
+        // Load answers with options to check correctness
+        $attempt->load('answers.selectedOption', 'answers.question');
+        
+        foreach ($attempt->answers as $answer) {
+            // Count only questions that have options (not text answers)
+            if ($answer->question->options->count() > 0) {
+                $totalQuestions++;
+                if ($answer->selectedOption && $answer->selectedOption->is_correct) {
+                    $correctAnswers++;
+                }
+            }
+        }
+        
+        // Calculate band score using the helper
+        if ($totalQuestions > 0) {
+            $bandScore = \App\Helpers\ScoreCalculator::calculateReadingBandScore($correctAnswers, $totalQuestions);
+            
+            // Update attempt with band score
+            $attempt->update(['band_score' => $bandScore]);
+        }
+    });
+    
+    return redirect()->route('student.results.show', $attempt)
+        ->with('success', 'Test submitted successfully!');
+}
 }
