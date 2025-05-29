@@ -37,6 +37,17 @@ class WritingTestController extends Controller
             abort(404);
         }
         
+        // Check if user has already completed this test
+        $existingAttempt = StudentAttempt::where('user_id', auth()->id())
+            ->where('test_set_id', $testSet->id)
+            ->where('status', 'completed')
+            ->first();
+            
+        if ($existingAttempt) {
+            return redirect()->route('student.results.show', $existingAttempt)
+                ->with('info', 'You have already completed this test.');
+        }
+        
         return view('student.test.writing.onboarding.confirm-details', compact('testSet'));
     }
 
@@ -63,21 +74,40 @@ class WritingTestController extends Controller
             abort(404);
         }
         
-        // Create a new attempt
-        $attempt = StudentAttempt::create([
-            'user_id' => auth()->id(),
-            'test_set_id' => $testSet->id,
-            'start_time' => now(),
-            'status' => 'in_progress',
-        ]);
+        // Check if user has already completed this test
+        $existingAttempt = StudentAttempt::where('user_id', auth()->id())
+            ->where('test_set_id', $testSet->id)
+            ->where('status', 'completed')
+            ->first();
+            
+        if ($existingAttempt) {
+            return redirect()->route('student.results.show', $existingAttempt)
+                ->with('info', 'You have already completed this test.');
+        }
         
-        // Pre-create answer records for both tasks
-        foreach ($testSet->questions as $question) {
-            StudentAnswer::create([
-                'attempt_id' => $attempt->id,
-                'question_id' => $question->id,
-                'answer' => '',
+        // Check if there's an ongoing attempt
+        $attempt = StudentAttempt::where('user_id', auth()->id())
+            ->where('test_set_id', $testSet->id)
+            ->where('status', 'in_progress')
+            ->first();
+            
+        if (!$attempt) {
+            // Create a new attempt only if no ongoing attempt exists
+            $attempt = StudentAttempt::create([
+                'user_id' => auth()->id(),
+                'test_set_id' => $testSet->id,
+                'start_time' => now(),
+                'status' => 'in_progress',
             ]);
+            
+            // Pre-create answer records for both tasks
+            foreach ($testSet->questions as $question) {
+                StudentAnswer::create([
+                    'attempt_id' => $attempt->id,
+                    'question_id' => $question->id,
+                    'answer' => '',
+                ]);
+            }
         }
         
         // Load attempt with answers
@@ -91,6 +121,11 @@ class WritingTestController extends Controller
      */
     public function autosave(Request $request, StudentAttempt $attempt, Question $question): JsonResponse
     {
+        // Verify the attempt belongs to the current user and is not completed
+        if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
+            return response()->json(['success' => false, 'message' => 'Invalid attempt']);
+        }
+        
         $request->validate([
             'content' => 'required|string',
         ]);
@@ -121,6 +156,12 @@ class WritingTestController extends Controller
      */
     public function submit(Request $request, StudentAttempt $attempt): RedirectResponse
     {
+        // Verify the attempt belongs to the current user and is not already completed
+        if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
+            return redirect()->route('student.writing.index')
+                ->with('error', 'Invalid attempt or test already submitted.');
+        }
+        
         // Validate the submission
         $request->validate([
             'answers' => 'required|array',

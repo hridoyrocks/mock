@@ -84,7 +84,7 @@ class QuestionController extends Controller
                 'order_number' => $request->order_number,
             ]);
             
-            // Create options if applicable
+            // Create options if applicable (not for passage type)
             if (in_array($request->question_type, ['multiple_choice', 'true_false', 'matching']) && isset($request->options)) {
                 foreach ($request->options as $index => $option) {
                     QuestionOption::create([
@@ -159,7 +159,7 @@ class QuestionController extends Controller
                 'order_number' => $request->order_number,
             ]);
             
-            // Update options if applicable
+            // Update options if applicable (not for passage type)
             if (in_array($request->question_type, ['multiple_choice', 'true_false', 'matching']) && isset($request->options)) {
                 // Delete old options
                 $question->options()->delete();
