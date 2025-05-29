@@ -32,7 +32,7 @@ class SpeakingTestController extends Controller
     /**
      * Show candidate information confirmation screen.
      */
-    public function confirmDetails(TestSet $testSet): View
+    public function confirmDetails(TestSet $testSet)
     {
         // Check if the test belongs to speaking section
         if ($testSet->section->name !== 'speaking') {
@@ -82,7 +82,7 @@ class SpeakingTestController extends Controller
     /**
      * Start a new speaking test.
      */
-    public function start(TestSet $testSet): View
+    public function start(TestSet $testSet)
     {
         // Check if the test belongs to speaking section
         if ($testSet->section->name !== 'speaking') {

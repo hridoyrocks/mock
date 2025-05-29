@@ -29,7 +29,7 @@ class ReadingTestController extends Controller
     /**
      * Show candidate information confirmation screen.
      */
-    public function confirmDetails(TestSet $testSet): View
+    public function confirmDetails(TestSet $testSet)
     {
         // Check if the test belongs to reading section
         if ($testSet->section->name !== 'reading') {
@@ -66,7 +66,7 @@ class ReadingTestController extends Controller
     /**
      * Start a new reading test.
      */
-    public function start(TestSet $testSet): View
+    public function start(TestSet $testSet)
     {
         // Check if the test belongs to reading section
         if ($testSet->section->name !== 'reading') {

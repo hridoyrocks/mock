@@ -30,7 +30,7 @@ class WritingTestController extends Controller
     /**
      * Show candidate information confirmation screen.
      */
-    public function confirmDetails(TestSet $testSet): View
+    public function confirmDetails(TestSet $testSet)
     {
         // Check if the test belongs to writing section
         if ($testSet->section->name !== 'writing') {
@@ -67,7 +67,7 @@ class WritingTestController extends Controller
     /**
      * Start a new writing test.
      */
-    public function start(TestSet $testSet): View
+    public function start(TestSet $testSet)
     {
         // Check if the test belongs to writing section
         if ($testSet->section->name !== 'writing') {
