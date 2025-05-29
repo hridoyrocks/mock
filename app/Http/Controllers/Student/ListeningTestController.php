@@ -14,9 +14,6 @@ use Illuminate\View\View;
 
 class ListeningTestController extends Controller
 {
-    /**
-     * Display a listing of the available listening tests.
-     */
     public function index(): View
     {
         $testSets = TestSet::whereHas('section', function ($query) {
@@ -26,25 +23,28 @@ class ListeningTestController extends Controller
         return view('student.test.listening.index', compact('testSets'));
     }
     
-    /**
-     * Show candidate information confirmation screen.
-     */
-    public function confirmDetails(TestSet $testSet): View
-    {
-        // Check if the test belongs to listening section
-        if ($testSet->section->name !== 'listening') {
-            abort(404);
-        }
-        
-        return view('student.test.listening.onboarding.confirm-details', compact('testSet'));
+   public function confirmDetails(TestSet $testSet)
+{
+    if ($testSet->section->name !== 'listening') {
+        abort(404);
     }
+    
+    // Check if user has already completed this test
+    $existingAttempt = StudentAttempt::where('user_id', auth()->id())
+        ->where('test_set_id', $testSet->id)
+        ->where('status', 'completed')
+        ->first();
+        
+    if ($existingAttempt) {
+        return redirect()->route('student.results.show', $existingAttempt)
+            ->with('info', 'You have already completed this test.');
+    }
+    
+    return view('student.test.listening.onboarding.confirm-details', compact('testSet'));
+}
 
-    /**
-     * Show the sound check screen.
-     */
     public function soundCheck(TestSet $testSet): View
     {
-        // Check if the test belongs to listening section
         if ($testSet->section->name !== 'listening') {
             abort(404);
         }
@@ -52,12 +52,8 @@ class ListeningTestController extends Controller
         return view('student.test.listening.onboarding.sound-check', compact('testSet'));
     }
 
-    /**
-     * Show the instructions screen.
-     */
     public function instructions(TestSet $testSet): View
     {
-        // Check if the test belongs to listening section
         if ($testSet->section->name !== 'listening') {
             abort(404);
         }
@@ -65,92 +61,94 @@ class ListeningTestController extends Controller
         return view('student.test.listening.onboarding.instructions', compact('testSet'));
     }
     
-    /**
-     * Start a new listening test.
-     */
-    public function start(TestSet $testSet): View
-    {
-        // Check if the test belongs to listening section
-        if ($testSet->section->name !== 'listening') {
-            abort(404);
-        }
+   public function start(TestSet $testSet)
+{
+    if ($testSet->section->name !== 'listening') {
+        abort(404);
+    }
+    
+    // Check if user has already completed this test
+    $existingAttempt = StudentAttempt::where('user_id', auth()->id())
+        ->where('test_set_id', $testSet->id)
+        ->where('status', 'completed')
+        ->first();
         
-        // Create a new attempt
+    if ($existingAttempt) {
+        return redirect()->route('student.results.show', $existingAttempt)
+            ->with('info', 'You have already completed this test.');
+    }
+    
+    // Check if there's an ongoing attempt
+    $attempt = StudentAttempt::where('user_id', auth()->id())
+        ->where('test_set_id', $testSet->id)
+        ->where('status', 'in_progress')
+        ->first();
+        
+    if (!$attempt) {
+        // Create a new attempt only if no ongoing attempt exists
         $attempt = StudentAttempt::create([
             'user_id' => auth()->id(),
             'test_set_id' => $testSet->id,
             'start_time' => now(),
             'status' => 'in_progress',
         ]);
-        
-        return view('student.test.listening.test', compact('testSet', 'attempt'));
-    }
-
-//hotat kaitaa dile
-    public function abandon(Request $request, StudentAttempt $attempt): JsonResponse
-{
-    // Verify the attempt belongs to the current user
-    if ($attempt->user_id !== auth()->id()) {
-        return response()->json(['error' => 'Unauthorized'], 403);
     }
     
-    // Mark attempt as abandoned
-    $attempt->update([
-        'status' => 'abandoned',
-        'end_time' => now(),
-    ]);
-    
-    return response()->json(['success' => true]);
+    return view('student.test.listening.test', compact('testSet', 'attempt'));
 }
     
-    /**
-     * Submit the listening test answers.
-     */
     public function submit(Request $request, StudentAttempt $attempt): RedirectResponse
-{
-    // Validate the submission
-    $request->validate([
-        'answers' => 'required|array',
-        'answers.*' => 'nullable',
-    ]);
-    
-    DB::transaction(function () use ($request, $attempt) {
-        // Save answers
-        foreach ($request->answers as $questionId => $optionId) {
-            StudentAnswer::create([
-                'attempt_id' => $attempt->id,
-                'question_id' => $questionId,
-                'selected_option_id' => $optionId,
-            ]);
+    {
+        // Verify the attempt belongs to the current user and is not already completed
+        if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
+            return redirect()->route('student.listening.index')
+                ->with('error', 'Invalid attempt or test already submitted.');
         }
         
-        // Mark attempt as completed
-        $attempt->update([
-            'end_time' => now(),
-            'status' => 'completed',
+        $request->validate([
+            'answers' => 'required|array',
+            'answers.*' => 'nullable',
         ]);
         
-        // Calculate automatic band score for listening
-        $correctAnswers = 0;
-        $totalQuestions = $attempt->testSet->questions->count();
-        
-        // Load answers with options to check correctness
-        $attempt->load('answers.selectedOption');
-        
-        foreach ($attempt->answers as $answer) {
-            if ($answer->selectedOption && $answer->selectedOption->is_correct) {
-                $correctAnswers++;
+        DB::transaction(function () use ($request, $attempt) {
+            // Save answers
+            foreach ($request->answers as $questionId => $optionId) {
+                if ($optionId) {
+                    StudentAnswer::updateOrCreate(
+                        [
+                            'attempt_id' => $attempt->id,
+                            'question_id' => $questionId,
+                        ],
+                        [
+                            'selected_option_id' => $optionId,
+                        ]
+                    );
+                }
             }
-        }
+            
+            // Mark attempt as completed
+            $attempt->update([
+                'end_time' => now(),
+                'status' => 'completed',
+            ]);
+            
+            // Calculate band score
+            $correctAnswers = 0;
+            $totalQuestions = $attempt->testSet->questions->count();
+            
+            $attempt->load('answers.selectedOption');
+            
+            foreach ($attempt->answers as $answer) {
+                if ($answer->selectedOption && $answer->selectedOption->is_correct) {
+                    $correctAnswers++;
+                }
+            }
+            
+            $bandScore = \App\Helpers\ScoreCalculator::calculateListeningBandScore($correctAnswers, $totalQuestions);
+            $attempt->update(['band_score' => $bandScore]);
+        });
         
-        // Calculate band score using the helper
-        $bandScore = \App\Helpers\ScoreCalculator::calculateListeningBandScore($correctAnswers, $totalQuestions);
-        
-        // Update attempt with band score
-        $attempt->update(['band_score' => $bandScore]);
-    });
-    
-    return redirect()->route('student.results.show', $attempt)
-        ->with('success', 'Test submitted successfully!');
-}
+        return redirect()->route('student.results.show', $attempt)
+            ->with('success', 'Test submitted successfully!');
+    }
 }

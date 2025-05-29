@@ -1,7 +1,6 @@
 <x-test-layout>
     <x-slot:title>IELTS Listening Test</x-slot>
     
-    <!-- Meta tags to prevent page caching and force fullscreen -->
     <x-slot:meta>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -9,7 +8,6 @@
         <meta http-equiv="Expires" content="0">
     </x-slot:meta>
     
-    <!-- Remove default margin/padding and set background color -->
     <style>
         body, html {
             margin: 0;
@@ -18,17 +16,6 @@
             background-color: #f8f9fa;
         }
         
-        /* Top IELTS Logo Bar */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: white;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        /* Red Computer-delivered IELTS Bar */
         .ielts-header {
             display: flex;
             justify-content: space-between;
@@ -43,7 +30,6 @@
             align-items: center;
         }
         
-        /* Black User Info Bar */
         .user-bar {
             display: flex;
             justify-content: space-between;
@@ -64,7 +50,6 @@
             gap: 10px;
         }
         
-        /* Timer */
         .timer {
             background-color: #0d6efd;
             color: white;
@@ -72,30 +57,34 @@
             border-radius: 4px;
             font-weight: 500;
             transition: all 0.3s ease;
-            position: relative;
         }
         
-        .timer:hover .seconds {
-            display: inline;
+        .timer.warning {
+            background-color: #f59e0b;
         }
         
-        .seconds {
-            display: none;
+        .timer.danger {
+            background-color: #dc2626;
+            animation: pulse 1s infinite;
         }
         
-        /* Content Area */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
         .content-area {
             padding: 20px;
+            padding-bottom: 100px;
         }
         
-        /* Test Title */
         .test-title {
             font-size: 24px;
             font-weight: 500;
             margin-bottom: 20px;
         }
         
-        /* Audio Info Box */
         .audio-info {
             border-left: 5px solid #0d6efd;
             background-color: #f0f7ff;
@@ -104,11 +93,8 @@
             color: #0d6efd;
         }
         
-        /* Questions Section */
         .questions-section {
             margin-top: 30px;
-            opacity: 0.5;
-            pointer-events: none;
         }
         
         .question-title {
@@ -144,7 +130,6 @@
             margin-right: 10px;
         }
         
-        /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -156,6 +141,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            z-index: 100;
         }
         
         .nav-left {
@@ -166,6 +152,8 @@
         .nav-numbers {
             display: flex;
             margin-left: 15px;
+            flex-wrap: wrap;
+            gap: 2px;
         }
         
         .number-btn {
@@ -176,9 +164,13 @@
             align-items: center;
             background-color: #f0f0f0;
             border: 1px solid #d1d5db;
-            margin-right: 4px;
-            font-size: 14px;
+            font-size: 12px;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .number-btn:hover {
+            background-color: #e5e7eb;
         }
         
         .number-btn.active {
@@ -187,9 +179,20 @@
             border-color: #3b82f6;
         }
         
+        .number-btn.answered {
+            background-color: #10b981;
+            color: white;
+            border-color: #059669;
+        }
+        
+        .number-btn.flagged {
+            border: 2px solid #f59e0b;
+        }
+        
         .nav-right {
             display: flex;
             align-items: center;
+            gap: 10px;
         }
         
         .pencil-btn {
@@ -200,8 +203,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-right: 10px;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pencil-btn:hover {
+            background-color: #ffca2c;
         }
         
         .arrow-btn {
@@ -212,21 +219,28 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-left: 5px;
             cursor: pointer;
+            transition: all 0.2s;
         }
         
-        /* Submit Button */
-        #submit-test-btn {
+        .arrow-btn:hover {
+            background-color: #e5e7eb;
+        }
+        
+        .arrow-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .submit-btn {
             transition: all 0.3s ease;
         }
         
-        #submit-test-btn:hover {
+        .submit-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
-        /* Warning Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -246,12 +260,12 @@
             border-radius: 8px;
             max-width: 400px;
             text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
         
         .modal-title {
             font-size: 20px;
             font-weight: bold;
-            color: #dc2626;
             margin-bottom: 16px;
         }
         
@@ -269,10 +283,21 @@
             border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
+            margin: 0 5px;
+        }
+        
+        .modal-button:hover {
+            background-color: #2563eb;
+        }
+        
+        .modal-button.secondary {
+            background-color: #6b7280;
+        }
+        
+        .modal-button.secondary:hover {
+            background-color: #4b5563;
         }
     </style>
-
-
 
     <!-- IELTS Header -->
     <div class="ielts-header">
@@ -302,22 +327,18 @@
                 <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071a1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                 </svg>
-                <input type="range" min="0" max="100" value="75" class="ml-2 w-20">
+                <input type="range" min="0" max="100" value="75" class="ml-2 w-20" id="volume-slider">
             </div>
-            <!-- Timer -->
             <div class="timer" id="timer-display">
-                <span class="minutes">{{ $testSet->section->time_limit }}</span>
-                <span class="seconds">:00</span>
+                <span id="timer-text">{{ $testSet->section->time_limit }}:00</span>
             </div>
         </div>
     </div>
 
     <!-- Main Content -->
     <div class="content-area">
-        <!-- Test Title -->
         <h1 class="test-title">Listening Test</h1>
         
-        <!-- Brief audio notification - No audio progress bar -->
         <div class="audio-info">
             <p>The audio will begin automatically. You will hear the recording ONCE only. The questions will be enabled after the audio has played.</p>
         </div>
@@ -375,7 +396,7 @@
             </div>
         </div>
         <div class="nav-right">
-            <button type="button" id="submit-test-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md mr-3 text-sm font-medium">
+            <button type="button" id="submit-test-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md mr-3 text-sm font-medium submit-btn">
                 Submit Test
             </button>
             <div class="pencil-btn">
@@ -396,10 +417,10 @@
         </div>
     </div>
 
-    <!-- Warning Modal (initially hidden) -->
+    <!-- Warning Modal -->
     <div id="warning-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <div class="modal-title">Warning!</div>
+            <div class="modal-title" style="color: #dc2626;">Warning!</div>
             <div class="modal-message">
                 You cannot leave the test page once it has started. Leaving this page will count as an incomplete attempt.
             </div>
@@ -418,333 +439,282 @@
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button class="modal-button" id="confirm-submit-btn">Yes, Submit</button>
-                <button class="modal-button" id="cancel-submit-btn" style="background-color: #6b7280;">Cancel</button>
+                <button class="modal-button secondary" id="cancel-submit-btn">Cancel</button>
             </div>
         </div>
     </div>
 
     <!-- Hidden Audio Element -->
-    <audio id="test-audio" preload="auto" style="display:none;">
-        <source src="{{ asset('storage/' . $testSet->questions->first()->media_path) }}" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+    @if($testSet->questions->first() && $testSet->questions->first()->media_path)
+        <audio id="test-audio" preload="auto" style="display:none;">
+            <source src="{{ asset('storage/' . $testSet->questions->first()->media_path) }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    @endif
     
-    @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Elements
-            const audio = document.getElementById('test-audio');
-            const volumeSlider = document.querySelector('input[type="range"]');
-            const questionsContainer = document.getElementById('questions-container');
-            const submitButton = document.getElementById('submit-button');
-            const navButtons = document.querySelectorAll('.number-btn');
-            const prevBtn = document.getElementById('prev-btn');
-            const nextBtn = document.getElementById('next-btn');
-            const timerDisplay = document.getElementById('timer-display');
-            const minutesElement = timerDisplay.querySelector('.minutes');
-            const secondsElement = timerDisplay.querySelector('.seconds');
-            const warningModal = document.getElementById('warning-modal');
-            const continueTestBtn = document.getElementById('continue-test-btn');
-            const submitTestBtn = document.getElementById('submit-test-btn');
-            const submitModal = document.getElementById('submit-modal');
-            const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-            const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
-            const answeredCountSpan = document.getElementById('answered-count');
-            
-            // Record test start time in localStorage
-            localStorage.setItem('testStartTime', Date.now());
-            localStorage.setItem('testId', '{{ $attempt->id }}');
-            
-            // -------------------- PREVENT NAVIGATION --------------------
-            
-            // 1. Disable all navigation links (excluding Help and Hide buttons)
-            const navLinks = document.querySelectorAll('a:not([href^="#"]):not(.no-nav)');
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showWarningModal();
-                    return false;
-                });
-            });
-            
-            // 2. Prevent browser navigation (back/forward)
-            let preventCount = 0;
+   @push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elements
+        const audio = document.getElementById('test-audio');
+        const volumeSlider = document.getElementById('volume-slider');
+        const questionsContainer = document.getElementById('questions-container');
+        const submitButton = document.getElementById('submit-button');
+        const navButtons = document.querySelectorAll('.number-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const timerDisplay = document.getElementById('timer-display');
+        const timerText = document.getElementById('timer-text');
+        const warningModal = document.getElementById('warning-modal');
+        const continueTestBtn = document.getElementById('continue-test-btn');
+        const submitTestBtn = document.getElementById('submit-test-btn');
+        const submitModal = document.getElementById('submit-modal');
+        const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+        const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
+        const answeredCountSpan = document.getElementById('answered-count');
+        
+        // Prevent page reload and navigation
+        window.addEventListener('beforeunload', function(e) {
+            e.preventDefault();
+            e.returnValue = 'Your test progress will be lost. Are you sure you want to leave?';
+            return 'Your test progress will be lost. Are you sure you want to leave?';
+        });
+        
+        // Navigation prevention
+        let preventCount = 0;
+        history.pushState(null, null, location.href);
+        window.addEventListener('popstate', function(event) {
             history.pushState(null, null, location.href);
-            window.addEventListener('popstate', function(event) {
-                history.pushState(null, null, location.href);
-                preventCount++;
-                if (preventCount <= 2) {
-                    showWarningModal();
-                }
-            });
-            
-            // 3. Prevent tab/window close
-            window.addEventListener('beforeunload', function(e) {
-                // Save the current answers
-                saveAllAnswers();
-                
-                // Cancel the event
-                e.preventDefault();
-                // Chrome requires returnValue to be set
-                e.returnValue = '';
-                return 'You are in the middle of a test. Are you sure you want to leave?';
-            });
-            
-            // 4. Function to show warning modal
-            function showWarningModal() {
-                warningModal.style.display = 'flex';
-            }
-            
-            // 5. Close warning modal
-            continueTestBtn.addEventListener('click', function() {
-                warningModal.style.display = 'none';
-            });
-            
-            // 6. Handle keyboard shortcuts
-            document.addEventListener('keydown', function(e) {
-                // Block F5 key
-                if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
-                    e.preventDefault();
-                    showWarningModal();
-                    return false;
-                }
-                
-                // Block Ctrl+W, Alt+F4 
-                if ((e.ctrlKey && e.key === 'w') || (e.altKey && e.key === 'F4')) {
-                    e.preventDefault();
-                    showWarningModal();
-                    return false;
-                }
-            });
-            
-            // 7. Detect when user leaves the page focus
-            document.addEventListener('visibilitychange', function() {
-                if (document.visibilityState === 'hidden') {
-                    // User switched tabs or minimized window
-                    console.log('User left the test page at:', new Date());
-                }
-            });
-            
-            // Save all current answers to localStorage
-            function saveAllAnswers() {
-                // Get all selected radio buttons
-                const selectedRadios = document.querySelectorAll('input[type="radio"]:checked');
-                
-                // Create an answers object
-                const answers = {};
-                selectedRadios.forEach(radio => {
-                    const questionId = radio.name.replace('answers[', '').replace(']', '');
-                    answers[questionId] = radio.value;
-                });
-                
-                // Store in local storage as backup
-                localStorage.setItem('testAnswers', JSON.stringify(answers));
-            }
-            
-            // Periodically save answers (every 30 seconds)
-            setInterval(saveAllAnswers, 30000);
-            
-            // -------------------- AUDIO AND TEST FUNCTIONALITY --------------------
-            
-            // Initialize audio volume
-            audio.volume = volumeSlider.value / 100;
-            
-            // Volume control
-            volumeSlider.addEventListener('input', function() {
-                audio.volume = this.value / 100;
-            });
-            
-            // Start timer immediately
-            startTimer({{ $testSet->section->time_limit }});
-            
-            // Play audio automatically
-            audio.play().catch(function(e) {
-                console.error('Error playing audio:', e);
-                
-                // Create a hidden auto-play trigger if needed
-                document.addEventListener('click', function autoPlayHandler() {
-                    audio.play().then(() => {
-                        document.removeEventListener('click', autoPlayHandler);
-                    }).catch(err => {
-                        console.error('Still cannot play audio:', err);
-                    });
-                }, { once: true });
-            });
-            
-            // Audio ended event
-            audio.addEventListener('ended', function() {
-                // Enable questions
-                questionsContainer.style.opacity = '1';
-                questionsContainer.style.pointerEvents = 'auto';
-                
-                // Set first question button as active
-                if (navButtons.length > 0) {
-                    navButtons[0].classList.add('active');
-                }
-            });
-            
-            // Enable questions if audio fails to play or for testing
-            setTimeout(function() {
-                if (audio.paused || audio.ended) {
-                    questionsContainer.style.opacity = '1';
-                    questionsContainer.style.pointerEvents = 'auto';
-                }
-            }, 3000);
-            
-            // Timer functionality
-            function startTimer(minutes) {
-                let totalSeconds = minutes * 60;
-                
-                const timerInterval = setInterval(function() {
-                    totalSeconds--;
-                    
-                    if (totalSeconds <= 0) {
-                        clearInterval(timerInterval);
-                        saveAllAnswers(); // Save all answers before submitting
-                        submitButton.click(); // Auto-submit
-                        return;
-                    }
-                    
-                    const minutesLeft = Math.floor(totalSeconds / 60);
-                    const secondsLeft = totalSeconds % 60;
-                    
-                    // Visual cue for time running low
-                    if (totalSeconds < 60) {
-                        timerDisplay.style.backgroundColor = '#dc2626'; // Red
-                        timerDisplay.classList.add('animate-pulse');
-                    } else if (totalSeconds < 300) { // Less than 5 minutes
-                        timerDisplay.style.backgroundColor = '#f59e0b'; // Yellow
-                    }
-                    
-                    // Update timer display
-                    minutesElement.textContent = minutesLeft;
-                    secondsElement.textContent = `:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
-                }, 1000);
-            }
-            
-            // Question navigation
-            navButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Remove active class from all buttons
-                    navButtons.forEach(btn => btn.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    this.classList.add('active');
-                    
-                    // Scroll to question
-                    const questionNumber = this.dataset.question;
-                    const questionElement = document.getElementById(`question-${questionNumber}`);
-                    
-                    if (questionElement) {
-                        questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                });
-            });
-            
-            // Previous/Next buttons
-            prevBtn.addEventListener('click', function() {
-                const activeButton = document.querySelector('.number-btn.active');
-                if (activeButton && activeButton.previousElementSibling && activeButton.previousElementSibling.classList.contains('number-btn')) {
-                    activeButton.previousElementSibling.click();
-                }
-            });
-            
-            nextBtn.addEventListener('click', function() {
-                const activeButton = document.querySelector('.number-btn.active');
-                if (activeButton && activeButton.nextElementSibling && activeButton.nextElementSibling.classList.contains('number-btn')) {
-                    activeButton.nextElementSibling.click();
-                }
-            });
-            
-            // Handle answer selection
-            const radioButtons = document.querySelectorAll('input[type="radio"]');
-            radioButtons.forEach(function(radio) {
-                radio.addEventListener('change', function() {
-                    const questionId = this.name.replace('answers[', '').replace(']', '');
-                    const question = this.closest('.question-box');
-                    const questionNumber = question.id.replace('question-', '');
-                    
-                    // Mark question as answered in navigation
-                    const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
-                    if (navButton) {
-                        navButton.style.backgroundColor = '#10b981'; // Green
-                        navButton.style.color = 'white';
-                        navButton.style.borderColor = '#059669';
-                    }
-                    
-                    // Save the answer when it's changed
-                    saveAllAnswers();
-                });
-            });
-            
-            // Review checkbox functionality
-            const reviewCheckbox = document.getElementById('review-checkbox');
-            reviewCheckbox.addEventListener('change', function() {
-                const currentQuestion = document.querySelector('.number-btn.active');
-                if (currentQuestion) {
-                    if (this.checked) {
-                        currentQuestion.style.border = '2px solid #F59E0B';
-                    } else {
-                        currentQuestion.style.border = '';
-                    }
-                }
-            });
-            
-            // Submit button click handler
-            submitTestBtn.addEventListener('click', function() {
-                // Count answered questions
-                const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
-                answeredCountSpan.textContent = answeredQuestions;
-                
-                // Show submit confirmation modal
-                submitModal.style.display = 'flex';
-            });
-            
-            // Confirm submit button
-            confirmSubmitBtn.addEventListener('click', function() {
-                saveAllAnswers();
-                submitButton.click();
-            });
-            
-            // Cancel submit button
-            cancelSubmitBtn.addEventListener('click', function() {
-                submitModal.style.display = 'none';
-            });
-            
-            // Attempt to load answers from local storage if the test was interrupted
-            try {
-                const savedAnswers = localStorage.getItem('testAnswers');
-                const testId = localStorage.getItem('testId');
-                
-                // Only restore if it's the same test
-                if (savedAnswers && testId === '{{ $attempt->id }}') {
-                    const answers = JSON.parse(savedAnswers);
-                    
-                    // Restore each answer
-                    Object.keys(answers).forEach(questionId => {
-                        const optionId = answers[questionId];
-                        const radio = document.querySelector(`input[name="answers[${questionId}]"][value="${optionId}"]`);
-                        if (radio) {
-                            radio.checked = true;
-                            
-                            // Mark as answered in navigation
-                            const question = radio.closest('.question-box');
-                            if (question) {
-                                const questionNumber = question.id.replace('question-', '');
-                                const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
-                                if (navButton) {
-                                    navButton.style.backgroundColor = '#10b981';
-                                    navButton.style.color = 'white';
-                                    navButton.style.borderColor = '#059669';
-                                }
-                            }
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error('Error restoring saved answers:', e);
+            preventCount++;
+            if (preventCount <= 2) {
+                showWarningModal();
             }
         });
-    </script>
-    @endpush
+        
+        function showWarningModal() {
+            warningModal.style.display = 'flex';
+        }
+        
+        continueTestBtn.addEventListener('click', function() {
+            warningModal.style.display = 'none';
+        });
+        
+        // PROPER TIMER CALCULATION - NO RESET ON REFRESH
+        const attemptStartTime = new Date('{{ $attempt->start_time->format('c') }}');
+        const testDurationMinutes = {{ $testSet->section->time_limit }};
+        const testDurationMs = testDurationMinutes * 60 * 1000;
+        
+        function calculateRemainingTime() {
+            const currentTime = new Date();
+            const elapsedMs = currentTime.getTime() - attemptStartTime.getTime();
+            const remainingMs = testDurationMs - elapsedMs;
+            
+            // Convert to seconds, minimum 0
+            return Math.max(0, Math.floor(remainingMs / 1000));
+        }
+        
+        let totalSeconds = calculateRemainingTime();
+        
+        console.log('=== TIMER DEBUG INFO ===');
+        console.log('Attempt started at:', attemptStartTime.toLocaleString());
+        console.log('Current time:', new Date().toLocaleString());
+        console.log('Test duration (minutes):', testDurationMinutes);
+        console.log('Elapsed time (seconds):', Math.floor((new Date() - attemptStartTime) / 1000));
+        console.log('Remaining time (seconds):', totalSeconds);
+        console.log('========================');
+        
+        // If time is up, auto submit immediately
+        if (totalSeconds <= 0) {
+            console.log('Time is already up, submitting...');
+            saveAllAnswers();
+            submitButton.click();
+            return;
+        }
+        
+        // Update timer display immediately
+        updateTimerDisplay();
+        
+        // Timer functionality - updates every second
+        const timerInterval = setInterval(function() {
+            // Recalculate remaining time to stay accurate
+            totalSeconds = calculateRemainingTime();
+            
+            if (totalSeconds <= 0) {
+                clearInterval(timerInterval);
+                console.log('Timer expired, auto-submitting...');
+                saveAllAnswers();
+                submitButton.click();
+                return;
+            }
+            
+            updateTimerDisplay();
+        }, 1000);
+        
+        function updateTimerDisplay() {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            
+            // Visual cue for time running low
+            if (totalSeconds < 60) {
+                timerDisplay.className = 'timer danger';
+            } else if (totalSeconds < 300) { // 5 minutes
+                timerDisplay.className = 'timer warning';
+            } else {
+                timerDisplay.className = 'timer';
+            }
+            
+            timerText.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        // Audio handling
+        if (audio) {
+            if (volumeSlider) {
+                audio.volume = volumeSlider.value / 100;
+                volumeSlider.addEventListener('input', function() {
+                    audio.volume = this.value / 100;
+                });
+            }
+            
+            // Try to play audio, but don't force it
+            audio.play().catch(function(e) {
+                console.log('Audio autoplay blocked:', e.message);
+            });
+            
+            audio.addEventListener('ended', function() {
+                console.log('Audio finished playing');
+            });
+        }
+        
+        // Question navigation
+        navButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const questionNumber = this.dataset.question;
+                const questionElement = document.getElementById(`question-${questionNumber}`);
+                
+                if (questionElement) {
+                    questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        });
+        
+        // Previous/Next buttons
+        prevBtn.addEventListener('click', function() {
+            const activeButton = document.querySelector('.number-btn.active');
+            if (activeButton && activeButton.previousElementSibling && activeButton.previousElementSibling.classList.contains('number-btn')) {
+                activeButton.previousElementSibling.click();
+            }
+        });
+        
+        nextBtn.addEventListener('click', function() {
+            const activeButton = document.querySelector('.number-btn.active');
+            if (activeButton && activeButton.nextElementSibling && activeButton.nextElementSibling.classList.contains('number-btn')) {
+                activeButton.nextElementSibling.click();
+            }
+        });
+        
+        // Handle answer selection
+        const radioButtons = document.querySelectorAll('input[type="radio"]');
+        radioButtons.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                const question = this.closest('.question-box');
+                const questionNumber = question.id.replace('question-', '');
+                
+                // Mark question as answered in navigation
+                const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+                if (navButton) {
+                    navButton.classList.add('answered');
+                }
+                
+                saveAllAnswers();
+            });
+        });
+        
+        // Review checkbox functionality
+        const reviewCheckbox = document.getElementById('review-checkbox');
+        reviewCheckbox.addEventListener('change', function() {
+            const currentQuestion = document.querySelector('.number-btn.active');
+            if (currentQuestion) {
+                if (this.checked) {
+                    currentQuestion.classList.add('flagged');
+                } else {
+                    currentQuestion.classList.remove('flagged');
+                }
+            }
+        });
+        
+        // Submit functionality
+        submitTestBtn.addEventListener('click', function() {
+            const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
+            answeredCountSpan.textContent = answeredQuestions;
+            submitModal.style.display = 'flex';
+        });
+        
+        confirmSubmitBtn.addEventListener('click', function() {
+            window.removeEventListener('beforeunload', function() {});
+            saveAllAnswers();
+            submitButton.click();
+        });
+        
+        cancelSubmitBtn.addEventListener('click', function() {
+            submitModal.style.display = 'none';
+        });
+        
+        // Save all current answers to localStorage as backup
+        function saveAllAnswers() {
+            const selectedRadios = document.querySelectorAll('input[type="radio"]:checked');
+            const answers = {};
+            selectedRadios.forEach(radio => {
+                const questionId = radio.name.replace('answers[', '').replace(']', '');
+                answers[questionId] = radio.value;
+            });
+            
+            localStorage.setItem('testAnswers_{{ $attempt->id }}', JSON.stringify(answers));
+            console.log('Answers saved to localStorage');
+        }
+        
+        // Periodically save answers every 30 seconds
+        setInterval(saveAllAnswers, 30000);
+        
+        // Load saved answers on page load
+        try {
+            const savedAnswers = localStorage.getItem('testAnswers_{{ $attempt->id }}');
+            
+            if (savedAnswers) {
+                const answers = JSON.parse(savedAnswers);
+                console.log('Restoring saved answers:', answers);
+                
+                Object.keys(answers).forEach(questionId => {
+                    const optionId = answers[questionId];
+                    const radio = document.querySelector(`input[name="answers[${questionId}]"][value="${optionId}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                        
+                        const question = radio.closest('.question-box');
+                        if (question) {
+                            const questionNumber = question.id.replace('question-', '');
+                            const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+                            if (navButton) {
+                                navButton.classList.add('answered');
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('Error restoring saved answers:', e);
+        }
+        
+        // Clean up localStorage when test is submitted
+        window.addEventListener('beforeunload', function() {
+            // Only clean up if we're actually submitting
+            if (document.querySelector('form').checkValidity && document.querySelector('form').checkValidity()) {
+                localStorage.removeItem('testAnswers_{{ $attempt->id }}');
+            }
+        });
+    });
+</script>
+@endpush
 </x-test-layout>

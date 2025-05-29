@@ -15,20 +15,15 @@ use App\Http\Controllers\Student\WritingTestController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 
+// Home route
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-
+// Profile routes (authenticated)
 Route::middleware(['auth'])->group(function () {
-   
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
-// Home route
-Route::get('/', [HomeController::class, 'index'])->name('home');
-
-// Public routes
-Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
@@ -38,19 +33,14 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:student'])->prefix('test')->name('student.')->group(function () {
         Route::get('/', [TestController::class, 'index'])->name('index');
         
-        // Listening section
-        
+        // Listening section - Updated routes
         Route::prefix('listening')->name('listening.')->group(function () {
             Route::get('/', [ListeningTestController::class, 'index'])->name('index');
             
-            // Onboarding routes
-            Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                Route::get('/{testSet}', [ListeningTestController::class, 'confirmDetails'])->name('confirm-details');
-                Route::get('/sound-check/{testSet}', [ListeningTestController::class, 'soundCheck'])->name('sound-check');
-                Route::get('/instructions/{testSet}', [ListeningTestController::class, 'instructions'])->name('instructions');
-            });
-
-            Route::post('/abandon/{attempt}', [ListeningTestController::class, 'abandon'])->name('abandon');
+            // Simplified onboarding routes
+            Route::get('/onboarding/{testSet}', [ListeningTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
+            Route::get('/sound-check/{testSet}', [ListeningTestController::class, 'soundCheck'])->name('onboarding.sound-check');
+            Route::get('/instructions/{testSet}', [ListeningTestController::class, 'instructions'])->name('onboarding.instructions');
             
             Route::get('/start/{testSet}', [ListeningTestController::class, 'start'])->name('start');
             Route::post('/submit/{attempt}', [ListeningTestController::class, 'submit'])->name('submit');
