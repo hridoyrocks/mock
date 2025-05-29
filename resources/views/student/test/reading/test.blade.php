@@ -1,5 +1,17 @@
+{{-- resources/views/student/test/reading/test.blade.php --}}
+{{-- BACKUP নিন এই FILE এর --}}
+
 <x-test-layout>
     <x-slot:title>Reading Test - IELTS Mock Test</x-slot>
+    
+    {{-- ✅ ADD: Include Universal Timer Component --}}
+    <x-test-timer 
+        :attempt="$attempt" 
+        auto-submit-form-id="reading-form"
+        position="top-right"
+        :warning-time="600"
+        :danger-time="300"
+    />
     
     <div class="min-h-screen bg-gray-50">
         <div class="py-2 bg-white shadow-sm border-b">
@@ -10,14 +22,13 @@
                         <h1 class="text-xl font-medium text-gray-900">{{ $testSet->title }}</h1>
                     </div>
                     
-                    <div class="bg-gray-100 rounded-md px-3 py-1">
-                        <span class="text-sm text-gray-800">Time remaining: <span id="timer" class="font-medium">{{ $testSet->section->time_limit }}:00</span></span>
-                    </div>
+                    
                 </div>
             </div>
         </div>
         
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            {{-- ✅ CHANGE: Form ID to match timer config --}}
             <form id="reading-form" action="{{ route('student.reading.submit', $attempt) }}" method="POST">
                 @csrf
                 
@@ -27,7 +38,6 @@
                         <h2 class="text-lg font-semibold mb-4">Passage</h2>
                         
                         @php
-                            // Find the passage content from the first question with type 'passage'
                             $passage = $testSet->questions->where('question_type', 'passage')->first();
                         @endphp
                         
@@ -53,7 +63,6 @@
                         <h2 class="text-lg font-semibold mb-4">Questions</h2>
                         
                         @php
-                            // Get all questions except the passage
                             $questions = $testSet->questions->where('question_type', '!=', 'passage');
                         @endphp
                         
@@ -134,12 +143,5 @@
         </div>
     </div>
     
-    @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize the timer
-            window.timer.init({{ $testSet->section->time_limit }}, 'timer', 'reading-form');
-        });
-    </script>
-    @endpush
+    
 </x-test-layout>

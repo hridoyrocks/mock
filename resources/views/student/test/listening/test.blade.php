@@ -1,3 +1,4 @@
+{{-- resources/views/student/test/listening/test.blade.php --}}
 <x-test-layout>
     <x-slot:title>IELTS Listening Test</x-slot>
     
@@ -48,30 +49,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-        
-        .timer {
-            background-color: #0d6efd;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .timer.warning {
-            background-color: #f59e0b;
-        }
-        
-        .timer.danger {
-            background-color: #dc2626;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
         }
         
         .content-area {
@@ -312,7 +289,7 @@
         </div>
     </div>
 
-    <!-- User Info Bar with Timer -->
+    <!-- User Info Bar WITH Integrated Timer -->
     <div class="user-bar">
         <div class="user-info">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -329,9 +306,15 @@
                 </svg>
                 <input type="range" min="0" max="100" value="75" class="ml-2 w-20" id="volume-slider">
             </div>
-            <div class="timer" id="timer-display">
-                <span id="timer-text">{{ $testSet->section->time_limit }}:00</span>
-            </div>
+            
+            {{-- ✅ ADD: Integrated Timer Component --}}
+            <x-test-timer 
+                :attempt="$attempt" 
+                auto-submit-form-id="test-form"
+                position="integrated"
+                :warning-time="300"
+                :danger-time="60"
+            />
         </div>
     </div>
 
@@ -417,7 +400,7 @@
         </div>
     </div>
 
-    <!-- Warning Modal -->
+    <!-- Warning & Submit Modals -->
     <div id="warning-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-title" style="color: #dc2626;">Warning!</div>
@@ -428,7 +411,6 @@
         </div>
     </div>
 
-    <!-- Submit Confirmation Modal -->
     <div id="submit-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-title" style="color: #059669;">Submit Test?</div>
@@ -452,8 +434,8 @@
         </audio>
     @endif
     
-   @push('scripts')
-<script>
+    @push('scripts')
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Elements
         const audio = document.getElementById('test-audio');
@@ -463,8 +445,6 @@
         const navButtons = document.querySelectorAll('.number-btn');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
-        const timerDisplay = document.getElementById('timer-display');
-        const timerText = document.getElementById('timer-text');
         const warningModal = document.getElementById('warning-modal');
         const continueTestBtn = document.getElementById('continue-test-btn');
         const submitTestBtn = document.getElementById('submit-test-btn');
@@ -472,99 +452,6 @@
         const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
         const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
         const answeredCountSpan = document.getElementById('answered-count');
-        
-        // Prevent page reload and navigation
-        window.addEventListener('beforeunload', function(e) {
-            e.preventDefault();
-            e.returnValue = 'Your test progress will be lost. Are you sure you want to leave?';
-            return 'Your test progress will be lost. Are you sure you want to leave?';
-        });
-        
-        // Navigation prevention
-        let preventCount = 0;
-        history.pushState(null, null, location.href);
-        window.addEventListener('popstate', function(event) {
-            history.pushState(null, null, location.href);
-            preventCount++;
-            if (preventCount <= 2) {
-                showWarningModal();
-            }
-        });
-        
-        function showWarningModal() {
-            warningModal.style.display = 'flex';
-        }
-        
-        continueTestBtn.addEventListener('click', function() {
-            warningModal.style.display = 'none';
-        });
-        
-        // PROPER TIMER CALCULATION - NO RESET ON REFRESH
-        const attemptStartTime = new Date('{{ $attempt->start_time->format('c') }}');
-        const testDurationMinutes = {{ $testSet->section->time_limit }};
-        const testDurationMs = testDurationMinutes * 60 * 1000;
-        
-        function calculateRemainingTime() {
-            const currentTime = new Date();
-            const elapsedMs = currentTime.getTime() - attemptStartTime.getTime();
-            const remainingMs = testDurationMs - elapsedMs;
-            
-            // Convert to seconds, minimum 0
-            return Math.max(0, Math.floor(remainingMs / 1000));
-        }
-        
-        let totalSeconds = calculateRemainingTime();
-        
-        console.log('=== TIMER DEBUG INFO ===');
-        console.log('Attempt started at:', attemptStartTime.toLocaleString());
-        console.log('Current time:', new Date().toLocaleString());
-        console.log('Test duration (minutes):', testDurationMinutes);
-        console.log('Elapsed time (seconds):', Math.floor((new Date() - attemptStartTime) / 1000));
-        console.log('Remaining time (seconds):', totalSeconds);
-        console.log('========================');
-        
-        // If time is up, auto submit immediately
-        if (totalSeconds <= 0) {
-            console.log('Time is already up, submitting...');
-            saveAllAnswers();
-            submitButton.click();
-            return;
-        }
-        
-        // Update timer display immediately
-        updateTimerDisplay();
-        
-        // Timer functionality - updates every second
-        const timerInterval = setInterval(function() {
-            // Recalculate remaining time to stay accurate
-            totalSeconds = calculateRemainingTime();
-            
-            if (totalSeconds <= 0) {
-                clearInterval(timerInterval);
-                console.log('Timer expired, auto-submitting...');
-                saveAllAnswers();
-                submitButton.click();
-                return;
-            }
-            
-            updateTimerDisplay();
-        }, 1000);
-        
-        function updateTimerDisplay() {
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            
-            // Visual cue for time running low
-            if (totalSeconds < 60) {
-                timerDisplay.className = 'timer danger';
-            } else if (totalSeconds < 300) { // 5 minutes
-                timerDisplay.className = 'timer warning';
-            } else {
-                timerDisplay.className = 'timer';
-            }
-            
-            timerText.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        }
         
         // Audio handling
         if (audio) {
@@ -575,7 +462,6 @@
                 });
             }
             
-            // Try to play audio, but don't force it
             audio.play().catch(function(e) {
                 console.log('Audio autoplay blocked:', e.message);
             });
@@ -622,7 +508,6 @@
                 const question = this.closest('.question-box');
                 const questionNumber = question.id.replace('question-', '');
                 
-                // Mark question as answered in navigation
                 const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
                 if (navButton) {
                     navButton.classList.add('answered');
@@ -653,7 +538,9 @@
         });
         
         confirmSubmitBtn.addEventListener('click', function() {
-            window.removeEventListener('beforeunload', function() {});
+            if (window.UniversalTimer) {
+                window.UniversalTimer.stop();
+            }
             saveAllAnswers();
             submitButton.click();
         });
@@ -662,7 +549,11 @@
             submitModal.style.display = 'none';
         });
         
-        // Save all current answers to localStorage as backup
+        continueTestBtn.addEventListener('click', function() {
+            warningModal.style.display = 'none';
+        });
+        
+        // Save answers function
         function saveAllAnswers() {
             const selectedRadios = document.querySelectorAll('input[type="radio"]:checked');
             const answers = {};
@@ -672,10 +563,9 @@
             });
             
             localStorage.setItem('testAnswers_{{ $attempt->id }}', JSON.stringify(answers));
-            console.log('Answers saved to localStorage');
         }
         
-        // Periodically save answers every 30 seconds
+        // Periodically save answers
         setInterval(saveAllAnswers, 30000);
         
         // Load saved answers on page load
@@ -684,7 +574,6 @@
             
             if (savedAnswers) {
                 const answers = JSON.parse(savedAnswers);
-                console.log('Restoring saved answers:', answers);
                 
                 Object.keys(answers).forEach(questionId => {
                     const optionId = answers[questionId];
@@ -706,15 +595,7 @@
         } catch (e) {
             console.error('Error restoring saved answers:', e);
         }
-        
-        // Clean up localStorage when test is submitted
-        window.addEventListener('beforeunload', function() {
-            // Only clean up if we're actually submitting
-            if (document.querySelector('form').checkValidity && document.querySelector('form').checkValidity()) {
-                localStorage.removeItem('testAnswers_{{ $attempt->id }}');
-            }
-        });
     });
-</script>
-@endpush
+    </script>
+    @endpush
 </x-test-layout>
