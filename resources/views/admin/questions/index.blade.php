@@ -283,6 +283,36 @@
                             <div class="ml-5 w-0 flex-1">
                                 <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Essays & Others</dt>
-                                    <dd class="text-lg font-medium text-gray-900">{{ ($questionTypes['essay'] ?? 0) + ($questionTypes['cue_card'] ?? 0) + ($questionTypes['passage'] ?? 0) }}</dd>
+                                    <dd class="text-lg font-medium text-gray-900">{{ ($questionTypes['essay'] ?? 0) + ($questionTypes['cue_card'] ?? 0) + ($questionTypes['passage'] ?? 0) + ($questionTypes['short_answer'] ?? 0) + ($questionTypes['fill_blank'] ?? 0) }}</dd>
                                 </dl>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Info Section -->
+            <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">Question Management Tips</h3>
+                        <div class="mt-2 text-sm text-blue-700">
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Use the <strong>order number</strong> to control question sequence within test sets</li>
+                                <li><strong>Media files</strong> support images (JPG, PNG, GIF) and audio (MP3, WAV, OGG) up to 10MB</li>
+                                <li><strong>Multiple choice</strong> and <strong>True/False</strong> questions require answer options</li>
+                                <li><strong>Passage</strong> questions are used as reading material and don't need options</li>
+                                <li>Questions can be filtered by section and test set for easier management</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</x-layout>

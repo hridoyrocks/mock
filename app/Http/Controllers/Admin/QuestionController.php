@@ -6,56 +6,44 @@ use App\Http\Controllers\Controller;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\TestSet;
+use App\Models\TestSection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
-class QuestionController extends Controller
+class EnhancedQuestionController extends Controller
 {
     /**
-     * Display a listing of the questions.
+     * Display section-wise question management interface.
      */
     public function index(Request $request): View
     {
-        $query = Question::with(['testSet', 'testSet.section', 'options'])
-            ->orderBy('test_set_id')
-            ->orderBy('order_number');
-        
-        // Filter by section
-        if ($request->has('section') && $request->section != '') {
-            $query->whereHas('testSet.section', function ($q) use ($request) {
-                $q->where('name', $request->section);
-            });
-        }
-        
-        // Filter by test set
-        if ($request->has('test_set') && $request->test_set != '') {
-            $query->where('test_set_id', $request->test_set);
-        }
-        
-        $questions = $query->paginate(20);
-        
-        // Get test sets for filtering
-        $testSets = TestSet::with('section')->get();
-        
-        return view('admin.questions.index', compact('questions', 'testSets'));
+        $sections = TestSection::with(['testSets.questions' => function ($query) {
+            $query->orderBy('order_number');
+        }])->get();
+
+        $selectedSection = $request->get('section', 'listening');
+        $currentSection = $sections->where('name', $selectedSection)->first();
+
+        return view('admin.questions.enhanced-index', compact('sections', 'selectedSection', 'currentSection'));
     }
 
     /**
-     * Show the form for creating a new question.
+     * Show the advanced question creation interface.
      */
     public function create(Request $request): View
     {
         $testSets = TestSet::with('section')->get();
         $preselectedTestSet = $request->test_set;
+        $preselectedSection = $request->section;
         
-        return view('admin.questions.create', compact('testSets', 'preselectedTestSet'));
+        return view('admin.questions.enhanced-create', compact('testSets', 'preselectedTestSet', 'preselectedSection'));
     }
 
     /**
-     * Store a newly created question in storage.
+     * Store a newly created question with enhanced features.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -64,7 +52,11 @@ class QuestionController extends Controller
             'question_type' => 'required|in:passage,multiple_choice,true_false,matching,fill_blank,short_answer,essay,cue_card',
             'content' => 'required|string',
             'order_number' => 'required|integer|min:1',
-            'media' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp3,wav,ogg|max:10240', // 10MB max
+            'media' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp3,wav,ogg,mp4|max:20480', // 20MB max
+            'explanation' => 'nullable|string',
+            'difficulty_level' => 'nullable|in:easy,medium,hard',
+            'tags' => 'nullable|array',
+            'time_limit' => 'nullable|integer|min:1',
         ];
 
         // Add validation for questions that need options
@@ -84,13 +76,21 @@ class QuestionController extends Controller
         }
         
         DB::transaction(function () use ($request, $mediaPath) {
+            // Process content with shortcodes
+            $processedContent = $this->processShortcodes($request->content);
+            
             // Create the question
             $question = Question::create([
                 'test_set_id' => $request->test_set_id,
                 'question_type' => $request->question_type,
-                'content' => $request->content,
+                'content' => $processedContent,
+                'original_content' => $request->content, // Store original with shortcodes
                 'media_path' => $mediaPath,
                 'order_number' => $request->order_number,
+                'explanation' => $request->explanation,
+                'difficulty_level' => $request->difficulty_level ?? 'medium',
+                'tags' => $request->tags ? json_encode($request->tags) : null,
+                'time_limit' => $request->time_limit,
             ]);
             
             // Create options if applicable
@@ -101,6 +101,7 @@ class QuestionController extends Controller
                             'question_id' => $question->id,
                             'content' => trim($option['content']),
                             'is_correct' => ($request->correct_option == $index),
+                            'explanation' => $option['explanation'] ?? null,
                         ]);
                     }
                 }
@@ -119,126 +120,75 @@ class QuestionController extends Controller
             }
         });
         
-        return redirect()->route('admin.questions.index')
-            ->with('success', 'Question created successfully.');
+        return redirect()->route('admin.questions.enhanced.index', ['section' => $request->section ?? 'listening'])
+            ->with('success', 'Question created successfully with enhanced features.');
     }
 
     /**
-     * Display the specified question.
+     * Update question order via drag and drop.
      */
-    public function show(Question $question): View
+    public function updateOrder(Request $request)
     {
-        $question->load(['testSet', 'testSet.section', 'options']);
-        
-        return view('admin.questions.show', compact('question'));
-    }
+        $request->validate([
+            'questions' => 'required|array',
+            'questions.*.id' => 'required|exists:questions,id',
+            'questions.*.order_number' => 'required|integer|min:1',
+        ]);
 
-    /**
-     * Show the form for editing the specified question.
-     */
-    public function edit(Question $question): View
-    {
-        $question->load(['testSet', 'options']);
-        $testSets = TestSet::with('section')->get();
-        
-        return view('admin.questions.edit', compact('question', 'testSets'));
-    }
-
-    /**
-     * Update the specified question in storage.
-     */
-    public function update(Request $request, Question $question): RedirectResponse
-    {
-        $rules = [
-            'test_set_id' => 'required|exists:test_sets,id',
-            'question_type' => 'required|in:passage,multiple_choice,true_false,matching,fill_blank,short_answer,essay,cue_card',
-            'content' => 'required|string',
-            'order_number' => 'required|integer|min:1',
-            'media' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp3,wav,ogg|max:10240',
-        ];
-
-        if (in_array($request->question_type, ['multiple_choice', 'true_false', 'matching'])) {
-            $rules['options'] = 'required|array|min:2';
-            $rules['options.*.content'] = 'required|string';
-            $rules['correct_option'] = 'required|integer|min:0';
-        }
-
-        $request->validate($rules);
-        
-        $mediaPath = $question->media_path;
-        
-        // Handle media upload
-        if ($request->hasFile('media')) {
-            // Delete old media if exists
-            if ($mediaPath) {
-                Storage::disk('public')->delete($mediaPath);
-            }
-            
-            $media = $request->file('media');
-            $mediaPath = $media->store('questions', 'public');
-        }
-        
-        // Handle media removal
-        if ($request->has('remove_media') && $mediaPath) {
-            Storage::disk('public')->delete($mediaPath);
-            $mediaPath = null;
-        }
-        
-        DB::transaction(function () use ($request, $question, $mediaPath) {
-            // Update the question
-            $question->update([
-                'test_set_id' => $request->test_set_id,
-                'question_type' => $request->question_type,
-                'content' => $request->content,
-                'media_path' => $mediaPath,
-                'order_number' => $request->order_number,
-            ]);
-            
-            // Update options if applicable
-            if (in_array($request->question_type, ['multiple_choice', 'true_false', 'matching'])) {
-                // Delete old options
-                $question->options()->delete();
-                
-                // Create new options
-                if (isset($request->options)) {
-                    foreach ($request->options as $index => $option) {
-                        if (!empty($option['content'])) {
-                            QuestionOption::create([
-                                'question_id' => $question->id,
-                                'content' => trim($option['content']),
-                                'is_correct' => ($request->correct_option == $index),
-                            ]);
-                        }
-                    }
-                }
-            } else {
-                // Remove all options for non-option question types
-                $question->options()->delete();
+        DB::transaction(function () use ($request) {
+            foreach ($request->questions as $questionData) {
+                Question::where('id', $questionData['id'])
+                    ->update(['order_number' => $questionData['order_number']]);
             }
         });
-        
-        return redirect()->route('admin.questions.index')
-            ->with('success', 'Question updated successfully.');
+
+        return response()->json(['success' => true]);
     }
 
     /**
-     * Remove the specified question from storage.
+     * Bulk operations on questions.
      */
-    public function destroy(Question $question): RedirectResponse
+    public function bulkAction(Request $request)
     {
-        // Delete media if exists
-        if ($question->media_path) {
-            Storage::disk('public')->delete($question->media_path);
+        $request->validate([
+            'action' => 'required|in:delete,duplicate,move,change_difficulty',
+            'question_ids' => 'required|array',
+            'question_ids.*' => 'exists:questions,id',
+            'target_test_set' => 'nullable|exists:test_sets,id',
+            'difficulty_level' => 'nullable|in:easy,medium,hard',
+        ]);
+
+        $questions = Question::whereIn('id', $request->question_ids);
+
+        switch ($request->action) {
+            case 'delete':
+                $questions->delete();
+                break;
+            
+            case 'duplicate':
+                foreach ($questions->get() as $question) {
+                    $this->duplicateQuestion($question);
+                }
+                break;
+            
+            case 'move':
+                if ($request->target_test_set) {
+                    $questions->update(['test_set_id' => $request->target_test_set]);
+                }
+                break;
+            
+            case 'change_difficulty':
+                if ($request->difficulty_level) {
+                    $questions->update(['difficulty_level' => $request->difficulty_level]);
+                }
+                break;
         }
-        
-        $question->delete();
-        
-        return redirect()->route('admin.questions.index')
-            ->with('success', 'Question deleted successfully.');
+
+        return response()->json(['success' => true]);
     }
 
     /**
-     * Get question template based on type (AJAX endpoint)
+     * Get question templates for different types.
      */
     public function getTemplate(Request $request)
     {
@@ -247,53 +197,166 @@ class QuestionController extends Controller
         $templates = [
             'passage' => [
                 'needs_options' => false,
-                'placeholder' => 'Enter the reading passage or text content here...',
-                'description' => 'This will be displayed as reference material for students.'
+                'shortcodes' => ['[highlight]', '[underline]', '[bold]'],
+                'placeholder' => 'Enter the reading passage or text content here...\n\nUse shortcodes like [highlight]important text[/highlight] to emphasize content.',
+                'description' => 'This will be displayed as reference material for students.',
+                'example' => 'The Industrial Revolution was a period of [highlight]major industrialization[/highlight] that took place during the late 1700s and early 1800s.',
             ],
             'multiple_choice' => [
                 'needs_options' => true,
                 'min_options' => 3,
                 'max_options' => 6,
-                'placeholder' => 'Enter your question here...',
+                'shortcodes' => ['[blank]', '[highlight]', '[underline]'],
+                'placeholder' => 'Enter your question here...\n\nUse [blank] for fill-in-the-blank style questions.',
                 'option_placeholder' => 'Enter option text...',
-                'description' => 'Students will select one correct answer from multiple options.'
+                'description' => 'Students will select one correct answer from multiple options.',
+                'example' => 'What is the capital of [blank]?\nA) London\nB) Paris\nC) Berlin\nD) Rome',
             ],
             'true_false' => [
                 'needs_options' => true,
                 'fixed_options' => ['True', 'False', 'Not Given'],
+                'shortcodes' => ['[highlight]', '[underline]'],
                 'placeholder' => 'Enter a statement for students to evaluate...',
-                'description' => 'Students will choose True, False, or Not Given.'
+                'description' => 'Students will choose True, False, or Not Given.',
+                'example' => 'The passage states that [highlight]climate change[/highlight] is the primary concern for scientists.',
             ],
             'matching' => [
                 'needs_options' => true,
                 'min_options' => 4,
                 'max_options' => 8,
-                'placeholder' => 'Enter matching instruction...',
+                'shortcodes' => ['[list]', '[item]'],
+                'placeholder' => 'Enter matching instruction...\n\nUse [list] and [item] for structured lists.',
                 'option_placeholder' => 'Enter matching pair...',
-                'description' => 'Students will match items from two lists.'
+                'description' => 'Students will match items from two lists.',
+                'example' => 'Match the following countries with their capitals:\n[list]\n[item]France - Paris[/item]\n[item]Germany - Berlin[/item]\n[/list]',
             ],
             'fill_blank' => [
                 'needs_options' => false,
-                'placeholder' => 'Enter text with blanks using _____ for each blank...',
-                'description' => 'Students will fill in the missing words.'
+                'shortcodes' => ['[blank]', '[blank:5]', '[blank:word]'],
+                'placeholder' => 'Enter text with blanks using [blank] shortcode...',
+                'description' => 'Students will fill in the missing words.',
+                'example' => 'The [blank] Revolution began in the [blank:4] century and changed the way people [blank:worked].',
             ],
             'short_answer' => [
                 'needs_options' => false,
-                'placeholder' => 'Enter question requiring a brief written response...',
-                'description' => 'Students will provide short text answers.'
+                'shortcodes' => ['[highlight]', '[underline]', '[word_limit:50]'],
+                'placeholder' => 'Enter question requiring a brief written response...\n\nUse [word_limit:X] to set word limits.',
+                'description' => 'Students will provide short text answers.',
+                'example' => 'Explain the main cause of the Industrial Revolution in [word_limit:30] words.',
             ],
             'essay' => [
                 'needs_options' => false,
-                'placeholder' => 'Enter essay prompt or task description...',
-                'description' => 'Students will write detailed responses (for Writing section).'
+                'shortcodes' => ['[word_limit:250]', '[time_limit:40]', '[highlight]'],
+                'placeholder' => 'Enter essay prompt or task description...\n\nUse [word_limit:X] and [time_limit:X] for requirements.',
+                'description' => 'Students will write detailed responses (for Writing section).',
+                'example' => 'Discuss the impact of technology on modern education. [word_limit:250] [time_limit:40]',
             ],
             'cue_card' => [
                 'needs_options' => false,
-                'placeholder' => 'Enter speaking topic with bullet points for guidance...',
-                'description' => 'Students will speak on this topic (for Speaking section).'
+                'shortcodes' => ['[time_limit:2]', '[bullet]', '[highlight]'],
+                'placeholder' => 'Enter speaking topic with bullet points for guidance...\n\nUse [bullet] for bullet points.',
+                'description' => 'Students will speak on this topic (for Speaking section).',
+                'example' => 'Describe a memorable trip you have taken.\n[bullet]Where did you go?\n[bullet]Who did you go with?\n[bullet]What made it memorable?\n[time_limit:2]',
             ]
         ];
         
         return response()->json($templates[$type] ?? []);
+    }
+
+    /**
+     * Process shortcodes in content.
+     */
+    private function processShortcodes($content)
+    {
+        // Define shortcode patterns and their replacements
+        $shortcodes = [
+            // Text formatting
+            '/\[highlight\](.*?)\[\/highlight\]/s' => '<mark class="bg-yellow-200 px-1 rounded">$1</mark>',
+            '/\[underline\](.*?)\[\/underline\]/s' => '<u class="decoration-2">$1</u>',
+            '/\[bold\](.*?)\[\/bold\]/s' => '<strong class="font-semibold">$1</strong>',
+            
+            // Fill in the blank
+            '/\[blank\]/' => '<span class="inline-block border-b-2 border-gray-400 min-w-[80px] h-6 mx-1"></span>',
+            '/\[blank:(\d+)\]/' => '<span class="inline-block border-b-2 border-gray-400 min-w-[${1}px] h-6 mx-1"></span>',
+            '/\[blank:(\w+)\]/' => '<span class="inline-block border-b-2 border-gray-400 min-w-[100px] h-6 mx-1" data-answer="$1"></span>',
+            
+            // Lists
+            '/\[list\](.*?)\[\/list\]/s' => '<ul class="list-disc ml-6 my-2">$1</ul>',
+            '/\[item\](.*?)\[\/item\]/s' => '<li class="mb-1">$1</li>',
+            '/\[bullet\]/' => '<li class="mb-1">',
+            
+            // Metadata (these won't be displayed but stored for processing)
+            '/\[word_limit:(\d+)\]/' => '<span class="hidden" data-word-limit="$1"></span>',
+            '/\[time_limit:(\d+)\]/' => '<span class="hidden" data-time-limit="$1"></span>',
+        ];
+
+        $processedContent = $content;
+        foreach ($shortcodes as $pattern => $replacement) {
+            $processedContent = preg_replace($pattern, $replacement, $processedContent);
+        }
+
+        return $processedContent;
+    }
+
+    /**
+     * Duplicate a question with all its options.
+     */
+    private function duplicateQuestion($originalQuestion)
+    {
+        $newQuestion = $originalQuestion->replicate();
+        $newQuestion->order_number = Question::where('test_set_id', $originalQuestion->test_set_id)->max('order_number') + 1;
+        $newQuestion->save();
+
+        // Duplicate options
+        foreach ($originalQuestion->options as $option) {
+            $newOption = $option->replicate();
+            $newOption->question_id = $newQuestion->id;
+            $newOption->save();
+        }
+
+        return $newQuestion;
+    }
+
+    /**
+     * Preview question with processed shortcodes.
+     */
+    public function preview(Request $request)
+    {
+        $content = $request->get('content', '');
+        $processedContent = $this->processShortcodes($content);
+        
+        return response()->json([
+            'original' => $content,
+            'processed' => $processedContent
+        ]);
+    }
+
+    /**
+     * Get shortcode help.
+     */
+    public function shortcodeHelp()
+    {
+        $shortcodes = [
+            'Text Formatting' => [
+                '[highlight]text[/highlight]' => 'Highlights text with yellow background',
+                '[underline]text[/underline]' => 'Underlines text',
+                '[bold]text[/bold]' => 'Makes text bold',
+            ],
+            'Fill in the Blank' => [
+                '[blank]' => 'Creates a standard blank space',
+                '[blank:100]' => 'Creates a blank space with specific width (pixels)',
+                '[blank:answer]' => 'Creates a blank with expected answer for reference',
+            ],
+            'Lists' => [
+                '[list][item]Item 1[/item][item]Item 2[/item][/list]' => 'Creates a bulleted list',
+                '[bullet]' => 'Creates a single bullet point',
+            ],
+            'Metadata' => [
+                '[word_limit:250]' => 'Sets word limit for responses',
+                '[time_limit:40]' => 'Sets time limit in minutes',
+            ],
+        ];
+
+        return response()->json($shortcodes);
     }
 }
