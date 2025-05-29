@@ -432,416 +432,319 @@
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-    // Elements
-    const audio = document.getElementById('test-audio');
-    const volumeSlider = document.querySelector('input[type="range"]');
-    const questionsContainer = document.getElementById('questions-container');
-    const submitButton = document.getElementById('submit-button');
-    const navButtons = document.querySelectorAll('.number-btn');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const timerDisplay = document.getElementById('timer-display');
-    const minutesElement = timerDisplay.querySelector('.minutes');
-    const secondsElement = timerDisplay.querySelector('.seconds');
-    const warningModal = document.getElementById('warning-modal');
-    const continueTestBtn = document.getElementById('continue-test-btn');
-    const submitTestBtn = document.getElementById('submit-test-btn');
-    const submitModal = document.getElementById('submit-modal');
-    const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-    const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
-    const answeredCountSpan = document.getElementById('answered-count');
-    
-    // Test session management
-    const testId = '{{ $attempt->id }}';
-    const testDuration = {{ $testSet->section->time_limit }} * 60; // in seconds
-    
-    // Check if test was abandoned
-    const isTestAbandoned = localStorage.getItem('test_' + testId + '_abandoned') === 'true';
-    if (isTestAbandoned) {
-        // Show abandoned message and redirect
-        alert('This test attempt has been marked as abandoned. You will be redirected to the results page.');
-        window.location.href = '{{ route("student.results") }}';
-        return;
-    }
-    
-    // Initialize or restore timer
-    let testStartTime = localStorage.getItem('test_' + testId + '_startTime');
-    if (!testStartTime) {
-        testStartTime = Date.now();
-        localStorage.setItem('test_' + testId + '_startTime', testStartTime);
-    }
-    
-    // Record test session
-    localStorage.setItem('testId', testId);
-    localStorage.setItem('test_' + testId + '_active', 'true');
-    
-    // -------------------- PREVENT NAVIGATION --------------------
-    
-    // Track if user is trying to leave
-    let isLeavingPage = false;
-    
-    // 1. Disable all navigation links (excluding Help and Hide buttons)
-    const navLinks = document.querySelectorAll('a:not([href^="#"]):not(.no-nav)');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            showWarningModal();
-            return false;
-        });
-    });
-    
-    // 2. Prevent browser navigation (back/forward)
-    let preventCount = 0;
-    history.pushState(null, null, location.href);
-    window.addEventListener('popstate', function(event) {
-        history.pushState(null, null, location.href);
-        preventCount++;
-        if (preventCount <= 2) {
-            showWarningModal();
-        } else {
-            // User is insisting on leaving - mark as abandoned
-            markTestAsAbandoned();
-        }
-    });
-    
-    // 3. Prevent tab/window close and mark as abandoned if they leave
-    window.addEventListener('beforeunload', function(e) {
-        if (!isLeavingPage) {
-            // Save the current answers
-            saveAllAnswers();
+            // Elements
+            const audio = document.getElementById('test-audio');
+            const volumeSlider = document.querySelector('input[type="range"]');
+            const questionsContainer = document.getElementById('questions-container');
+            const submitButton = document.getElementById('submit-button');
+            const navButtons = document.querySelectorAll('.number-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const timerDisplay = document.getElementById('timer-display');
+            const minutesElement = timerDisplay.querySelector('.minutes');
+            const secondsElement = timerDisplay.querySelector('.seconds');
+            const warningModal = document.getElementById('warning-modal');
+            const continueTestBtn = document.getElementById('continue-test-btn');
+            const submitTestBtn = document.getElementById('submit-test-btn');
+            const submitModal = document.getElementById('submit-modal');
+            const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+            const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
+            const answeredCountSpan = document.getElementById('answered-count');
             
-            // Mark test as potentially abandoned
-            localStorage.setItem('test_' + testId + '_possiblyAbandoned', 'true');
-            localStorage.setItem('test_' + testId + '_lastActivity', Date.now());
+            // Record test start time in localStorage
+            localStorage.setItem('testStartTime', Date.now());
+            localStorage.setItem('testId', '{{ $attempt->id }}');
             
-            // Cancel the event
-            e.preventDefault();
-            // Chrome requires returnValue to be set
-            e.returnValue = 'You are in the middle of a test. Leaving will mark this attempt as abandoned.';
-            return 'You are in the middle of a test. Leaving will mark this attempt as abandoned.';
-        }
-    });
-    
-    // 4. Function to show warning modal
-    function showWarningModal() {
-        warningModal.style.display = 'flex';
-    }
-    
-    // 5. Close warning modal
-    continueTestBtn.addEventListener('click', function() {
-        warningModal.style.display = 'none';
-    });
-    
-    // 6. Handle keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // Block F5 key
-        if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
-            e.preventDefault();
-            showWarningModal();
-            return false;
-        }
-        
-        // Block Ctrl+W, Alt+F4 
-        if ((e.ctrlKey && e.key === 'w') || (e.altKey && e.key === 'F4')) {
-            e.preventDefault();
-            showWarningModal();
-            return false;
-        }
-    });
-    
-    // 7. Detect when user leaves the page focus
-    let leftPageCount = 0;
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'hidden') {
-            leftPageCount++;
-            console.log('User left the test page at:', new Date());
+            // -------------------- PREVENT NAVIGATION --------------------
             
-            // If user leaves page more than 3 times, mark as suspicious
-            if (leftPageCount > 3) {
-                localStorage.setItem('test_' + testId + '_suspicious', 'true');
-            }
-        }
-    });
-    
-    // Function to mark test as abandoned
-    function markTestAsAbandoned() {
-        localStorage.setItem('test_' + testId + '_abandoned', 'true');
-        localStorage.removeItem('test_' + testId + '_active');
-        
-        // Send AJAX request to mark attempt as abandoned
-        fetch('{{ route("student.listening.abandon", $attempt) }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                attempt_id: testId
-            })
-        });
-    }
-    
-    // Check if test was possibly abandoned (page was closed)
-    window.addEventListener('load', function() {
-        const possiblyAbandoned = localStorage.getItem('test_' + testId + '_possiblyAbandoned');
-        const lastActivity = localStorage.getItem('test_' + testId + '_lastActivity');
-        
-        if (possiblyAbandoned === 'true' && lastActivity) {
-            const timeSinceLastActivity = Date.now() - parseInt(lastActivity);
-            
-            // If more than 5 minutes have passed, consider it abandoned
-            if (timeSinceLastActivity > 5 * 60 * 1000) {
-                markTestAsAbandoned();
-                alert('This test has been marked as abandoned due to inactivity.');
-                window.location.href = '{{ route("student.results") }}';
-                return;
-            } else {
-                // Clear the possibly abandoned flag
-                localStorage.removeItem('test_' + testId + '_possiblyAbandoned');
-                localStorage.removeItem('test_' + testId + '_lastActivity');
-            }
-        }
-    });
-    
-    // Save all current answers to localStorage
-    function saveAllAnswers() {
-        // Get all selected radio buttons
-        const selectedRadios = document.querySelectorAll('input[type="radio"]:checked');
-        
-        // Create an answers object
-        const answers = {};
-        selectedRadios.forEach(radio => {
-            const questionId = radio.name.replace('answers[', '').replace(']', '');
-            answers[questionId] = radio.value;
-        });
-        
-        // Store in local storage as backup
-        localStorage.setItem('test_' + testId + '_answers', JSON.stringify(answers));
-    }
-    
-    // Periodically save answers (every 30 seconds)
-    setInterval(saveAllAnswers, 30000);
-    
-    // -------------------- AUDIO AND TEST FUNCTIONALITY --------------------
-    
-    // Initialize audio volume
-    audio.volume = volumeSlider.value / 100;
-    
-    // Volume control
-    volumeSlider.addEventListener('input', function() {
-        audio.volume = this.value / 100;
-    });
-    
-    // Start timer with elapsed time consideration
-    startTimer();
-    
-    // Play audio automatically
-    audio.play().catch(function(e) {
-        console.error('Error playing audio:', e);
-        
-        // Create a hidden auto-play trigger if needed
-        document.addEventListener('click', function autoPlayHandler() {
-            audio.play().then(() => {
-                document.removeEventListener('click', autoPlayHandler);
-            }).catch(err => {
-                console.error('Still cannot play audio:', err);
+            // 1. Disable all navigation links (excluding Help and Hide buttons)
+            const navLinks = document.querySelectorAll('a:not([href^="#"]):not(.no-nav)');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showWarningModal();
+                    return false;
+                });
             });
-        }, { once: true });
-    });
-    
-    // Audio ended event
-    audio.addEventListener('ended', function() {
-        // Enable questions
-        questionsContainer.style.opacity = '1';
-        questionsContainer.style.pointerEvents = 'auto';
-        
-        // Set first question button as active
-        if (navButtons.length > 0) {
-            navButtons[0].classList.add('active');
-        }
-    });
-    
-    // Enable questions if audio fails to play or for testing
-    setTimeout(function() {
-        if (audio.paused || audio.ended) {
-            questionsContainer.style.opacity = '1';
-            questionsContainer.style.pointerEvents = 'auto';
-        }
-    }, 3000);
-    
-    // Timer functionality with persistence
-    function startTimer() {
-        const startTime = parseInt(localStorage.getItem('test_' + testId + '_startTime'));
-        const currentTime = Date.now();
-        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-        let remainingSeconds = testDuration - elapsedSeconds;
-        
-        // If time is already up
-        if (remainingSeconds <= 0) {
-            saveAllAnswers();
-            submitButton.click();
-            return;
-        }
-        
-        const timerInterval = setInterval(function() {
-            remainingSeconds--;
             
-            if (remainingSeconds <= 0) {
-                clearInterval(timerInterval);
+            // 2. Prevent browser navigation (back/forward)
+            let preventCount = 0;
+            history.pushState(null, null, location.href);
+            window.addEventListener('popstate', function(event) {
+                history.pushState(null, null, location.href);
+                preventCount++;
+                if (preventCount <= 2) {
+                    showWarningModal();
+                }
+            });
+            
+            // 3. Prevent tab/window close
+            window.addEventListener('beforeunload', function(e) {
+                // Save the current answers
                 saveAllAnswers();
-                isLeavingPage = true; // Allow page to be left for submission
-                submitButton.click();
-                return;
+                
+                // Cancel the event
+                e.preventDefault();
+                // Chrome requires returnValue to be set
+                e.returnValue = '';
+                return 'You are in the middle of a test. Are you sure you want to leave?';
+            });
+            
+            // 4. Function to show warning modal
+            function showWarningModal() {
+                warningModal.style.display = 'flex';
             }
             
-            const minutesLeft = Math.floor(remainingSeconds / 60);
-            const secondsLeft = remainingSeconds % 60;
+            // 5. Close warning modal
+            continueTestBtn.addEventListener('click', function() {
+                warningModal.style.display = 'none';
+            });
             
-            // Visual cue for time running low
-            if (remainingSeconds < 60) {
-                timerDisplay.style.backgroundColor = '#dc2626'; // Red
-                timerDisplay.classList.add('animate-pulse');
-            } else if (remainingSeconds < 300) { // Less than 5 minutes
-                timerDisplay.style.backgroundColor = '#f59e0b'; // Yellow
+            // 6. Handle keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Block F5 key
+                if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                    e.preventDefault();
+                    showWarningModal();
+                    return false;
+                }
+                
+                // Block Ctrl+W, Alt+F4 
+                if ((e.ctrlKey && e.key === 'w') || (e.altKey && e.key === 'F4')) {
+                    e.preventDefault();
+                    showWarningModal();
+                    return false;
+                }
+            });
+            
+            // 7. Detect when user leaves the page focus
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    // User switched tabs or minimized window
+                    console.log('User left the test page at:', new Date());
+                }
+            });
+            
+            // Save all current answers to localStorage
+            function saveAllAnswers() {
+                // Get all selected radio buttons
+                const selectedRadios = document.querySelectorAll('input[type="radio"]:checked');
+                
+                // Create an answers object
+                const answers = {};
+                selectedRadios.forEach(radio => {
+                    const questionId = radio.name.replace('answers[', '').replace(']', '');
+                    answers[questionId] = radio.value;
+                });
+                
+                // Store in local storage as backup
+                localStorage.setItem('testAnswers', JSON.stringify(answers));
             }
             
-            // Update timer display
-            minutesElement.textContent = minutesLeft;
-            secondsElement.textContent = `:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
-        }, 1000);
-    }
-    
-    // Question navigation
-    navButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remove active class from all buttons
-            navButtons.forEach(btn => btn.classList.remove('active'));
+            // Periodically save answers (every 30 seconds)
+            setInterval(saveAllAnswers, 30000);
             
-            // Add active class to clicked button
-            this.classList.add('active');
+            // -------------------- AUDIO AND TEST FUNCTIONALITY --------------------
             
-            // Scroll to question
-            const questionNumber = this.dataset.question;
-            const questionElement = document.getElementById(`question-${questionNumber}`);
+            // Initialize audio volume
+            audio.volume = volumeSlider.value / 100;
             
-            if (questionElement) {
-                questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        });
-    });
-    
-    // Previous/Next buttons
-    prevBtn.addEventListener('click', function() {
-        const activeButton = document.querySelector('.number-btn.active');
-        if (activeButton && activeButton.previousElementSibling && activeButton.previousElementSibling.classList.contains('number-btn')) {
-            activeButton.previousElementSibling.click();
-        }
-    });
-    
-    nextBtn.addEventListener('click', function() {
-        const activeButton = document.querySelector('.number-btn.active');
-        if (activeButton && activeButton.nextElementSibling && activeButton.nextElementSibling.classList.contains('number-btn')) {
-            activeButton.nextElementSibling.click();
-        }
-    });
-    
-    // Handle answer selection
-    const radioButtons = document.querySelectorAll('input[type="radio"]');
-    radioButtons.forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            const questionId = this.name.replace('answers[', '').replace(']', '');
-            const question = this.closest('.question-box');
-            const questionNumber = question.id.replace('question-', '');
+            // Volume control
+            volumeSlider.addEventListener('input', function() {
+                audio.volume = this.value / 100;
+            });
             
-            // Mark question as answered in navigation
-            const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
-            if (navButton) {
-                navButton.style.backgroundColor = '#10b981'; // Green
-                navButton.style.color = 'white';
-                navButton.style.borderColor = '#059669';
-            }
+            // Start timer immediately
+            startTimer({{ $testSet->section->time_limit }});
             
-            // Save the answer when it's changed
-            saveAllAnswers();
-        });
-    });
-    
-    // Review checkbox functionality
-    const reviewCheckbox = document.getElementById('review-checkbox');
-    reviewCheckbox.addEventListener('change', function() {
-        const currentQuestion = document.querySelector('.number-btn.active');
-        if (currentQuestion) {
-            if (this.checked) {
-                currentQuestion.style.border = '2px solid #F59E0B';
-            } else {
-                currentQuestion.style.border = '';
-            }
-        }
-    });
-    
-    // Submit button click handler
-    submitTestBtn.addEventListener('click', function() {
-        // Count answered questions
-        const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
-        answeredCountSpan.textContent = answeredQuestions;
-        
-        // Show submit confirmation modal
-        submitModal.style.display = 'flex';
-    });
-    
-    // Confirm submit button
-    confirmSubmitBtn.addEventListener('click', function() {
-        saveAllAnswers();
-        isLeavingPage = true; // Allow page to be left for submission
-        
-        // Clear all test data from localStorage
-        localStorage.removeItem('test_' + testId + '_startTime');
-        localStorage.removeItem('test_' + testId + '_answers');
-        localStorage.removeItem('test_' + testId + '_active');
-        localStorage.removeItem('test_' + testId + '_abandoned');
-        localStorage.removeItem('test_' + testId + '_possiblyAbandoned');
-        localStorage.removeItem('test_' + testId + '_lastActivity');
-        
-        submitButton.click();
-    });
-    
-    // Cancel submit button
-    cancelSubmitBtn.addEventListener('click', function() {
-        submitModal.style.display = 'none';
-    });
-    
-    // Attempt to load answers from local storage
-    try {
-        const savedAnswers = localStorage.getItem('test_' + testId + '_answers');
-        
-        if (savedAnswers) {
-            const answers = JSON.parse(savedAnswers);
+            // Play audio automatically
+            audio.play().catch(function(e) {
+                console.error('Error playing audio:', e);
+                
+                // Create a hidden auto-play trigger if needed
+                document.addEventListener('click', function autoPlayHandler() {
+                    audio.play().then(() => {
+                        document.removeEventListener('click', autoPlayHandler);
+                    }).catch(err => {
+                        console.error('Still cannot play audio:', err);
+                    });
+                }, { once: true });
+            });
             
-            // Restore each answer
-            Object.keys(answers).forEach(questionId => {
-                const optionId = answers[questionId];
-                const radio = document.querySelector(`input[name="answers[${questionId}]"][value="${optionId}"]`);
-                if (radio) {
-                    radio.checked = true;
+            // Audio ended event
+            audio.addEventListener('ended', function() {
+                // Enable questions
+                questionsContainer.style.opacity = '1';
+                questionsContainer.style.pointerEvents = 'auto';
+                
+                // Set first question button as active
+                if (navButtons.length > 0) {
+                    navButtons[0].classList.add('active');
+                }
+            });
+            
+            // Enable questions if audio fails to play or for testing
+            setTimeout(function() {
+                if (audio.paused || audio.ended) {
+                    questionsContainer.style.opacity = '1';
+                    questionsContainer.style.pointerEvents = 'auto';
+                }
+            }, 3000);
+            
+            // Timer functionality
+            function startTimer(minutes) {
+                let totalSeconds = minutes * 60;
+                
+                const timerInterval = setInterval(function() {
+                    totalSeconds--;
                     
-                    // Mark as answered in navigation
-                    const question = radio.closest('.question-box');
-                    if (question) {
-                        const questionNumber = question.id.replace('question-', '');
-                        const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
-                        if (navButton) {
-                            navButton.style.backgroundColor = '#10b981';
-                            navButton.style.color = 'white';
-                            navButton.style.borderColor = '#059669';
-                        }
+                    if (totalSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        saveAllAnswers(); // Save all answers before submitting
+                        submitButton.click(); // Auto-submit
+                        return;
+                    }
+                    
+                    const minutesLeft = Math.floor(totalSeconds / 60);
+                    const secondsLeft = totalSeconds % 60;
+                    
+                    // Visual cue for time running low
+                    if (totalSeconds < 60) {
+                        timerDisplay.style.backgroundColor = '#dc2626'; // Red
+                        timerDisplay.classList.add('animate-pulse');
+                    } else if (totalSeconds < 300) { // Less than 5 minutes
+                        timerDisplay.style.backgroundColor = '#f59e0b'; // Yellow
+                    }
+                    
+                    // Update timer display
+                    minutesElement.textContent = minutesLeft;
+                    secondsElement.textContent = `:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
+                }, 1000);
+            }
+            
+            // Question navigation
+            navButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Scroll to question
+                    const questionNumber = this.dataset.question;
+                    const questionElement = document.getElementById(`question-${questionNumber}`);
+                    
+                    if (questionElement) {
+                        questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            });
+            
+            // Previous/Next buttons
+            prevBtn.addEventListener('click', function() {
+                const activeButton = document.querySelector('.number-btn.active');
+                if (activeButton && activeButton.previousElementSibling && activeButton.previousElementSibling.classList.contains('number-btn')) {
+                    activeButton.previousElementSibling.click();
+                }
+            });
+            
+            nextBtn.addEventListener('click', function() {
+                const activeButton = document.querySelector('.number-btn.active');
+                if (activeButton && activeButton.nextElementSibling && activeButton.nextElementSibling.classList.contains('number-btn')) {
+                    activeButton.nextElementSibling.click();
+                }
+            });
+            
+            // Handle answer selection
+            const radioButtons = document.querySelectorAll('input[type="radio"]');
+            radioButtons.forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    const questionId = this.name.replace('answers[', '').replace(']', '');
+                    const question = this.closest('.question-box');
+                    const questionNumber = question.id.replace('question-', '');
+                    
+                    // Mark question as answered in navigation
+                    const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+                    if (navButton) {
+                        navButton.style.backgroundColor = '#10b981'; // Green
+                        navButton.style.color = 'white';
+                        navButton.style.borderColor = '#059669';
+                    }
+                    
+                    // Save the answer when it's changed
+                    saveAllAnswers();
+                });
+            });
+            
+            // Review checkbox functionality
+            const reviewCheckbox = document.getElementById('review-checkbox');
+            reviewCheckbox.addEventListener('change', function() {
+                const currentQuestion = document.querySelector('.number-btn.active');
+                if (currentQuestion) {
+                    if (this.checked) {
+                        currentQuestion.style.border = '2px solid #F59E0B';
+                    } else {
+                        currentQuestion.style.border = '';
                     }
                 }
             });
-        }
-    } catch (e) {
-        console.error('Error restoring saved answers:', e);
-    }
-});
+            
+            // Submit button click handler
+            submitTestBtn.addEventListener('click', function() {
+                // Count answered questions
+                const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked').length;
+                answeredCountSpan.textContent = answeredQuestions;
+                
+                // Show submit confirmation modal
+                submitModal.style.display = 'flex';
+            });
+            
+            // Confirm submit button
+            confirmSubmitBtn.addEventListener('click', function() {
+                saveAllAnswers();
+                submitButton.click();
+            });
+            
+            // Cancel submit button
+            cancelSubmitBtn.addEventListener('click', function() {
+                submitModal.style.display = 'none';
+            });
+            
+            // Attempt to load answers from local storage if the test was interrupted
+            try {
+                const savedAnswers = localStorage.getItem('testAnswers');
+                const testId = localStorage.getItem('testId');
+                
+                // Only restore if it's the same test
+                if (savedAnswers && testId === '{{ $attempt->id }}') {
+                    const answers = JSON.parse(savedAnswers);
+                    
+                    // Restore each answer
+                    Object.keys(answers).forEach(questionId => {
+                        const optionId = answers[questionId];
+                        const radio = document.querySelector(`input[name="answers[${questionId}]"][value="${optionId}"]`);
+                        if (radio) {
+                            radio.checked = true;
+                            
+                            // Mark as answered in navigation
+                            const question = radio.closest('.question-box');
+                            if (question) {
+                                const questionNumber = question.id.replace('question-', '');
+                                const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+                                if (navButton) {
+                                    navButton.style.backgroundColor = '#10b981';
+                                    navButton.style.color = 'white';
+                                    navButton.style.borderColor = '#059669';
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Error restoring saved answers:', e);
+            }
+        });
     </script>
     @endpush
 </x-test-layout>
