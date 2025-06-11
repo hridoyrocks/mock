@@ -5,7 +5,7 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
-                        <img src="{{ asset('https://banglayielts.com/wp-content/uploads/2023/11/logo-2-2.png') }}" alt="IELTS Logo" class="h-10">
+                        <img src="{{ asset('https://www.nasa.gov/wp-content/uploads/2018/07/s75-31690.jpeg') }}" alt="IELTS Logo" class="h-10">
                     </a>
                 </div>
 
