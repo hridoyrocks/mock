@@ -4,7 +4,6 @@ use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\StudentAttemptController;
 use App\Http\Controllers\Admin\TestSectionController;
 use App\Http\Controllers\Admin\TestSetController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Student\ListeningTestController;
 use App\Http\Controllers\Student\ReadingTestController;
@@ -25,79 +24,97 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Authenticated routes
+// Authenticated routes with role-based dashboard
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Dashboard route with role-based redirection
+    Route::get('/dashboard', function() {
+        if (auth()->user()->is_admin) {
+            return redirect()->route('admin.dashboard');
+        } else {
+            return redirect()->route('student.dashboard');
+        }
+    })->name('dashboard');
     
     // Student routes
-    Route::middleware(['role:student'])->prefix('test')->name('student.')->group(function () {
-        Route::get('/', [TestController::class, 'index'])->name('index');
+    Route::middleware(['role:student'])->prefix('student')->name('student.')->group(function () {
+        // Student Dashboard
+        Route::get('/dashboard', [App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/progress-data', [App\Http\Controllers\Student\DashboardController::class, 'progressData'])->name('dashboard.progress-data');
         
-        // Listening section - Updated routes
-        Route::prefix('listening')->name('listening.')->group(function () {
-            Route::get('/', [ListeningTestController::class, 'index'])->name('index');
+        // Test routes
+        Route::prefix('test')->group(function () {
+            Route::get('/', [TestController::class, 'index'])->name('index');
             
-            // Simplified onboarding routes
-            Route::get('/onboarding/{testSet}', [ListeningTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
-            Route::get('/sound-check/{testSet}', [ListeningTestController::class, 'soundCheck'])->name('onboarding.sound-check');
-            Route::get('/instructions/{testSet}', [ListeningTestController::class, 'instructions'])->name('onboarding.instructions');
-            
-            Route::get('/start/{testSet}', [ListeningTestController::class, 'start'])->name('start');
-            Route::post('/submit/{attempt}', [ListeningTestController::class, 'submit'])->name('submit');
-        });
-        
-        // Reading section
-        Route::prefix('reading')->name('reading.')->group(function () {
-            Route::get('/', [ReadingTestController::class, 'index'])->name('index');
-            
-            // Onboarding routes
-            Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                Route::get('/{testSet}', [ReadingTestController::class, 'confirmDetails'])->name('confirm-details');
-                Route::get('/instructions/{testSet}', [ReadingTestController::class, 'instructions'])->name('instructions');
+            // Listening section - Updated routes
+            Route::prefix('listening')->name('listening.')->group(function () {
+                Route::get('/', [ListeningTestController::class, 'index'])->name('index');
+                
+                // Simplified onboarding routes
+                Route::get('/onboarding/{testSet}', [ListeningTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
+                Route::get('/sound-check/{testSet}', [ListeningTestController::class, 'soundCheck'])->name('onboarding.sound-check');
+                Route::get('/instructions/{testSet}', [ListeningTestController::class, 'instructions'])->name('onboarding.instructions');
+                
+                Route::get('/start/{testSet}', [ListeningTestController::class, 'start'])->name('start');
+                Route::post('/submit/{attempt}', [ListeningTestController::class, 'submit'])->name('submit');
             });
             
-            Route::get('/start/{testSet}', [ReadingTestController::class, 'start'])->name('start');
-            Route::post('/submit/{attempt}', [ReadingTestController::class, 'submit'])->name('submit');
-        });
-        
-        // Writing section
-        Route::prefix('writing')->name('writing.')->group(function () {
-            Route::get('/', [WritingTestController::class, 'index'])->name('index');
-            
-            // Onboarding routes
-            Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                Route::get('/{testSet}', [WritingTestController::class, 'confirmDetails'])->name('confirm-details');
-                Route::get('/instructions/{testSet}', [WritingTestController::class, 'instructions'])->name('instructions');
+            // Reading section
+            Route::prefix('reading')->name('reading.')->group(function () {
+                Route::get('/', [ReadingTestController::class, 'index'])->name('index');
+                
+                // Onboarding routes
+                Route::prefix('onboarding')->name('onboarding.')->group(function () {
+                    Route::get('/{testSet}', [ReadingTestController::class, 'confirmDetails'])->name('confirm-details');
+                    Route::get('/instructions/{testSet}', [ReadingTestController::class, 'instructions'])->name('instructions');
+                });
+                
+                Route::get('/start/{testSet}', [ReadingTestController::class, 'start'])->name('start');
+                Route::post('/submit/{attempt}', [ReadingTestController::class, 'submit'])->name('submit');
             });
             
-            Route::get('/start/{testSet}', [WritingTestController::class, 'start'])->name('start');
-            Route::post('/autosave/{attempt}/{question}', [WritingTestController::class, 'autosave'])->name('autosave');
-            Route::post('/submit/{attempt}', [WritingTestController::class, 'submit'])->name('submit');
-        });
-        
-        // Speaking section
-        Route::prefix('speaking')->name('speaking.')->group(function () {
-            Route::get('/', [SpeakingTestController::class, 'index'])->name('index');
-            
-            // Onboarding routes
-            Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                Route::get('/{testSet}', [SpeakingTestController::class, 'confirmDetails'])->name('confirm-details');
-                Route::get('/microphone-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('microphone-check');
-                Route::get('/instructions/{testSet}', [SpeakingTestController::class, 'instructions'])->name('instructions');
+            // Writing section
+            Route::prefix('writing')->name('writing.')->group(function () {
+                Route::get('/', [WritingTestController::class, 'index'])->name('index');
+                
+                // Onboarding routes
+                Route::prefix('onboarding')->name('onboarding.')->group(function () {
+                    Route::get('/{testSet}', [WritingTestController::class, 'confirmDetails'])->name('confirm-details');
+                    Route::get('/instructions/{testSet}', [WritingTestController::class, 'instructions'])->name('instructions');
+                });
+                
+                Route::get('/start/{testSet}', [WritingTestController::class, 'start'])->name('start');
+                Route::post('/autosave/{attempt}/{question}', [WritingTestController::class, 'autosave'])->name('autosave');
+                Route::post('/submit/{attempt}', [WritingTestController::class, 'submit'])->name('submit');
             });
             
-            Route::get('/start/{testSet}', [SpeakingTestController::class, 'start'])->name('start');
-            Route::post('/record/{attempt}/{question}', [SpeakingTestController::class, 'record'])->name('record');
-            Route::post('/submit/{attempt}', [SpeakingTestController::class, 'submit'])->name('submit');
+            // Speaking section
+            Route::prefix('speaking')->name('speaking.')->group(function () {
+                Route::get('/', [SpeakingTestController::class, 'index'])->name('index');
+                
+                // Onboarding routes
+                Route::prefix('onboarding')->name('onboarding.')->group(function () {
+                    Route::get('/{testSet}', [SpeakingTestController::class, 'confirmDetails'])->name('confirm-details');
+                    Route::get('/microphone-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('microphone-check');
+                    Route::get('/instructions/{testSet}', [SpeakingTestController::class, 'instructions'])->name('instructions');
+                });
+                
+                Route::get('/start/{testSet}', [SpeakingTestController::class, 'start'])->name('start');
+                Route::post('/record/{attempt}/{question}', [SpeakingTestController::class, 'record'])->name('record');
+                Route::post('/submit/{attempt}', [SpeakingTestController::class, 'submit'])->name('submit');
+            });
+            
+            // Results
+            Route::get('/results', [ResultController::class, 'index'])->name('results');
+            Route::get('/results/{attempt}', [ResultController::class, 'show'])->name('results.show');
         });
-        
-        // Results
-        Route::get('/results', [ResultController::class, 'index'])->name('results');
-        Route::get('/results/{attempt}', [ResultController::class, 'show'])->name('results.show');
     });
     
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        // Admin Dashboard
+        Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/quick-stats', [App\Http\Controllers\Admin\DashboardController::class, 'quickStats'])->name('dashboard.quick-stats');
+        
         // Test sections management
         Route::resource('sections', TestSectionController::class);
         

@@ -11,7 +11,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class AdminDashboardController extends Controller
+class DashboardController extends Controller
 {
     /**
      * Display the admin dashboard.
