@@ -121,8 +121,23 @@ Route::middleware(['auth'])->group(function () {
         // Test sets management
         Route::resource('test-sets', TestSetController::class);
         
-        // Questions management
-        Route::resource('questions', QuestionController::class);
+        // Questions management - Updated routes
+Route::prefix('questions')->name('questions.')->group(function () {
+    Route::get('/', [QuestionController::class, 'index'])->name('index');
+    Route::get('/create', [QuestionController::class, 'create'])->name('create');
+    Route::post('/', [QuestionController::class, 'store'])->name('store');
+    Route::get('/{question}', [QuestionController::class, 'show'])->name('show');
+    Route::get('/{question}/edit', [QuestionController::class, 'edit'])->name('edit');
+    Route::put('/{question}', [QuestionController::class, 'update'])->name('update');
+    Route::delete('/{question}', [QuestionController::class, 'destroy'])->name('destroy');
+    
+    // New routes
+    Route::post('/{question}/duplicate', [QuestionController::class, 'duplicate'])->name('duplicate');
+    Route::get('/bulk-import/{testSet}', [QuestionController::class, 'bulkImportForm'])->name('bulk-import');
+    Route::post('/bulk-import/{testSet}', [QuestionController::class, 'bulkImport'])->name('bulk-import.process');
+    Route::post('/reorder', [QuestionController::class, 'reorder'])->name('reorder');
+    Route::get('/test-set/{testSet}/part/{part}', [QuestionController::class, 'getByPart'])->name('get-by-part');
+});
         
         // Student attempts management
         Route::resource('attempts', StudentAttemptController::class);

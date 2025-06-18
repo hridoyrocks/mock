@@ -14,9 +14,15 @@ class Question extends Model
         'content', 
         'media_path', 
         'order_number',
+        'part_number',
+        'question_group',
+        'passage_text',
+        'audio_transcript',
         'word_limit',
         'time_limit',
         'instructions',
+        'marks',
+        'is_example',
         'passage_id', // For linking questions to reading passages
         'section_specific_data' // JSON field for section-specific data
     ];
@@ -24,6 +30,9 @@ class Question extends Model
     protected $casts = [
         'word_limit' => 'integer',
         'time_limit' => 'integer',
+        'marks' => 'integer',
+        'part_number' => 'integer',
+        'is_example' => 'boolean',
         'section_specific_data' => 'array'
     ];
     

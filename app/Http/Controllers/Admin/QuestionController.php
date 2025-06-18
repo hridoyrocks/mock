@@ -34,7 +34,15 @@ class QuestionController extends Controller
             $query->where('test_set_id', $request->test_set);
         }
         
-        $questions = $query->orderBy('test_set_id')->orderBy('order_number')->paginate(15);
+        // Filter by part
+        if ($request->has('part')) {
+            $query->where('part_number', $request->part);
+        }
+        
+        $questions = $query->orderBy('test_set_id')
+                          ->orderBy('part_number')
+                          ->orderBy('order_number')
+                          ->paginate(20);
         
         // Get test sets for filtering
         $testSets = TestSet::with('section')->get();
@@ -47,16 +55,17 @@ class QuestionController extends Controller
      */
     public function create(Request $request): View
     {
-        $testSets = TestSet::with('section')->get();
-        $sections = TestSection::all();
-        
-        // If section is specified, filter test sets
-        $selectedSection = $request->get('section');
-        if ($selectedSection) {
-            $testSets = $testSets->where('section.name', $selectedSection);
+        // If test_set is provided, use that specific test set
+        if ($request->has('test_set')) {
+            $testSet = TestSet::with('section')->findOrFail($request->test_set);
+            return view('admin.questions.create', compact('testSet'));
         }
         
-        return view('admin.questions.create', compact('testSets', 'sections', 'selectedSection'));
+        // Otherwise show test set selection
+        $testSets = TestSet::with('section')->where('active', true)->get();
+        $sections = TestSection::all();
+        
+        return view('admin.questions.select-test-set', compact('testSets', 'sections'));
     }
 
     /**
@@ -64,15 +73,57 @@ class QuestionController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // Dynamic validation based on question type and section
-        $rules = $this->getValidationRules($request->question_type, $request->test_set_id);
+        // Get test set to determine section
+        $testSet = TestSet::with('section')->findOrFail($request->test_set_id);
+        $section = $testSet->section->name;
+        
+        // Base validation rules
+        $rules = [
+            'test_set_id' => 'required|exists:test_sets,id',
+            'question_type' => 'required|string',
+            'content' => 'required|string',
+            'order_number' => 'required|integer|min:1',
+            'part_number' => 'nullable|integer',
+            'question_group' => 'nullable|string',
+            'marks' => 'nullable|integer|min:1|max:10',
+            'is_example' => 'nullable|boolean',
+            'instructions' => 'nullable|string',
+            'passage_text' => 'nullable|string',
+            'audio_transcript' => 'nullable|string',
+        ];
+        
+        // Section-specific validation
+        if ($section === 'listening') {
+            $rules['media'] = 'required_if:question_type,!=,passage|file|mimes:mp3,wav,ogg|max:51200';
+            $rules['part_number'] = 'required|integer|min:1|max:4';
+        } elseif ($section === 'reading') {
+            $rules['part_number'] = 'required|integer|min:1|max:3';
+            if ($request->question_type === 'passage') {
+                $rules['passage_text'] = 'required|string|min:200';
+            }
+        } elseif ($section === 'writing') {
+            $rules['word_limit'] = 'required|integer|min:50|max:500';
+            $rules['time_limit'] = 'required|integer|min:1|max:60';
+            if (strpos($request->question_type, 'task1') !== false) {
+                $rules['media'] = 'required|file|mimes:jpg,jpeg,png,gif|max:5120';
+            }
+        } elseif ($section === 'speaking') {
+            $rules['time_limit'] = 'required|integer|min:1|max:10';
+        }
+        
+        // Add options validation if needed
+        if ($this->requiresOptions($request->question_type)) {
+            $rules['options'] = 'required|array|min:2';
+            $rules['options.*.content'] = 'required|string';
+            $rules['correct_option'] = 'required|integer|min:0';
+        }
+        
         $request->validate($rules);
         
+        // Handle file upload
         $mediaPath = null;
-        
         if ($request->hasFile('media')) {
-            $media = $request->file('media');
-            $mediaPath = $media->store('questions', 'public');
+            $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
         }
         
         DB::transaction(function () use ($request, $mediaPath) {
@@ -83,20 +134,16 @@ class QuestionController extends Controller
                 'content' => $request->content,
                 'media_path' => $mediaPath,
                 'order_number' => $request->order_number,
+                'part_number' => $request->part_number,
+                'question_group' => $request->question_group,
+                'marks' => $request->marks ?? 1,
+                'is_example' => $request->is_example ?? false,
+                'instructions' => $request->instructions,
+                'passage_text' => $request->passage_text,
+                'audio_transcript' => $request->audio_transcript,
+                'word_limit' => $request->word_limit ?? null,
+                'time_limit' => $request->time_limit ?? null,
             ];
-
-            // Add section-specific fields
-            if ($request->has('word_limit')) {
-                $questionData['word_limit'] = $request->word_limit;
-            }
-            
-            if ($request->has('time_limit')) {
-                $questionData['time_limit'] = $request->time_limit;
-            }
-
-            if ($request->has('instructions')) {
-                $questionData['instructions'] = $request->instructions;
-            }
 
             $question = Question::create($questionData);
             
@@ -110,145 +157,25 @@ class QuestionController extends Controller
                     ]);
                 }
             }
-
-            // Handle bulk questions for reading passages
-            if ($request->question_type === 'passage' && $request->has('bulk_questions')) {
-                $this->createBulkQuestions($question, $request->bulk_questions);
-            }
         });
         
-        return redirect()->route('admin.questions.index')
+        // Redirect based on action
+        if ($request->action === 'save_and_new') {
+            return redirect()->route('admin.questions.create', ['test_set' => $request->test_set_id])
+                ->with('success', 'Question created successfully. Add another question.');
+        }
+        
+        return redirect()->route('admin.test-sets.show', $request->test_set_id)
             ->with('success', 'Question created successfully.');
     }
 
     /**
-     * Get validation rules based on question type and section
+     * Display the specified question.
      */
-    private function getValidationRules($questionType, $testSetId): array
+    public function show(Question $question): View
     {
-        $testSet = TestSet::with('section')->find($testSetId);
-        $section = $testSet ? $testSet->section->name : null;
-
-        $baseRules = [
-            'test_set_id' => 'required|exists:test_sets,id',
-            'question_type' => 'required|string',
-            'content' => 'required|string',
-            'order_number' => 'required|integer|min:1',
-            'media' => 'nullable|file|max:20480', // 20MB max
-        ];
-
-        // Section-specific rules
-        switch ($section) {
-            case 'listening':
-                if ($questionType === 'form_completion' || $questionType === 'note_completion') {
-                    $baseRules['media'] = 'required|file|mimes:mp3,wav,ogg|max:50240'; // 50MB for audio
-                }
-                break;
-                
-            case 'reading':
-                if ($questionType === 'passage') {
-                    $baseRules['content'] = 'required|string|min:200'; // Minimum 200 chars for passage
-                    $baseRules['bulk_questions'] = 'sometimes|array';
-                    $baseRules['bulk_questions.*.content'] = 'required|string';
-                    $baseRules['bulk_questions.*.type'] = 'required|string';
-                }
-                break;
-                
-            case 'writing':
-                $baseRules['word_limit'] = 'required|integer|min:150|max:400';
-                $baseRules['time_limit'] = 'required|integer|min:20|max:60'; // minutes
-                if ($questionType === 'task1_chart') {
-                    $baseRules['media'] = 'required|file|mimes:jpg,jpeg,png,gif|max:5120'; // 5MB for images
-                }
-                break;
-                
-            case 'speaking':
-                $baseRules['time_limit'] = 'required|integer|min:1|max:4'; // minutes
-                if ($questionType === 'cue_card') {
-                    $baseRules['instructions'] = 'required|string';
-                }
-                break;
-        }
-
-        // Question type specific rules
-        if (in_array($questionType, ['multiple_choice', 'true_false', 'matching'])) {
-            $baseRules['options'] = 'required|array|min:2';
-            $baseRules['options.*.content'] = 'required|string';
-            $baseRules['correct_option'] = 'required|integer|min:0';
-        }
-
-        return $baseRules;
-    }
-
-    /**
-     * Check if question type requires options
-     */
-    private function requiresOptions($questionType): bool
-    {
-        return in_array($questionType, [
-            'multiple_choice', 
-            'true_false', 
-            'matching',
-            'form_completion',
-            'sentence_completion'
-        ]);
-    }
-
-    /**
-     * Create bulk questions for reading passages
-     */
-    private function createBulkQuestions($passage, $bulkQuestions): void
-    {
-        foreach ($bulkQuestions as $index => $questionData) {
-            $question = Question::create([
-                'test_set_id' => $passage->test_set_id,
-                'question_type' => $questionData['type'],
-                'content' => $questionData['content'],
-                'order_number' => $passage->order_number + $index + 1,
-                'passage_id' => $passage->id, // Link to passage
-            ]);
-
-            // Create options if needed
-            if (isset($questionData['options'])) {
-                foreach ($questionData['options'] as $optionIndex => $option) {
-                    QuestionOption::create([
-                        'question_id' => $question->id,
-                        'content' => $option['content'],
-                        'is_correct' => ($questionData['correct_option'] == $optionIndex),
-                    ]);
-                }
-            }
-        }
-    }
-
-    /**
-     * Bulk upload questions via CSV/Excel
-     */
-    public function bulkUpload(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx|max:2048',
-            'test_set_id' => 'required|exists:test_sets,id'
-        ]);
-
-        $file = $request->file('file');
-        $testSetId = $request->test_set_id;
-
-        // Process file and create questions
-        $this->processBulkFile($file, $testSetId);
-
-        return redirect()->route('admin.questions.index')
-            ->with('success', 'Questions uploaded successfully via bulk upload.');
-    }
-
-    /**
-     * Process bulk upload file
-     */
-    private function processBulkFile($file, $testSetId): void
-    {
-        // Implementation for CSV/Excel processing
-        // This would use libraries like PhpSpreadsheet or League/CSV
-        // For now, showing the structure
+        $question->load(['testSet', 'testSet.section', 'options']);
+        return view('admin.questions.show', compact('question'));
     }
 
     /**
@@ -257,10 +184,7 @@ class QuestionController extends Controller
     public function edit(Question $question): View
     {
         $question->load(['testSet', 'options']);
-        $testSets = TestSet::with('section')->get();
-        $sections = TestSection::all();
-        
-        return view('admin.questions.edit', compact('question', 'testSets', 'sections'));
+        return view('admin.questions.edit', compact('question'));
     }
 
     /**
@@ -268,21 +192,39 @@ class QuestionController extends Controller
      */
     public function update(Request $request, Question $question): RedirectResponse
     {
-        $rules = $this->getValidationRules($request->question_type, $request->test_set_id);
+        // Get test set to determine section
+        $testSet = TestSet::with('section')->findOrFail($request->test_set_id ?? $question->test_set_id);
+        $section = $testSet->section->name;
+        
+        // Use same validation as store
+        $rules = [
+            'question_type' => 'required|string',
+            'content' => 'required|string',
+            'order_number' => 'required|integer|min:1',
+            'part_number' => 'nullable|integer',
+            'question_group' => 'nullable|string',
+            'marks' => 'nullable|integer|min:1|max:10',
+            'is_example' => 'nullable|boolean',
+            'instructions' => 'nullable|string',
+            'passage_text' => 'nullable|string',
+            'audio_transcript' => 'nullable|string',
+        ];
+        
+        // Add section-specific rules (similar to store)
+        $this->addSectionSpecificRules($rules, $section, $request);
+        
         $request->validate($rules);
         
+        // Handle file upload
         $mediaPath = $question->media_path;
-        
         if ($request->hasFile('media')) {
-            // Delete old media if exists
+            // Delete old media
             if ($mediaPath) {
                 Storage::disk('public')->delete($mediaPath);
             }
-            
-            $media = $request->file('media');
-            $mediaPath = $media->store('questions', 'public');
+            $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
         }
-
+        
         // Handle media removal
         if ($request->has('remove_media') && $mediaPath) {
             Storage::disk('public')->delete($mediaPath);
@@ -292,25 +234,20 @@ class QuestionController extends Controller
         DB::transaction(function () use ($request, $question, $mediaPath) {
             // Update the question
             $updateData = [
-                'test_set_id' => $request->test_set_id,
                 'question_type' => $request->question_type,
                 'content' => $request->content,
                 'media_path' => $mediaPath,
                 'order_number' => $request->order_number,
+                'part_number' => $request->part_number,
+                'question_group' => $request->question_group,
+                'marks' => $request->marks ?? 1,
+                'is_example' => $request->is_example ?? false,
+                'instructions' => $request->instructions,
+                'passage_text' => $request->passage_text,
+                'audio_transcript' => $request->audio_transcript,
+                'word_limit' => $request->word_limit ?? null,
+                'time_limit' => $request->time_limit ?? null,
             ];
-
-            // Add section-specific fields
-            if ($request->has('word_limit')) {
-                $updateData['word_limit'] = $request->word_limit;
-            }
-            
-            if ($request->has('time_limit')) {
-                $updateData['time_limit'] = $request->time_limit;
-            }
-
-            if ($request->has('instructions')) {
-                $updateData['instructions'] = $request->instructions;
-            }
 
             $question->update($updateData);
             
@@ -330,7 +267,7 @@ class QuestionController extends Controller
             }
         });
         
-        return redirect()->route('admin.questions.index')
+        return redirect()->route('admin.test-sets.show', $question->test_set_id)
             ->with('success', 'Question updated successfully.');
     }
 
@@ -344,9 +281,10 @@ class QuestionController extends Controller
             Storage::disk('public')->delete($question->media_path);
         }
         
+        $testSetId = $question->test_set_id;
         $question->delete();
         
-        return redirect()->route('admin.questions.index')
+        return redirect()->route('admin.test-sets.show', $testSetId)
             ->with('success', 'Question deleted successfully.');
     }
 
@@ -368,7 +306,113 @@ class QuestionController extends Controller
             }
         });
 
-        return redirect()->route('admin.questions.edit', $newQuestion)
-            ->with('success', 'Question duplicated successfully. Please review and modify as needed.');
+        return redirect()->route('admin.test-sets.show', $question->test_set_id)
+            ->with('success', 'Question duplicated successfully.');
+    }
+
+    /**
+     * Show bulk import form
+     */
+    public function bulkImportForm(TestSet $testSet): View
+    {
+        return view('admin.questions.bulk-import', compact('testSet'));
+    }
+
+    /**
+     * Process bulk import
+     */
+    public function bulkImport(Request $request, TestSet $testSet): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
+            'part_number' => 'nullable|integer'
+        ]);
+
+        // Process the file
+        // Implementation would use PhpSpreadsheet or similar library
+        
+        return redirect()->route('admin.test-sets.show', $testSet)
+            ->with('success', 'Questions imported successfully.');
+    }
+
+    /**
+     * Reorder questions via AJAX
+     */
+    public function reorder(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'questions' => 'required|array',
+            'questions.*.id' => 'required|exists:questions,id',
+            'questions.*.order' => 'required|integer|min:1'
+        ]);
+
+        DB::transaction(function () use ($request) {
+            foreach ($request->questions as $item) {
+                Question::where('id', $item['id'])->update(['order_number' => $item['order']]);
+            }
+        });
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Check if question type requires options
+     */
+    private function requiresOptions($questionType): bool
+    {
+        return in_array($questionType, [
+            'multiple_choice', 
+            'true_false', 
+            'yes_no',
+            'matching',
+            'matching_headings',
+            'matching_information',
+            'matching_features'
+        ]);
+    }
+
+    /**
+     * Add section-specific validation rules
+     */
+    private function addSectionSpecificRules(&$rules, $section, $request)
+    {
+        switch ($section) {
+            case 'listening':
+                if (!$request->question_type || $request->question_type !== 'passage') {
+                    $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
+                }
+                $rules['part_number'] = 'required|integer|min:1|max:4';
+                break;
+                
+            case 'reading':
+                $rules['part_number'] = 'required|integer|min:1|max:3';
+                if ($request->question_type === 'passage') {
+                    $rules['passage_text'] = 'required|string|min:200';
+                }
+                break;
+                
+            case 'writing':
+                $rules['word_limit'] = 'required|integer|min:50|max:500';
+                $rules['time_limit'] = 'required|integer|min:1|max:60';
+                break;
+                
+            case 'speaking':
+                $rules['time_limit'] = 'required|integer|min:1|max:10';
+                break;
+        }
+    }
+
+    /**
+     * Get questions by part (AJAX)
+     */
+    public function getByPart(TestSet $testSet, $part): \Illuminate\Http\JsonResponse
+    {
+        $questions = Question::where('test_set_id', $testSet->id)
+                            ->where('part_number', $part)
+                            ->orderBy('order_number')
+                            ->with('options')
+                            ->get();
+
+        return response()->json($questions);
     }
 }

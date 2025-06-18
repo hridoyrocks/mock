@@ -1,814 +1,735 @@
 <x-layout>
-    <x-slot:title>Create IELTS Question - Professional Wizard</x-slot>
+    <x-slot:title>Add Question - {{ ucfirst($testSet->section->name) }}</x-slot>
     
-    <x-slot:header>
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-semibold text-2xl text-gray-800 leading-tight">
-                    IELTS Question Creator
-                </h2>
-                <p class="text-gray-600 mt-1">Create professional IELTS questions with our easy-to-use wizard</p>
+    <!-- Modern Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-semibold">Add Question to {{ $testSet->title }}</h1>
+                        <p class="text-blue-100 text-sm mt-1">{{ ucfirst($testSet->section->name) }} Section</p>
+                    </div>
+                    <a href="{{ route('admin.test-sets.show', $testSet) }}" 
+                       class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Back
+                    </a>
+                </div>
             </div>
-            <a href="{{ route('admin.questions.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors">
-                ← Back to Questions
-            </a>
         </div>
-    </x-slot:header>
+    </div>
 
-    <div class="py-8">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
-            <!-- Progress Steps -->
-            <div class="mb-8">
-                <div class="flex items-center justify-center space-x-8">
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-medium step-indicator" data-step="1">1</div>
-                        <span class="ml-3 text-sm font-medium text-gray-700">Section & Type</span>
-                    </div>
-                    <div class="flex-1 h-0.5 bg-gray-200"></div>
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-medium step-indicator" data-step="2">2</div>
-                        <span class="ml-3 text-sm font-medium text-gray-500">Question Details</span>
-                    </div>
-                    <div class="flex-1 h-0.5 bg-gray-200"></div>
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-medium step-indicator" data-step="3">3</div>
-                        <span class="ml-3 text-sm font-medium text-gray-500">Media & Options</span>
-                    </div>
-                    <div class="flex-1 h-0.5 bg-gray-200"></div>
-                    <div class="flex items-center">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-medium step-indicator" data-step="4">4</div>
-                        <span class="ml-3 text-sm font-medium text-gray-500">Review & Save</span>
-                    </div>
-                </div>
-            </div>
-
-            <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="question-wizard">
+    <div class="bg-gray-50 min-h-screen">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm">
                 @csrf
+                <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
                 
-                <!-- Step 1: Section & Type Selection -->
-                <div class="step-content bg-white rounded-xl shadow-lg p-8 mb-6" data-step="1">
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Choose IELTS Section & Question Type</h3>
-                        <p class="text-gray-600">Select the section and specific question type you want to create</p>
-                    </div>
-
-                    <!-- Section Selection Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div class="section-card cursor-pointer border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-blue-500 hover:shadow-lg" data-section="listening">
-                            <div class="text-4xl mb-4">🎧</div>
-                            <h4 class="text-lg font-semibold text-gray-900 mb-2">Listening</h4>
-                            <p class="text-sm text-gray-600">Audio-based questions with various formats</p>
+                <!-- Single Column Layout -->
+                <div class="space-y-6">
+                    
+                    <!-- Question Content Section -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Question Content</h3>
                         </div>
                         
-                        <div class="section-card cursor-pointer border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-blue-500 hover:shadow-lg" data-section="reading">
-                            <div class="text-4xl mb-4">📖</div>
-                            <h4 class="text-lg font-semibold text-gray-900 mb-2">Reading</h4>
-                            <p class="text-sm text-gray-600">Text comprehension and analysis questions</p>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Left Column -->
+                                <div class="space-y-6">
+                                    <!-- Instructions -->
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="block text-sm font-medium text-gray-700">Instructions</label>
+                                            <button type="button" onclick="showTemplates()" class="text-sm text-blue-600 hover:text-blue-700">
+                                                Use Template ▼
+                                            </button>
+                                        </div>
+                                        <textarea id="instructions" name="instructions" rows="3" 
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                  placeholder="Enter instructions for this question...">{{ old('instructions') }}</textarea>
+                                    </div>
+                                    
+                                    <!-- Question Editor -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Question <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="mb-3 flex space-x-2">
+                                            <button type="button" onclick="insertBlank()" class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700">
+                                                Insert Blank
+                                            </button>
+                                            <button type="button" onclick="insertDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">
+                                                Insert Dropdown
+                                            </button>
+                                        </div>
+                                        <textarea id="content" name="content" class="tinymce">{{ old('content') }}</textarea>
+                                        
+                                        <!-- Word Count -->
+                                        <div class="flex justify-between items-center text-xs text-gray-500 mt-2">
+                                            <span>Words: <span id="word-count">0</span></span>
+                                            <span>Characters: <span id="char-count">0</span></span>
+                                        </div>
+                                        
+                                        <!-- Blanks Manager -->
+                                        <div id="blanks-manager" class="hidden mt-4">
+                                            <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                                                <h4 class="text-sm font-medium text-blue-900 mb-3">Fill in the Blanks Configuration</h4>
+                                                <div id="blanks-list" class="space-y-2">
+                                                    <!-- Blanks will be dynamically added here -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Right Column -->
+                                <div class="space-y-6">
+                                    <!-- Settings Grid -->
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <!-- Part Selection -->
+                                        @if(in_array($testSet->section->name, ['listening', 'reading', 'speaking', 'writing']))
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                {{ $testSet->section->name === 'writing' ? 'Task' : 'Part' }} <span class="text-red-500">*</span>
+                                            </label>
+                                            <select name="part_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                                @if($testSet->section->name === 'listening')
+                                                    <option value="1">Part 1 (Social)</option>
+                                                    <option value="2">Part 2 (Monologue)</option>
+                                                    <option value="3">Part 3 (Discussion)</option>
+                                                    <option value="4">Part 4 (Lecture)</option>
+                                                @elseif($testSet->section->name === 'reading')
+                                                    <option value="1">Passage 1</option>
+                                                    <option value="2">Passage 2</option>
+                                                    <option value="3">Passage 3</option>
+                                                @elseif($testSet->section->name === 'speaking')
+                                                    <option value="1">Part 1</option>
+                                                    <option value="2">Part 2</option>
+                                                    <option value="3">Part 3</option>
+                                                @elseif($testSet->section->name === 'writing')
+                                                    <option value="1">Task 1</option>
+                                                    <option value="2">Task 2</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        @endif
+                                        
+                                        <!-- Question Type -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Type <span class="text-red-500">*</span></label>
+                                            <select id="question_type" name="question_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                                <option value="">Select type...</option>
+                                                @php
+                                                    $types = [
+                                                        'listening' => [
+                                                            'multiple_choice' => 'Multiple Choice',
+                                                            'form_completion' => 'Form Completion',
+                                                            'note_completion' => 'Note Completion',
+                                                            'sentence_completion' => 'Sentence Completion',
+                                                            'short_answer' => 'Short Answer',
+                                                            'matching' => 'Matching'
+                                                        ],
+                                                        'reading' => [
+                                                            'multiple_choice' => 'Multiple Choice',
+                                                            'true_false' => 'True/False/Not Given',
+                                                            'yes_no' => 'Yes/No/Not Given',
+                                                            'matching_headings' => 'Matching Headings',
+                                                            'sentence_completion' => 'Sentence Completion',
+                                                            'summary_completion' => 'Summary Completion',
+                                                            'fill_blanks' => 'Fill in the Blanks',
+                                                            'short_answer' => 'Short Answer'
+                                                        ],
+                                                        'writing' => [
+                                                            'task1_graph' => 'Task 1: Graph/Chart',
+                                                            'task1_process' => 'Task 1: Process',
+                                                            'task1_map' => 'Task 1: Map',
+                                                            'task2_opinion' => 'Task 2: Opinion',
+                                                            'task2_discussion' => 'Task 2: Discussion'
+                                                        ],
+                                                        'speaking' => [
+                                                            'part1_personal' => 'Part 1: Personal',
+                                                            'part2_cue_card' => 'Part 2: Cue Card',
+                                                            'part3_discussion' => 'Part 3: Discussion'
+                                                        ]
+                                                    ];
+                                                @endphp
+                                                @foreach($types[$testSet->section->name] ?? [] as $key => $type)
+                                                    <option value="{{ $key }}">{{ $type }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Question Number -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Number <span class="text-red-500">*</span></label>
+                                            <input type="number" name="order_number" value="{{ old('order_number', $testSet->questions->max('order_number') + 1) }}" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1" required>
+                                        </div>
+                                        
+                                        <!-- Marks -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Marks</label>
+                                            <input type="number" name="marks" value="1" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1" max="40">
+                                        </div>
+                                        
+                                        <!-- Question Group -->
+                                        <div class="col-span-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Group</label>
+                                            <input type="text" name="question_group" placeholder="e.g., Questions 1-5"
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        
+                                        @if($testSet->section->name === 'writing')
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Word Limit</label>
+                                            <input type="number" name="word_limit" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Time (min)</label>
+                                            <input type="number" name="time_limit" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Answer Options Section -->
+                    <div id="options-card" class="bg-white rounded-lg shadow-sm hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">Answer Options</h3>
+                            <button type="button" onclick="showBulkOptions()" class="text-sm text-blue-600 hover:text-blue-700">
+                                Add Bulk Options
+                            </button>
                         </div>
                         
-                        <div class="section-card cursor-pointer border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-blue-500 hover:shadow-lg" data-section="writing">
-                            <div class="text-4xl mb-4">✍️</div>
-                            <h4 class="text-lg font-semibold text-gray-900 mb-2">Writing</h4>
-                            <p class="text-sm text-gray-600">Task 1 & Task 2 writing prompts</p>
+                        <div class="p-6">
+                            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <!-- Options will be dynamically added here -->
+                            </div>
+                            
+                            <button type="button" id="add-option-btn" 
+                                    class="mt-4 w-full md:w-auto px-4 py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-md hover:border-gray-400 hover:text-gray-600 transition-all">
+                                + Add Option
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Media Files Section -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Media Files</h3>
                         </div>
                         
-                        <div class="section-card cursor-pointer border-2 border-gray-200 rounded-xl p-6 text-center transition-all hover:border-blue-500 hover:shadow-lg" data-section="speaking">
-                            <div class="text-4xl mb-4">🎤</div>
-                            <h4 class="text-lg font-semibold text-gray-900 mb-2">Speaking</h4>
-                            <p class="text-sm text-gray-600">Conversation and presentation topics</p>
-                        </div>
-                    </div>
-
-                    <!-- Test Set Selection -->
-                    <div id="test-set-selection" class="mb-8 hidden">
-                        <label class="block text-lg font-medium text-gray-900 mb-4">Select Test Set</label>
-                        <select id="test_set_id" name="test_set_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
-                            <option value="">Choose a test set...</option>
-                            @foreach($testSets as $testSet)
-                                <option value="{{ $testSet->id }}" data-section="{{ $testSet->section->name }}">
-                                    {{ $testSet->title }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- Question Type Selection -->
-                    <div id="question-type-selection" class="hidden">
-                        <label class="block text-lg font-medium text-gray-900 mb-4">Select Question Type</label>
-                        <div id="question-types-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <!-- Question type cards will be populated by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- Hidden inputs -->
-                    <input type="hidden" id="selected_section" name="section" value="">
-                    <input type="hidden" id="selected_question_type" name="question_type" value="">
-                </div>
-
-                <!-- Step 2: Question Details -->
-                <div class="step-content bg-white rounded-xl shadow-lg p-8 mb-6 hidden" data-step="2">
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Question Details</h3>
-                        <p class="text-gray-600">Enter the main content and settings for your question</p>
-                    </div>
-
-                    <div class="max-w-4xl mx-auto space-y-6">
-                        <!-- Question Number -->
-                        <div>
-                            <label for="order_number" class="block text-sm font-medium text-gray-700 mb-2">Question Number</label>
-                            <input type="number" id="order_number" name="order_number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter question number (e.g., 1, 2, 3...)">
-                        </div>
-
-                        <!-- Question Content -->
-                        <div>
-                            <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Question Content</label>
-                            <div id="content-template" class="mb-3 p-4 bg-blue-50 rounded-lg hidden">
-                                <h4 class="font-medium text-blue-900 mb-2">Template for this question type:</h4>
-                                <p class="text-blue-800 text-sm"></p>
-                            </div>
-                            <textarea id="content" name="content" rows="8" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter your question content here..."></textarea>
-                            <p class="mt-2 text-sm text-gray-500">Be clear and specific. Use proper IELTS question formatting.</p>
-                        </div>
-
-                        <!-- Dynamic Fields Container -->
-                        <div id="dynamic-fields">
-                            <!-- Word Limit -->
-                            <div id="word-limit-field" class="hidden">
-                                <label for="word_limit" class="block text-sm font-medium text-gray-700 mb-2">Word Limit</label>
-                                <div class="flex items-center space-x-4">
-                                    <input type="number" id="word_limit" name="word_limit" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <span class="text-sm text-gray-500">words</span>
-                                </div>
-                            </div>
-
-                            <!-- Time Limit -->
-                            <div id="time-limit-field" class="hidden">
-                                <label for="time_limit" class="block text-sm font-medium text-gray-700 mb-2">Time Limit</label>
-                                <div class="flex items-center space-x-4">
-                                    <input type="number" id="time_limit" name="time_limit" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <span class="text-sm text-gray-500">minutes</span>
-                                </div>
-                            </div>
-
-                            <!-- Instructions -->
-                            <div id="instructions-field" class="hidden">
-                                <label for="instructions" class="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
-                                <textarea id="instructions" name="instructions" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter any special instructions for students..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Step 3: Media & Options -->
-                <div class="step-content bg-white rounded-xl shadow-lg p-8 mb-6 hidden" data-step="3">
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Media & Answer Options</h3>
-                        <p class="text-gray-600">Upload media files and set up answer options</p>
-                    </div>
-
-                    <div class="max-w-4xl mx-auto space-y-8">
-                        <!-- Media Upload -->
-                        <div>
-                            <label class="block text-lg font-medium text-gray-900 mb-4">Media File</label>
-                            <div id="media-upload-area" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                                <div id="media-upload-content">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                    <p class="text-lg font-medium text-gray-900 mb-2">Upload Media File</p>
-                                    <p class="text-gray-500" id="media-help-text">Click to upload or drag and drop</p>
-                                    <p class="text-sm text-gray-400 mt-2" id="media-formats">Supported formats will be shown here</p>
-                                </div>
-                                <input type="file" id="media" name="media" class="hidden" accept="">
+                        <div class="p-6">
+                            <div class="border-2 border-dashed border-gray-300 rounded-md p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                                 id="drop-zone" onclick="document.getElementById('media').click()">
+                                <input type="file" id="media" name="media" class="hidden" 
+                                       accept="{{ $testSet->section->name === 'listening' ? '.mp3,.wav,.ogg' : 'image/*,.mp3,.wav,.ogg' }}">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p class="mt-2 text-sm text-gray-600">
+                                    <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span> or drag and drop
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    @if($testSet->section->name === 'listening')
+                                        Audio files only: MP3, WAV, OGG (max 50MB)
+                                    @else
+                                        Images: PNG, JPG, GIF (max 10MB) or Audio files
+                                    @endif
+                                </p>
                             </div>
                             <div id="media-preview" class="mt-4 hidden">
-                                <!-- Media preview will be shown here -->
+                                <!-- Preview will be shown here -->
                             </div>
                         </div>
-
-                        <!-- Answer Options -->
-                        <div id="answer-options-section" class="hidden">
-                            <label class="block text-lg font-medium text-gray-900 mb-4">Answer Options</label>
-                            <div id="options-container">
-                                <div id="options-list" class="space-y-4">
-                                    <!-- Options will be populated by JavaScript -->
-                                </div>
-                                <button type="button" id="add-option-btn" class="mt-4 flex items-center text-blue-600 hover:text-blue-800 font-medium">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
-                                    Add Another Option
+                    </div>
+                    
+                    <!-- Actions Section -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Actions</h3>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <button type="submit" class="flex-1 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                                    Save Question
+                                </button>
+                                <button type="submit" name="save_and_new" value="1" class="flex-1 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors">
+                                    Save & Add Another
+                                </button>
+                                <button type="button" onclick="previewQuestion()" class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
+                                    Preview
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Step 4: Review & Save -->
-                <div class="step-content bg-white rounded-xl shadow-lg p-8 mb-6 hidden" data-step="4">
-                    <div class="text-center mb-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Review Your Question</h3>
-                        <p class="text-gray-600">Please review all details before saving</p>
-                    </div>
-
-                    <div class="max-w-4xl mx-auto">
-                        <div id="question-preview" class="bg-gray-50 rounded-xl p-6 mb-6">
-                            <!-- Question preview will be populated by JavaScript -->
-                        </div>
-
-                        <div class="flex items-center justify-center space-x-4">
-                            <button type="button" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors prev-btn">
-                                ← Previous
-                            </button>
-                            <button type="submit" class="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                                ✓ Create Question
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Navigation Buttons -->
-                <div class="flex items-center justify-between">
-                    <button type="button" id="prev-btn" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors hidden">
-                        ← Previous
-                    </button>
-                    <div class="flex-1"></div>
-                    <button type="button" id="next-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        Next →
-                    </button>
-                </div>
             </form>
         </div>
     </div>
+    
+    <!-- Template Modal -->
+    <div id="template-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Instruction Templates</h3>
+            <div class="space-y-2">
+                <button onclick="useTemplate('Choose the correct letter, A, B, C or D.')" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">Multiple Choice</button>
+                <button onclick="useTemplate('Write TRUE if the statement agrees with the information, FALSE if it contradicts, or NOT GIVEN.')" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">True/False/NG</button>
+                <button onclick="useTemplate('Complete the sentences below. Write NO MORE THAN TWO WORDS from the passage.')" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">Sentence Completion</button>
+                <button onclick="useTemplate('Write NO MORE THAN THREE WORDS AND/OR A NUMBER for each answer.')" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">Short Answer</button>
+            </div>
+            <button onclick="closeTemplates()" class="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Close</button>
+        </div>
+    </div>
+    
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Question Preview</h3>
+                <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="preview-content" class="border rounded-lg p-6 bg-gray-50">
+                <!-- Preview content will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bulk Options Modal -->
+    <div id="bulk-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Add Bulk Options</h3>
+            <p class="text-sm text-gray-600 mb-2">Enter each option on a new line:</p>
+            <textarea id="bulk-text" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"></textarea>
+            <div class="flex justify-end space-x-3 mt-4">
+                <button onclick="closeBulkOptions()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">Cancel</button>
+                <button onclick="addBulkOptions()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add Options</button>
+            </div>
+        </div>
+    </div>
+
+    @push('styles')
+    <style>
+        /* Clean styling */
+        .tox .tox-editor-header {
+            border-bottom: 1px solid #e5e7eb !important;
+        }
+        
+        .tox.tox-tinymce {
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+        }
+        
+        #drop-zone.drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        /* Blank styling in TinyMCE */
+        .blank-placeholder {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+            padding: 2px 8px;
+            margin: 0 2px;
+            border-radius: 4px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .dropdown-placeholder {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 2px 8px;
+            margin: 0 2px;
+            border-radius: 4px;
+            font-weight: 500;
+            display: inline-block;
+        }
+    </style>
+    @endpush
 
     @push('scripts')
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    
     <script>
-        class QuestionWizard {
-            constructor() {
-                this.currentStep = 1;
-                this.maxSteps = 4;
-                this.selectedSection = '';
-                this.selectedQuestionType = '';
-                
-                this.questionTypes = {
-                    listening: [
-                        { id: 'multiple_choice', title: 'Multiple Choice', icon: '☑️', desc: 'Select the correct answer from options' },
-                        { id: 'form_completion', title: 'Form Completion', icon: '📝', desc: 'Fill in missing information in a form' },
-                        { id: 'note_completion', title: 'Note Completion', icon: '📋', desc: 'Complete notes with missing words' },
-                        { id: 'sentence_completion', title: 'Sentence Completion', icon: '✏️', desc: 'Complete sentences with missing words' },
-                        { id: 'short_answer', title: 'Short Answer', icon: '💬', desc: 'Provide brief answers to questions' },
-                        { id: 'matching', title: 'Matching', icon: '🔗', desc: 'Match items from two lists' }
-                    ],
-                    reading: [
-                        { id: 'passage', title: 'Reading Passage', icon: '📄', desc: 'Main text for reading comprehension' },
-                        { id: 'multiple_choice', title: 'Multiple Choice', icon: '☑️', desc: 'Select the correct answer from options' },
-                        { id: 'true_false', title: 'True/False/Not Given', icon: '✅', desc: 'Evaluate statement accuracy' },
-                        { id: 'yes_no', title: 'Yes/No/Not Given', icon: '❓', desc: 'Agree/disagree with writer\'s views' },
-                        { id: 'matching_headings', title: 'Matching Headings', icon: '🏷️', desc: 'Match paragraphs with headings' },
-                        { id: 'sentence_completion', title: 'Sentence Completion', icon: '✏️', desc: 'Complete sentences with passage words' },
-                        { id: 'short_answer', title: 'Short Answer', icon: '💬', desc: 'Answer questions with passage words' }
-                    ],
-                    writing: [
-                        { id: 'task1_line_graph', title: 'Task 1: Line Graph', icon: '📈', desc: 'Describe trends in line graphs' },
-                        { id: 'task1_bar_chart', title: 'Task 1: Bar Chart', icon: '📊', desc: 'Compare data in bar charts' },
-                        { id: 'task1_pie_chart', title: 'Task 1: Pie Chart', icon: '🥧', desc: 'Analyze proportions in pie charts' },
-                        { id: 'task1_table', title: 'Task 1: Table', icon: '📋', desc: 'Summarize data from tables' },
-                        { id: 'task1_process', title: 'Task 1: Process', icon: '🔄', desc: 'Describe processes or cycles' },
-                        { id: 'task2_opinion', title: 'Task 2: Opinion', icon: '💭', desc: 'Express and support opinions' },
-                        { id: 'task2_discussion', title: 'Task 2: Discussion', icon: '🗣️', desc: 'Discuss different viewpoints' },
-                        { id: 'task2_problem_solution', title: 'Task 2: Problem/Solution', icon: '🔧', desc: 'Identify problems and solutions' }
-                    ],
-                    speaking: [
-                        { id: 'part1_personal', title: 'Part 1: Personal', icon: '👤', desc: 'Personal questions and topics' },
-                        { id: 'part2_cue_card', title: 'Part 2: Cue Card', icon: '🎤', desc: 'Individual presentation topics' },
-                        { id: 'part3_discussion', title: 'Part 3: Discussion', icon: '🗣️', desc: 'Abstract discussion questions' }
-                    ]
-                };
-
-                this.templates = {
-                    multiple_choice: "Listen to the audio and choose the correct answer.\n\nWhat is the main topic of the conversation?\nA) Travel plans\nB) Work schedule\nC) Weekend activities\nD) Restaurant booking",
-                    passage: "Write a comprehensive reading passage (minimum 300 words) that will be used for comprehension questions. Include varied vocabulary and clear structure with introduction, body paragraphs, and conclusion.",
-                    task1_line_graph: "The line graph below shows [describe what the graph shows].\n\nSummarize the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.",
-                    task2_opinion: "Some people believe that [topic statement].\n\nTo what extent do you agree or disagree with this statement?\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.\n\nWrite at least 250 words.",
-                    part2_cue_card: "Describe a place you would like to visit in the future.\n\nYou should say:\n• Where this place is\n• Why you want to visit it\n• What you would do there\n• And explain how you think you would feel about visiting this place\n\nYou will have 1-2 minutes to talk about this topic."
-                };
-
-                this.init();
-            }
-
-            init() {
-                this.bindEvents();
-                this.updateStepDisplay();
-            }
-
-            bindEvents() {
-                // Section cards
-                document.querySelectorAll('.section-card').forEach(card => {
-                    card.addEventListener('click', () => this.selectSection(card.dataset.section));
-                });
-
-                // Navigation buttons
-                document.getElementById('next-btn').addEventListener('click', () => this.nextStep());
-                document.getElementById('prev-btn').addEventListener('click', () => this.prevStep());
-                
-                // Test set selection
-                document.getElementById('test_set_id').addEventListener('change', (e) => {
-                    if (e.target.value) {
-                        this.showQuestionTypes();
-                    }
-                });
-
-                // Media upload
-                document.getElementById('media-upload-area').addEventListener('click', () => {
-                    document.getElementById('media').click();
-                });
-
-                document.getElementById('media').addEventListener('change', (e) => {
-                    this.handleMediaUpload(e.target.files[0]);
-                });
-
-                // Add option button
-                document.getElementById('add-option-btn').addEventListener('click', () => {
-                    this.addOption();
+        let blankCounter = 0;
+        let editor;
+        
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '.tinymce',
+            height: 350,
+            menubar: true,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.6; }',
+            setup: function(ed) {
+                editor = ed;
+                ed.on('input change', function() {
+                    updateWordCount();
+                    updateBlanks();
                 });
             }
-
-            selectSection(section) {
-                this.selectedSection = section;
-                document.getElementById('selected_section').value = section;
+        });
+        
+        // Word count
+        function updateWordCount() {
+            if (editor) {
+                const text = editor.getContent({format: 'text'});
+                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                const chars = text.length;
                 
-                // Update UI
-                document.querySelectorAll('.section-card').forEach(card => {
-                    card.classList.remove('border-blue-500', 'bg-blue-50');
-                    card.classList.add('border-gray-200');
-                });
-                
-                document.querySelector(`[data-section="${section}"]`).classList.remove('border-gray-200');
-                document.querySelector(`[data-section="${section}"]`).classList.add('border-blue-500', 'bg-blue-50');
-                
-                // Show test set selection
-                this.showTestSets(section);
-                document.getElementById('test-set-selection').classList.remove('hidden');
-                
-                // Enable next button
-                this.updateNextButton();
+                document.getElementById('word-count').textContent = words.length;
+                document.getElementById('char-count').textContent = chars;
             }
-
-            showTestSets(section) {
-                const select = document.getElementById('test_set_id');
-                const options = select.querySelectorAll('option[data-section]');
-                
-                options.forEach(option => {
-                    option.style.display = option.dataset.section === section ? 'block' : 'none';
-                });
-                
-                select.value = '';
+        }
+        
+        // Insert blank
+        function insertBlank() {
+            if (editor) {
+                blankCounter++;
+                const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[BLANK_${blankCounter}]</span>`;
+                editor.insertContent(blankHtml);
+                updateBlanks();
             }
-
-            showQuestionTypes() {
-                const container = document.getElementById('question-types-grid');
-                const types = this.questionTypes[this.selectedSection] || [];
-                
-                container.innerHTML = '';
-                
-                types.forEach(type => {
-                    const card = document.createElement('div');
-                    card.className = 'question-type-card cursor-pointer border-2 border-gray-200 rounded-lg p-4 text-center transition-all hover:border-blue-500 hover:shadow-md';
-                    card.dataset.type = type.id;
-                    
-                    card.innerHTML = `
-                        <div class="text-2xl mb-2">${type.icon}</div>
-                        <h5 class="font-medium text-gray-900 mb-1">${type.title}</h5>
-                        <p class="text-xs text-gray-600">${type.desc}</p>
-                    `;
-                    
-                    card.addEventListener('click', () => this.selectQuestionType(type.id, card));
-                    container.appendChild(card);
-                });
-                
-                document.getElementById('question-type-selection').classList.remove('hidden');
-            }
-
-            selectQuestionType(type, card) {
-                this.selectedQuestionType = type;
-                document.getElementById('selected_question_type').value = type;
-                
-                // Update UI
-                document.querySelectorAll('.question-type-card').forEach(c => {
-                    c.classList.remove('border-blue-500', 'bg-blue-50');
-                    c.classList.add('border-gray-200');
-                });
-                
-                card.classList.remove('border-gray-200');
-                card.classList.add('border-blue-500', 'bg-blue-50');
-                
-                this.updateNextButton();
-            }
-
-            nextStep() {
-                if (this.currentStep < this.maxSteps) {
-                    if (this.validateStep()) {
-                        this.currentStep++;
-                        this.updateStepDisplay();
-                        this.setupStepContent();
-                    }
-                }
-            }
-
-            prevStep() {
-                if (this.currentStep > 1) {
-                    this.currentStep--;
-                    this.updateStepDisplay();
-                }
-            }
-
-            validateStep() {
-                switch (this.currentStep) {
-                    case 1:
-                        return this.selectedSection && this.selectedQuestionType && document.getElementById('test_set_id').value;
-                    case 2:
-                        return document.getElementById('content').value && document.getElementById('order_number').value;
-                    case 3:
-                        return true; // Media and options are optional
-                    default:
-                        return true;
-                }
-            }
-
-            setupStepContent() {
-                switch (this.currentStep) {
-                    case 2:
-                        this.setupQuestionDetails();
-                        break;
-                    case 3:
-                        this.setupMediaAndOptions();
-                        break;
-                    case 4:
-                        this.setupReview();
-                        break;
-                }
-            }
-
-            setupQuestionDetails() {
-                // Show template if available
-                const template = this.templates[this.selectedQuestionType];
-                if (template) {
-                    const templateDiv = document.getElementById('content-template');
-                    templateDiv.querySelector('p').textContent = template;
-                    templateDiv.classList.remove('hidden');
-                    
-                    // Auto-fill if content is empty
-                    if (!document.getElementById('content').value) {
-                        document.getElementById('content').value = template;
-                    }
-                }
-
-                // Show relevant fields
-                this.showRelevantFields();
-            }
-
-            showRelevantFields() {
-                const section = this.selectedSection;
-                const type = this.selectedQuestionType;
-
-                // Hide all dynamic fields first
-                document.querySelectorAll('#dynamic-fields > div').forEach(field => {
-                    field.classList.add('hidden');
-                });
-
-                // Show word limit for writing
-                if (section === 'writing') {
-                    document.getElementById('word-limit-field').classList.remove('hidden');
-                    const wordLimit = type.startsWith('task1_') ? 150 : 250;
-                    document.getElementById('word_limit').value = wordLimit;
-                }
-
-                // Show time limit for writing and speaking
-                if (section === 'writing' || section === 'speaking') {
-                    document.getElementById('time-limit-field').classList.remove('hidden');
-                    let timeLimit = 20;
-                    if (section === 'writing') {
-                        timeLimit = type.startsWith('task1_') ? 20 : 40;
-                    } else if (section === 'speaking') {
-                        timeLimit = type === 'part2_cue_card' ? 2 : 5;
-                    }
-                    document.getElementById('time_limit').value = timeLimit;
-                }
-
-                // Show instructions for specific types
-                if (['part2_cue_card', 'form_completion', 'note_completion'].includes(type)) {
-                    document.getElementById('instructions-field').classList.remove('hidden');
-                }
-            }
-
-            setupMediaAndOptions() {
-                this.setupMediaUpload();
-                this.setupAnswerOptions();
-            }
-
-            setupMediaUpload() {
-                const section = this.selectedSection;
-                const type = this.selectedQuestionType;
-                
-                let helpText = 'Optional: Upload supporting media';
-                let formats = 'Images: JPG, PNG, GIF | Audio: MP3, WAV, OGG';
-                let accept = '.jpg,.jpeg,.png,.gif,.mp3,.wav,.ogg';
-                let required = false;
-
-                if (section === 'listening') {
-                    helpText = 'Required: Upload audio file for listening question';
-                    formats = 'Audio files: MP3, WAV, OGG (max 50MB)';
-                    accept = '.mp3,.wav,.ogg';
-                    required = true;
-                } else if (section === 'writing' && type.startsWith('task1_')) {
-                    helpText = 'Required: Upload chart/graph/diagram image';
-                    formats = 'Images: JPG, PNG, GIF (max 5MB)';
-                    accept = '.jpg,.jpeg,.png,.gif';
-                    required = true;
-                }
-
-                document.getElementById('media-help-text').textContent = helpText;
-                document.getElementById('media-formats').textContent = formats;
-                document.getElementById('media').setAttribute('accept', accept);
-
-                if (required) {
-                    document.getElementById('media-upload-area').classList.add('border-blue-400', 'bg-blue-50');
-                }
-            }
-
-            setupAnswerOptions() {
-                const type = this.selectedQuestionType;
-                const requiresOptions = [
-                    'multiple_choice', 'true_false', 'yes_no', 'matching',
-                    'matching_headings', 'matching_information'
-                ];
-
-                if (requiresOptions.includes(type)) {
-                    document.getElementById('answer-options-section').classList.remove('hidden');
-                    this.createDefaultOptions(type);
-                } else {
-                    document.getElementById('answer-options-section').classList.add('hidden');
-                }
-            }
-
-            createDefaultOptions(type) {
-                const container = document.getElementById('options-list');
-                container.innerHTML = '';
-
-                let options = [];
-                if (type === 'true_false') {
-                    options = ['True', 'False', 'Not Given'];
-                } else if (type === 'yes_no') {
-                    options = ['Yes', 'No', 'Not Given'];
-                } else if (type === 'multiple_choice') {
-                    options = ['Option A', 'Option B', 'Option C', 'Option D'];
-                }
-
-                options.forEach((text, index) => {
-                    this.addOption(text, index === 0);
-                });
-
-                // Hide add button for fixed option types
-                const addBtn = document.getElementById('add-option-btn');
-                if (['true_false', 'yes_no'].includes(type)) {
-                    addBtn.style.display = 'none';
-                } else {
-                    addBtn.style.display = 'flex';
-                }
-            }
-
-            addOption(text = '', isFirst = false) {
-                const container = document.getElementById('options-list');
-                const index = container.children.length;
-                
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'option-item bg-gray-50 p-4 rounded-lg border border-gray-200';
-                
-                optionDiv.innerHTML = `
-                    <div class="flex items-start space-x-4">
-                        <div class="flex items-center">
-                            <input type="radio" name="correct_option" value="${index}" class="w-4 h-4 text-blue-600" ${isFirst ? 'checked' : ''}>
-                            <label class="ml-2 text-sm font-medium text-gray-700">Correct</label>
-                        </div>
-                        <div class="flex-1">
-                            <input type="text" name="options[${index}][content]" value="${text}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter option text...">
-                        </div>
-                        ${!text ? '<button type="button" class="text-red-500 hover:text-red-700 remove-option">Remove</button>' : ''}
-                    </div>
-                `;
-                
-                container.appendChild(optionDiv);
-
-                // Add remove functionality
-                const removeBtn = optionDiv.querySelector('.remove-option');
-                if (removeBtn) {
-                    removeBtn.addEventListener('click', () => {
-                        optionDiv.remove();
-                        this.updateOptionIndices();
-                    });
-                }
-            }
-
-            updateOptionIndices() {
-                const options = document.querySelectorAll('.option-item');
-                options.forEach((option, index) => {
-                    const radio = option.querySelector('input[type="radio"]');
-                    const input = option.querySelector('input[type="text"]');
-                    
-                    radio.value = index;
-                    input.name = `options[${index}][content]`;
-                });
-            }
-
-            setupReview() {
-                const preview = document.getElementById('question-preview');
-                const section = this.selectedSection;
-                const type = this.selectedQuestionType;
-                const content = document.getElementById('content').value;
-                const orderNumber = document.getElementById('order_number').value;
-                
-                preview.innerHTML = `
-                    <div class="mb-4">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            ${section.charAt(0).toUpperCase() + section.slice(1)} - Question ${orderNumber}
-                        </span>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium text-gray-900 mb-2">Question Type:</h4>
-                        <p class="text-gray-700">${this.getQuestionTypeTitle(type)}</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium text-gray-900 mb-2">Content:</h4>
-                        <div class="bg-white p-4 rounded border text-gray-700 whitespace-pre-line">${content}</div>
-                    </div>
-                    ${this.getAdditionalReviewFields()}
-                `;
-            }
-
-            getQuestionTypeTitle(type) {
-                for (const section in this.questionTypes) {
-                    const found = this.questionTypes[section].find(t => t.id === type);
-                    if (found) return found.title;
-                }
-                return type;
-            }
-
-            getAdditionalReviewFields() {
-                let html = '';
-                
-                const wordLimit = document.getElementById('word_limit')?.value;
-                if (wordLimit) {
-                    html += `
-                        <div class="mb-4">
-                            <h4 class="font-medium text-gray-900 mb-2">Word Limit:</h4>
-                            <p class="text-gray-700">${wordLimit} words</p>
-                        </div>
-                    `;
-                }
-
-                const timeLimit = document.getElementById('time_limit')?.value;
-                if (timeLimit) {
-                    html += `
-                        <div class="mb-4">
-                            <h4 class="font-medium text-gray-900 mb-2">Time Limit:</h4>
-                            <p class="text-gray-700">${timeLimit} minutes</p>
-                        </div>
-                    `;
-                }
-
-                const options = document.querySelectorAll('.option-item input[type="text"]');
-                if (options.length > 0) {
-                    html += `
-                        <div class="mb-4">
-                            <h4 class="font-medium text-gray-900 mb-2">Answer Options:</h4>
-                            <ul class="space-y-2">
-                    `;
-                    options.forEach((option, index) => {
-                        const isCorrect = document.querySelector(`input[name="correct_option"]:checked`)?.value == index;
-                        html += `
-                            <li class="flex items-center">
-                                <span class="w-6 h-6 flex items-center justify-center rounded-full text-sm font-medium mr-3 ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">
-                                    ${String.fromCharCode(65 + index)}
-                                </span>
-                                <span class="text-gray-700">${option.value}</span>
-                                ${isCorrect ? '<span class="ml-2 text-green-600 font-medium">✓ Correct</span>' : ''}
-                            </li>
-                        `;
-                    });
-                    html += '</ul></div>';
-                }
-
-                return html;
-            }
-
-            handleMediaUpload(file) {
-                if (!file) return;
-
-                const preview = document.getElementById('media-preview');
-                const uploadContent = document.getElementById('media-upload-content');
-                
-                preview.innerHTML = '';
-                
-                if (file.type.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.className = 'max-h-48 rounded-lg';
-                    preview.appendChild(img);
-                } else if (file.type.startsWith('audio/')) {
-                    const audio = document.createElement('audio');
-                    audio.src = URL.createObjectURL(file);
-                    audio.controls = true;
-                    audio.className = 'w-full';
-                    preview.appendChild(audio);
-                }
-                
-                const fileInfo = document.createElement('p');
-                fileInfo.className = 'text-sm text-gray-600 mt-2';
-                fileInfo.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-                preview.appendChild(fileInfo);
-                
-                preview.classList.remove('hidden');
-                uploadContent.innerHTML = `
-                    <svg class="mx-auto h-8 w-8 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p class="text-green-600 font-medium">File uploaded successfully</p>
-                    <p class="text-sm text-gray-500">Click to change file</p>
-                `;
-            }
-
-            updateStepDisplay() {
-                // Update progress indicators
-                document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
-                    const stepNum = index + 1;
-                    if (stepNum < this.currentStep) {
-                        indicator.className = 'flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-medium step-indicator';
-                        indicator.innerHTML = '✓';
-                    } else if (stepNum === this.currentStep) {
-                        indicator.className = 'flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-medium step-indicator';
-                        indicator.textContent = stepNum;
-                    } else {
-                        indicator.className = 'flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-medium step-indicator';
-                        indicator.textContent = stepNum;
-                    }
-                });
-
-                // Update step labels
-                document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
-                    const stepNum = index + 1;
-                    const label = indicator.nextElementSibling;
-                    if (stepNum <= this.currentStep) {
-                        label.className = 'ml-3 text-sm font-medium text-gray-900';
-                    } else {
-                        label.className = 'ml-3 text-sm font-medium text-gray-500';
-                    }
-                });
-
-                // Show/hide step content
-                document.querySelectorAll('.step-content').forEach((content, index) => {
-                    if (index + 1 === this.currentStep) {
-                        content.classList.remove('hidden');
-                    } else {
-                        content.classList.add('hidden');
-                    }
-                });
-
-                // Update navigation buttons
-                const prevBtn = document.getElementById('prev-btn');
-                const nextBtn = document.getElementById('next-btn');
-
-                if (this.currentStep === 1) {
-                    prevBtn.classList.add('hidden');
-                } else {
-                    prevBtn.classList.remove('hidden');
-                }
-
-                if (this.currentStep === this.maxSteps) {
-                    nextBtn.classList.add('hidden');
-                } else {
-                    nextBtn.classList.remove('hidden');
-                }
-
-                this.updateNextButton();
-            }
-
-            updateNextButton() {
-                const nextBtn = document.getElementById('next-btn');
-                const isValid = this.validateStep();
-                
-                if (isValid) {
-                    nextBtn.disabled = false;
-                    nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                } else {
-                    nextBtn.disabled = true;
-                    nextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        
+        // Insert dropdown
+        function insertDropdown() {
+            if (editor) {
+                const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
+                if (options) {
+                    blankCounter++;
+                    const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${blankCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${blankCounter}]</span>`;
+                    editor.insertContent(dropdownHtml);
+                    updateBlanks();
                 }
             }
         }
-
-        // Initialize wizard when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            new QuestionWizard();
+        
+        // Update blanks
+        function updateBlanks() {
+            if (!editor) return;
+            
+            const content = editor.getContent();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            
+            const blanks = tempDiv.querySelectorAll('[data-blank], [data-dropdown]');
+            const blanksManager = document.getElementById('blanks-manager');
+            const blanksList = document.getElementById('blanks-list');
+            
+            if (blanks.length > 0) {
+                blanksManager.classList.remove('hidden');
+                blanksList.innerHTML = '';
+                
+                blanks.forEach((blank) => {
+                    const isDropdown = blank.hasAttribute('data-dropdown');
+                    const num = blank.getAttribute(isDropdown ? 'data-dropdown' : 'data-blank');
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex items-center space-x-2';
+                    
+                    if (isDropdown) {
+                        const options = blank.getAttribute('data-options');
+                        itemDiv.innerHTML = `
+                            <span class="text-sm font-medium">Dropdown ${num}:</span>
+                            <input type="text" value="${options}" name="dropdown_options[${num}]" 
+                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded">
+                            <select name="dropdown_correct[${num}]" class="px-2 py-1 text-sm border border-gray-300 rounded">
+                                ${options.split(',').map((opt, idx) => `<option value="${idx}">${opt.trim()}</option>`).join('')}
+                            </select>
+                        `;
+                    } else {
+                        itemDiv.innerHTML = `
+                            <span class="text-sm font-medium">Blank ${num}:</span>
+                            <input type="text" name="blank_answers[${num}]" 
+                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                                   placeholder="Correct answer">
+                        `;
+                    }
+                    
+                    blanksList.appendChild(itemDiv);
+                });
+            } else {
+                blanksManager.classList.add('hidden');
+            }
+        }
+        
+        // Question type handler
+        document.getElementById('question_type').addEventListener('change', function() {
+            const type = this.value;
+            const optionsCard = document.getElementById('options-card');
+            
+            const optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching', 'matching_headings'];
+            
+            if (optionTypes.includes(type)) {
+                optionsCard.classList.remove('hidden');
+                setupDefaultOptions(type);
+            } else {
+                optionsCard.classList.add('hidden');
+            }
+        });
+        
+        // Setup default options
+        function setupDefaultOptions(type) {
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            if (type === 'true_false') {
+                addOption('TRUE', true);
+                addOption('FALSE', false);
+                addOption('NOT GIVEN', false);
+                document.getElementById('add-option-btn').style.display = 'none';
+            } else if (type === 'yes_no') {
+                addOption('YES', true);
+                addOption('NO', false);
+                addOption('NOT GIVEN', false);
+                document.getElementById('add-option-btn').style.display = 'none';
+            } else {
+                for (let i = 0; i < 4; i++) {
+                    addOption('', i === 0);
+                }
+                document.getElementById('add-option-btn').style.display = 'inline-block';
+            }
+        }
+        
+        // Add option
+        function addOption(content = '', isCorrect = false) {
+            const container = document.getElementById('options-container');
+            const index = container.children.length;
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+            
+            optionDiv.innerHTML = `
+                <input type="radio" name="correct_option" value="${index}" 
+                       class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
+                <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
+                <input type="text" name="options[${index}][content]" value="${content}" 
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                       placeholder="Enter option text..." required>
+                <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(optionDiv);
+        }
+        
+        // Remove option
+        function removeOption(btn) {
+            btn.parentElement.remove();
+            reindexOptions();
+        }
+        
+        // Reindex options
+        function reindexOptions() {
+            const options = document.querySelectorAll('#options-container > div');
+            options.forEach((option, index) => {
+                option.querySelector('input[type="radio"]').value = index;
+                option.querySelector('input[type="text"]').name = `options[${index}][content]`;
+                option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
+            });
+        }
+        
+        // Add option button
+        document.getElementById('add-option-btn').addEventListener('click', () => addOption());
+        
+        // Templates
+        function showTemplates() {
+            document.getElementById('template-modal').classList.remove('hidden');
+        }
+        
+        function closeTemplates() {
+            document.getElementById('template-modal').classList.add('hidden');
+        }
+        
+        function useTemplate(template) {
+            document.getElementById('instructions').value = template;
+            closeTemplates();
+        }
+        
+        // Preview
+        function previewQuestion() {
+            const modal = document.getElementById('preview-modal');
+            const content = document.getElementById('preview-content');
+            
+            const instructions = document.getElementById('instructions').value;
+            const questionContent = editor ? editor.getContent() : '';
+            
+            let previewHtml = '<div class="space-y-4">';
+            
+            if (instructions) {
+                previewHtml += `<div class="text-sm text-gray-600 italic">${instructions}</div>`;
+            }
+            
+            previewHtml += `<div class="text-gray-900">${questionContent}</div>`;
+            
+            const optionsContainer = document.getElementById('options-container');
+            if (optionsContainer && optionsContainer.children.length > 0) {
+                previewHtml += '<div class="mt-4 space-y-2">';
+                const options = optionsContainer.querySelectorAll('input[type="text"]');
+                options.forEach((option, index) => {
+                    if (option.value) {
+                        previewHtml += `<div class="flex items-center space-x-2">
+                            <span class="font-medium">${String.fromCharCode(65 + index)}.</span>
+                            <span>${option.value}</span>
+                        </div>`;
+                    }
+                });
+                previewHtml += '</div>';
+            }
+            
+            previewHtml += '</div>';
+            
+            content.innerHTML = previewHtml;
+            modal.classList.remove('hidden');
+        }
+        
+        function closePreview() {
+            document.getElementById('preview-modal').classList.add('hidden');
+        }
+        
+        // Bulk options
+        function showBulkOptions() {
+            document.getElementById('bulk-modal').classList.remove('hidden');
+        }
+        
+        function closeBulkOptions() {
+            document.getElementById('bulk-modal').classList.add('hidden');
+            document.getElementById('bulk-text').value = '';
+        }
+        
+        function addBulkOptions() {
+            const text = document.getElementById('bulk-text').value;
+            if (text) {
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+                
+                const options = text.split('\n').filter(opt => opt.trim());
+                options.forEach((opt, index) => {
+                    addOption(opt.trim(), index === 0);
+                });
+                
+                closeBulkOptions();
+            }
+        }
+        
+        // Drag and drop
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('media');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+        });
+        
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFiles(files);
+            }
+        }
+        
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(this.files);
+        });
+        
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                const preview = document.getElementById('media-preview');
+                preview.innerHTML = '';
+                preview.classList.remove('hidden');
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `
+                            <div class="relative inline-block">
+                                <img src="${e.target.result}" class="max-h-48 rounded">
+                                <button type="button" onclick="clearMedia()" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full transform translate-x-1/2 -translate-y-1/2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type.startsWith('audio/')) {
+                    preview.innerHTML = `
+                        <div class="relative">
+                            <audio controls class="w-full">
+                                <source src="${URL.createObjectURL(file)}" type="${file.type}">
+                            </audio>
+                            <button type="button" onclick="clearMedia()" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full transform translate-x-1/2 -translate-y-1/2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                    `;
+                }
+            }
+        }
+        
+        function clearMedia() {
+            document.getElementById('media').value = '';
+            document.getElementById('media-preview').innerHTML = '';
+            document.getElementById('media-preview').classList.add('hidden');
+        }
+        
+        // Close modals on ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeTemplates();
+                closePreview();
+                closeBulkOptions();
+            }
         });
     </script>
     @endpush
