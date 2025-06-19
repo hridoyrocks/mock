@@ -753,6 +753,10 @@
         }
     </style>
 
+    @push('styles')
+    <link rel="stylesheet" href="{{ asset('css/help-guide.css') }}">
+    @endpush
+
     <!-- IELTS Header -->
     <div class="ielts-header">
         <div class="ielts-header-left">
@@ -775,7 +779,7 @@
             <span>{{ auth()->user()->name }} - BI {{ str_pad(auth()->id(), 6, '0', STR_PAD_LEFT) }}</span>
         </div>
         <div class="user-controls">
-            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm" onclick="HelpGuide.open()">Help ?</button>
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm help-button" id="help-button">Help ?</button>
             <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
             
             {{-- Integrated Timer Component --}}
@@ -1174,585 +1178,667 @@
         </div>
     </div>
 
+   <!-- Include the Help Guide Component -->
     <x-help-guide :testType="'reading'" />
     
-    @push('scripts')
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Elements
-        const submitButton = document.getElementById('submit-button');
-        const navButtons = document.querySelectorAll('.number-btn');
-        const partButtons = document.querySelectorAll('.part-btn');
-        const submitTestBtn = document.getElementById('submit-test-btn');
-        const submitModal = document.getElementById('submit-modal');
-        const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-        const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
-        const answeredCountSpan = document.getElementById('answered-count');
-        const passageContainers = document.querySelectorAll('.passage-container');
-        const questionParts = document.querySelectorAll('.part-questions');
+ 
+@push('scripts')
+<!-- Include Help Guide JavaScript -->
+<script src="{{ asset('js/help-guide.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded');
+    
+    // Debug: Check if HelpGuide is available
+    console.log('HelpGuide available?', typeof HelpGuide !== 'undefined');
+    
+    // Debug: Check if help button exists
+    const helpButton = document.getElementById('help-button');
+    console.log('Help button found?', helpButton !== null);
+    
+    // Initialize Help Guide
+    if (typeof HelpGuide !== 'undefined') {
+        console.log('Initializing HelpGuide...');
+        HelpGuide.init({
+            testType: 'reading'
+        });
         
-        // Part navigation - Show corresponding passage and questions
-        partButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                partButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                const partNumber = this.dataset.part;
-                
-                // Hide all question parts first
-                questionParts.forEach(part => {
-                    part.style.display = 'none';
+        // Add click handler to help button
+        if (helpButton) {
+            console.log('Adding click handler to help button...');
+            
+            // Method 1: Direct onclick
+            helpButton.onclick = function() {
+                console.log('Help button clicked (onclick)!');
+                HelpGuide.open();
+            };
+            
+            // Method 2: addEventListener as backup
+            helpButton.addEventListener('click', function(e) {
+                console.log('Help button clicked (addEventListener)!');
+                e.preventDefault();
+                e.stopPropagation();
+                HelpGuide.open();
+            });
+        } else {
+            console.error('Help button not found!');
+        }
+    } else {
+        console.error('HelpGuide is not defined! Check if help-guide.js is loaded.');
+        
+        // Fallback: Try to load it again
+        setTimeout(function() {
+            if (typeof HelpGuide !== 'undefined') {
+                console.log('HelpGuide now available after delay');
+                HelpGuide.init({
+                    testType: 'reading'
                 });
                 
-                // Show questions for this part
-                const targetQuestionPart = document.querySelector(`.part-questions[data-part="${partNumber}"]`);
-                if (targetQuestionPart) {
-                    targetQuestionPart.style.display = 'block';
+                if (helpButton) {
+                    helpButton.onclick = function() {
+                        HelpGuide.open();
+                    };
                 }
-                
-                // Update passage display
-                updatePassageDisplay(partNumber);
-                
-                // Find first question of this part
-                const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]`);
-                if (firstQuestionOfPart) {
-                    firstQuestionOfPart.click();
-                }
-            });
-        });
+            }
+        }, 1000);
+    }
+    
+    // Check if help modal exists
+    const helpModal = document.getElementById('help-modal');
+    console.log('Help modal found?', helpModal !== null);
+    
+    // Alternative approach - create a simple test
+    if (helpButton) {
+        // Test if button is actually clickable
+        helpButton.style.cursor = 'pointer';
+        helpButton.title = 'Click for help';
         
-        // Function to update passage display based on part
-        function updatePassageDisplay(partNumber) {
-            // Hide all passages first
-            passageContainers.forEach(container => {
-                container.classList.remove('active');
+        // Add a simple test click
+        helpButton.addEventListener('click', function() {
+            console.log('Button is clickable!');
+            
+            // If HelpGuide doesn't work, show a simple alert
+            if (typeof HelpGuide === 'undefined' || !HelpGuide.open) {
+                alert('Help Guide is not loaded properly. Please check:\n1. help-guide.js file exists in public/js/\n2. help-guide.css file exists in public/css/\n3. No JavaScript errors in console');
+            }
+        });
+    }
+
+    // Your existing code continues here...
+    const submitButton = document.getElementById('submit-button');
+    const navButtons = document.querySelectorAll('.number-btn');
+    const partButtons = document.querySelectorAll('.part-btn');
+    const submitTestBtn = document.getElementById('submit-test-btn');
+    const submitModal = document.getElementById('submit-modal');
+    const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+    const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
+    const answeredCountSpan = document.getElementById('answered-count');
+    const passageContainers = document.querySelectorAll('.passage-container');
+    const questionParts = document.querySelectorAll('.part-questions');
+    
+    // Part navigation - Show corresponding passage and questions
+    partButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            partButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            const partNumber = this.dataset.part;
+            
+            // Hide all question parts first
+            questionParts.forEach(part => {
+                part.style.display = 'none';
             });
             
-            // Show the passage for this part
-            const partPassage = document.querySelector(`.passage-container[data-part="${partNumber}"]`);
-            if (partPassage) {
-                partPassage.classList.add('active');
+            // Show questions for this part
+            const targetQuestionPart = document.querySelector(`.part-questions[data-part="${partNumber}"]`);
+            if (targetQuestionPart) {
+                targetQuestionPart.style.display = 'block';
             }
+            
+            // Update passage display
+            updatePassageDisplay(partNumber);
+            
+            // Find first question of this part
+            const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]`);
+            if (firstQuestionOfPart) {
+                firstQuestionOfPart.click();
+            }
+        });
+    });
+    
+    // Function to update passage display based on part
+    function updatePassageDisplay(partNumber) {
+        // Hide all passages first
+        passageContainers.forEach(container => {
+            container.classList.remove('active');
+        });
+        
+        // Show the passage for this part
+        const partPassage = document.querySelector(`.passage-container[data-part="${partNumber}"]`);
+        if (partPassage) {
+            partPassage.classList.add('active');
         }
-        
-        // Question navigation
-        navButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                navButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                const questionId = this.dataset.question;
-                const blankIndex = this.dataset.blank;
-                const partNumber = this.dataset.part;
-                const questionElement = document.getElementById(`question-${questionId}`);
-                
-                if (questionElement) {
-                    // Smooth scroll to question
-                    questionElement.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'center' 
-                    });
-                    
-                    // If specific blank, focus on it
-                    if (blankIndex) {
-                        const inputs = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
-                        if (inputs[blankIndex - 1]) {
-                            setTimeout(() => inputs[blankIndex - 1].focus(), 300);
-                        }
-                    }
-                    
-                    // Update active part if needed
-                    if (partNumber) {
-                        const currentActivePart = document.querySelector('.part-btn.active');
-                        if (!currentActivePart || currentActivePart.dataset.part !== partNumber) {
-                            partButtons.forEach(btn => {
-                                if (btn.dataset.part === partNumber) {
-                                    btn.click(); // This will update everything
-                                }
-                            });
-                        }
-                    }
-                }
-                
-                // Update review checkbox based on flagged status
-                const reviewCheckbox = document.getElementById('review-checkbox');
-                reviewCheckbox.checked = this.classList.contains('flagged');
-            });
-        });
-        
-        // Handle individual blank/dropdown tracking
-        document.querySelectorAll('.simple-blank, .simple-dropdown').forEach(input => {
-            input.addEventListener('change', function() {
-                const questionNumber = this.dataset.questionNumber;
-                if (questionNumber) {
-                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                    if (navButton && this.value.trim()) {
-                        navButton.classList.add('answered');
-                    } else if (navButton && !this.value.trim()) {
-                        navButton.classList.remove('answered');
-                    }
-                }
-                saveAllAnswers();
-            });
+    }
+    
+    // Question navigation
+    navButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
             
-            input.addEventListener('blur', function() {
-                const questionNumber = this.dataset.questionNumber;
-                if (questionNumber) {
-                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                    if (navButton && this.value.trim()) {
-                        navButton.classList.add('answered');
-                    } else if (navButton && !this.value.trim()) {
-                        navButton.classList.remove('answered');
-                    }
-                }
-                saveAllAnswers();
-            });
-        });
-        
-        // Handle regular questions (radio, text, select)
-        document.querySelectorAll('input[type="radio"], input[type="text"]:not(.simple-blank), select:not(.simple-dropdown)').forEach(input => {
-            input.addEventListener('change', function() {
-                const questionNumber = this.dataset.questionNumber;
-                if (questionNumber) {
-                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                    if (navButton && this.value) {
-                        navButton.classList.add('answered');
-                    }
-                }
-                saveAllAnswers();
-            });
-        });
-        
-        // Simple auto-width adjustment for blanks
-        document.querySelectorAll('.simple-blank').forEach(input => {
-            input.addEventListener('input', function() {
-                // Auto adjust width
-                const length = this.value.length;
-                if (length > 8) {
-                    this.style.width = (length * 9) + 'px';
-                } else {
-                    this.style.width = '120px';
-                }
-            });
+            const questionId = this.dataset.question;
+            const blankIndex = this.dataset.blank;
+            const partNumber = this.dataset.part;
+            const questionElement = document.getElementById(`question-${questionId}`);
             
-            // Tab navigation between blanks
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    const allInputs = document.querySelectorAll('.simple-blank, .simple-dropdown');
-                    const currentIndex = Array.from(allInputs).indexOf(this);
-                    const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
-                    
-                    if (nextIndex >= 0 && nextIndex < allInputs.length) {
-                        allInputs[nextIndex].focus();
-                    }
-                }
-            });
-        });
-        
-        // Passage selection functionality with color picker
-        const passageContents = document.querySelectorAll('.passage-content');
-        let currentColorPicker = null;
-        let selectedTextRange = null;
-        
-        // Initialize passage selection
-        passageContents.forEach(passage => {
-            // Prevent text selection on simple click
-            let isSelecting = false;
-            
-            passage.addEventListener('mousedown', function() {
-                isSelecting = false;
-            });
-            
-            passage.addEventListener('mousemove', function() {
-                isSelecting = true;
-            });
-            
-            // Enable text selection with color picker
-            passage.addEventListener('mouseup', function(e) {
-                // Small delay to ensure selection is complete
-                setTimeout(() => {
-                    const selection = window.getSelection();
-                    const selectedText = selection.toString().trim();
-                    
-                    if (selectedText.length > 0 && isSelecting) {
-                        // Remove any existing color picker first
-                        removeColorPicker();
-                        
-                        // Store the range for later use
-                        selectedTextRange = selection.getRangeAt(0).cloneRange();
-                        
-                        // Show color picker with slight delay for smooth animation
-                        setTimeout(() => {
-                            showColorPicker(e);
-                        }, 50);
-                    }
-                }, 10);
-            });
-            
-            // Click on highlighted text to remove highlight
-            passage.addEventListener('click', function(e) {
-                if (e.target.classList.contains('highlight-yellow') || 
-                    e.target.classList.contains('highlight-green') || 
-                    e.target.classList.contains('highlight-blue')) {
-                    
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Remove highlight with animation
-                    e.target.style.transition = 'background-color 0.3s';
-                    e.target.style.backgroundColor = 'transparent';
-                    
-                    setTimeout(() => {
-                        const text = e.target.textContent;
-                        e.target.replaceWith(document.createTextNode(text));
-                    }, 300);
-                }
-            });
-        });
-        
-        // Show color picker with smooth animation
-        function showColorPicker(e) {
-            // Get selection bounds
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-            
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            
-            // Create color picker element
-            const picker = document.createElement('div');
-            picker.className = 'color-picker';
-            picker.style.opacity = '0';
-            picker.style.transform = 'translateY(5px)';
-            picker.innerHTML = `
-                <button class="color-btn yellow" data-color="yellow" title="Yellow highlight"></button>
-                <button class="color-btn green" data-color="green" title="Green highlight"></button>
-                <button class="color-btn blue" data-color="blue" title="Blue highlight"></button>
-                <div class="color-btn remove" title="Cancel">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </div>
-            `;
-            
-            // Add to body first to calculate dimensions
-            document.body.appendChild(picker);
-            
-            // Calculate position
-            const pickerRect = picker.getBoundingClientRect();
-            let top = rect.top - pickerRect.height - 15;
-            let left = rect.left + (rect.width / 2) - (pickerRect.width / 2);
-            
-            // Adjust for viewport bounds
-            if (top < 10) {
-                top = rect.bottom + 15;
-                picker.classList.add('bottom');
-            }
-            
-            if (left < 10) {
-                left = 10;
-            } else if (left + pickerRect.width > window.innerWidth - 10) {
-                left = window.innerWidth - pickerRect.width - 10;
-            }
-            
-            // Apply position
-            picker.style.position = 'fixed';
-            picker.style.top = top + 'px';
-            picker.style.left = left + 'px';
-            picker.style.zIndex = '9999';
-            
-            // Animate in
-            requestAnimationFrame(() => {
-                picker.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
-                picker.style.opacity = '1';
-                picker.style.transform = 'translateY(0)';
-            });
-            
-            currentColorPicker = picker;
-            
-            // Add click handlers
-            picker.querySelectorAll('.color-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const color = this.dataset.color;
-                    
-                    if (color) {
-                        applyHighlight(color);
-                    }
-                    
-                    removeColorPicker();
-                });
-            });
-        }
-        
-        // Apply highlight to selected text with better handling
-        function applyHighlight(color) {
-            if (!selectedTextRange) return;
-            
-            try {
-                // Restore the selection
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(selectedTextRange);
-                
-                // Check if selection is valid
-                const selectedText = selection.toString().trim();
-                if (!selectedText) return;
-                
-                // Create span with highlight
-                const span = document.createElement('span');
-                span.className = `highlight-${color}`;
-                span.style.transition = 'background-color 0.3s ease-in';
-                
-                try {
-                    // Try to wrap the selected content
-                    selectedTextRange.surroundContents(span);
-                } catch (e) {
-                    // If surroundContents fails, use alternative method
-                    const contents = selectedTextRange.extractContents();
-                    span.appendChild(contents);
-                    selectedTextRange.insertNode(span);
-                }
-                
-                // Animate the highlight
-                requestAnimationFrame(() => {
-                    span.style.backgroundColor = '';
+            if (questionElement) {
+                // Smooth scroll to question
+                questionElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
                 });
                 
-            } catch (e) {
-                console.error('Error applying highlight:', e);
-            } finally {
-                // Clear selection
-                window.getSelection().removeAllRanges();
-            }
-        }
-        
-        // Remove color picker with animation
-        function removeColorPicker() {
-            if (currentColorPicker) {
-                currentColorPicker.style.opacity = '0';
-                currentColorPicker.style.transform = 'translateY(5px)';
-                
-                setTimeout(() => {
-                    if (currentColorPicker && currentColorPicker.parentNode) {
-                        currentColorPicker.remove();
+                // If specific blank, focus on it
+                if (blankIndex) {
+                    const inputs = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
+                    if (inputs[blankIndex - 1]) {
+                        setTimeout(() => inputs[blankIndex - 1].focus(), 300);
                     }
-                    currentColorPicker = null;
-                }, 200);
-            }
-            selectedTextRange = null;
-        }
-        
-        // Close color picker when clicking elsewhere
-        document.addEventListener('mousedown', function(e) {
-            if (currentColorPicker && !e.target.closest('.color-picker') && !e.target.closest('.passage-content')) {
-                removeColorPicker();
-            }
-        });
-        
-        // Close color picker on scroll with debounce
-        let scrollTimeout;
-        document.addEventListener('scroll', function() {
-            if (currentColorPicker) {
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(() => {
-                    removeColorPicker();
-                }, 100);
-            }
-        }, true);
-        
-        // Keyboard support - ESC to close
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && currentColorPicker) {
-                removeColorPicker();
-            }
-        });
-        
-        // Mobile touch support
-        if ('ontouchstart' in window) {
-            passageContents.forEach(passage => {
-                let touchTimer;
+                }
                 
-                passage.addEventListener('touchstart', function(e) {
-                    touchTimer = setTimeout(() => {
-                        // Long press to select word
-                        const touch = e.touches[0];
-                        const word = getWordAtPoint(touch.clientX, touch.clientY);
-                        
-                        if (word) {
-                            // Select the word
-                            const selection = window.getSelection();
-                            const range = document.createRange();
-                            
-                            // Find and select the word
-                            const textNodes = getTextNodes(passage);
-                            for (let node of textNodes) {
-                                const index = node.textContent.indexOf(word);
-                                if (index !== -1) {
-                                    range.setStart(node, index);
-                                    range.setEnd(node, index + word.length);
-                                    selection.removeAllRanges();
-                                    selection.addRange(range);
-                                    
-                                    // Show color picker
-                                    showColorPicker(e);
-                                    break;
-                                }
+                // Update active part if needed
+                if (partNumber) {
+                    const currentActivePart = document.querySelector('.part-btn.active');
+                    if (!currentActivePart || currentActivePart.dataset.part !== partNumber) {
+                        partButtons.forEach(btn => {
+                            if (btn.dataset.part === partNumber) {
+                                btn.click(); // This will update everything
                             }
-                        }
-                    }, 500);
-                });
-                
-                passage.addEventListener('touchend', function() {
-                    clearTimeout(touchTimer);
-                });
-                
-                passage.addEventListener('touchmove', function() {
-                    clearTimeout(touchTimer);
-                });
-            });
-        }
-        
-        // Helper function to get all text nodes
-        function getTextNodes(element) {
-            const textNodes = [];
-            const walker = document.createTreeWalker(
-                element,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            );
-            
-            let node;
-            while (node = walker.nextNode()) {
-                textNodes.push(node);
-            }
-            
-            return textNodes;
-        }
-        
-        // Helper function to get word at click point
-        function getWordAtPoint(x, y) {
-            const range = document.caretRangeFromPoint(x, y);
-            if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
-                const text = range.startContainer.textContent;
-                const offset = range.startOffset;
-                
-                // Find word boundaries
-                let start = offset;
-                let end = offset;
-                
-                while (start > 0 && /\S/.test(text[start - 1])) start--;
-                while (end < text.length && /\S/.test(text[end])) end++;
-                
-                return text.substring(start, end).trim();
-            }
-            return null;
-        }
-        
-        // Review checkbox functionality
-        const reviewCheckbox = document.getElementById('review-checkbox');
-        reviewCheckbox.addEventListener('change', function() {
-            const currentQuestion = document.querySelector('.number-btn.active');
-            if (currentQuestion) {
-                if (this.checked) {
-                    currentQuestion.classList.add('flagged');
-                } else {
-                    currentQuestion.classList.remove('flagged');
+                        });
+                    }
                 }
             }
+            
+            // Update review checkbox based on flagged status
+            const reviewCheckbox = document.getElementById('review-checkbox');
+            reviewCheckbox.checked = this.classList.contains('flagged');
         });
-        
-        // Submit functionality
-        submitTestBtn.addEventListener('click', function() {
-            const answeredCount = document.querySelectorAll('.number-btn.answered').length;
-            answeredCountSpan.textContent = answeredCount;
-            submitModal.style.display = 'flex';
-        });
-        
-        confirmSubmitBtn.addEventListener('click', function() {
-            if (window.UniversalTimer) {
-                window.UniversalTimer.stop();
+    });
+    
+    // Handle individual blank/dropdown tracking
+    document.querySelectorAll('.simple-blank, .simple-dropdown').forEach(input => {
+        input.addEventListener('change', function() {
+            const questionNumber = this.dataset.questionNumber;
+            if (questionNumber) {
+                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                if (navButton && this.value.trim()) {
+                    navButton.classList.add('answered');
+                } else if (navButton && !this.value.trim()) {
+                    navButton.classList.remove('answered');
+                }
             }
             saveAllAnswers();
-            submitButton.click();
         });
         
-        cancelSubmitBtn.addEventListener('click', function() {
-            submitModal.style.display = 'none';
-        });
-        
-        // Save answers function
-        function saveAllAnswers() {
-            const formData = new FormData(document.getElementById('reading-form'));
-            const answers = {};
-            
-            for (let [key, value] of formData.entries()) {
-                if (key.startsWith('answers[') && value) {
-                    answers[key] = value;
+        input.addEventListener('blur', function() {
+            const questionNumber = this.dataset.questionNumber;
+            if (questionNumber) {
+                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                if (navButton && this.value.trim()) {
+                    navButton.classList.add('answered');
+                } else if (navButton && !this.value.trim()) {
+                    navButton.classList.remove('answered');
                 }
             }
-            
-            localStorage.setItem('testAnswers_{{ $attempt->id }}', JSON.stringify(answers));
+            saveAllAnswers();
+        });
+    });
+    
+    // Handle regular questions (radio, text, select)
+    document.querySelectorAll('input[type="radio"], input[type="text"]:not(.simple-blank), select:not(.simple-dropdown)').forEach(input => {
+        input.addEventListener('change', function() {
+            const questionNumber = this.dataset.questionNumber;
+            if (questionNumber) {
+                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                if (navButton && this.value) {
+                    navButton.classList.add('answered');
+                }
+            }
+            saveAllAnswers();
+        });
+    });
+    
+    // Simple auto-width adjustment for blanks
+    document.querySelectorAll('.simple-blank').forEach(input => {
+        input.addEventListener('input', function() {
+            // Auto adjust width
+            const length = this.value.length;
+            if (length > 8) {
+                this.style.width = (length * 9) + 'px';
+            } else {
+                this.style.width = '120px';
+            }
+        });
+        
+        // Tab navigation between blanks
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const allInputs = document.querySelectorAll('.simple-blank, .simple-dropdown');
+                const currentIndex = Array.from(allInputs).indexOf(this);
+                const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
+                
+                if (nextIndex >= 0 && nextIndex < allInputs.length) {
+                    allInputs[nextIndex].focus();
+                }
+            }
+        });
+    });
+    
+    // Passage selection functionality with color picker
+    const passageContents = document.querySelectorAll('.passage-content');
+    let currentColorPicker = null;
+    let selectedTextRange = null;
+    
+    // Initialize passage selection
+    passageContents.forEach(passage => {
+        // Prevent text selection on simple click
+        let isSelecting = false;
+        
+        passage.addEventListener('mousedown', function() {
+            isSelecting = false;
+        });
+        
+        passage.addEventListener('mousemove', function() {
+            isSelecting = true;
+        });
+        
+        // Enable text selection with color picker
+        passage.addEventListener('mouseup', function(e) {
+            // Small delay to ensure selection is complete
+            setTimeout(() => {
+                const selection = window.getSelection();
+                const selectedText = selection.toString().trim();
+                
+                if (selectedText.length > 0 && isSelecting) {
+                    // Remove any existing color picker first
+                    removeColorPicker();
+                    
+                    // Store the range for later use
+                    selectedTextRange = selection.getRangeAt(0).cloneRange();
+                    
+                    // Show color picker with slight delay for smooth animation
+                    setTimeout(() => {
+                        showColorPicker(e);
+                    }, 50);
+                }
+            }, 10);
+        });
+        
+        // Click on highlighted text to remove highlight
+        passage.addEventListener('click', function(e) {
+            if (e.target.classList.contains('highlight-yellow') || 
+                e.target.classList.contains('highlight-green') || 
+                e.target.classList.contains('highlight-blue')) {
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Remove highlight with animation
+                e.target.style.transition = 'background-color 0.3s';
+                e.target.style.backgroundColor = 'transparent';
+                
+                setTimeout(() => {
+                    const text = e.target.textContent;
+                    e.target.replaceWith(document.createTextNode(text));
+                }, 300);
+            }
+        });
+    });
+    
+    // Show color picker with smooth animation
+    function showColorPicker(e) {
+        // Get selection bounds
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        // Create color picker element
+        const picker = document.createElement('div');
+        picker.className = 'color-picker';
+        picker.style.opacity = '0';
+        picker.style.transform = 'translateY(5px)';
+        picker.innerHTML = `
+            <button class="color-btn yellow" data-color="yellow" title="Yellow highlight"></button>
+            <button class="color-btn green" data-color="green" title="Green highlight"></button>
+            <button class="color-btn blue" data-color="blue" title="Blue highlight"></button>
+            <div class="color-btn remove" title="Cancel">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+        `;
+        
+        // Add to body first to calculate dimensions
+        document.body.appendChild(picker);
+        
+        // Calculate position
+        const pickerRect = picker.getBoundingClientRect();
+        let top = rect.top - pickerRect.height - 15;
+        let left = rect.left + (rect.width / 2) - (pickerRect.width / 2);
+        
+        // Adjust for viewport bounds
+        if (top < 10) {
+            top = rect.bottom + 15;
+            picker.classList.add('bottom');
         }
         
-        // Periodically save answers
-        setInterval(saveAllAnswers, 30000); // Every 30 seconds
+        if (left < 10) {
+            left = 10;
+        } else if (left + pickerRect.width > window.innerWidth - 10) {
+            left = window.innerWidth - pickerRect.width - 10;
+        }
         
-        // Load saved answers on page load
-        try {
-            const savedAnswers = localStorage.getItem('testAnswers_{{ $attempt->id }}');
-            
-            if (savedAnswers) {
-                const answers = JSON.parse(savedAnswers);
+        // Apply position
+        picker.style.position = 'fixed';
+        picker.style.top = top + 'px';
+        picker.style.left = left + 'px';
+        picker.style.zIndex = '9999';
+        
+        // Animate in
+        requestAnimationFrame(() => {
+            picker.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
+            picker.style.opacity = '1';
+            picker.style.transform = 'translateY(0)';
+        });
+        
+        currentColorPicker = picker;
+        
+        // Add click handlers
+        picker.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 
-                Object.keys(answers).forEach(key => {
-                    const value = answers[key];
-                    const input = document.querySelector(`[name="${key}"]`);
+                const color = this.dataset.color;
+                
+                if (color) {
+                    applyHighlight(color);
+                }
+                
+                removeColorPicker();
+            });
+        });
+    }
+    
+    // Apply highlight to selected text with better handling
+    function applyHighlight(color) {
+        if (!selectedTextRange) return;
+        
+        try {
+            // Restore the selection
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(selectedTextRange);
+            
+            // Check if selection is valid
+            const selectedText = selection.toString().trim();
+            if (!selectedText) return;
+            
+            // Create span with highlight
+            const span = document.createElement('span');
+            span.className = `highlight-${color}`;
+            span.style.transition = 'background-color 0.3s ease-in';
+            
+            try {
+                // Try to wrap the selected content
+                selectedTextRange.surroundContents(span);
+            } catch (e) {
+                // If surroundContents fails, use alternative method
+                const contents = selectedTextRange.extractContents();
+                span.appendChild(contents);
+                selectedTextRange.insertNode(span);
+            }
+            
+            // Animate the highlight
+            requestAnimationFrame(() => {
+                span.style.backgroundColor = '';
+            });
+            
+        } catch (e) {
+            console.error('Error applying highlight:', e);
+        } finally {
+            // Clear selection
+            window.getSelection().removeAllRanges();
+        }
+    }
+    
+    // Remove color picker with animation
+    function removeColorPicker() {
+        if (currentColorPicker) {
+            currentColorPicker.style.opacity = '0';
+            currentColorPicker.style.transform = 'translateY(5px)';
+            
+            setTimeout(() => {
+                if (currentColorPicker && currentColorPicker.parentNode) {
+                    currentColorPicker.remove();
+                }
+                currentColorPicker = null;
+            }, 200);
+        }
+        selectedTextRange = null;
+    }
+    
+    // Close color picker when clicking elsewhere
+    document.addEventListener('mousedown', function(e) {
+        if (currentColorPicker && !e.target.closest('.color-picker') && !e.target.closest('.passage-content')) {
+            removeColorPicker();
+        }
+    });
+    
+    // Close color picker on scroll with debounce
+    let scrollTimeout;
+    document.addEventListener('scroll', function() {
+        if (currentColorPicker) {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                removeColorPicker();
+            }, 100);
+        }
+    }, true);
+    
+    // Keyboard support - ESC to close
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && currentColorPicker) {
+            removeColorPicker();
+        }
+    });
+    
+    // Mobile touch support
+    if ('ontouchstart' in window) {
+        passageContents.forEach(passage => {
+            let touchTimer;
+            
+            passage.addEventListener('touchstart', function(e) {
+                touchTimer = setTimeout(() => {
+                    // Long press to select word
+                    const touch = e.touches[0];
+                    const word = getWordAtPoint(touch.clientX, touch.clientY);
                     
-                    if (input) {
-                        if (input.type === 'radio') {
-                            const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
-                            if (radio) {
-                                radio.checked = true;
-                                // Update nav button
-                                const questionNumber = radio.dataset.questionNumber;
-                                if (questionNumber) {
-                                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                                    if (navButton) {
-                                        navButton.classList.add('answered');
-                                    }
+                    if (word) {
+                        // Select the word
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        
+                        // Find and select the word
+                        const textNodes = getTextNodes(passage);
+                        for (let node of textNodes) {
+                            const index = node.textContent.indexOf(word);
+                            if (index !== -1) {
+                                range.setStart(node, index);
+                                range.setEnd(node, index + word.length);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                
+                                // Show color picker
+                                showColorPicker(e);
+                                break;
+                            }
+                        }
+                    }
+                }, 500);
+            });
+            
+            passage.addEventListener('touchend', function() {
+                clearTimeout(touchTimer);
+            });
+            
+            passage.addEventListener('touchmove', function() {
+                clearTimeout(touchTimer);
+            });
+        });
+    }
+    
+    // Helper function to get all text nodes
+    function getTextNodes(element) {
+        const textNodes = [];
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+            textNodes.push(node);
+        }
+        
+        return textNodes;
+    }
+    
+    // Helper function to get word at click point
+    function getWordAtPoint(x, y) {
+        const range = document.caretRangeFromPoint(x, y);
+        if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
+            const text = range.startContainer.textContent;
+            const offset = range.startOffset;
+            
+            // Find word boundaries
+            let start = offset;
+            let end = offset;
+            
+            while (start > 0 && /\S/.test(text[start - 1])) start--;
+            while (end < text.length && /\S/.test(text[end])) end++;
+            
+            return text.substring(start, end).trim();
+        }
+        return null;
+    }
+    
+    // Review checkbox functionality
+    const reviewCheckbox = document.getElementById('review-checkbox');
+    reviewCheckbox.addEventListener('change', function() {
+        const currentQuestion = document.querySelector('.number-btn.active');
+        if (currentQuestion) {
+            if (this.checked) {
+                currentQuestion.classList.add('flagged');
+            } else {
+                currentQuestion.classList.remove('flagged');
+            }
+        }
+    });
+    
+    // Submit functionality
+    submitTestBtn.addEventListener('click', function() {
+        const answeredCount = document.querySelectorAll('.number-btn.answered').length;
+        answeredCountSpan.textContent = answeredCount;
+        submitModal.style.display = 'flex';
+    });
+    
+    confirmSubmitBtn.addEventListener('click', function() {
+        if (window.UniversalTimer) {
+            window.UniversalTimer.stop();
+        }
+        saveAllAnswers();
+        submitButton.click();
+    });
+    
+    cancelSubmitBtn.addEventListener('click', function() {
+        submitModal.style.display = 'none';
+    });
+    
+    // Save answers function
+    function saveAllAnswers() {
+        const formData = new FormData(document.getElementById('reading-form'));
+        const answers = {};
+        
+        for (let [key, value] of formData.entries()) {
+            if (key.startsWith('answers[') && value) {
+                answers[key] = value;
+            }
+        }
+        
+        localStorage.setItem('testAnswers_{{ $attempt->id }}', JSON.stringify(answers));
+    }
+    
+    // Periodically save answers
+    setInterval(saveAllAnswers, 30000); // Every 30 seconds
+    
+    // Load saved answers on page load
+    try {
+        const savedAnswers = localStorage.getItem('testAnswers_{{ $attempt->id }}');
+        
+        if (savedAnswers) {
+            const answers = JSON.parse(savedAnswers);
+            
+            Object.keys(answers).forEach(key => {
+                const value = answers[key];
+                const input = document.querySelector(`[name="${key}"]`);
+                
+                if (input) {
+                    if (input.type === 'radio') {
+                        const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
+                        if (radio) {
+                            radio.checked = true;
+                            // Update nav button
+                            const questionNumber = radio.dataset.questionNumber;
+                            if (questionNumber) {
+                                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                                if (navButton) {
+                                    navButton.classList.add('answered');
                                 }
                             }
-                        } else {
-                            input.value = value;
-                            if (value) {
-                                // Update nav button
-                                const questionNumber = input.dataset.questionNumber;
-                                if (questionNumber) {
-                                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                                    if (navButton) {
-                                        navButton.classList.add('answered');
-                                    }
+                        }
+                    } else {
+                        input.value = value;
+                        if (value) {
+                            // Update nav button
+                            const questionNumber = input.dataset.questionNumber;
+                            if (questionNumber) {
+                                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                                if (navButton) {
+                                    navButton.classList.add('answered');
                                 }
                             }
                         }
                     }
-                });
-            }
-        } catch (e) {
-            console.error('Error restoring saved answers:', e);
+                }
+            });
         }
-        
-        // Initialize first part on load
-        const firstPartBtn = document.querySelector('.part-btn');
-        if (firstPartBtn) {
-            firstPartBtn.click();
-        }
-    });
-    </script>
-    @endpush
+    } catch (e) {
+        console.error('Error restoring saved answers:', e);
+    }
+    
+    // Initialize first part on load
+    const firstPartBtn = document.querySelector('.part-btn');
+    if (firstPartBtn) {
+        firstPartBtn.click();
+    }
+});
+</script>
+@endpush
 </x-test-layout>
