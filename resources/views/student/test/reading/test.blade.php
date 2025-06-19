@@ -151,41 +151,50 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
         }
         
-        /* Fill in the blanks styles */
-        .fill-blank-input {
-            display: inline-block;
-            width: 150px;
-            padding: 4px 8px;
-            margin: 0 4px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            font-size: 14px;
-            background-color: #fef3c7;
-        }
-        
-        .fill-blank-input:focus {
+        /* Simple underline blanks - no boxes */
+        .simple-blank {
+            border: none;
+            border-bottom: 1px solid #9ca3af;
+            background: transparent;
             outline: none;
-            border-color: #f59e0b;
-            background-color: #fffbeb;
-            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+            padding: 0 2px;
+            margin: 0 4px;
+            font-size: inherit;
+            font-family: inherit;
+            color: #1f2937;
+            min-width: 80px;
+            text-align: center;
+            transition: all 0.2s;
         }
         
-        .dropdown-select {
-            display: inline-block;
-            padding: 4px 8px;
+        .simple-blank:focus {
+            border-bottom-color: #2563eb;
+            border-bottom-width: 2px;
+            padding-bottom: 0;
+        }
+        
+        .simple-blank:not(:placeholder-shown) {
+            border-bottom-color: #059669;
+            font-weight: 500;
+        }
+        
+        /* Simple dropdown */
+        .simple-dropdown {
+            border: none;
+            border-bottom: 1px solid #9ca3af;
+            background: transparent;
+            outline: none;
+            padding: 2px 4px;
             margin: 0 4px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            font-size: 14px;
-            background-color: #d1fae5;
+            font-size: inherit;
+            font-family: inherit;
             cursor: pointer;
+            min-width: 100px;
         }
         
-        .dropdown-select:focus {
-            outline: none;
-            border-color: #10b981;
-            background-color: #ecfdf5;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+        .simple-dropdown:focus {
+            border-bottom-color: #2563eb;
+            border-bottom-width: 2px;
         }
         
         .question-content {
@@ -684,21 +693,22 @@
                                         $hasDropdowns = false;
                                         
                                         // Check for blanks and dropdowns
-                                        if (strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[DROPDOWN_') !== false) {
-                                            $hasBlanks = strpos($processedContent, '[BLANK_') !== false;
+                                        if (strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[____') !== false || strpos($processedContent, '[DROPDOWN_') !== false) {
+                                            $hasBlanks = strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[____') !== false;
                                             $hasDropdowns = strpos($processedContent, '[DROPDOWN_') !== false;
                                             
-                                            // Replace blanks with input fields
-                                            $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]/', function($matches) use ($question) {
-                                                $blankNum = $matches[1];
+                                            // Replace blanks with simple underline inputs
+                                            $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/', function($matches) use ($question) {
+                                                $blankNum = $matches[1] ?? $matches[2];
                                                 return '<input type="text" 
                                                         name="answers[' . $question->id . '][blank_' . $blankNum . ']" 
-                                                        class="fill-blank-input" 
-                                                        placeholder="____" 
+                                                        class="simple-blank" 
+                                                        placeholder="______"
+                                                        autocomplete="off"
                                                         data-blank="' . $blankNum . '">';
                                             }, $processedContent);
                                             
-                                            // Replace dropdowns with select fields
+                                            // Replace dropdowns with simple select fields
                                             if ($question->section_specific_data) {
                                                 $sectionData = $question->section_specific_data;
                                                 $dropdownOptions = $sectionData['dropdown_options'] ?? [];
@@ -708,9 +718,9 @@
                                                     $options = isset($dropdownOptions[$dropdownNum]) ? explode(',', $dropdownOptions[$dropdownNum]) : [];
                                                     
                                                     $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
-                                                            class="dropdown-select" 
+                                                            class="simple-dropdown" 
                                                             data-dropdown="' . $dropdownNum . '">
-                                                            <option value="">Choose</option>';
+                                                            <option value="">______</option>';
                                                     
                                                     foreach ($options as $option) {
                                                         $selectHtml .= '<option value="' . trim($option) . '">' . trim($option) . '</option>';
@@ -726,7 +736,7 @@
                                     <div class="question-number">
                                         {{ $question->order_number }}. 
                                         @if($hasBlanks || $hasDropdowns)
-                                            <div class="question-content">{!! $processedContent !!}</div>
+                                            <span class="question-content">{!! $processedContent !!}</span>
                                         @else
                                             {!! $question->content !!}
                                         @endif
@@ -973,7 +983,7 @@
                 }
                 
                 // Check if all blanks/dropdowns in question are filled
-                if (this.classList.contains('fill-blank-input') || this.classList.contains('dropdown-select')) {
+                if (this.classList.contains('simple-blank') || this.classList.contains('simple-dropdown')) {
                     checkAllBlanksInQuestion(question, navButton);
                 }
                 
@@ -988,7 +998,7 @@
                     
                     const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
                     if (navButton) {
-                        if (this.classList.contains('fill-blank-input')) {
+                        if (this.classList.contains('simple-blank')) {
                             checkAllBlanksInQuestion(question, navButton);
                         } else if (this.value.trim()) {
                             navButton.classList.add('answered');
@@ -1002,9 +1012,53 @@
             }
         });
         
+        // Simple auto-width adjustment for blanks
+        document.querySelectorAll('.simple-blank').forEach(input => {
+            input.addEventListener('input', function() {
+                // Auto adjust width
+                const length = this.value.length;
+                if (length > 8) {
+                    this.style.width = (length * 9) + 'px';
+                }
+                
+                // Check if all blanks in question are filled
+                const question = this.closest('.question-box');
+                checkAllBlanksInQuestion(question);
+            });
+            
+            // Tab navigation between blanks
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const allInputs = document.querySelectorAll('.simple-blank, .simple-dropdown');
+                    const currentIndex = Array.from(allInputs).indexOf(this);
+                    const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
+                    
+                    if (nextIndex >= 0 && nextIndex < allInputs.length) {
+                        allInputs[nextIndex].focus();
+                    }
+                }
+            });
+        });
+        
+        // Handle dropdowns
+        document.querySelectorAll('.simple-dropdown').forEach(dropdown => {
+            dropdown.addEventListener('change', function() {
+                const question = this.closest('.question-box');
+                checkAllBlanksInQuestion(question);
+            });
+        });
+        
         // Check if all blanks in a question are filled
         function checkAllBlanksInQuestion(questionElement, navButton) {
-            const blanks = questionElement.querySelectorAll('.fill-blank-input, .dropdown-select');
+            if (!questionElement) return;
+            
+            if (!navButton) {
+                const questionNumber = questionElement.id.replace('question-', '');
+                navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+            }
+            
+            const blanks = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
             let allFilled = true;
             
             blanks.forEach(blank => {
@@ -1041,15 +1095,15 @@
             
             // Count regular questions
             answeredQuestions += document.querySelectorAll('input[type="radio"]:checked').length;
-            answeredQuestions += document.querySelectorAll('input[type="text"]:not(.fill-blank-input)[value]:not([value=""])').length;
-            answeredQuestions += document.querySelectorAll('select:not(.dropdown-select) option:checked:not([value=""])').length;
+            answeredQuestions += document.querySelectorAll('input[type="text"]:not(.simple-blank)[value]:not([value=""])').length;
+            answeredQuestions += document.querySelectorAll('select:not(.simple-dropdown) option:checked:not([value=""])').length;
             
             // Count fill-in-the-blank questions
             const blankQuestions = new Set();
-            document.querySelectorAll('.fill-blank-input, .dropdown-select').forEach(input => {
+            document.querySelectorAll('.simple-blank, .simple-dropdown').forEach(input => {
                 const question = input.closest('.question-box');
                 if (question) {
-                    const blanks = question.querySelectorAll('.fill-blank-input, .dropdown-select');
+                    const blanks = question.querySelectorAll('.simple-blank, .simple-dropdown');
                     let allFilled = true;
                     blanks.forEach(blank => {
                         if (!blank.value.trim()) {

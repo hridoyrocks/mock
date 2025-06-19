@@ -24,6 +24,44 @@
 
     <div class="bg-gray-50 min-h-screen">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Question Status Card - NEW ADDITION -->
+            <div class="bg-white rounded-lg shadow-sm mb-6 border-l-4 border-blue-500">
+                <div class="p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Creating Question</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                Total questions in this test: <span class="font-semibold">{{ $existingQuestions->count() }}</span>
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold text-blue-600" id="question-number-display">
+                                #{{ $nextQuestionNumber }}
+                            </div>
+                            <p class="text-xs text-gray-500">Question Number</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick question list -->
+                    @if($existingQuestions->count() > 0)
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <p class="text-xs text-gray-500 mb-2">Existing questions:</p>
+                        <div class="flex flex-wrap gap-1">
+                            @foreach($existingQuestions->sortBy('order_number') as $q)
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                #{{ $q->order_number }}
+                            </span>
+                            @endforeach
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 border border-blue-300">
+                                #{{ $nextQuestionNumber }} (new)
+                            </span>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            
             <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm" novalidate>
                 @csrf
                 <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
@@ -135,7 +173,7 @@
                                                             'matching' => 'Matching'
                                                         ],
                                                         'reading' => [
-                                                            'passage' => ' Reading Passage',
+                                                            'passage' => '📄 Reading Passage',
                                                             'multiple_choice' => 'Multiple Choice',
                                                             'true_false' => 'True/False/Not Given',
                                                             'yes_no' => 'Yes/No/Not Given',
@@ -168,17 +206,17 @@
                                         <!-- Question Number -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Number <span class="text-red-500">*</span></label>
-                                            <input type="number" name="order_number" value="{{ old('order_number', $testSet->questions->max('order_number') + 1) }}" 
+                                            <input type="number" name="order_number" value="{{ old('order_number', $nextQuestionNumber) }}" 
                                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1" required>
                                         </div>
                                         
-                                 <!-- Marks -->
-<div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Marks</label>
-    <input type="number" id="marks-input" name="marks" value="1" 
-           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-           min="0" max="40">
-</div>
+                                        <!-- Marks -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Marks</label>
+                                            <input type="number" id="marks-input" name="marks" value="1" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                   min="0" max="40">
+                                        </div>
                                         
                                         <!-- Question Group -->
                                         <div class="col-span-2">
@@ -361,6 +399,9 @@
         </div>
     </div>
 
+    <!-- Tooltip div for editor feedback -->
+    <div id="editor-tooltip" style="position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; display: none;"></div>
+
     @push('styles')
     <style>
         /* Clean styling */
@@ -378,16 +419,17 @@
             background-color: #eff6ff;
         }
         
-        /* Blank styling in TinyMCE */
+        /* Enhanced Blank styling in TinyMCE */
         .blank-placeholder {
             background-color: #fef3c7;
-            border: 1px solid #f59e0b;
-            color: #92400e;
-            padding: 2px 8px;
-            margin: 0 2px;
-            border-radius: 4px;
-            font-weight: 500;
+            border-bottom: 2px solid #f59e0b;
+            padding: 0 8px;
+            margin: 0 4px;
             display: inline-block;
+            min-width: 60px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 13px;
         }
         
         .dropdown-placeholder {
@@ -400,276 +442,148 @@
             font-weight: 500;
             display: inline-block;
         }
+        
+        /* Duplicate warning style */
+        .duplicate-warning {
+            color: #d97706;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
     </style>
     @endpush
 
     @push('scripts')
-<!-- TinyMCE -->
-<script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 
-<script>
-    let blankCounter = 0;
-    let editor;
-    
-    // Debug function
-    function debugLog(message, data) {
-        console.log(`[Question Form] ${message}`, data);
-    }
-    
-    // Initialize TinyMCE
-    tinymce.init({
-        selector: '.tinymce',
-        height: 350,
-        menubar: true,
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount'
-        ],
-        toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.6; }',
-        setup: function(ed) {
-            editor = ed;
-            ed.on('input change', function() {
-                updateWordCount();
-                updateBlanks();
-            });
-        },
-        init_instance_callback: function(ed) {
-            debugLog('TinyMCE initialized', 'Editor ready');
-        }
-    });
-    
-    // Handle question type change
-    function handleQuestionTypeChange() {
-        const type = this.value;
-        debugLog('Question type changed to:', type);
+    <script>
+        let blankCounter = 0;
+        let editor;
         
-        const optionsCard = document.getElementById('options-card');
-        const passageSection = document.getElementById('passage-section');
-        const mainContentSection = document.getElementById('main-content-section');
-        
-        const optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching', 'matching_headings'];
-        
-        try {
-            // Handle passage type
-            if (type === 'passage') {
-                debugLog('Showing passage section');
-                passageSection.classList.remove('hidden');
-                optionsCard.classList.add('hidden');
-                mainContentSection.classList.add('hidden');
-                
-                // Auto-set some fields for passage
-                const orderInput = document.querySelector('input[name="order_number"]');
-                const marksInput = document.querySelector('input[name="marks"]');
-                
-                if (orderInput) orderInput.value = '0';
-                if (marksInput) marksInput.value = '0';
-                
-                // Make content field optional
-                const contentTextarea = document.getElementById('content');
-                if (contentTextarea) {
-                    contentTextarea.removeAttribute('required');
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '.tinymce',
+            height: 350,
+            menubar: true,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+            content_style: `
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+                    font-size: 14px; 
+                    line-height: 1.6; 
                 }
-            } else {
-                debugLog('Hiding passage section');
-                passageSection.classList.add('hidden');
-                mainContentSection.classList.remove('hidden');
-                
-                // Reset marks to default
-                const marksInput = document.querySelector('input[name="marks"]');
-                if (marksInput && marksInput.value === '0') {
-                    marksInput.value = '1';
+                .blank-placeholder {
+                    background-color: #fef3c7;
+                    border-bottom: 2px solid #f59e0b;
+                    padding: 0 8px;
+                    margin: 0 4px;
+                    display: inline-block;
+                    min-width: 60px;
+                    text-align: center;
+                    font-family: monospace;
+                    font-size: 13px;
                 }
-                
-                // Make content field required again
-                const contentTextarea = document.getElementById('content');
-                if (contentTextarea) {
-                    contentTextarea.setAttribute('required', 'required');
+                .dropdown-placeholder {
+                    background-color: #d1fae5;
+                    border: 1px solid #10b981;
+                    color: #065f46;
+                    padding: 2px 8px;
+                    margin: 0 2px;
+                    border-radius: 4px;
+                    font-weight: 500;
+                    display: inline-block;
                 }
-                
-                if (optionTypes.includes(type)) {
-                    optionsCard.classList.remove('hidden');
-                    setupDefaultOptions(type);
-                } else {
-                    optionsCard.classList.add('hidden');
-                }
+            `,
+            setup: function(ed) {
+                editor = ed;
+                ed.on('input change', function() {
+                    updateWordCount();
+                    updateBlanks();
+                });
             }
-        } catch (error) {
-            console.error('Error handling question type change:', error);
-        }
-    }
-    
-    // Update passage word count
-    function updatePassageWordCount() {
-        try {
-            const words = this.value.trim().split(/\s+/).filter(word => word.length > 0);
-            const wordCountElement = document.getElementById('passage-word-count');
-            if (wordCountElement) {
-                wordCountElement.textContent = words.length;
-            }
-        } catch (error) {
-            console.error('Error updating word count:', error);
-        }
-    }
-    
-    // Handle form submission
-    function handleFormSubmit(e) {
-        e.preventDefault(); // Always prevent default first
-        
-        debugLog('Form submission started', e);
-        
-        const form = e.target;
-        const questionType = document.getElementById('question_type').value;
-        
-        try {
-            // Custom validation based on question type
-            if (questionType === 'passage') {
-                const passageText = document.querySelector('textarea[name="passage_text"]').value;
-                
-                if (!passageText || passageText.trim() === '') {
-                    alert('Please enter passage text');
-                    return false;
-                }
-                
-                // Set content for passage
-                const contentTextarea = document.getElementById('content');
-                if (editor) {
-                    editor.setContent(passageText);
-                    editor.save();
-                } else if (contentTextarea) {
-                    contentTextarea.value = passageText;
-                }
-                
-                // Set marks to 0 for passage
-                const marksInput = document.querySelector('input[name="marks"]');
-                if (marksInput) {
-                    marksInput.value = '0';
-                }
-            } else {
-                // For regular questions
-                if (editor) {
-                    editor.save();
-                }
-                
-                // Check if content is provided
-                const content = editor ? editor.getContent() : document.getElementById('content').value;
-                if (!content || content.trim() === '') {
-                    alert('Please enter question content');
-                    return false;
-                }
-            }
-            
-            debugLog('Validation passed, submitting form...');
-            
-            // Submit form programmatically
-            form.submit();
-            
-        } catch (error) {
-            console.error('Form submission error:', error);
-            alert('Error: ' + error.message);
-        }
-    }
-    
-    // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        debugLog('Page loaded', 'Initializing form...');
-        
-        // Initialize question type handler
-        const questionTypeSelect = document.getElementById('question_type');
-        if (questionTypeSelect) {
-            questionTypeSelect.addEventListener('change', handleQuestionTypeChange);
-            debugLog('Question type handler attached');
-        } else {
-            console.error('Question type select not found!');
-        }
-        
-        // Initialize passage textarea
-        const passageTextarea = document.querySelector('textarea[name="passage_text"]');
-        if (passageTextarea) {
-            passageTextarea.addEventListener('input', updatePassageWordCount);
-            debugLog('Passage word count handler attached');
-        }
-        
-        // Initialize form submission
-        const form = document.getElementById('questionForm');
-        if (form) {
-            form.addEventListener('submit', handleFormSubmit);
-            debugLog('Form submission handler attached');
-        } else {
-            console.error('Question form not found!');
-        }
-        
-        // Initialize add option button
-        const addOptionBtn = document.getElementById('add-option-btn');
-        if (addOptionBtn) {
-            addOptionBtn.addEventListener('click', () => addOption());
-        }
-        
-        // Initialize save buttons
-        const saveButtons = document.querySelectorAll('.save-btn');
-        saveButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                debugLog('Save button clicked:', this.textContent);
-                
-                // Add action value
-                const form = document.getElementById('questionForm');
-                let actionInput = form.querySelector('input[name="action"]');
-                if (!actionInput) {
-                    actionInput = document.createElement('input');
-                    actionInput.type = 'hidden';
-                    actionInput.name = 'action';
-                    form.appendChild(actionInput);
-                }
-                actionInput.value = this.name === 'action' ? this.value : 'save';
-            });
         });
-    });
-    
-    // Word count update function
-    function updateWordCount() {
-        if (editor) {
-            try {
-                const text = editor.getContent({format: 'text'});
-                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-                const chars = text.length;
-                
-                document.getElementById('word-count').textContent = words.length;
-                document.getElementById('char-count').textContent = chars;
-            } catch (error) {
-                console.error('Error updating word count:', error);
-            }
-        }
-    }
-    
-    // Insert blank function
-    function insertBlank() {
-        if (editor) {
-            blankCounter++;
-            const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[BLANK_${blankCounter}]</span>`;
-            editor.insertContent(blankHtml);
-            updateBlanks();
-        }
-    }
-    
-    // Insert dropdown function
-    function insertDropdown() {
-        if (editor) {
-            const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
-            if (options) {
-                blankCounter++;
-                const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${blankCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${blankCounter}]</span>`;
-                editor.insertContent(dropdownHtml);
-                updateBlanks();
-            }
-        }
-    }
-    
-    // Update blanks function
-    function updateBlanks() {
-        if (!editor) return;
         
-        try {
+        // Question number display update
+        document.addEventListener('DOMContentLoaded', function() {
+            const orderInput = document.querySelector('input[name="order_number"]');
+            const numberDisplay = document.getElementById('question-number-display');
+            const existingNumbers = {{ $existingQuestions->pluck('order_number')->toJson() }};
+            
+            if (orderInput && numberDisplay) {
+                orderInput.addEventListener('input', function() {
+                    const value = this.value || '?';
+                    numberDisplay.textContent = '#' + value;
+                    
+                    // Check duplicate
+                    if (existingNumbers.includes(parseInt(value))) {
+                        // Add small warning below input
+                        let warning = this.parentElement.querySelector('.duplicate-warning');
+                        if (!warning) {
+                            warning = document.createElement('p');
+                            warning.className = 'duplicate-warning text-xs text-yellow-600 mt-1';
+                            warning.innerHTML = '⚠️ This number already exists. Existing questions will be reordered.';
+                            this.parentElement.appendChild(warning);
+                        }
+                    } else {
+                        // Remove warning if exists
+                        const warning = this.parentElement.querySelector('.duplicate-warning');
+                        if (warning) warning.remove();
+                    }
+                });
+            }
+        });
+        
+        // Enhanced Insert Blank
+        function insertBlank() {
+            if (editor) {
+                blankCounter++;
+                const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[____${blankCounter}____]</span>`;
+                editor.insertContent(blankHtml);
+                updateBlanks();
+                
+                // Show tooltip
+                showTooltip('Blank inserted! It will appear as ____ in student view.');
+            }
+        }
+        
+        // Insert dropdown
+        function insertDropdown() {
+            if (editor) {
+                const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
+                if (options) {
+                    blankCounter++;
+                    const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${blankCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${blankCounter}]</span>`;
+                    editor.insertContent(dropdownHtml);
+                    updateBlanks();
+                    showTooltip('Dropdown inserted! Students will see a dropdown menu.');
+                }
+            }
+        }
+        
+        // Show tooltip function
+        function showTooltip(message) {
+            const tooltip = document.getElementById('editor-tooltip');
+            tooltip.textContent = message;
+            tooltip.style.display = 'block';
+            tooltip.style.opacity = '1';
+            
+            setTimeout(() => {
+                tooltip.style.opacity = '0';
+                setTimeout(() => {
+                    tooltip.style.display = 'none';
+                }, 300);
+            }, 3000);
+        }
+        
+        // Update blanks
+        function updateBlanks() {
+            if (!editor) return;
+            
             const content = editor.getContent();
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = content;
@@ -713,14 +627,59 @@
             } else {
                 blanksManager.classList.add('hidden');
             }
-        } catch (error) {
-            console.error('Error updating blanks:', error);
         }
-    }
-    
-    // Setup default options
-    function setupDefaultOptions(type) {
-        try {
+        
+        // Handle question type change
+        document.getElementById('question_type').addEventListener('change', function() {
+            const type = this.value;
+            const optionsCard = document.getElementById('options-card');
+            const passageSection = document.getElementById('passage-section');
+            const mainContentSection = document.getElementById('main-content-section');
+            
+            const optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching', 'matching_headings'];
+            
+            // Handle passage type
+            if (type === 'passage') {
+                passageSection.classList.remove('hidden');
+                optionsCard.classList.add('hidden');
+                mainContentSection.classList.add('hidden');
+                
+                // Auto-set some fields for passage
+                const orderInput = document.querySelector('input[name="order_number"]');
+                const marksInput = document.querySelector('input[name="marks"]');
+                
+                if (orderInput) orderInput.value = '0';
+                if (marksInput) marksInput.value = '0';
+            } else {
+                passageSection.classList.add('hidden');
+                mainContentSection.classList.remove('hidden');
+                
+                // Reset marks to default
+                const marksInput = document.querySelector('input[name="marks"]');
+                if (marksInput && marksInput.value === '0') {
+                    marksInput.value = '1';
+                }
+                
+                if (optionTypes.includes(type)) {
+                    optionsCard.classList.remove('hidden');
+                    setupDefaultOptions(type);
+                } else {
+                    optionsCard.classList.add('hidden');
+                }
+            }
+        });
+        
+        // Update passage word count
+        const passageTextarea = document.querySelector('textarea[name="passage_text"]');
+        if (passageTextarea) {
+            passageTextarea.addEventListener('input', function() {
+                const words = this.value.trim().split(/\s+/).filter(word => word.length > 0);
+                document.getElementById('passage-word-count').textContent = words.length;
+            });
+        }
+        
+        // Setup default options
+        function setupDefaultOptions(type) {
             const container = document.getElementById('options-container');
             container.innerHTML = '';
             
@@ -740,14 +699,10 @@
                 }
                 document.getElementById('add-option-btn').style.display = 'inline-block';
             }
-        } catch (error) {
-            console.error('Error setting up options:', error);
         }
-    }
-    
-    // Add option function
-    function addOption(content = '', isCorrect = false) {
-        try {
+        
+        // Add option
+        function addOption(content = '', isCorrect = false) {
             const container = document.getElementById('options-container');
             const index = container.children.length;
             
@@ -769,46 +724,55 @@
             `;
             
             container.appendChild(optionDiv);
-        } catch (error) {
-            console.error('Error adding option:', error);
         }
-    }
-    
-    // Remove option function
-    function removeOption(btn) {
-        btn.parentElement.remove();
-        reindexOptions();
-    }
-    
-    // Reindex options function
-    function reindexOptions() {
-        const options = document.querySelectorAll('#options-container > div');
-        options.forEach((option, index) => {
-            option.querySelector('input[type="radio"]').value = index;
-            option.querySelector('input[type="text"]').name = `options[${index}][content]`;
-            option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
-        });
-    }
-    
-    // Other helper functions (templates, preview, bulk options, drag/drop) remain the same...
-    
-    // Templates
-    function showTemplates() {
-        document.getElementById('template-modal').classList.remove('hidden');
-    }
-    
-    function closeTemplates() {
-        document.getElementById('template-modal').classList.add('hidden');
-    }
-    
-    function useTemplate(template) {
-        document.getElementById('instructions').value = template;
-        closeTemplates();
-    }
-    
-    // Preview
-    function previewQuestion() {
-        try {
+        
+        // Remove option
+        function removeOption(btn) {
+            btn.parentElement.remove();
+            reindexOptions();
+        }
+        
+        // Reindex options
+        function reindexOptions() {
+            const options = document.querySelectorAll('#options-container > div');
+            options.forEach((option, index) => {
+                option.querySelector('input[type="radio"]').value = index;
+                option.querySelector('input[type="text"]').name = `options[${index}][content]`;
+                option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
+            });
+        }
+        
+        // Add option button
+        document.getElementById('add-option-btn').addEventListener('click', () => addOption());
+        
+        // Word count
+        function updateWordCount() {
+            if (editor) {
+                const text = editor.getContent({format: 'text'});
+                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                const chars = text.length;
+                
+                document.getElementById('word-count').textContent = words.length;
+                document.getElementById('char-count').textContent = chars;
+            }
+        }
+        
+        // Template functions
+        function showTemplates() {
+            document.getElementById('template-modal').classList.remove('hidden');
+        }
+        
+        function closeTemplates() {
+            document.getElementById('template-modal').classList.add('hidden');
+        }
+        
+        function useTemplate(template) {
+            document.getElementById('instructions').value = template;
+            closeTemplates();
+        }
+        
+        // Preview function
+        function previewQuestion() {
             const modal = document.getElementById('preview-modal');
             const content = document.getElementById('preview-content');
             
@@ -854,69 +818,101 @@
             
             content.innerHTML = previewHtml;
             modal.classList.remove('hidden');
-        } catch (error) {
-            console.error('Error in preview:', error);
-            alert('Error generating preview: ' + error.message);
         }
-    }
-    
-    function closePreview() {
-        document.getElementById('preview-modal').classList.add('hidden');
-    }
-    
-    // Bulk options
-    function showBulkOptions() {
-        document.getElementById('bulk-modal').classList.remove('hidden');
-    }
-    
-    function closeBulkOptions() {
-        document.getElementById('bulk-modal').classList.add('hidden');
-        document.getElementById('bulk-text').value = '';
-    }
-    
-    function addBulkOptions() {
-        const text = document.getElementById('bulk-text').value;
-        if (text) {
-            const container = document.getElementById('options-container');
-            container.innerHTML = '';
-            
-            const options = text.split('\n').filter(opt => opt.trim());
-            options.forEach((opt, index) => {
-                addOption(opt.trim(), index === 0);
-            });
-            
-            closeBulkOptions();
+        
+        function closePreview() {
+            document.getElementById('preview-modal').classList.add('hidden');
         }
-    }
-    
-    // File handling functions
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    
-    function handleDrop(e) {
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            const fileInput = document.getElementById('media');
-            fileInput.files = files;
-            handleFiles(files);
+        
+        // Bulk options
+        function showBulkOptions() {
+            document.getElementById('bulk-modal').classList.remove('hidden');
         }
-    }
-    
-    function handleFiles(files) {
-        if (files.length > 0) {
-            const file = files[0];
-            const preview = document.getElementById('media-preview');
-            preview.innerHTML = '';
-            preview.classList.remove('hidden');
-            
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
+        
+        function closeBulkOptions() {
+            document.getElementById('bulk-modal').classList.add('hidden');
+            document.getElementById('bulk-text').value = '';
+        }
+        
+        function addBulkOptions() {
+            const text = document.getElementById('bulk-text').value;
+            if (text) {
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+                
+                const options = text.split('\n').filter(opt => opt.trim());
+                options.forEach((opt, index) => {
+                    addOption(opt.trim(), index === 0);
+                });
+                
+                closeBulkOptions();
+            }
+        }
+        
+        // Drag and drop
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('media');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+        });
+        
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFiles(files);
+            }
+        }
+        
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(this.files);
+        });
+        
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                const preview = document.getElementById('media-preview');
+                preview.innerHTML = '';
+                preview.classList.remove('hidden');
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `
+                            <div class="relative inline-block">
+                                <img src="${e.target.result}" class="max-h-48 rounded">
+                                <button type="button" onclick="clearMedia()" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full transform translate-x-1/2 -translate-y-1/2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type.startsWith('audio/')) {
                     preview.innerHTML = `
-                        <div class="relative inline-block">
-                            <img src="${e.target.result}" class="max-h-48 rounded">
+                        <div class="relative">
+                            <audio controls class="w-full">
+                                <source src="${URL.createObjectURL(file)}" type="${file.type}">
+                            </audio>
                             <button type="button" onclick="clearMedia()" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full transform translate-x-1/2 -translate-y-1/2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -925,65 +921,65 @@
                         </div>
                         <p class="text-sm text-gray-600 mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
                     `;
-                };
-                reader.readAsDataURL(file);
-            } else if (file.type.startsWith('audio/')) {
-                preview.innerHTML = `
-                    <div class="relative">
-                        <audio controls class="w-full">
-                            <source src="${URL.createObjectURL(file)}" type="${file.type}">
-                        </audio>
-                        <button type="button" onclick="clearMedia()" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
-                `;
+                }
             }
         }
-    }
-    
-    function clearMedia() {
-        document.getElementById('media').value = '';
-        document.getElementById('media-preview').innerHTML = '';
-        document.getElementById('media-preview').classList.add('hidden');
-    }
-    
-    // Initialize drag and drop
-    document.addEventListener('DOMContentLoaded', function() {
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('media');
         
-        if (dropZone && fileInput) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, preventDefaults, false);
-            });
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
-            });
-            
-            dropZone.addEventListener('drop', handleDrop, false);
-            fileInput.addEventListener('change', function(e) {
-                handleFiles(this.files);
-            });
+        function clearMedia() {
+            document.getElementById('media').value = '';
+            document.getElementById('media-preview').innerHTML = '';
+            document.getElementById('media-preview').classList.add('hidden');
         }
-    });
-    
-    // Close modals on ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeTemplates();
-            closePreview();
-            closeBulkOptions();
-        }
-    });
-</script>
-@endpush
+        
+        // Form submission handler
+        document.getElementById('questionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const questionType = document.getElementById('question_type').value;
+            
+            // Custom validation based on question type
+            if (questionType === 'passage') {
+                const passageText = document.querySelector('textarea[name="passage_text"]').value;
+                
+                if (!passageText || passageText.trim() === '') {
+                    alert('Please enter passage text');
+                    return false;
+                }
+                
+                // Set content for passage
+                const contentTextarea = document.getElementById('content');
+                if (editor) {
+                    editor.setContent(passageText);
+                    editor.save();
+                } else if (contentTextarea) {
+                    contentTextarea.value = passageText;
+                }
+            } else {
+                // For regular questions
+                if (editor) {
+                    editor.save();
+                }
+                
+                // Check if content is provided
+                const content = editor ? editor.getContent() : document.getElementById('content').value;
+                if (!content || content.trim() === '') {
+                    alert('Please enter question content');
+                    return false;
+                }
+            }
+            
+            // Submit form
+            this.submit();
+        });
+        
+        // Close modals on ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeTemplates();
+                closePreview();
+                closeBulkOptions();
+            }
+        });
+    </script>
+    @endpush
 </x-layout>

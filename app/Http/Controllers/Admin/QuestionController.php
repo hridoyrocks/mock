@@ -58,7 +58,22 @@ class QuestionController extends Controller
         // If test_set is provided, use that specific test set
         if ($request->has('test_set')) {
             $testSet = TestSet::with('section')->findOrFail($request->test_set);
-            return view('admin.questions.create', compact('testSet'));
+            
+            // Get existing questions for this test set
+            $existingQuestions = $testSet->questions()
+                ->orderBy('order_number')
+                ->get(['id', 'order_number', 'question_type', 'part_number']);
+            
+            // Calculate next question number
+            $nextQuestionNumber = $existingQuestions->count() > 0 
+                ? $existingQuestions->max('order_number') + 1 
+                : 1;
+            
+            return view('admin.questions.create', compact(
+                'testSet', 
+                'existingQuestions', 
+                'nextQuestionNumber'
+            ));
         }
         
         // Otherwise show test set selection
@@ -142,6 +157,18 @@ class QuestionController extends Controller
     }
     
     DB::transaction(function () use ($request, $mediaPath) {
+        // Check if we need to reorder existing questions
+        $existingQuestion = Question::where('test_set_id', $request->test_set_id)
+            ->where('order_number', $request->order_number)
+            ->exists();
+            
+        if ($existingQuestion) {
+            // Increment order numbers of existing questions
+            Question::where('test_set_id', $request->test_set_id)
+                ->where('order_number', '>=', $request->order_number)
+                ->increment('order_number');
+        }
+        
         // Prepare question data
         $questionData = [
             'test_set_id' => $request->test_set_id,
@@ -331,73 +358,6 @@ class QuestionController extends Controller
         
         return redirect()->route('admin.test-sets.show', $testSetId)
             ->with('success', 'Question deleted successfully.');
-    }
-
-    /**
-     * Duplicate a question
-     */
-    public function duplicate(Question $question): RedirectResponse
-    {
-        DB::transaction(function () use ($question) {
-            $newQuestion = $question->replicate();
-            $newQuestion->order_number = $question->order_number + 1;
-            $newQuestion->save();
-
-            // Duplicate options
-            foreach ($question->options as $option) {
-                $newOption = $option->replicate();
-                $newOption->question_id = $newQuestion->id;
-                $newOption->save();
-            }
-        });
-
-        return redirect()->route('admin.test-sets.show', $question->test_set_id)
-            ->with('success', 'Question duplicated successfully.');
-    }
-
-    /**
-     * Show bulk import form
-     */
-    public function bulkImportForm(TestSet $testSet): View
-    {
-        return view('admin.questions.bulk-import', compact('testSet'));
-    }
-
-    /**
-     * Process bulk import
-     */
-    public function bulkImport(Request $request, TestSet $testSet): RedirectResponse
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
-            'part_number' => 'nullable|integer'
-        ]);
-
-        // Process the file
-        // Implementation would use PhpSpreadsheet or similar library
-        
-        return redirect()->route('admin.test-sets.show', $testSet)
-            ->with('success', 'Questions imported successfully.');
-    }
-
-    /**
-     * Reorder questions via AJAX
-     */
-    public function reorder(Request $request): \Illuminate\Http\JsonResponse
-    {
-        $request->validate([
-            'questions' => 'required|array',
-            'questions.*.id' => 'required|exists:questions,id',
-            'questions.*.order' => 'required|integer|min:1'
-        ]);
-
-        DB::transaction(function () use ($request) {
-            foreach ($request->questions as $item) {
-                Question::where('id', $item['id'])->update(['order_number' => $item['order']]);
-            }
-        });
-
-        return response()->json(['success' => true]);
     }
 
     /**
