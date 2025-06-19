@@ -1,13 +1,13 @@
 {{-- resources/views/student/test/reading/test.blade.php --}}
 <x-test-layout>
-    <x-slot:title>IELTS Reading Test</x-slot>
+    <x-slot name="title">IELTS Reading Test</x-slot>
     
-    <x-slot:meta>
+    <x-slot name="meta">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
         <meta http-equiv="Pragma" content="no-cache">
         <meta http-equiv="Expires" content="0">
-    </x-slot:meta>
+    </x-slot>
     
     <style>
         body, html {
@@ -606,7 +606,200 @@
         .modal-button.secondary:hover {
             background-color: #4b5563;
         }
-        
+
+        /* Help Guide Modal Styles */
+        .help-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .help-modal-container {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .help-modal-header {
+            background: #1e40af;
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .help-header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .help-icon {
+            width: 28px;
+            height: 28px;
+        }
+
+        .help-modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .help-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .help-close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Tabs */
+        .help-tabs-container {
+            display: flex;
+            background: #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+            overflow-x: auto;
+        }
+
+        .help-tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+        }
+
+        .help-tab:hover {
+            color: #374151;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .help-tab.active {
+            color: #1e40af;
+            border-bottom-color: #1e40af;
+            background-color: white;
+        }
+
+        /* Content Area */
+        .help-content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: white;
+        }
+
+        .help-section {
+            line-height: 1.6;
+        }
+
+        .help-section h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 16px 0;
+        }
+
+        .help-section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin: 20px 0 12px 0;
+        }
+
+        .help-section p {
+            color: #4b5563;
+            margin-bottom: 12px;
+        }
+
+        .help-section ul,
+        .help-section ol {
+            margin: 0 0 16px 0;
+            padding-left: 24px;
+        }
+
+        .help-section li {
+            color: #4b5563;
+            margin-bottom: 8px;
+        }
+
+        .help-section strong {
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .help-modal-footer {
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .help-footer-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .help-version {
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        .help-footer-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .help-btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .help-btn-secondary:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
             .content-area {
                 grid-template-columns: 1fr;
@@ -688,6 +881,40 @@
                 border-top: none;
                 border-bottom: 8px solid white;
             }
+
+            .help-modal-overlay {
+                padding: 0;
+            }
+            
+            .help-modal-container {
+                max-width: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
+            
+            .help-tabs-container {
+                justify-content: flex-start;
+            }
+            
+            .help-tab {
+                flex: none;
+                min-width: 100px;
+            }
+            
+            .help-content-area {
+                padding: 16px;
+            }
+            
+            .help-modal-footer {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .help-footer-left,
+            .help-footer-right {
+                width: 100%;
+                justify-content: center;
+            }
         }
         
         @media (max-width: 640px) {
@@ -751,11 +978,41 @@
                 overflow-y: auto;
             }
         }
-    </style>
 
-    @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/help-guide.css') }}">
-    @endpush
+        /* Animations */
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .help-modal-overlay[style*="display: flex"] .help-modal-container {
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        /* Scrollbar Styling */
+        .help-content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .help-content-area::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+
+        .help-content-area::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        .help-content-area::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+    </style>
 
     <!-- IELTS Header -->
     <div class="ielts-header">
@@ -1178,667 +1435,751 @@
         </div>
     </div>
 
-   <!-- Include the Help Guide Component -->
-    <x-help-guide :testType="'reading'" />
-    
- 
-@push('scripts')
-<!-- Include Help Guide JavaScript -->
-<script src="{{ asset('js/help-guide.js') }}"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded');
-    
-    // Debug: Check if HelpGuide is available
-    console.log('HelpGuide available?', typeof HelpGuide !== 'undefined');
-    
-    // Debug: Check if help button exists
-    const helpButton = document.getElementById('help-button');
-    console.log('Help button found?', helpButton !== null);
-    
-    // Initialize Help Guide
-    if (typeof HelpGuide !== 'undefined') {
-        console.log('Initializing HelpGuide...');
-        HelpGuide.init({
-            testType: 'reading'
-        });
-        
-        // Add click handler to help button
-        if (helpButton) {
-            console.log('Adding click handler to help button...');
-            
-            // Method 1: Direct onclick
-            helpButton.onclick = function() {
-                console.log('Help button clicked (onclick)!');
-                HelpGuide.open();
-            };
-            
-            // Method 2: addEventListener as backup
-            helpButton.addEventListener('click', function(e) {
-                console.log('Help button clicked (addEventListener)!');
-                e.preventDefault();
-                e.stopPropagation();
-                HelpGuide.open();
-            });
-        } else {
-            console.error('Help button not found!');
-        }
-    } else {
-        console.error('HelpGuide is not defined! Check if help-guide.js is loaded.');
-        
-        // Fallback: Try to load it again
-        setTimeout(function() {
-            if (typeof HelpGuide !== 'undefined') {
-                console.log('HelpGuide now available after delay');
-                HelpGuide.init({
-                    testType: 'reading'
-                });
-                
-                if (helpButton) {
-                    helpButton.onclick = function() {
-                        HelpGuide.open();
-                    };
-                }
-            }
-        }, 1000);
-    }
-    
-    // Check if help modal exists
-    const helpModal = document.getElementById('help-modal');
-    console.log('Help modal found?', helpModal !== null);
-    
-    // Alternative approach - create a simple test
-    if (helpButton) {
-        // Test if button is actually clickable
-        helpButton.style.cursor = 'pointer';
-        helpButton.title = 'Click for help';
-        
-        // Add a simple test click
-        helpButton.addEventListener('click', function() {
-            console.log('Button is clickable!');
-            
-            // If HelpGuide doesn't work, show a simple alert
-            if (typeof HelpGuide === 'undefined' || !HelpGuide.open) {
-                alert('Help Guide is not loaded properly. Please check:\n1. help-guide.js file exists in public/js/\n2. help-guide.css file exists in public/css/\n3. No JavaScript errors in console');
-            }
-        });
-    }
-
-    // Your existing code continues here...
-    const submitButton = document.getElementById('submit-button');
-    const navButtons = document.querySelectorAll('.number-btn');
-    const partButtons = document.querySelectorAll('.part-btn');
-    const submitTestBtn = document.getElementById('submit-test-btn');
-    const submitModal = document.getElementById('submit-modal');
-    const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-    const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
-    const answeredCountSpan = document.getElementById('answered-count');
-    const passageContainers = document.querySelectorAll('.passage-container');
-    const questionParts = document.querySelectorAll('.part-questions');
-    
-    // Part navigation - Show corresponding passage and questions
-    partButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            partButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            const partNumber = this.dataset.part;
-            
-            // Hide all question parts first
-            questionParts.forEach(part => {
-                part.style.display = 'none';
-            });
-            
-            // Show questions for this part
-            const targetQuestionPart = document.querySelector(`.part-questions[data-part="${partNumber}"]`);
-            if (targetQuestionPart) {
-                targetQuestionPart.style.display = 'block';
-            }
-            
-            // Update passage display
-            updatePassageDisplay(partNumber);
-            
-            // Find first question of this part
-            const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]`);
-            if (firstQuestionOfPart) {
-                firstQuestionOfPart.click();
-            }
-        });
-    });
-    
-    // Function to update passage display based on part
-    function updatePassageDisplay(partNumber) {
-        // Hide all passages first
-        passageContainers.forEach(container => {
-            container.classList.remove('active');
-        });
-        
-        // Show the passage for this part
-        const partPassage = document.querySelector(`.passage-container[data-part="${partNumber}"]`);
-        if (partPassage) {
-            partPassage.classList.add('active');
-        }
-    }
-    
-    // Question navigation
-    navButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            const questionId = this.dataset.question;
-            const blankIndex = this.dataset.blank;
-            const partNumber = this.dataset.part;
-            const questionElement = document.getElementById(`question-${questionId}`);
-            
-            if (questionElement) {
-                // Smooth scroll to question
-                questionElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-                
-                // If specific blank, focus on it
-                if (blankIndex) {
-                    const inputs = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
-                    if (inputs[blankIndex - 1]) {
-                        setTimeout(() => inputs[blankIndex - 1].focus(), 300);
-                    }
-                }
-                
-                // Update active part if needed
-                if (partNumber) {
-                    const currentActivePart = document.querySelector('.part-btn.active');
-                    if (!currentActivePart || currentActivePart.dataset.part !== partNumber) {
-                        partButtons.forEach(btn => {
-                            if (btn.dataset.part === partNumber) {
-                                btn.click(); // This will update everything
-                            }
-                        });
-                    }
-                }
-            }
-            
-            // Update review checkbox based on flagged status
-            const reviewCheckbox = document.getElementById('review-checkbox');
-            reviewCheckbox.checked = this.classList.contains('flagged');
-        });
-    });
-    
-    // Handle individual blank/dropdown tracking
-    document.querySelectorAll('.simple-blank, .simple-dropdown').forEach(input => {
-        input.addEventListener('change', function() {
-            const questionNumber = this.dataset.questionNumber;
-            if (questionNumber) {
-                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                if (navButton && this.value.trim()) {
-                    navButton.classList.add('answered');
-                } else if (navButton && !this.value.trim()) {
-                    navButton.classList.remove('answered');
-                }
-            }
-            saveAllAnswers();
-        });
-        
-        input.addEventListener('blur', function() {
-            const questionNumber = this.dataset.questionNumber;
-            if (questionNumber) {
-                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                if (navButton && this.value.trim()) {
-                    navButton.classList.add('answered');
-                } else if (navButton && !this.value.trim()) {
-                    navButton.classList.remove('answered');
-                }
-            }
-            saveAllAnswers();
-        });
-    });
-    
-    // Handle regular questions (radio, text, select)
-    document.querySelectorAll('input[type="radio"], input[type="text"]:not(.simple-blank), select:not(.simple-dropdown)').forEach(input => {
-        input.addEventListener('change', function() {
-            const questionNumber = this.dataset.questionNumber;
-            if (questionNumber) {
-                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                if (navButton && this.value) {
-                    navButton.classList.add('answered');
-                }
-            }
-            saveAllAnswers();
-        });
-    });
-    
-    // Simple auto-width adjustment for blanks
-    document.querySelectorAll('.simple-blank').forEach(input => {
-        input.addEventListener('input', function() {
-            // Auto adjust width
-            const length = this.value.length;
-            if (length > 8) {
-                this.style.width = (length * 9) + 'px';
-            } else {
-                this.style.width = '120px';
-            }
-        });
-        
-        // Tab navigation between blanks
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const allInputs = document.querySelectorAll('.simple-blank, .simple-dropdown');
-                const currentIndex = Array.from(allInputs).indexOf(this);
-                const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
-                
-                if (nextIndex >= 0 && nextIndex < allInputs.length) {
-                    allInputs[nextIndex].focus();
-                }
-            }
-        });
-    });
-    
-    // Passage selection functionality with color picker
-    const passageContents = document.querySelectorAll('.passage-content');
-    let currentColorPicker = null;
-    let selectedTextRange = null;
-    
-    // Initialize passage selection
-    passageContents.forEach(passage => {
-        // Prevent text selection on simple click
-        let isSelecting = false;
-        
-        passage.addEventListener('mousedown', function() {
-            isSelecting = false;
-        });
-        
-        passage.addEventListener('mousemove', function() {
-            isSelecting = true;
-        });
-        
-        // Enable text selection with color picker
-        passage.addEventListener('mouseup', function(e) {
-            // Small delay to ensure selection is complete
-            setTimeout(() => {
-                const selection = window.getSelection();
-                const selectedText = selection.toString().trim();
-                
-                if (selectedText.length > 0 && isSelecting) {
-                    // Remove any existing color picker first
-                    removeColorPicker();
-                    
-                    // Store the range for later use
-                    selectedTextRange = selection.getRangeAt(0).cloneRange();
-                    
-                    // Show color picker with slight delay for smooth animation
-                    setTimeout(() => {
-                        showColorPicker(e);
-                    }, 50);
-                }
-            }, 10);
-        });
-        
-        // Click on highlighted text to remove highlight
-        passage.addEventListener('click', function(e) {
-            if (e.target.classList.contains('highlight-yellow') || 
-                e.target.classList.contains('highlight-green') || 
-                e.target.classList.contains('highlight-blue')) {
-                
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Remove highlight with animation
-                e.target.style.transition = 'background-color 0.3s';
-                e.target.style.backgroundColor = 'transparent';
-                
-                setTimeout(() => {
-                    const text = e.target.textContent;
-                    e.target.replaceWith(document.createTextNode(text));
-                }, 300);
-            }
-        });
-    });
-    
-    // Show color picker with smooth animation
-    function showColorPicker(e) {
-        // Get selection bounds
-        const selection = window.getSelection();
-        if (!selection.rangeCount) return;
-        
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        
-        // Create color picker element
-        const picker = document.createElement('div');
-        picker.className = 'color-picker';
-        picker.style.opacity = '0';
-        picker.style.transform = 'translateY(5px)';
-        picker.innerHTML = `
-            <button class="color-btn yellow" data-color="yellow" title="Yellow highlight"></button>
-            <button class="color-btn green" data-color="green" title="Green highlight"></button>
-            <button class="color-btn blue" data-color="blue" title="Blue highlight"></button>
-            <div class="color-btn remove" title="Cancel">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
+    <!-- Help Guide Modal (Inline Implementation) -->
+    <div id="help-modal" class="help-modal-overlay" style="display: none;">
+        <div class="help-modal-container">
+            <!-- Header -->
+            <div class="help-modal-header">
+                <div class="help-header-content">
+                    <svg class="help-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="help-modal-title">Test Guide</h2>
+                </div>
+                <button class="help-close-btn" id="help-close-btn">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
-        `;
-        
-        // Add to body first to calculate dimensions
-        document.body.appendChild(picker);
-        
-        // Calculate position
-        const pickerRect = picker.getBoundingClientRect();
-        let top = rect.top - pickerRect.height - 15;
-        let left = rect.left + (rect.width / 2) - (pickerRect.width / 2);
-        
-        // Adjust for viewport bounds
-        if (top < 10) {
-            top = rect.bottom + 15;
-            picker.classList.add('bottom');
-        }
-        
-        if (left < 10) {
-            left = 10;
-        } else if (left + pickerRect.width > window.innerWidth - 10) {
-            left = window.innerWidth - pickerRect.width - 10;
-        }
-        
-        // Apply position
-        picker.style.position = 'fixed';
-        picker.style.top = top + 'px';
-        picker.style.left = left + 'px';
-        picker.style.zIndex = '9999';
-        
-        // Animate in
-        requestAnimationFrame(() => {
-            picker.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
-            picker.style.opacity = '1';
-            picker.style.transform = 'translateY(0)';
-        });
-        
-        currentColorPicker = picker;
-        
-        // Add click handlers
-        picker.querySelectorAll('.color-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            
+         
+            
+            <!-- Dynamic Content Area -->
+            <div class="help-content-area" id="help-content">
+                <!-- Content will be loaded here -->
+            </div>
+            
+            <!-- Footer -->
+            <div class="help-modal-footer">
+                <div class="help-footer-left">
+                    <span class="help-version">RX 1.0</span>
+                </div>
+                <div class="help-footer-right">
+                    <button class="help-btn-secondary" id="help-video-btn">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Watch Tutorial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+    // Inline Help Guide Implementation
+    (function() {
+        const HelpGuide = {
+            init: function() {
+                this.loadContent('overview');
+                this.setupEventListeners();
+            },
+            
+            setupEventListeners: function() {
+                // Tab switching
+                document.querySelectorAll('.help-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const section = tab.dataset.section;
+                        
+                        // Update active tab
+                        document.querySelectorAll('.help-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // Load content
+                        this.loadContent(section);
+                    });
+                });
                 
-                const color = this.dataset.color;
-                
-                if (color) {
-                    applyHighlight(color);
+                // Close button
+                const closeBtn = document.getElementById('help-close-btn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => this.close());
                 }
                 
-                removeColorPicker();
+                // Click outside to close
+                const modal = document.getElementById('help-modal');
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        this.close();
+                    }
+                });
+                
+                // Video button
+                const videoBtn = document.getElementById('help-video-btn');
+                if (videoBtn) {
+                    videoBtn.addEventListener('click', () => {
+                        alert('Video tutorial coming soon!');
+                    });
+                }
+            },
+            
+            open: function() {
+                const modal = document.getElementById('help-modal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    this.loadContent('overview');
+                }
+            },
+            
+            close: function() {
+                const modal = document.getElementById('help-modal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            },
+            
+            loadContent: function(section) {
+                const contentArea = document.getElementById('help-content');
+                if (!contentArea) return;
+                
+                const contents = {
+                    overview: `
+                        <div class="help-section">
+                            <h3>Banglay IELTS - Reading Guide</h3>
+                            <p>Welcome to the IELTS Computer-Delivered Reading Test. This test consists of:</p>
+                            <ul>
+                                <li><strong>Duration:</strong> 60 minutes</li>
+                                <li><strong>Questions:</strong> 40 questions in total</li>
+                                <li><strong>Sections:</strong> 3 reading passages</li>
+                                <li><strong>Difficulty:</strong> Passages increase in difficulty</li>
+                            </ul>
+                            
+                            <h4>Test Interface</h4>
+                            <p>The screen is divided into two sections:</p>
+                            <ul>
+                                <li><strong>Left side:</strong> Reading passage</li>
+                                <li><strong>Right side:</strong> Questions</li>
+                            </ul>
+                            
+                            <h4>Important Features</h4>
+                            <ul>
+                                <li>You can highlight text in the passage using different colors</li>
+                                <li>Timer shows remaining time at the top of the screen</li>
+                                <li>Navigation buttons at the bottom let you jump between questions</li>
+                                <li>Review checkbox allows you to flag questions for later review</li>
+                            </ul>
+                        </div>
+                    `,
+                    
+                   
+                   
+                    
+                    
+                };
+                
+                contentArea.innerHTML = contents[section] || '<p>Content not available</p>';
+            }
+        };
+        
+        // Make it globally available
+        window.HelpGuide = HelpGuide;
+        
+        // Initialize after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            HelpGuide.init();
+            
+            // Setup help button
+            const helpButton = document.getElementById('help-button');
+            if (helpButton) {
+                helpButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    HelpGuide.open();
+                });
+            }
+        });
+    })();
+
+    // Continue with your existing test code
+    document.addEventListener('DOMContentLoaded', function() {
+        // Your existing code continues here...
+        const submitButton = document.getElementById('submit-button');
+        const navButtons = document.querySelectorAll('.number-btn');
+        const partButtons = document.querySelectorAll('.part-btn');
+        const submitTestBtn = document.getElementById('submit-test-btn');
+        const submitModal = document.getElementById('submit-modal');
+        const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+        const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
+        const answeredCountSpan = document.getElementById('answered-count');
+        const passageContainers = document.querySelectorAll('.passage-container');
+        const questionParts = document.querySelectorAll('.part-questions');
+        
+        // Part navigation - Show corresponding passage and questions
+        partButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                partButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const partNumber = this.dataset.part;
+                
+                // Hide all question parts first
+                questionParts.forEach(part => {
+                    part.style.display = 'none';
+                });
+                
+                // Show questions for this part
+                const targetQuestionPart = document.querySelector(`.part-questions[data-part="${partNumber}"]`);
+                if (targetQuestionPart) {
+                    targetQuestionPart.style.display = 'block';
+                }
+                
+                // Update passage display
+                updatePassageDisplay(partNumber);
+                
+                // Find first question of this part
+                const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]`);
+                if (firstQuestionOfPart) {
+                    firstQuestionOfPart.click();
+                }
             });
         });
-    }
-    
-    // Apply highlight to selected text with better handling
-    function applyHighlight(color) {
-        if (!selectedTextRange) return;
         
-        try {
-            // Restore the selection
+        // Function to update passage display based on part
+        function updatePassageDisplay(partNumber) {
+            // Hide all passages first
+            passageContainers.forEach(container => {
+                container.classList.remove('active');
+            });
+            
+            // Show the passage for this part
+            const partPassage = document.querySelector(`.passage-container[data-part="${partNumber}"]`);
+            if (partPassage) {
+                partPassage.classList.add('active');
+            }
+        }
+        
+        // Question navigation
+        navButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const questionId = this.dataset.question;
+                const blankIndex = this.dataset.blank;
+                const partNumber = this.dataset.part;
+                const questionElement = document.getElementById(`question-${questionId}`);
+                
+                if (questionElement) {
+                    // Smooth scroll to question
+                    questionElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    
+                    // If specific blank, focus on it
+                    if (blankIndex) {
+                        const inputs = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
+                        if (inputs[blankIndex - 1]) {
+                            setTimeout(() => inputs[blankIndex - 1].focus(), 300);
+                        }
+                    }
+                    
+                    // Update active part if needed
+                    if (partNumber) {
+                        const currentActivePart = document.querySelector('.part-btn.active');
+                        if (!currentActivePart || currentActivePart.dataset.part !== partNumber) {
+                            partButtons.forEach(btn => {
+                                if (btn.dataset.part === partNumber) {
+                                    btn.click(); // This will update everything
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                // Update review checkbox based on flagged status
+                const reviewCheckbox = document.getElementById('review-checkbox');
+                reviewCheckbox.checked = this.classList.contains('flagged');
+            });
+        });
+        
+        // Handle individual blank/dropdown tracking
+        document.querySelectorAll('.simple-blank, .simple-dropdown').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionNumber = this.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton && this.value.trim()) {
+                        navButton.classList.add('answered');
+                    } else if (navButton && !this.value.trim()) {
+                        navButton.classList.remove('answered');
+                    }
+                }
+                saveAllAnswers();
+            });
+            
+            input.addEventListener('blur', function() {
+                const questionNumber = this.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton && this.value.trim()) {
+                        navButton.classList.add('answered');
+                    } else if (navButton && !this.value.trim()) {
+                        navButton.classList.remove('answered');
+                    }
+                }
+                saveAllAnswers();
+            });
+        });
+        
+        // Handle regular questions (radio, text, select)
+        document.querySelectorAll('input[type="radio"], input[type="text"]:not(.simple-blank), select:not(.simple-dropdown)').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionNumber = this.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton && this.value) {
+                        navButton.classList.add('answered');
+                    }
+                }
+                saveAllAnswers();
+            });
+        });
+        
+        // Simple auto-width adjustment for blanks
+        document.querySelectorAll('.simple-blank').forEach(input => {
+            input.addEventListener('input', function() {
+                // Auto adjust width
+                const length = this.value.length;
+                if (length > 8) {
+                    this.style.width = (length * 9) + 'px';
+                } else {
+                    this.style.width = '120px';
+                }
+            });
+            
+            // Tab navigation between blanks
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const allInputs = document.querySelectorAll('.simple-blank, .simple-dropdown');
+                    const currentIndex = Array.from(allInputs).indexOf(this);
+                    const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
+                    
+                    if (nextIndex >= 0 && nextIndex < allInputs.length) {
+                        allInputs[nextIndex].focus();
+                    }
+                }
+            });
+        });
+        
+        // Passage selection functionality with color picker
+        const passageContents = document.querySelectorAll('.passage-content');
+        let currentColorPicker = null;
+        let selectedTextRange = null;
+        
+        // Initialize passage selection
+        passageContents.forEach(passage => {
+            // Prevent text selection on simple click
+            let isSelecting = false;
+            
+            passage.addEventListener('mousedown', function() {
+                isSelecting = false;
+            });
+            
+            passage.addEventListener('mousemove', function() {
+                isSelecting = true;
+            });
+            
+            // Enable text selection with color picker
+            passage.addEventListener('mouseup', function(e) {
+                // Small delay to ensure selection is complete
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    const selectedText = selection.toString().trim();
+                    
+                    if (selectedText.length > 0 && isSelecting) {
+                        // Remove any existing color picker first
+                        removeColorPicker();
+                        
+                        // Store the range for later use
+                        selectedTextRange = selection.getRangeAt(0).cloneRange();
+                        
+                        // Show color picker with slight delay for smooth animation
+                        setTimeout(() => {
+                            showColorPicker(e);
+                        }, 50);
+                    }
+                }, 10);
+            });
+            
+            // Click on highlighted text to remove highlight
+            passage.addEventListener('click', function(e) {
+                if (e.target.classList.contains('highlight-yellow') || 
+                    e.target.classList.contains('highlight-green') || 
+                    e.target.classList.contains('highlight-blue')) {
+                    
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Remove highlight with animation
+                    e.target.style.transition = 'background-color 0.3s';
+                    e.target.style.backgroundColor = 'transparent';
+                    
+                    setTimeout(() => {
+                        const text = e.target.textContent;
+                        e.target.replaceWith(document.createTextNode(text));
+                    }, 300);
+                }
+            });
+        });
+        
+        // Show color picker with smooth animation
+        function showColorPicker(e) {
+            // Get selection bounds
             const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(selectedTextRange);
+            if (!selection.rangeCount) return;
             
-            // Check if selection is valid
-            const selectedText = selection.toString().trim();
-            if (!selectedText) return;
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
             
-            // Create span with highlight
-            const span = document.createElement('span');
-            span.className = `highlight-${color}`;
-            span.style.transition = 'background-color 0.3s ease-in';
+            // Create color picker element
+            const picker = document.createElement('div');
+            picker.className = 'color-picker';
+            picker.style.opacity = '0';
+            picker.style.transform = 'translateY(5px)';
+            picker.innerHTML = `
+                <button class="color-btn yellow" data-color="yellow" title="Yellow highlight"></button>
+                <button class="color-btn green" data-color="green" title="Green highlight"></button>
+                <button class="color-btn blue" data-color="blue" title="Blue highlight"></button>
+                <div class="color-btn remove" title="Cancel">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </div>
+            `;
+            
+            // Add to body first to calculate dimensions
+            document.body.appendChild(picker);
+            
+            // Calculate position
+            const pickerRect = picker.getBoundingClientRect();
+            let top = rect.top - pickerRect.height - 15;
+            let left = rect.left + (rect.width / 2) - (pickerRect.width / 2);
+            
+            // Adjust for viewport bounds
+            if (top < 10) {
+                top = rect.bottom + 15;
+                picker.classList.add('bottom');
+            }
+            
+            if (left < 10) {
+                left = 10;
+            } else if (left + pickerRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - pickerRect.width - 10;
+            }
+            
+            // Apply position
+            picker.style.position = 'fixed';
+            picker.style.top = top + 'px';
+            picker.style.left = left + 'px';
+            picker.style.zIndex = '9999';
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                picker.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
+                picker.style.opacity = '1';
+                picker.style.transform = 'translateY(0)';
+            });
+            
+            currentColorPicker = picker;
+            
+            // Add click handlers
+            picker.querySelectorAll('.color-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const color = this.dataset.color;
+                    
+                    if (color) {
+                        applyHighlight(color);
+                    }
+                    
+                    removeColorPicker();
+                });
+            });
+        }
+        
+        // Apply highlight to selected text with better handling
+        function applyHighlight(color) {
+            if (!selectedTextRange) return;
             
             try {
-                // Try to wrap the selected content
-                selectedTextRange.surroundContents(span);
-            } catch (e) {
-                // If surroundContents fails, use alternative method
-                const contents = selectedTextRange.extractContents();
-                span.appendChild(contents);
-                selectedTextRange.insertNode(span);
-            }
-            
-            // Animate the highlight
-            requestAnimationFrame(() => {
-                span.style.backgroundColor = '';
-            });
-            
-        } catch (e) {
-            console.error('Error applying highlight:', e);
-        } finally {
-            // Clear selection
-            window.getSelection().removeAllRanges();
-        }
-    }
-    
-    // Remove color picker with animation
-    function removeColorPicker() {
-        if (currentColorPicker) {
-            currentColorPicker.style.opacity = '0';
-            currentColorPicker.style.transform = 'translateY(5px)';
-            
-            setTimeout(() => {
-                if (currentColorPicker && currentColorPicker.parentNode) {
-                    currentColorPicker.remove();
-                }
-                currentColorPicker = null;
-            }, 200);
-        }
-        selectedTextRange = null;
-    }
-    
-    // Close color picker when clicking elsewhere
-    document.addEventListener('mousedown', function(e) {
-        if (currentColorPicker && !e.target.closest('.color-picker') && !e.target.closest('.passage-content')) {
-            removeColorPicker();
-        }
-    });
-    
-    // Close color picker on scroll with debounce
-    let scrollTimeout;
-    document.addEventListener('scroll', function() {
-        if (currentColorPicker) {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                removeColorPicker();
-            }, 100);
-        }
-    }, true);
-    
-    // Keyboard support - ESC to close
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && currentColorPicker) {
-            removeColorPicker();
-        }
-    });
-    
-    // Mobile touch support
-    if ('ontouchstart' in window) {
-        passageContents.forEach(passage => {
-            let touchTimer;
-            
-            passage.addEventListener('touchstart', function(e) {
-                touchTimer = setTimeout(() => {
-                    // Long press to select word
-                    const touch = e.touches[0];
-                    const word = getWordAtPoint(touch.clientX, touch.clientY);
-                    
-                    if (word) {
-                        // Select the word
-                        const selection = window.getSelection();
-                        const range = document.createRange();
-                        
-                        // Find and select the word
-                        const textNodes = getTextNodes(passage);
-                        for (let node of textNodes) {
-                            const index = node.textContent.indexOf(word);
-                            if (index !== -1) {
-                                range.setStart(node, index);
-                                range.setEnd(node, index + word.length);
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-                                
-                                // Show color picker
-                                showColorPicker(e);
-                                break;
-                            }
-                        }
-                    }
-                }, 500);
-            });
-            
-            passage.addEventListener('touchend', function() {
-                clearTimeout(touchTimer);
-            });
-            
-            passage.addEventListener('touchmove', function() {
-                clearTimeout(touchTimer);
-            });
-        });
-    }
-    
-    // Helper function to get all text nodes
-    function getTextNodes(element) {
-        const textNodes = [];
-        const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        
-        let node;
-        while (node = walker.nextNode()) {
-            textNodes.push(node);
-        }
-        
-        return textNodes;
-    }
-    
-    // Helper function to get word at click point
-    function getWordAtPoint(x, y) {
-        const range = document.caretRangeFromPoint(x, y);
-        if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
-            const text = range.startContainer.textContent;
-            const offset = range.startOffset;
-            
-            // Find word boundaries
-            let start = offset;
-            let end = offset;
-            
-            while (start > 0 && /\S/.test(text[start - 1])) start--;
-            while (end < text.length && /\S/.test(text[end])) end++;
-            
-            return text.substring(start, end).trim();
-        }
-        return null;
-    }
-    
-    // Review checkbox functionality
-    const reviewCheckbox = document.getElementById('review-checkbox');
-    reviewCheckbox.addEventListener('change', function() {
-        const currentQuestion = document.querySelector('.number-btn.active');
-        if (currentQuestion) {
-            if (this.checked) {
-                currentQuestion.classList.add('flagged');
-            } else {
-                currentQuestion.classList.remove('flagged');
-            }
-        }
-    });
-    
-    // Submit functionality
-    submitTestBtn.addEventListener('click', function() {
-        const answeredCount = document.querySelectorAll('.number-btn.answered').length;
-        answeredCountSpan.textContent = answeredCount;
-        submitModal.style.display = 'flex';
-    });
-    
-    confirmSubmitBtn.addEventListener('click', function() {
-        if (window.UniversalTimer) {
-            window.UniversalTimer.stop();
-        }
-        saveAllAnswers();
-        submitButton.click();
-    });
-    
-    cancelSubmitBtn.addEventListener('click', function() {
-        submitModal.style.display = 'none';
-    });
-    
-    // Save answers function
-    function saveAllAnswers() {
-        const formData = new FormData(document.getElementById('reading-form'));
-        const answers = {};
-        
-        for (let [key, value] of formData.entries()) {
-            if (key.startsWith('answers[') && value) {
-                answers[key] = value;
-            }
-        }
-        
-        localStorage.setItem('testAnswers_{{ $attempt->id }}', JSON.stringify(answers));
-    }
-    
-    // Periodically save answers
-    setInterval(saveAllAnswers, 30000); // Every 30 seconds
-    
-    // Load saved answers on page load
-    try {
-        const savedAnswers = localStorage.getItem('testAnswers_{{ $attempt->id }}');
-        
-        if (savedAnswers) {
-            const answers = JSON.parse(savedAnswers);
-            
-            Object.keys(answers).forEach(key => {
-                const value = answers[key];
-                const input = document.querySelector(`[name="${key}"]`);
+                // Restore the selection
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(selectedTextRange);
                 
-                if (input) {
-                    if (input.type === 'radio') {
-                        const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
-                        if (radio) {
-                            radio.checked = true;
-                            // Update nav button
-                            const questionNumber = radio.dataset.questionNumber;
-                            if (questionNumber) {
-                                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                                if (navButton) {
-                                    navButton.classList.add('answered');
+                // Check if selection is valid
+                const selectedText = selection.toString().trim();
+                if (!selectedText) return;
+                
+                // Create span with highlight
+                const span = document.createElement('span');
+                span.className = `highlight-${color}`;
+                span.style.transition = 'background-color 0.3s ease-in';
+                
+                try {
+                    // Try to wrap the selected content
+                    selectedTextRange.surroundContents(span);
+                } catch (e) {
+                    // If surroundContents fails, use alternative method
+                    const contents = selectedTextRange.extractContents();
+                    span.appendChild(contents);
+                    selectedTextRange.insertNode(span);
+                }
+                
+                // Animate the highlight
+                requestAnimationFrame(() => {
+                    span.style.backgroundColor = '';
+                });
+                
+            } catch (e) {
+                console.error('Error applying highlight:', e);
+            } finally {
+                // Clear selection
+                window.getSelection().removeAllRanges();
+            }
+        }
+        
+        // Remove color picker with animation
+        function removeColorPicker() {
+            if (currentColorPicker) {
+                currentColorPicker.style.opacity = '0';
+                currentColorPicker.style.transform = 'translateY(5px)';
+                
+                setTimeout(() => {
+                    if (currentColorPicker && currentColorPicker.parentNode) {
+                        currentColorPicker.remove();
+                    }
+                    currentColorPicker = null;
+                }, 200);
+            }
+            selectedTextRange = null;
+        }
+        
+        // Close color picker when clicking elsewhere
+        document.addEventListener('mousedown', function(e) {
+            if (currentColorPicker && !e.target.closest('.color-picker') && !e.target.closest('.passage-content')) {
+                removeColorPicker();
+            }
+        });
+        
+        // Close color picker on scroll with debounce
+        let scrollTimeout;
+        document.addEventListener('scroll', function() {
+            if (currentColorPicker) {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    removeColorPicker();
+                }, 100);
+            }
+        }, true);
+        
+        // Keyboard support - ESC to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && currentColorPicker) {
+                removeColorPicker();
+            }
+        });
+        
+        // Mobile touch support
+        if ('ontouchstart' in window) {
+            passageContents.forEach(passage => {
+                let touchTimer;
+                
+                passage.addEventListener('touchstart', function(e) {
+                    touchTimer = setTimeout(() => {
+                        // Long press to select word
+                        const touch = e.touches[0];
+                        const word = getWordAtPoint(touch.clientX, touch.clientY);
+                        
+                        if (word) {
+                            // Select the word
+                            const selection = window.getSelection();
+                            const range = document.createRange();
+                            
+                            // Find and select the word
+                            const textNodes = getTextNodes(passage);
+                            for (let node of textNodes) {
+                                const index = node.textContent.indexOf(word);
+                                if (index !== -1) {
+                                    range.setStart(node, index);
+                                    range.setEnd(node, index + word.length);
+                                    selection.removeAllRanges();
+                                    selection.addRange(range);
+                                    
+                                    // Show color picker
+                                    showColorPicker(e);
+                                    break;
                                 }
                             }
                         }
-                    } else {
-                        input.value = value;
-                        if (value) {
-                            // Update nav button
-                            const questionNumber = input.dataset.questionNumber;
-                            if (questionNumber) {
-                                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                                if (navButton) {
-                                    navButton.classList.add('answered');
+                    }, 500);
+                });
+                
+                passage.addEventListener('touchend', function() {
+                    clearTimeout(touchTimer);
+                });
+                
+                passage.addEventListener('touchmove', function() {
+                    clearTimeout(touchTimer);
+                });
+            });
+        }
+        
+        // Helper function to get all text nodes
+        function getTextNodes(element) {
+            const textNodes = [];
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+            
+            return textNodes;
+        }
+        
+        // Helper function to get word at click point
+        function getWordAtPoint(x, y) {
+            const range = document.caretRangeFromPoint(x, y);
+            if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
+                const text = range.startContainer.textContent;
+                const offset = range.startOffset;
+                
+                // Find word boundaries
+                let start = offset;
+                let end = offset;
+                
+                while (start > 0 && /\S/.test(text[start - 1])) start--;
+                while (end < text.length && /\S/.test(text[end])) end++;
+                
+                return text.substring(start, end).trim();
+            }
+            return null;
+        }
+        
+        // Review checkbox functionality
+        const reviewCheckbox = document.getElementById('review-checkbox');
+        reviewCheckbox.addEventListener('change', function() {
+            const currentQuestion = document.querySelector('.number-btn.active');
+            if (currentQuestion) {
+                if (this.checked) {
+                    currentQuestion.classList.add('flagged');
+                } else {
+                    currentQuestion.classList.remove('flagged');
+                }
+            }
+        });
+        
+        // Submit functionality
+        submitTestBtn.addEventListener('click', function() {
+            const answeredCount = document.querySelectorAll('.number-btn.answered').length;
+            answeredCountSpan.textContent = answeredCount;
+            submitModal.style.display = 'flex';
+        });
+        
+        confirmSubmitBtn.addEventListener('click', function() {
+            if (window.UniversalTimer) {
+                window.UniversalTimer.stop();
+            }
+            saveAllAnswers();
+            submitButton.click();
+        });
+        
+        cancelSubmitBtn.addEventListener('click', function() {
+            submitModal.style.display = 'none';
+        });
+        
+        // Save answers function
+        function saveAllAnswers() {
+            const formData = new FormData(document.getElementById('reading-form'));
+            const answers = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key.startsWith('answers[') && value) {
+                    answers[key] = value;
+                }
+            }
+            
+            localStorage.setItem('testAnswers_{{ $attempt->id }}', JSON.stringify(answers));
+        }
+        
+        // Periodically save answers
+        setInterval(saveAllAnswers, 30000); // Every 30 seconds
+        
+        // Load saved answers on page load
+        try {
+            const savedAnswers = localStorage.getItem('testAnswers_{{ $attempt->id }}');
+            
+            if (savedAnswers) {
+                const answers = JSON.parse(savedAnswers);
+                
+                Object.keys(answers).forEach(key => {
+                    const value = answers[key];
+                    const input = document.querySelector(`[name="${key}"]`);
+                    
+                    if (input) {
+                        if (input.type === 'radio') {
+                            const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
+                            if (radio) {
+                                radio.checked = true;
+                                // Update nav button
+                                const questionNumber = radio.dataset.questionNumber;
+                                if (questionNumber) {
+                                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                                    if (navButton) {
+                                        navButton.classList.add('answered');
+                                    }
+                                }
+                            }
+                        } else {
+                            input.value = value;
+                            if (value) {
+                                // Update nav button
+                                const questionNumber = input.dataset.questionNumber;
+                                if (questionNumber) {
+                                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                                    if (navButton) {
+                                        navButton.classList.add('answered');
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
+        } catch (e) {
+            console.error('Error restoring saved answers:', e);
         }
-    } catch (e) {
-        console.error('Error restoring saved answers:', e);
-    }
-    
-    // Initialize first part on load
-    const firstPartBtn = document.querySelector('.part-btn');
-    if (firstPartBtn) {
-        firstPartBtn.click();
-    }
-});
-</script>
-@endpush
+        
+        // Initialize first part on load
+        const firstPartBtn = document.querySelector('.part-btn');
+        if (firstPartBtn) {
+            firstPartBtn.click();
+        }
+    });
+    </script>
+    @endpush
 </x-test-layout>
