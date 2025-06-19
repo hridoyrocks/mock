@@ -71,103 +71,132 @@ class QuestionController extends Controller
     /**
      * Store a newly created question in storage.
      */
-    public function store(Request $request): RedirectResponse
-    {
-        // Get test set to determine section
-        $testSet = TestSet::with('section')->findOrFail($request->test_set_id);
-        $section = $testSet->section->name;
-        
-        // Base validation rules
-        $rules = [
-            'test_set_id' => 'required|exists:test_sets,id',
-            'question_type' => 'required|string',
-            'content' => 'required|string',
-            'order_number' => 'required|integer|min:1',
-            'part_number' => 'nullable|integer',
-            'question_group' => 'nullable|string',
-            'marks' => 'nullable|integer|min:1|max:10',
-            'is_example' => 'nullable|boolean',
-            'instructions' => 'nullable|string',
-            'passage_text' => 'nullable|string',
-            'audio_transcript' => 'nullable|string',
+   public function store(Request $request): RedirectResponse
+{
+    // Get test set to determine section
+    $testSet = TestSet::with('section')->findOrFail($request->test_set_id);
+    $section = $testSet->section->name;
+    
+    // Base validation rules
+    $rules = [
+        'test_set_id' => 'required|exists:test_sets,id',
+        'question_type' => 'required|string',
+        'order_number' => 'required|integer|min:0', // Changed from min:1 to min:0 for passages
+        'part_number' => 'nullable|integer',
+        'question_group' => 'nullable|string',
+        'marks' => 'nullable|integer|min:0|max:10', // Changed from min:1 to min:0
+        'is_example' => 'nullable|boolean',
+        'instructions' => 'nullable|string',
+        'passage_text' => 'nullable|string',
+        'audio_transcript' => 'nullable|string',
+    ];
+    
+    // Handle passage type specially
+    if ($request->question_type === 'passage') {
+        $rules['content'] = 'nullable|string'; // Make content optional for passage
+        $rules['passage_text'] = 'required_if:question_type,passage|string';
+    } else {
+        $rules['content'] = 'required|string';
+    }
+    
+    // Section-specific validation
+    if ($section === 'listening') {
+        $rules['media'] = 'required_if:question_type,!=,passage|file|mimes:mp3,wav,ogg|max:51200';
+        $rules['part_number'] = 'required|integer|min:1|max:4';
+    } elseif ($section === 'reading') {
+        $rules['part_number'] = 'required|integer|min:1|max:3';
+    } elseif ($section === 'writing') {
+        $rules['word_limit'] = 'required|integer|min:50|max:500';
+        $rules['time_limit'] = 'required|integer|min:1|max:60';
+        if (strpos($request->question_type, 'task1') !== false) {
+            $rules['media'] = 'required|file|mimes:jpg,jpeg,png,gif|max:5120';
+        }
+    } elseif ($section === 'speaking') {
+        $rules['time_limit'] = 'required|integer|min:1|max:10';
+    }
+    
+    // Add options validation if needed
+    if ($this->requiresOptions($request->question_type)) {
+        $rules['options'] = 'required|array|min:2';
+        $rules['options.*.content'] = 'required|string';
+        $rules['correct_option'] = 'required|integer|min:0';
+    }
+    
+    $request->validate($rules);
+    
+    // Handle file upload
+    $mediaPath = null;
+    if ($request->hasFile('media')) {
+        $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
+    }
+    
+    DB::transaction(function () use ($request, $mediaPath) {
+        // Prepare question data
+        $questionData = [
+            'test_set_id' => $request->test_set_id,
+            'question_type' => $request->question_type,
+            'order_number' => $request->order_number,
+            'part_number' => $request->part_number,
+            'question_group' => $request->question_group,
+            'marks' => $request->marks ?? 1,
+            'is_example' => $request->is_example ?? false,
+            'instructions' => $request->instructions,
+            'audio_transcript' => $request->audio_transcript,
+            'word_limit' => $request->word_limit ?? null,
+            'time_limit' => $request->time_limit ?? null,
+            'media_path' => $mediaPath,
         ];
         
-        // Section-specific validation
-        if ($section === 'listening') {
-            $rules['media'] = 'required_if:question_type,!=,passage|file|mimes:mp3,wav,ogg|max:51200';
-            $rules['part_number'] = 'required|integer|min:1|max:4';
-        } elseif ($section === 'reading') {
-            $rules['part_number'] = 'required|integer|min:1|max:3';
-            if ($request->question_type === 'passage') {
-                $rules['passage_text'] = 'required|string|min:200';
-            }
-        } elseif ($section === 'writing') {
-            $rules['word_limit'] = 'required|integer|min:50|max:500';
-            $rules['time_limit'] = 'required|integer|min:1|max:60';
-            if (strpos($request->question_type, 'task1') !== false) {
-                $rules['media'] = 'required|file|mimes:jpg,jpeg,png,gif|max:5120';
-            }
-        } elseif ($section === 'speaking') {
-            $rules['time_limit'] = 'required|integer|min:1|max:10';
-        }
-        
-        // Add options validation if needed
-        if ($this->requiresOptions($request->question_type)) {
-            $rules['options'] = 'required|array|min:2';
-            $rules['options.*.content'] = 'required|string';
-            $rules['correct_option'] = 'required|integer|min:0';
-        }
-        
-        $request->validate($rules);
-        
-        // Handle file upload
-        $mediaPath = null;
-        if ($request->hasFile('media')) {
-            $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
-        }
-        
-        DB::transaction(function () use ($request, $mediaPath) {
-            // Create the question
-            $questionData = [
-                'test_set_id' => $request->test_set_id,
-                'question_type' => $request->question_type,
-                'content' => $request->content,
-                'media_path' => $mediaPath,
-                'order_number' => $request->order_number,
-                'part_number' => $request->part_number,
-                'question_group' => $request->question_group,
-                'marks' => $request->marks ?? 1,
-                'is_example' => $request->is_example ?? false,
-                'instructions' => $request->instructions,
-                'passage_text' => $request->passage_text,
-                'audio_transcript' => $request->audio_transcript,
-                'word_limit' => $request->word_limit ?? null,
-                'time_limit' => $request->time_limit ?? null,
-            ];
-
-            $question = Question::create($questionData);
+        // Handle content based on question type
+        if ($request->question_type === 'passage') {
+            // For passages, use passage_text as content
+            $questionData['content'] = $request->passage_text ?? $request->content;
+            $questionData['passage_text'] = $request->passage_text;
             
-            // Create options if applicable
-            if ($this->requiresOptions($request->question_type) && isset($request->options)) {
-                foreach ($request->options as $index => $option) {
-                    QuestionOption::create([
-                        'question_id' => $question->id,
-                        'content' => $option['content'],
-                        'is_correct' => ($request->correct_option == $index),
-                    ]);
-                }
+            // Use passage_title as instructions if provided
+            if ($request->filled('passage_title')) {
+                $questionData['instructions'] = $request->passage_title;
             }
-        });
+        } else {
+            // For regular questions
+            $questionData['content'] = $request->content;
+            $questionData['passage_text'] = $request->passage_text;
+        }
+
+        $question = Question::create($questionData);
         
-        // Redirect based on action
-        if ($request->action === 'save_and_new') {
-            return redirect()->route('admin.questions.create', ['test_set' => $request->test_set_id])
-                ->with('success', 'Question created successfully. Add another question.');
+        // Create options if applicable
+        if ($this->requiresOptions($request->question_type) && isset($request->options)) {
+            foreach ($request->options as $index => $option) {
+                QuestionOption::create([
+                    'question_id' => $question->id,
+                    'content' => $option['content'],
+                    'is_correct' => ($request->correct_option == $index),
+                ]);
+            }
         }
         
-        return redirect()->route('admin.test-sets.show', $request->test_set_id)
-            ->with('success', 'Question created successfully.');
+        // Handle fill in the blanks answers
+        if ($request->has('blank_answers')) {
+            // Store in section_specific_data as JSON
+            $question->section_specific_data = [
+                'blank_answers' => $request->blank_answers,
+                'dropdown_options' => $request->dropdown_options ?? [],
+                'dropdown_correct' => $request->dropdown_correct ?? []
+            ];
+            $question->save();
+        }
+    });
+    
+    // Redirect based on action
+    if ($request->action === 'save_and_new') {
+        return redirect()->route('admin.questions.create', ['test_set' => $request->test_set_id])
+            ->with('success', 'Question created successfully. Add another question.');
     }
+    
+    return redirect()->route('admin.test-sets.show', $request->test_set_id)
+        ->with('success', 'Question created successfully.');
+}
 
     /**
      * Display the specified question.

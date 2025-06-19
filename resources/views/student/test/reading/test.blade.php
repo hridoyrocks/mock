@@ -76,6 +76,35 @@
             overflow-y: auto;
         }
         
+        .part-header {
+            background-color: #f3f4f6;
+            padding: 12px 16px;
+            margin: -20px -20px 20px -20px;
+            border-bottom: 2px solid #e5e7eb;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .question-group-header {
+            background-color: #fef3c7;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #92400e;
+        }
+        
+        .question-instructions {
+            background-color: #eff6ff;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #1e40af;
+            font-style: italic;
+        }
+        
         .question-box {
             margin-bottom: 20px;
             padding-bottom: 20px;
@@ -121,78 +150,263 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
         }
         
+        /* Fill in the blanks styles */
+        .fill-blank-input {
+            display: inline-block;
+            width: 150px;
+            padding: 4px 8px;
+            margin: 0 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #fef3c7;
+        }
+        
+        .fill-blank-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+        }
+        
+        .dropdown-select {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 0 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: #d1fae5;
+            cursor: pointer;
+        }
+        
+        .dropdown-select:focus {
+            outline: none;
+            border-color: #10b981;
+            background-color: #ecfdf5;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+        }
+        
+        .question-content {
+            line-height: 1.8;
+            color: #374151;
+        }
+        
+        .blank-placeholder {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+            padding: 2px 8px;
+            margin: 0 2px;
+            border-radius: 4px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .dropdown-placeholder {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 2px 8px;
+            margin: 0 2px;
+            border-radius: 4px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .passage-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #111827;
+        }
+        
+        .passage-content {
+            line-height: 1.8;
+            color: #374151;
+            text-align: justify;
+        }
+        
+        .passage-content p {
+            margin-bottom: 15px;
+        }
+        
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: white;
-            border-top: 1px solid #e5e7eb;
-            padding: 10px 20px;
+            background-color: #f8f9fa;
+            border-top: 2px solid #dee2e6;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
         
         .nav-left {
             display: flex;
             align-items: center;
+            flex: 1;
+            gap: 20px;
+        }
+        
+        .review-section {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .review-check {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        .review-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #212529;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .nav-section-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .section-label {
+            font-weight: 600;
+            color: #212529;
+            font-size: 14px;
+        }
+        
+        .parts-nav {
+            display: flex;
+            gap: 8px;
+            border-right: 2px solid #dee2e6;
+            padding-right: 15px;
+            margin-right: 10px;
+        }
+        
+        .part-btn {
+            padding: 6px 16px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .part-btn:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .part-btn.active {
+            background-color: #0066cc;
+            color: white;
+            border-color: #0066cc;
         }
         
         .nav-numbers {
             display: flex;
-            margin-left: 15px;
             flex-wrap: wrap;
-            gap: 2px;
+            gap: 4px;
+            max-width: 600px;
         }
         
         .number-btn {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #f0f0f0;
-            border: 1px solid #d1d5db;
-            font-size: 12px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #495057;
             cursor: pointer;
             transition: all 0.2s;
         }
         
         .number-btn:hover {
-            background-color: #e5e7eb;
+            background-color: #e9ecef;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .number-btn.active {
-            background-color: #3b82f6;
+            background-color: #0066cc;
             color: white;
-            border-color: #3b82f6;
+            border-color: #0066cc;
+            font-weight: 600;
         }
         
         .number-btn.answered {
-            background-color: #10b981;
+            background-color: #28a745;
             color: white;
-            border-color: #059669;
+            border-color: #28a745;
         }
         
         .number-btn.flagged {
-            border: 2px solid #f59e0b;
+            position: relative;
+            overflow: visible;
+        }
+        
+        .number-btn.flagged::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            width: 10px;
+            height: 10px;
+            background-color: #ffc107;
+            border-radius: 50%;
+            border: 2px solid #f8f9fa;
         }
         
         .nav-right {
             display: flex;
             align-items: center;
-            gap: 10px;
         }
         
-        .submit-btn {
+        .submit-test-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
         }
         
-        .submit-btn:hover {
+        .submit-test-button:hover {
+            background-color: #218838;
             transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .submit-test-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
         }
         
         .modal-overlay {
@@ -258,7 +472,19 @@
                 height: auto;
             }
             
+            .parts-nav {
+                display: none;
+            }
+            
             .nav-numbers {
+                max-width: 100%;
+            }
+            
+            .review-section {
+                padding: 6px 12px;
+            }
+            
+            .section-label {
                 display: none;
             }
         }
@@ -302,24 +528,40 @@
 
     <!-- Main Content -->
     <div class="content-area">
-        <!-- Reading Passage -->
+        <!-- Reading Passage(s) -->
         <div class="passage-section">
-            <h2 class="text-lg font-semibold mb-4">Reading Passage</h2>
-            
             @php
-                $passage = $testSet->questions->where('question_type', 'passage')->first();
+                // Group questions by part
+                $questionsByPart = $testSet->questions->groupBy('part_number');
+                $passages = $testSet->questions->where('question_type', 'passage')->sortBy('order_number');
             @endphp
             
-            @if ($passage)
-                <div class="prose prose-sm max-w-none">
-                    {!! nl2br(e($passage->content)) !!}
-                </div>
-                
-                @if ($passage->media_path)
-                    <div class="mt-4">
-                        <img src="{{ asset('storage/' . $passage->media_path) }}" alt="Passage Image" class="max-w-full h-auto">
+            @if ($passages->count() > 0)
+                @foreach ($passages as $passage)
+                    <div class="passage-container mb-8">
+                        @if($passage->instructions)
+                            <div class="passage-title">{{ $passage->instructions }}</div>
+                        @else
+                            <div class="passage-title">Reading Passage {{ $loop->iteration }}</div>
+                        @endif
+                        
+                        @if($passage->passage_text)
+                            <div class="passage-content">
+                                {!! nl2br(e($passage->passage_text)) !!}
+                            </div>
+                        @elseif($passage->content)
+                            <div class="passage-content">
+                                {!! nl2br(e($passage->content)) !!}
+                            </div>
+                        @endif
+                        
+                        @if ($passage->media_path)
+                            <div class="mt-4">
+                                <img src="{{ Storage::url($passage->media_path) }}" alt="Passage Image" class="max-w-full h-auto rounded">
+                            </div>
+                        @endif
                     </div>
-                @endif
+                @endforeach
             @else
                 <div class="bg-yellow-50 p-4 rounded-md">
                     <p class="text-yellow-700">No passage content found for this test.</p>
@@ -329,64 +571,161 @@
         
         <!-- Questions Section -->
         <div class="questions-section">
-            <h2 class="text-lg font-semibold mb-4">Questions</h2>
-            
             <form id="reading-form" action="{{ route('student.reading.submit', $attempt) }}" method="POST">
                 @csrf
                 
                 @php
-                    $questions = $testSet->questions->where('question_type', '!=', 'passage')->sortBy('order_number');
+                    $allQuestions = $testSet->questions
+                        ->where('question_type', '!=', 'passage')
+                        ->sortBy(['part_number', 'order_number']);
+                    $groupedQuestions = $allQuestions->groupBy('part_number');
                 @endphp
                 
-                @foreach ($questions as $question)
-                    <div class="question-box" id="question-{{ $question->order_number }}">
-                        <div class="question-number">
-                            {{ $question->order_number }}. {!! nl2br(e($question->content)) !!}
+                @foreach ($groupedQuestions as $partNumber => $partQuestions)
+                    @if($partNumber)
+                        <div class="part-header">
+                            Part {{ $partNumber }}
                         </div>
-                        
-                        @if ($question->media_path)
-                            <div class="mb-3">
-                                <img src="{{ asset('storage/' . $question->media_path) }}" alt="Question Image" class="max-w-full h-auto">
+                    @endif
+                    
+                    @php
+                        $questionGroups = $partQuestions->groupBy('question_group');
+                    @endphp
+                    
+                    @foreach ($questionGroups as $groupName => $questions)
+                        @if($groupName)
+                            <div class="question-group-header">
+                                {{ $groupName }}
                             </div>
                         @endif
                         
-                        <div class="options-list">
-                            @switch($question->question_type)
-                                @case('multiple_choice')
-                                    @foreach ($question->options as $option)
-                                        <div class="option-item">
-                                            <input type="radio" name="answers[{{ $question->id }}]" id="option-{{ $option->id }}" value="{{ $option->id }}" class="option-radio">
-                                            <label for="option-{{ $option->id }}">{{ $option->content }}</label>
-                                        </div>
-                                    @endforeach
-                                    @break
+                        @php
+                            // Get unique instructions for this group
+                            $instructions = $questions->pluck('instructions')->filter()->unique();
+                        @endphp
+                        
+                        @foreach($instructions as $instruction)
+                            <div class="question-instructions">
+                                {{ $instruction }}
+                            </div>
+                        @endforeach
+                        
+                        @foreach ($questions as $question)
+                            <div class="question-box" id="question-{{ $question->order_number }}">
+                                @php
+                                    // Process content for fill in the blanks
+                                    $processedContent = $question->content;
+                                    $hasBlanks = false;
+                                    $hasDropdowns = false;
+                                    
+                                    // Check for blanks and dropdowns
+                                    if (strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[DROPDOWN_') !== false) {
+                                        $hasBlanks = strpos($processedContent, '[BLANK_') !== false;
+                                        $hasDropdowns = strpos($processedContent, '[DROPDOWN_') !== false;
+                                        
+                                        // Replace blanks with input fields
+                                        $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]/', function($matches) use ($question) {
+                                            $blankNum = $matches[1];
+                                            return '<input type="text" 
+                                                    name="answers[' . $question->id . '][blank_' . $blankNum . ']" 
+                                                    class="fill-blank-input" 
+                                                    placeholder="____" 
+                                                    data-blank="' . $blankNum . '">';
+                                        }, $processedContent);
+                                        
+                                        // Replace dropdowns with select fields
+                                        $processedContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question) {
+                                            $dropdownNum = $matches[1];
+                                            // You would need to get dropdown options from question data
+                                            return '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
+                                                    class="dropdown-select" 
+                                                    data-dropdown="' . $dropdownNum . '">
+                                                    <option value="">Choose</option>
+                                                    <option value="option1">Option 1</option>
+                                                    <option value="option2">Option 2</option>
+                                                    </select>';
+                                        }, $processedContent);
+                                    }
+                                @endphp
                                 
-                                @case('true_false')
-                                    @foreach ($question->options as $option)
-                                        <div class="option-item">
-                                            <input type="radio" name="answers[{{ $question->id }}]" id="option-{{ $option->id }}" value="{{ $option->id }}" class="option-radio">
-                                            <label for="option-{{ $option->id }}">{{ $option->content }}</label>
-                                        </div>
-                                    @endforeach
-                                    @break
+                                <div class="question-number">
+                                    {{ $question->order_number }}. 
+                                    @if($hasBlanks || $hasDropdowns)
+                                        <div class="question-content">{!! $processedContent !!}</div>
+                                    @else
+                                        {!! $question->content !!}
+                                    @endif
+                                </div>
                                 
-                                @case('matching')
-                                    <select name="answers[{{ $question->id }}]" class="text-input">
-                                        <option value="">Select your answer</option>
-                                        @foreach ($question->options as $option)
-                                            <option value="{{ $option->id }}">{{ $option->content }}</option>
-                                        @endforeach
-                                    </select>
-                                    @break
+                                @if ($question->media_path)
+                                    <div class="mb-3">
+                                        <img src="{{ Storage::url($question->media_path) }}" alt="Question Image" class="max-w-full h-auto rounded">
+                                    </div>
+                                @endif
                                 
-                                @case('fill_blank')
-                                @case('short_answer')
-                                @default
-                                    <input type="text" name="answers[{{ $question->id }}]" class="text-input" placeholder="Your answer">
-                                    @break
-                            @endswitch
-                        </div>
-                    </div>
+                                @if(!$hasBlanks && !$hasDropdowns)
+                                <div class="options-list">
+                                    @switch($question->question_type)
+                                        @case('multiple_choice')
+                                            @foreach ($question->options as $optionIndex => $option)
+                                                <div class="option-item">
+                                                    <input type="radio" 
+                                                           name="answers[{{ $question->id }}]" 
+                                                           id="option-{{ $option->id }}" 
+                                                           value="{{ $option->id }}" 
+                                                           class="option-radio">
+                                                    <label for="option-{{ $option->id }}">
+                                                        <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                    </label>
+                                                </div>
+                                            @endforeach
+                                            @break
+                                        
+                                        @case('true_false')
+                                        @case('yes_no')
+                                            @foreach ($question->options as $option)
+                                                <div class="option-item">
+                                                    <input type="radio" 
+                                                           name="answers[{{ $question->id }}]" 
+                                                           id="option-{{ $option->id }}" 
+                                                           value="{{ $option->id }}" 
+                                                           class="option-radio">
+                                                    <label for="option-{{ $option->id }}">{{ $option->content }}</label>
+                                                </div>
+                                            @endforeach
+                                            @break
+                                        
+                                        @case('matching')
+                                        @case('matching_headings')
+                                        @case('matching_information')
+                                        @case('matching_features')
+                                            <select name="answers[{{ $question->id }}]" class="text-input">
+                                                <option value="">Select your answer</option>
+                                                @foreach ($question->options as $optionIndex => $option)
+                                                    <option value="{{ $option->id }}">
+                                                        {{ chr(65 + $optionIndex) }}. {{ $option->content }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @break
+                                        
+                                        @case('fill_blanks')
+                                        @case('sentence_completion')
+                                        @case('summary_completion')
+                                        @case('short_answer')
+                                        @default
+                                            <input type="text" 
+                                                   name="answers[{{ $question->id }}]" 
+                                                   class="text-input" 
+                                                   placeholder="Type your answer here"
+                                                   maxlength="100">
+                                            @break
+                                    @endswitch
+                                </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    @endforeach
                 @endforeach
                 
                 <button type="submit" id="submit-button" class="hidden">Submit</button>
@@ -397,24 +736,46 @@
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
         <div class="nav-left">
-            <div>
-                <input type="checkbox" id="review-checkbox">
-                <label for="review-checkbox">Review</label>
+            <div class="review-section">
+                <input type="checkbox" id="review-checkbox" class="review-check">
+                <label for="review-checkbox" class="review-label">Review</label>
             </div>
-            <div class="nav-numbers">
-                <span class="mr-2">Reading</span>
-                @php
-                    $questionCount = $questions->count();
-                    $maxButtons = min($questionCount, 30);
-                @endphp
+            
+            <div class="nav-section-container">
+                <span class="section-label">Reading</span>
                 
-                @for ($i = 1; $i <= $maxButtons; $i++)
-                    <div class="number-btn {{ $i == 1 ? 'active' : '' }}" data-question="{{ $i }}">{{ $i }}</div>
-                @endfor
+                {{-- Parts Navigation --}}
+                <div class="parts-nav">
+                    @php
+                        $partsWithQuestions = $allQuestions->groupBy('part_number')->keys()->filter()->sort();
+                    @endphp
+                    
+                    @foreach($partsWithQuestions as $partNum)
+                        <button type="button" class="part-btn {{ $loop->first ? 'active' : '' }}" data-part="{{ $partNum }}">
+                            Part {{ $partNum }}
+                        </button>
+                    @endforeach
+                </div>
+                
+                {{-- Question Numbers --}}
+                <div class="nav-numbers">
+                    @php
+                        $questionCount = $allQuestions->count();
+                    @endphp
+                    
+                    @foreach($allQuestions as $index => $question)
+                        <div class="number-btn {{ $index == 0 ? 'active' : '' }}" 
+                             data-question="{{ $question->order_number }}"
+                             data-part="{{ $question->part_number }}">
+                            {{ $question->order_number }}
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
+        
         <div class="nav-right">
-            <button type="button" id="submit-test-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md mr-3 text-sm font-medium submit-btn">
+            <button type="button" id="submit-test-btn" class="submit-test-button">
                 Submit Test
             </button>
         </div>
@@ -427,7 +788,7 @@
             <div class="modal-message">
                 Are you sure you want to submit your test? You cannot change your answers after submission.
                 <br><br>
-                <strong>Answered Questions: <span id="answered-count">0</span> / {{ $questions->count() }}</strong>
+                <strong>Answered Questions: <span id="answered-count">0</span> / {{ $allQuestions->count() }}</strong>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button class="modal-button" id="confirm-submit-btn">Yes, Submit</button>
@@ -442,11 +803,27 @@
         // Elements
         const submitButton = document.getElementById('submit-button');
         const navButtons = document.querySelectorAll('.number-btn');
+        const partButtons = document.querySelectorAll('.part-btn');
         const submitTestBtn = document.getElementById('submit-test-btn');
         const submitModal = document.getElementById('submit-modal');
         const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
         const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
         const answeredCountSpan = document.getElementById('answered-count');
+        
+        // Part navigation
+        partButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                partButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const partNumber = this.dataset.part;
+                // Find first question of this part
+                const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]`);
+                if (firstQuestionOfPart) {
+                    firstQuestionOfPart.click();
+                }
+            });
+        });
         
         // Question navigation
         navButtons.forEach(button => {
@@ -459,6 +836,18 @@
                 
                 if (questionElement) {
                     questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Update active part
+                    const partNumber = this.dataset.part;
+                    if (partNumber) {
+                        partButtons.forEach(btn => {
+                            if (btn.dataset.part === partNumber) {
+                                btn.classList.add('active');
+                            } else {
+                                btn.classList.remove('active');
+                            }
+                        });
+                    }
                 }
             });
         });
@@ -475,9 +864,55 @@
                     navButton.classList.add('answered');
                 }
                 
+                // Check if all blanks/dropdowns in question are filled
+                if (this.classList.contains('fill-blank-input') || this.classList.contains('dropdown-select')) {
+                    checkAllBlanksInQuestion(question, navButton);
+                }
+                
                 saveAllAnswers();
             });
+            
+            // Also handle text input on blur
+            if (input.type === 'text') {
+                input.addEventListener('blur', function() {
+                    const question = this.closest('.question-box');
+                    const questionNumber = question.id.replace('question-', '');
+                    
+                    const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+                    if (navButton) {
+                        if (this.classList.contains('fill-blank-input')) {
+                            checkAllBlanksInQuestion(question, navButton);
+                        } else if (this.value.trim()) {
+                            navButton.classList.add('answered');
+                        } else {
+                            navButton.classList.remove('answered');
+                        }
+                    }
+                    
+                    saveAllAnswers();
+                });
+            }
         });
+        
+        // Check if all blanks in a question are filled
+        function checkAllBlanksInQuestion(questionElement, navButton) {
+            const blanks = questionElement.querySelectorAll('.fill-blank-input, .dropdown-select');
+            let allFilled = true;
+            
+            blanks.forEach(blank => {
+                if (!blank.value.trim()) {
+                    allFilled = false;
+                }
+            });
+            
+            if (navButton) {
+                if (allFilled && blanks.length > 0) {
+                    navButton.classList.add('answered');
+                } else {
+                    navButton.classList.remove('answered');
+                }
+            }
+        }
         
         // Review checkbox functionality
         const reviewCheckbox = document.getElementById('review-checkbox');
@@ -494,7 +929,33 @@
         
         // Submit functionality
         submitTestBtn.addEventListener('click', function() {
-            const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked, input[type="text"]:not([value=""]), select option:checked:not([value=""])').length;
+            let answeredQuestions = 0;
+            
+            // Count regular questions
+            answeredQuestions += document.querySelectorAll('input[type="radio"]:checked').length;
+            answeredQuestions += document.querySelectorAll('input[type="text"]:not(.fill-blank-input)[value]:not([value=""])').length;
+            answeredQuestions += document.querySelectorAll('select:not(.dropdown-select) option:checked:not([value=""])').length;
+            
+            // Count fill-in-the-blank questions
+            const blankQuestions = new Set();
+            document.querySelectorAll('.fill-blank-input, .dropdown-select').forEach(input => {
+                const question = input.closest('.question-box');
+                if (question) {
+                    const blanks = question.querySelectorAll('.fill-blank-input, .dropdown-select');
+                    let allFilled = true;
+                    blanks.forEach(blank => {
+                        if (!blank.value.trim()) {
+                            allFilled = false;
+                        }
+                    });
+                    if (allFilled && blanks.length > 0) {
+                        blankQuestions.add(question.id);
+                    }
+                }
+            });
+            
+            answeredQuestions += blankQuestions.size;
+            
             answeredCountSpan.textContent = answeredQuestions;
             submitModal.style.display = 'flex';
         });
@@ -571,6 +1032,14 @@
             }
         } catch (e) {
             console.error('Error restoring saved answers:', e);
+        }
+        
+        // Scroll to first question on load
+        const firstQuestion = document.getElementById('question-1');
+        if (firstQuestion) {
+            setTimeout(() => {
+                firstQuestion.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
         }
     });
     </script>

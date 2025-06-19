@@ -32,7 +32,7 @@
                 <div class="space-y-6">
                     
                     <!-- Question Content Section -->
-                    <div class="bg-white rounded-lg shadow-sm">
+                    <div class="bg-white rounded-lg shadow-sm" id="main-content-section">
                         <div class="px-6 py-4 border-b border-gray-200">
                             <h3 class="text-lg font-medium text-gray-900">Question Content</h3>
                         </div>
@@ -135,6 +135,7 @@
                                                             'matching' => 'Matching'
                                                         ],
                                                         'reading' => [
+                                                            'passage' => '📄 Reading Passage',
                                                             'multiple_choice' => 'Multiple Choice',
                                                             'true_false' => 'True/False/Not Given',
                                                             'yes_no' => 'Yes/No/Not Given',
@@ -203,6 +204,41 @@
                         </div>
                     </div>
                     
+                    <!-- Reading Passage Special Section -->
+                    <div id="passage-section" class="bg-white rounded-lg shadow-sm hidden">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Reading Passage Content</h3>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Passage Title / Heading
+                                </label>
+                                <input type="text" name="passage_title" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                       placeholder="e.g., The History of Navigation">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Passage Text <span class="text-red-500">*</span>
+                                </label>
+                                <textarea name="passage_text" rows="20" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                                          placeholder="Paste or type your reading passage here...">{{ old('passage_text') }}</textarea>
+                                <div class="flex justify-between items-center mt-2">
+                                    <p class="text-xs text-gray-500">
+                                        Tip: Use empty lines to separate paragraphs. The passage will display in the left column during the test.
+                                    </p>
+                                    <span class="text-xs text-gray-500">
+                                        <span id="passage-word-count">0</span> words
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Answer Options Section -->
                     <div id="options-card" class="bg-white rounded-lg shadow-sm hidden">
                         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -263,10 +299,10 @@
                         
                         <div class="p-6">
                             <div class="flex flex-col sm:flex-row gap-3">
-                                <button type="submit" class="flex-1 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                                <button type="submit" name="action" value="save" class="flex-1 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors save-btn">
                                     Save Question
                                 </button>
-                                <button type="submit" name="save_and_new" value="1" class="flex-1 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors">
+                                <button type="submit" name="action" value="save_and_new" class="flex-1 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors save-btn">
                                     Save & Add Another
                                 </button>
                                 <button type="button" onclick="previewQuestion()" class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
@@ -368,11 +404,54 @@
 
     @push('scripts')
     <!-- TinyMCE -->
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     
     <script>
         let blankCounter = 0;
         let editor;
+        
+        // Debug function
+        function debugLog(message, data) {
+            console.log(`[Question Form] ${message}`, data);
+        }
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('Page loaded', 'Initializing form...');
+            
+            // Check if buttons exist
+            const saveButtons = document.querySelectorAll('.save-btn');
+            debugLog('Save buttons found:', saveButtons.length);
+            
+            // Add click listeners to save buttons
+            saveButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    debugLog('Button clicked:', this.textContent);
+                });
+            });
+            
+            // Initialize question type handler
+            const questionTypeSelect = document.getElementById('question_type');
+            if (questionTypeSelect) {
+                questionTypeSelect.addEventListener('change', handleQuestionTypeChange);
+            } else {
+                console.error('Question type select not found!');
+            }
+            
+            // Initialize passage textarea
+            const passageTextarea = document.querySelector('textarea[name="passage_text"]');
+            if (passageTextarea) {
+                passageTextarea.addEventListener('input', updatePassageWordCount);
+            }
+            
+            // Initialize form submission
+            const form = document.getElementById('questionForm');
+            if (form) {
+                form.addEventListener('submit', handleFormSubmit);
+            } else {
+                console.error('Question form not found!');
+            }
+        });
         
         // Initialize TinyMCE
         tinymce.init({
@@ -392,18 +471,121 @@
                     updateWordCount();
                     updateBlanks();
                 });
+            },
+            init_instance_callback: function(ed) {
+                debugLog('TinyMCE initialized', 'Editor ready');
             }
         });
+        
+        // Handle question type change
+        function handleQuestionTypeChange() {
+            const type = this.value;
+            debugLog('Question type changed to:', type);
+            
+            const optionsCard = document.getElementById('options-card');
+            const passageSection = document.getElementById('passage-section');
+            const mainContentSection = document.getElementById('main-content-section');
+            
+            const optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching', 'matching_headings'];
+            
+            try {
+                // Handle passage type
+                if (type === 'passage') {
+                    passageSection.classList.remove('hidden');
+                    optionsCard.classList.add('hidden');
+                    mainContentSection.classList.add('hidden');
+                    
+                    // Auto-set some fields for passage
+                    document.querySelector('input[name="order_number"]').value = '0';
+                    document.querySelector('input[name="marks"]').value = '0';
+                } else {
+                    passageSection.classList.add('hidden');
+                    mainContentSection.classList.remove('hidden');
+                    
+                    if (optionTypes.includes(type)) {
+                        optionsCard.classList.remove('hidden');
+                        setupDefaultOptions(type);
+                    } else {
+                        optionsCard.classList.add('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Error handling question type change:', error);
+            }
+        }
+        
+        // Update passage word count
+        function updatePassageWordCount() {
+            try {
+                const words = this.value.trim().split(/\s+/).filter(word => word.length > 0);
+                const wordCountElement = document.getElementById('passage-word-count');
+                if (wordCountElement) {
+                    wordCountElement.textContent = words.length;
+                }
+            } catch (error) {
+                console.error('Error updating word count:', error);
+            }
+        }
+        
+        // Handle form submission
+        function handleFormSubmit(e) {
+            debugLog('Form submission started', e);
+            
+            try {
+                const questionType = document.getElementById('question_type').value;
+                
+                // For passage type, copy passage text to content field
+                if (questionType === 'passage') {
+                    const passageText = document.querySelector('textarea[name="passage_text"]').value;
+                    const passageTitle = document.querySelector('input[name="passage_title"]').value;
+                    
+                    // Create a hidden input for content if doesn't exist
+                    let contentInput = document.querySelector('input[name="content"]');
+                    if (!contentInput) {
+                        contentInput = document.createElement('input');
+                        contentInput.type = 'hidden';
+                        contentInput.name = 'content';
+                        this.appendChild(contentInput);
+                    }
+                    contentInput.value = passageText || 'Passage content';
+                    
+                    // Set instructions to passage title
+                    if (passageTitle) {
+                        document.getElementById('instructions').value = passageTitle;
+                    }
+                    
+                    debugLog('Passage data prepared', {
+                        title: passageTitle,
+                        textLength: passageText.length
+                    });
+                }
+                
+                // If TinyMCE is active, sync content
+                if (editor && questionType !== 'passage') {
+                    editor.save();
+                }
+                
+                debugLog('Form submission completed', 'Sending to server...');
+            } catch (error) {
+                console.error('Form submission error:', error);
+                alert('Error preparing form data: ' + error.message);
+                e.preventDefault();
+            }
+        }
         
         // Word count
         function updateWordCount() {
             if (editor) {
-                const text = editor.getContent({format: 'text'});
-                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-                const chars = text.length;
-                
-                document.getElementById('word-count').textContent = words.length;
-                document.getElementById('char-count').textContent = chars;
+                try {
+                    const text = editor.getContent({format: 'text'});
+                    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                    const chars = text.length;
+                    
+                    document.getElementById('word-count').textContent = words.length;
+                    document.getElementById('char-count').textContent = chars;
+                } catch (error) {
+                    console.error('Error updating word count:', error);
+                }
             }
         }
         
@@ -434,112 +616,109 @@
         function updateBlanks() {
             if (!editor) return;
             
-            const content = editor.getContent();
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            
-            const blanks = tempDiv.querySelectorAll('[data-blank], [data-dropdown]');
-            const blanksManager = document.getElementById('blanks-manager');
-            const blanksList = document.getElementById('blanks-list');
-            
-            if (blanks.length > 0) {
-                blanksManager.classList.remove('hidden');
-                blanksList.innerHTML = '';
+            try {
+                const content = editor.getContent();
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
                 
-                blanks.forEach((blank) => {
-                    const isDropdown = blank.hasAttribute('data-dropdown');
-                    const num = blank.getAttribute(isDropdown ? 'data-dropdown' : 'data-blank');
+                const blanks = tempDiv.querySelectorAll('[data-blank], [data-dropdown]');
+                const blanksManager = document.getElementById('blanks-manager');
+                const blanksList = document.getElementById('blanks-list');
+                
+                if (blanks.length > 0) {
+                    blanksManager.classList.remove('hidden');
+                    blanksList.innerHTML = '';
                     
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'flex items-center space-x-2';
-                    
-                    if (isDropdown) {
-                        const options = blank.getAttribute('data-options');
-                        itemDiv.innerHTML = `
-                            <span class="text-sm font-medium">Dropdown ${num}:</span>
-                            <input type="text" value="${options}" name="dropdown_options[${num}]" 
-                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded">
-                            <select name="dropdown_correct[${num}]" class="px-2 py-1 text-sm border border-gray-300 rounded">
-                                ${options.split(',').map((opt, idx) => `<option value="${idx}">${opt.trim()}</option>`).join('')}
-                            </select>
-                        `;
-                    } else {
-                        itemDiv.innerHTML = `
-                            <span class="text-sm font-medium">Blank ${num}:</span>
-                            <input type="text" name="blank_answers[${num}]" 
-                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-                                   placeholder="Correct answer">
-                        `;
-                    }
-                    
-                    blanksList.appendChild(itemDiv);
-                });
-            } else {
-                blanksManager.classList.add('hidden');
+                    blanks.forEach((blank) => {
+                        const isDropdown = blank.hasAttribute('data-dropdown');
+                        const num = blank.getAttribute(isDropdown ? 'data-dropdown' : 'data-blank');
+                        
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'flex items-center space-x-2';
+                        
+                        if (isDropdown) {
+                            const options = blank.getAttribute('data-options');
+                            itemDiv.innerHTML = `
+                                <span class="text-sm font-medium">Dropdown ${num}:</span>
+                                <input type="text" value="${options}" name="dropdown_options[${num}]" 
+                                       class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded">
+                                <select name="dropdown_correct[${num}]" class="px-2 py-1 text-sm border border-gray-300 rounded">
+                                    ${options.split(',').map((opt, idx) => `<option value="${idx}">${opt.trim()}</option>`).join('')}
+                                </select>
+                            `;
+                        } else {
+                            itemDiv.innerHTML = `
+                                <span class="text-sm font-medium">Blank ${num}:</span>
+                                <input type="text" name="blank_answers[${num}]" 
+                                       class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                                       placeholder="Correct answer">
+                            `;
+                        }
+                        
+                        blanksList.appendChild(itemDiv);
+                    });
+                } else {
+                    blanksManager.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error updating blanks:', error);
             }
         }
         
-        // Question type handler
-        document.getElementById('question_type').addEventListener('change', function() {
-            const type = this.value;
-            const optionsCard = document.getElementById('options-card');
-            
-            const optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching', 'matching_headings'];
-            
-            if (optionTypes.includes(type)) {
-                optionsCard.classList.remove('hidden');
-                setupDefaultOptions(type);
-            } else {
-                optionsCard.classList.add('hidden');
-            }
-        });
-        
         // Setup default options
         function setupDefaultOptions(type) {
-            const container = document.getElementById('options-container');
-            container.innerHTML = '';
-            
-            if (type === 'true_false') {
-                addOption('TRUE', true);
-                addOption('FALSE', false);
-                addOption('NOT GIVEN', false);
-                document.getElementById('add-option-btn').style.display = 'none';
-            } else if (type === 'yes_no') {
-                addOption('YES', true);
-                addOption('NO', false);
-                addOption('NOT GIVEN', false);
-                document.getElementById('add-option-btn').style.display = 'none';
-            } else {
-                for (let i = 0; i < 4; i++) {
-                    addOption('', i === 0);
+            try {
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+                
+                if (type === 'true_false') {
+                    addOption('TRUE', true);
+                    addOption('FALSE', false);
+                    addOption('NOT GIVEN', false);
+                    document.getElementById('add-option-btn').style.display = 'none';
+                } else if (type === 'yes_no') {
+                    addOption('YES', true);
+                    addOption('NO', false);
+                    addOption('NOT GIVEN', false);
+                    document.getElementById('add-option-btn').style.display = 'none';
+                } else {
+                    for (let i = 0; i < 4; i++) {
+                        addOption('', i === 0);
+                    }
+                    document.getElementById('add-option-btn').style.display = 'inline-block';
                 }
-                document.getElementById('add-option-btn').style.display = 'inline-block';
+            } catch (error) {
+                console.error('Error setting up options:', error);
             }
         }
         
         // Add option
         function addOption(content = '', isCorrect = false) {
-            const container = document.getElementById('options-container');
-            const index = container.children.length;
-            
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
-            
-            optionDiv.innerHTML = `
-                <input type="radio" name="correct_option" value="${index}" 
-                       class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
-                <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
-                <input type="text" name="options[${index}][content]" value="${content}" 
-                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                       placeholder="Enter option text..." required>
-                <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            `;
-            
-            container.appendChild(optionDiv);
+            try {
+                const container = document.getElementById('options-container');
+                const index = container.children.length;
+                
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+                
+                optionDiv.innerHTML = `
+                    <input type="radio" name="correct_option" value="${index}" 
+                           class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
+                    <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
+                    <input type="text" name="options[${index}][content]" value="${content}" 
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter option text..." required>
+                    <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+                
+                container.appendChild(optionDiv);
+            } catch (error) {
+                console.error('Error adding option:', error);
+            }
         }
         
         // Remove option
@@ -558,8 +737,13 @@
             });
         }
         
-        // Add option button
-        document.getElementById('add-option-btn').addEventListener('click', () => addOption());
+        // Add option button - Initialize after DOM load
+        document.addEventListener('DOMContentLoaded', function() {
+            const addOptionBtn = document.getElementById('add-option-btn');
+            if (addOptionBtn) {
+                addOptionBtn.addEventListener('click', () => addOption());
+            }
+        });
         
         // Templates
         function showTemplates() {
@@ -577,39 +761,56 @@
         
         // Preview
         function previewQuestion() {
-            const modal = document.getElementById('preview-modal');
-            const content = document.getElementById('preview-content');
-            
-            const instructions = document.getElementById('instructions').value;
-            const questionContent = editor ? editor.getContent() : '';
-            
-            let previewHtml = '<div class="space-y-4">';
-            
-            if (instructions) {
-                previewHtml += `<div class="text-sm text-gray-600 italic">${instructions}</div>`;
-            }
-            
-            previewHtml += `<div class="text-gray-900">${questionContent}</div>`;
-            
-            const optionsContainer = document.getElementById('options-container');
-            if (optionsContainer && optionsContainer.children.length > 0) {
-                previewHtml += '<div class="mt-4 space-y-2">';
-                const options = optionsContainer.querySelectorAll('input[type="text"]');
-                options.forEach((option, index) => {
-                    if (option.value) {
-                        previewHtml += `<div class="flex items-center space-x-2">
-                            <span class="font-medium">${String.fromCharCode(65 + index)}.</span>
-                            <span>${option.value}</span>
-                        </div>`;
+            try {
+                const modal = document.getElementById('preview-modal');
+                const content = document.getElementById('preview-content');
+                
+                const questionType = document.getElementById('question_type').value;
+                
+                let previewHtml = '<div class="space-y-4">';
+                
+                if (questionType === 'passage') {
+                    const passageTitle = document.querySelector('input[name="passage_title"]').value;
+                    const passageText = document.querySelector('textarea[name="passage_text"]').value;
+                    
+                    if (passageTitle) {
+                        previewHtml += `<h3 class="text-lg font-semibold">${passageTitle}</h3>`;
                     }
-                });
+                    previewHtml += `<div class="whitespace-pre-wrap">${passageText}</div>`;
+                } else {
+                    const instructions = document.getElementById('instructions').value;
+                    const questionContent = editor ? editor.getContent() : '';
+                    
+                    if (instructions) {
+                        previewHtml += `<div class="text-sm text-gray-600 italic">${instructions}</div>`;
+                    }
+                    
+                    previewHtml += `<div class="text-gray-900">${questionContent}</div>`;
+                    
+                    const optionsContainer = document.getElementById('options-container');
+                    if (optionsContainer && optionsContainer.children.length > 0) {
+                        previewHtml += '<div class="mt-4 space-y-2">';
+                        const options = optionsContainer.querySelectorAll('input[type="text"]');
+                        options.forEach((option, index) => {
+                            if (option.value) {
+                                previewHtml += `<div class="flex items-center space-x-2">
+                                    <span class="font-medium">${String.fromCharCode(65 + index)}.</span>
+                                    <span>${option.value}</span>
+                                </div>`;
+                            }
+                        });
+                        previewHtml += '</div>';
+                    }
+                }
+                
                 previewHtml += '</div>';
+                
+                content.innerHTML = previewHtml;
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error in preview:', error);
+                alert('Error generating preview: ' + error.message);
             }
-            
-            previewHtml += '</div>';
-            
-            content.innerHTML = previewHtml;
-            modal.classList.remove('hidden');
         }
         
         function closePreview() {
@@ -642,11 +843,28 @@
         }
         
         // Drag and drop
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('media');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('media');
+            
+            if (dropZone && fileInput) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+                });
+                
+                dropZone.addEventListener('drop', handleDrop, false);
+                fileInput.addEventListener('change', function(e) {
+                    handleFiles(this.files);
+                });
+            }
         });
         
         function preventDefaults(e) {
@@ -654,27 +872,14 @@
             e.stopPropagation();
         }
         
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
-        });
-        
-        dropZone.addEventListener('drop', handleDrop, false);
-        
         function handleDrop(e) {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
+                const fileInput = document.getElementById('media');
                 fileInput.files = files;
                 handleFiles(files);
             }
         }
-        
-        fileInput.addEventListener('change', function(e) {
-            handleFiles(this.files);
-        });
         
         function handleFiles(files) {
             if (files.length > 0) {
