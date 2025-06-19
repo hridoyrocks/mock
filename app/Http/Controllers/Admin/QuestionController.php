@@ -73,6 +73,15 @@ class QuestionController extends Controller
      */
    public function store(Request $request): RedirectResponse
 {
+    // Debug logging
+    \Log::info('Question Store Request', [
+        'question_type' => $request->question_type,
+        'has_content' => $request->has('content'),
+        'has_passage_text' => $request->has('passage_text'),
+        'content_length' => strlen($request->content ?? ''),
+        'passage_text_length' => strlen($request->passage_text ?? ''),
+    ]);
+    
     // Get test set to determine section
     $testSet = TestSet::with('section')->findOrFail($request->test_set_id);
     $section = $testSet->section->name;
@@ -81,10 +90,10 @@ class QuestionController extends Controller
     $rules = [
         'test_set_id' => 'required|exists:test_sets,id',
         'question_type' => 'required|string',
-        'order_number' => 'required|integer|min:0', // Changed from min:1 to min:0 for passages
+        'order_number' => 'required|integer|min:0',
         'part_number' => 'nullable|integer',
         'question_group' => 'nullable|string',
-        'marks' => 'nullable|integer|min:0|max:10', // Changed from min:1 to min:0
+        'marks' => 'nullable|integer|min:0|max:10',
         'is_example' => 'nullable|boolean',
         'instructions' => 'nullable|string',
         'passage_text' => 'nullable|string',
@@ -94,7 +103,9 @@ class QuestionController extends Controller
     // Handle passage type specially
     if ($request->question_type === 'passage') {
         $rules['content'] = 'nullable|string'; // Make content optional for passage
-        $rules['passage_text'] = 'required_if:question_type,passage|string';
+        $rules['passage_text'] = 'required|string'; // Always required for passage type
+        $rules['order_number'] = 'required|integer|min:0'; // Allow 0 for passages
+        $rules['marks'] = 'nullable|integer|min:0'; // Allow 0 for passages
     } else {
         $rules['content'] = 'required|string';
     }
@@ -150,13 +161,18 @@ class QuestionController extends Controller
         // Handle content based on question type
         if ($request->question_type === 'passage') {
             // For passages, use passage_text as content
-            $questionData['content'] = $request->passage_text ?? $request->content;
+            $questionData['content'] = $request->passage_text;
             $questionData['passage_text'] = $request->passage_text;
             
             // Use passage_title as instructions if provided
             if ($request->filled('passage_title')) {
                 $questionData['instructions'] = $request->passage_title;
             }
+            
+            \Log::info('Passage data prepared', [
+                'title' => $request->passage_title ?? 'No title',
+                'textLength' => strlen($request->passage_text ?? '')
+            ]);
         } else {
             // For regular questions
             $questionData['content'] = $request->content;

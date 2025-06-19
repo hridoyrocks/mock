@@ -66,6 +66,7 @@
             border-radius: 8px;
             padding: 20px;
             overflow-y: auto;
+            position: relative;
         }
         
         .questions-section {
@@ -192,43 +193,60 @@
             color: #374151;
         }
         
-        .blank-placeholder {
-            background-color: #fef3c7;
-            border: 1px solid #f59e0b;
-            color: #92400e;
-            padding: 2px 8px;
-            margin: 0 2px;
-            border-radius: 4px;
-            font-weight: 500;
-            display: inline-block;
+        /* Passage container styles */
+        .passage-container {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
         }
         
-        .dropdown-placeholder {
-            background-color: #d1fae5;
-            border: 1px solid #10b981;
-            color: #065f46;
-            padding: 2px 8px;
-            margin: 0 2px;
-            border-radius: 4px;
-            font-weight: 500;
-            display: inline-block;
+        .passage-container.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .passage-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #111827;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            line-height: 1.3;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
         }
         
         .passage-content {
-            line-height: 1.8;
+            line-height: 1.9;
             color: #374151;
             text-align: justify;
+            font-size: 15px;
         }
         
         .passage-content p {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
+            text-indent: 2em;
+        }
+        
+        .passage-content p:first-child {
+            text-indent: 0;
+        }
+        
+        .no-passage-message {
+            background-color: #fef3c7;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: #92400e;
+            font-weight: 500;
         }
         
         .bottom-nav {
@@ -528,43 +546,93 @@
 
     <!-- Main Content -->
     <div class="content-area">
-        <!-- Reading Passage(s) -->
+        <!-- Reading Passage(s) Section -->
         <div class="passage-section">
             @php
-                // Group questions by part
-                $questionsByPart = $testSet->questions->groupBy('part_number');
-                $passages = $testSet->questions->where('question_type', 'passage')->sortBy('order_number');
+                // Get all passages ordered by part and order
+                $passages = $testSet->questions
+                    ->where('question_type', 'passage')
+                    ->sortBy(['part_number', 'order_number']);
+                
+                // Group passages by part
+                $passagesByPart = $passages->groupBy('part_number');
+                
+                // Get all parts that have questions (including Part 3)
+                $allQuestions = $testSet->questions
+                    ->where('question_type', '!=', 'passage')
+                    ->sortBy(['part_number', 'order_number']);
+                $partsWithQuestions = $allQuestions->groupBy('part_number')->keys()->filter()->sort();
             @endphp
             
             @if ($passages->count() > 0)
-                @foreach ($passages as $passage)
-                    <div class="passage-container mb-8">
-                        @if($passage->instructions)
-                            <div class="passage-title">{{ $passage->instructions }}</div>
+                {{-- Show all passages for all parts --}}
+                @foreach($partsWithQuestions as $partNumber)
+                    <div class="passage-container {{ $loop->first ? 'active' : '' }}" 
+                         data-part="{{ $partNumber }}"
+                         id="passage-part-{{ $partNumber }}">
+                        
+                        @if($passagesByPart->has($partNumber))
+                            {{-- Part has passages --}}
+                            @foreach($passagesByPart[$partNumber] as $passage)
+                                <div class="passage-content-wrapper">
+                                    @if($passage->instructions)
+                                        <h2 class="passage-title">{{ $passage->instructions }}</h2>
+                                    @else
+                                        <h2 class="passage-title">Reading Passage {{ $partNumber }}</h2>
+                                    @endif
+                                    
+                                    @if($passage->passage_text)
+                                        <div class="passage-content">
+                                            @php
+                                                $paragraphs = explode("\n\n", $passage->passage_text);
+                                            @endphp
+                                            @foreach($paragraphs as $paragraph)
+                                                @if(trim($paragraph))
+                                                    <p>{!! nl2br(e(trim($paragraph))) !!}</p>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    @elseif($passage->content)
+                                        <div class="passage-content">
+                                            @php
+                                                $paragraphs = explode("\n\n", $passage->content);
+                                            @endphp
+                                            @foreach($paragraphs as $paragraph)
+                                                @if(trim($paragraph))
+                                                    <p>{!! nl2br(e(trim($paragraph))) !!}</p>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                    
+                                    @if ($passage->media_path)
+                                        <div class="mt-4">
+                                            <img src="{{ Storage::url($passage->media_path) }}" 
+                                                 alt="Passage Image" 
+                                                 class="max-w-full h-auto rounded border border-gray-200">
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
                         @else
-                            <div class="passage-title">Reading Passage {{ $loop->iteration }}</div>
-                        @endif
-                        
-                        @if($passage->passage_text)
-                            <div class="passage-content">
-                                {!! nl2br(e($passage->passage_text)) !!}
-                            </div>
-                        @elseif($passage->content)
-                            <div class="passage-content">
-                                {!! nl2br(e($passage->content)) !!}
-                            </div>
-                        @endif
-                        
-                        @if ($passage->media_path)
-                            <div class="mt-4">
-                                <img src="{{ Storage::url($passage->media_path) }}" alt="Passage Image" class="max-w-full h-auto rounded">
+                            {{-- Part has no passage - show message --}}
+                            <div class="no-passage-message">
+                                <svg class="w-12 h-12 mx-auto mb-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                                <p>No reading passage available for Part {{ $partNumber }}.</p>
+                                <p class="text-sm mt-2">Questions are shown on the right side.</p>
                             </div>
                         @endif
                     </div>
                 @endforeach
             @else
-                <div class="bg-yellow-50 p-4 rounded-md">
-                    <p class="text-yellow-700">No passage content found for this test.</p>
+                <div class="no-passage-message">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <p>No reading passages available for this test.</p>
+                    <p class="text-sm mt-2">Please contact your administrator.</p>
                 </div>
             @endif
         </div>
@@ -575,157 +643,165 @@
                 @csrf
                 
                 @php
-                    $allQuestions = $testSet->questions
-                        ->where('question_type', '!=', 'passage')
-                        ->sortBy(['part_number', 'order_number']);
                     $groupedQuestions = $allQuestions->groupBy('part_number');
                 @endphp
                 
                 @foreach ($groupedQuestions as $partNumber => $partQuestions)
-                    @if($partNumber)
-                        <div class="part-header">
-                            Part {{ $partNumber }}
-                        </div>
-                    @endif
-                    
-                    @php
-                        $questionGroups = $partQuestions->groupBy('question_group');
-                    @endphp
-                    
-                    @foreach ($questionGroups as $groupName => $questions)
-                        @if($groupName)
-                            <div class="question-group-header">
-                                {{ $groupName }}
+                    <div class="part-questions" data-part="{{ $partNumber }}" style="{{ !$loop->first ? 'display: none;' : '' }}">
+                        @if($partNumber)
+                            <div class="part-header">
+                                Part {{ $partNumber }}
                             </div>
                         @endif
                         
                         @php
-                            // Get unique instructions for this group
-                            $instructions = $questions->pluck('instructions')->filter()->unique();
+                            $questionGroups = $partQuestions->groupBy('question_group');
                         @endphp
                         
-                        @foreach($instructions as $instruction)
-                            <div class="question-instructions">
-                                {{ $instruction }}
-                            </div>
-                        @endforeach
-                        
-                        @foreach ($questions as $question)
-                            <div class="question-box" id="question-{{ $question->order_number }}">
-                                @php
-                                    // Process content for fill in the blanks
-                                    $processedContent = $question->content;
-                                    $hasBlanks = false;
-                                    $hasDropdowns = false;
+                        @foreach ($questionGroups as $groupName => $questions)
+                            @if($groupName)
+                                <div class="question-group-header">
+                                    {{ $groupName }}
+                                </div>
+                            @endif
+                            
+                            @php
+                                $instructions = $questions->pluck('instructions')->filter()->unique();
+                            @endphp
+                            
+                            @foreach($instructions as $instruction)
+                                <div class="question-instructions">
+                                    {{ $instruction }}
+                                </div>
+                            @endforeach
+                            
+                            @foreach ($questions as $question)
+                                <div class="question-box" id="question-{{ $question->order_number }}">
+                                    @php
+                                        // Process content for fill in the blanks
+                                        $processedContent = $question->content;
+                                        $hasBlanks = false;
+                                        $hasDropdowns = false;
+                                        
+                                        // Check for blanks and dropdowns
+                                        if (strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[DROPDOWN_') !== false) {
+                                            $hasBlanks = strpos($processedContent, '[BLANK_') !== false;
+                                            $hasDropdowns = strpos($processedContent, '[DROPDOWN_') !== false;
+                                            
+                                            // Replace blanks with input fields
+                                            $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]/', function($matches) use ($question) {
+                                                $blankNum = $matches[1];
+                                                return '<input type="text" 
+                                                        name="answers[' . $question->id . '][blank_' . $blankNum . ']" 
+                                                        class="fill-blank-input" 
+                                                        placeholder="____" 
+                                                        data-blank="' . $blankNum . '">';
+                                            }, $processedContent);
+                                            
+                                            // Replace dropdowns with select fields
+                                            if ($question->section_specific_data) {
+                                                $sectionData = $question->section_specific_data;
+                                                $dropdownOptions = $sectionData['dropdown_options'] ?? [];
+                                                
+                                                $processedContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question, $dropdownOptions) {
+                                                    $dropdownNum = $matches[1];
+                                                    $options = isset($dropdownOptions[$dropdownNum]) ? explode(',', $dropdownOptions[$dropdownNum]) : [];
+                                                    
+                                                    $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
+                                                            class="dropdown-select" 
+                                                            data-dropdown="' . $dropdownNum . '">
+                                                            <option value="">Choose</option>';
+                                                    
+                                                    foreach ($options as $option) {
+                                                        $selectHtml .= '<option value="' . trim($option) . '">' . trim($option) . '</option>';
+                                                    }
+                                                    
+                                                    $selectHtml .= '</select>';
+                                                    return $selectHtml;
+                                                }, $processedContent);
+                                            }
+                                        }
+                                    @endphp
                                     
-                                    // Check for blanks and dropdowns
-                                    if (strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[DROPDOWN_') !== false) {
-                                        $hasBlanks = strpos($processedContent, '[BLANK_') !== false;
-                                        $hasDropdowns = strpos($processedContent, '[DROPDOWN_') !== false;
-                                        
-                                        // Replace blanks with input fields
-                                        $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]/', function($matches) use ($question) {
-                                            $blankNum = $matches[1];
-                                            return '<input type="text" 
-                                                    name="answers[' . $question->id . '][blank_' . $blankNum . ']" 
-                                                    class="fill-blank-input" 
-                                                    placeholder="____" 
-                                                    data-blank="' . $blankNum . '">';
-                                        }, $processedContent);
-                                        
-                                        // Replace dropdowns with select fields
-                                        $processedContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question) {
-                                            $dropdownNum = $matches[1];
-                                            // You would need to get dropdown options from question data
-                                            return '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
-                                                    class="dropdown-select" 
-                                                    data-dropdown="' . $dropdownNum . '">
-                                                    <option value="">Choose</option>
-                                                    <option value="option1">Option 1</option>
-                                                    <option value="option2">Option 2</option>
-                                                    </select>';
-                                        }, $processedContent);
-                                    }
-                                @endphp
-                                
-                                <div class="question-number">
-                                    {{ $question->order_number }}. 
-                                    @if($hasBlanks || $hasDropdowns)
-                                        <div class="question-content">{!! $processedContent !!}</div>
-                                    @else
-                                        {!! $question->content !!}
+                                    <div class="question-number">
+                                        {{ $question->order_number }}. 
+                                        @if($hasBlanks || $hasDropdowns)
+                                            <div class="question-content">{!! $processedContent !!}</div>
+                                        @else
+                                            {!! $question->content !!}
+                                        @endif
+                                    </div>
+                                    
+                                    @if ($question->media_path)
+                                        <div class="mb-3">
+                                            <img src="{{ Storage::url($question->media_path) }}" alt="Question Image" class="max-w-full h-auto rounded">
+                                        </div>
+                                    @endif
+                                    
+                                    @if(!$hasBlanks && !$hasDropdowns)
+                                    <div class="options-list">
+                                        @switch($question->question_type)
+                                            @case('multiple_choice')
+                                                @foreach ($question->options as $optionIndex => $option)
+                                                    <div class="option-item">
+                                                        <input type="radio" 
+                                                               name="answers[{{ $question->id }}]" 
+                                                               id="option-{{ $option->id }}" 
+                                                               value="{{ $option->id }}" 
+                                                               class="option-radio">
+                                                        <label for="option-{{ $option->id }}">
+                                                            <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                        </label>
+                                                    </div>
+                                                @endforeach
+                                                @break
+                                            
+                                            @case('true_false')
+                                            @case('yes_no')
+                                                @foreach ($question->options as $option)
+                                                    <div class="option-item">
+                                                        <input type="radio" 
+                                                               name="answers[{{ $question->id }}]" 
+                                                               id="option-{{ $option->id }}" 
+                                                               value="{{ $option->id }}" 
+                                                               class="option-radio">
+                                                        <label for="option-{{ $option->id }}">{{ $option->content }}</label>
+                                                    </div>
+                                                @endforeach
+                                                @break
+                                            
+                                            @case('matching')
+                                            @case('matching_headings')
+                                            @case('matching_information')
+                                            @case('matching_features')
+                                                <select name="answers[{{ $question->id }}]" class="text-input">
+                                                    <option value="">Select your answer</option>
+                                                    @foreach ($question->options as $optionIndex => $option)
+                                                        <option value="{{ $option->id }}">
+                                                            {{ chr(65 + $optionIndex) }}. {{ $option->content }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                @break
+                                            
+                                            @case('fill_blanks')
+                                            @case('sentence_completion')
+                                            @case('summary_completion')
+                                            @case('short_answer')
+                                            @default
+                                                <input type="text" 
+                                                       name="answers[{{ $question->id }}]" 
+                                                       class="text-input" 
+                                                       placeholder="Type your answer here"
+                                                       maxlength="100">
+                                                @break
+                                        @endswitch
+                                    </div>
                                     @endif
                                 </div>
-                                
-                                @if ($question->media_path)
-                                    <div class="mb-3">
-                                        <img src="{{ Storage::url($question->media_path) }}" alt="Question Image" class="max-w-full h-auto rounded">
-                                    </div>
-                                @endif
-                                
-                                @if(!$hasBlanks && !$hasDropdowns)
-                                <div class="options-list">
-                                    @switch($question->question_type)
-                                        @case('multiple_choice')
-                                            @foreach ($question->options as $optionIndex => $option)
-                                                <div class="option-item">
-                                                    <input type="radio" 
-                                                           name="answers[{{ $question->id }}]" 
-                                                           id="option-{{ $option->id }}" 
-                                                           value="{{ $option->id }}" 
-                                                           class="option-radio">
-                                                    <label for="option-{{ $option->id }}">
-                                                        <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
-                                                    </label>
-                                                </div>
-                                            @endforeach
-                                            @break
-                                        
-                                        @case('true_false')
-                                        @case('yes_no')
-                                            @foreach ($question->options as $option)
-                                                <div class="option-item">
-                                                    <input type="radio" 
-                                                           name="answers[{{ $question->id }}]" 
-                                                           id="option-{{ $option->id }}" 
-                                                           value="{{ $option->id }}" 
-                                                           class="option-radio">
-                                                    <label for="option-{{ $option->id }}">{{ $option->content }}</label>
-                                                </div>
-                                            @endforeach
-                                            @break
-                                        
-                                        @case('matching')
-                                        @case('matching_headings')
-                                        @case('matching_information')
-                                        @case('matching_features')
-                                            <select name="answers[{{ $question->id }}]" class="text-input">
-                                                <option value="">Select your answer</option>
-                                                @foreach ($question->options as $optionIndex => $option)
-                                                    <option value="{{ $option->id }}">
-                                                        {{ chr(65 + $optionIndex) }}. {{ $option->content }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            @break
-                                        
-                                        @case('fill_blanks')
-                                        @case('sentence_completion')
-                                        @case('summary_completion')
-                                        @case('short_answer')
-                                        @default
-                                            <input type="text" 
-                                                   name="answers[{{ $question->id }}]" 
-                                                   class="text-input" 
-                                                   placeholder="Type your answer here"
-                                                   maxlength="100">
-                                            @break
-                                    @endswitch
-                                </div>
-                                @endif
-                            </div>
+                            @endforeach
                         @endforeach
-                    @endforeach
+                    </div>
                 @endforeach
                 
                 <button type="submit" id="submit-button" class="hidden">Submit</button>
@@ -744,12 +820,8 @@
             <div class="nav-section-container">
                 <span class="section-label">Reading</span>
                 
-                {{-- Parts Navigation --}}
+                {{-- Parts Navigation - Show all parts --}}
                 <div class="parts-nav">
-                    @php
-                        $partsWithQuestions = $allQuestions->groupBy('part_number')->keys()->filter()->sort();
-                    @endphp
-                    
                     @foreach($partsWithQuestions as $partNum)
                         <button type="button" class="part-btn {{ $loop->first ? 'active' : '' }}" data-part="{{ $partNum }}">
                             Part {{ $partNum }}
@@ -759,10 +831,6 @@
                 
                 {{-- Question Numbers --}}
                 <div class="nav-numbers">
-                    @php
-                        $questionCount = $allQuestions->count();
-                    @endphp
-                    
                     @foreach($allQuestions as $index => $question)
                         <div class="number-btn {{ $index == 0 ? 'active' : '' }}" 
                              data-question="{{ $question->order_number }}"
@@ -809,14 +877,31 @@
         const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
         const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
         const answeredCountSpan = document.getElementById('answered-count');
+        const passageContainers = document.querySelectorAll('.passage-container');
+        const questionParts = document.querySelectorAll('.part-questions');
         
-        // Part navigation
+        // Part navigation - Show corresponding passage and questions
         partButtons.forEach(button => {
             button.addEventListener('click', function() {
                 partButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
                 
                 const partNumber = this.dataset.part;
+                
+                // Hide all question parts first
+                questionParts.forEach(part => {
+                    part.style.display = 'none';
+                });
+                
+                // Show questions for this part
+                const targetQuestionPart = document.querySelector(`.part-questions[data-part="${partNumber}"]`);
+                if (targetQuestionPart) {
+                    targetQuestionPart.style.display = 'block';
+                }
+                
+                // Update passage display
+                updatePassageDisplay(partNumber);
+                
                 // Find first question of this part
                 const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]`);
                 if (firstQuestionOfPart) {
@@ -825,6 +910,20 @@
             });
         });
         
+        // Function to update passage display based on part
+        function updatePassageDisplay(partNumber) {
+            // Hide all passages first
+            passageContainers.forEach(container => {
+                container.classList.remove('active');
+            });
+            
+            // Show the passage for this part
+            const partPassage = document.querySelector(`.passage-container[data-part="${partNumber}"]`);
+            if (partPassage) {
+                partPassage.classList.add('active');
+            }
+        }
+        
         // Question navigation
         navButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -832,23 +931,32 @@
                 this.classList.add('active');
                 
                 const questionNumber = this.dataset.question;
+                const partNumber = this.dataset.part;
                 const questionElement = document.getElementById(`question-${questionNumber}`);
                 
                 if (questionElement) {
-                    questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Smooth scroll to question
+                    questionElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
                     
-                    // Update active part
-                    const partNumber = this.dataset.part;
+                    // Update active part if needed
                     if (partNumber) {
-                        partButtons.forEach(btn => {
-                            if (btn.dataset.part === partNumber) {
-                                btn.classList.add('active');
-                            } else {
-                                btn.classList.remove('active');
-                            }
-                        });
+                        const currentActivePart = document.querySelector('.part-btn.active');
+                        if (!currentActivePart || currentActivePart.dataset.part !== partNumber) {
+                            partButtons.forEach(btn => {
+                                if (btn.dataset.part === partNumber) {
+                                    btn.click(); // This will update everything
+                                }
+                            });
+                        }
                     }
                 }
+                
+                // Update review checkbox based on flagged status
+                const reviewCheckbox = document.getElementById('review-checkbox');
+                reviewCheckbox.checked = this.classList.contains('flagged');
             });
         });
         
@@ -987,7 +1095,7 @@
         }
         
         // Periodically save answers
-        setInterval(saveAllAnswers, 30000);
+        setInterval(saveAllAnswers, 30000); // Every 30 seconds
         
         // Load saved answers on page load
         try {
@@ -1034,12 +1142,10 @@
             console.error('Error restoring saved answers:', e);
         }
         
-        // Scroll to first question on load
-        const firstQuestion = document.getElementById('question-1');
-        if (firstQuestion) {
-            setTimeout(() => {
-                firstQuestion.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 500);
+        // Initialize first part on load
+        const firstPartBtn = document.querySelector('.part-btn');
+        if (firstPartBtn) {
+            firstPartBtn.click();
         }
     });
     </script>
