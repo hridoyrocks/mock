@@ -121,6 +121,169 @@
             margin-bottom: 10px;
         }
         
+        /* Simple underline blanks - NO BOX */
+        .simple-blank {
+            all: unset;
+            border-bottom: 1px solid #9ca3af;
+            min-width: 120px;
+            display: inline-block;
+            text-align: center;
+            padding-bottom: 2px;
+            margin: 0 8px;
+            font-size: inherit;
+            font-family: inherit;
+            color: #1f2937;
+            transition: all 0.2s;
+        }
+        
+        .simple-blank:focus {
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 1px;
+        }
+        
+        .simple-blank:not(:placeholder-shown) {
+            border-bottom-color: #059669;
+            font-weight: 500;
+        }
+        
+        .simple-blank::placeholder {
+            color: transparent;
+        }
+        
+        /* Simple dropdown */
+        .simple-dropdown {
+            all: unset;
+            border-bottom: 1px solid #9ca3af;
+            min-width: 120px;
+            display: inline-block;
+            padding: 0 4px 2px 4px;
+            margin: 0 8px;
+            cursor: pointer;
+            font-size: inherit;
+            font-family: inherit;
+        }
+        
+        .simple-dropdown:focus {
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 1px;
+        }
+        
+        /* Question number inline style */
+        .question-number-inline {
+            font-weight: 600;
+            color: #1f2937;
+            margin-right: 8px;
+            display: inline-block;
+            min-width: 20px;
+        }
+        
+        .question-content {
+            line-height: 2;
+        }
+        
+        /* Passage highlight styles */
+        .passage-content.highlighted {
+            background-color: #fef3c7;
+            transition: background-color 0.3s;
+        }
+        
+        /* Text highlight colors */
+        .highlight-yellow {
+            background-color: #fef3c7;
+            padding: 2px 4px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        
+        .highlight-green {
+            background-color: #d1fae5;
+            padding: 2px 4px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        
+        .highlight-blue {
+            background-color: #dbeafe;
+            padding: 2px 4px;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        
+        /* Color picker popup */
+        .color-picker {
+            position: fixed;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 9999;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+        
+        .color-picker::before {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid white;
+        }
+        
+        .color-picker.bottom::before {
+            top: -8px;
+            bottom: auto;
+            border-top: none;
+            border-bottom: 8px solid white;
+        }
+        
+        .color-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .color-btn:hover {
+            transform: scale(1.1);
+            border-color: #374151;
+        }
+        
+        .color-btn.yellow {
+            background-color: #fbbf24;
+        }
+        
+        .color-btn.green {
+            background-color: #34d399;
+        }
+        
+        .color-btn.blue {
+            background-color: #60a5fa;
+        }
+        
+        .color-btn.remove {
+            background-color: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Highlighted text hover effect */
+        .highlight-yellow:hover,
+        .highlight-green:hover,
+        .highlight-blue:hover {
+            filter: brightness(0.95);
+        }
+        
         .options-list {
             margin-left: 20px;
             margin-top: 10px;
@@ -149,57 +312,6 @@
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-        }
-        
-        /* Simple underline blanks - no boxes */
-        .simple-blank {
-            border: none;
-            border-bottom: 1px solid #9ca3af;
-            background: transparent;
-            outline: none;
-            padding: 0 2px;
-            margin: 0 4px;
-            font-size: inherit;
-            font-family: inherit;
-            color: #1f2937;
-            min-width: 80px;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        
-        .simple-blank:focus {
-            border-bottom-color: #2563eb;
-            border-bottom-width: 2px;
-            padding-bottom: 0;
-        }
-        
-        .simple-blank:not(:placeholder-shown) {
-            border-bottom-color: #059669;
-            font-weight: 500;
-        }
-        
-        /* Simple dropdown */
-        .simple-dropdown {
-            border: none;
-            border-bottom: 1px solid #9ca3af;
-            background: transparent;
-            outline: none;
-            padding: 2px 4px;
-            margin: 0 4px;
-            font-size: inherit;
-            font-family: inherit;
-            cursor: pointer;
-            min-width: 100px;
-        }
-        
-        .simple-dropdown:focus {
-            border-bottom-color: #2563eb;
-            border-bottom-width: 2px;
-        }
-        
-        .question-content {
-            line-height: 1.8;
-            color: #374151;
         }
         
         /* Passage container styles */
@@ -238,6 +350,8 @@
             color: #374151;
             text-align: justify;
             font-size: 15px;
+            cursor: text;
+            user-select: text;
         }
         
         .passage-content p {
@@ -497,6 +611,15 @@
             .content-area {
                 grid-template-columns: 1fr;
                 height: auto;
+                padding: 10px;
+                padding-bottom: 120px;
+            }
+            
+            .passage-section,
+            .questions-section {
+                height: auto;
+                max-height: none;
+                margin-bottom: 20px;
             }
             
             .parts-nav {
@@ -505,6 +628,13 @@
             
             .nav-numbers {
                 max-width: 100%;
+                gap: 3px;
+            }
+            
+            .number-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
             }
             
             .review-section {
@@ -513,6 +643,112 @@
             
             .section-label {
                 display: none;
+            }
+            
+            .bottom-nav {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            
+            .nav-left {
+                width: 100%;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .nav-section-container {
+                width: 100%;
+            }
+            
+            .submit-test-button {
+                width: 100%;
+            }
+            
+            .question-number-inline {
+                font-size: 14px;
+            }
+            
+            .simple-blank,
+            .simple-dropdown {
+                min-width: 80px;
+                margin: 0 4px;
+            }
+            
+            .color-picker {
+                top: auto !important;
+                bottom: 40px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+            }
+            
+            .color-picker::before {
+                top: auto;
+                bottom: -8px;
+                border-top: none;
+                border-bottom: 8px solid white;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .ielts-header {
+                padding: 8px 12px;
+            }
+            
+            .ielts-header svg {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .ielts-header span {
+                font-size: 14px;
+            }
+            
+            .user-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .user-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .passage-title {
+                font-size: 18px;
+            }
+            
+            .passage-content {
+                font-size: 14px;
+            }
+            
+            .question-box {
+                font-size: 14px;
+            }
+            
+            .modal-content {
+                width: 90%;
+                padding: 20px;
+            }
+        }
+        
+        /* Landscape mode for mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .content-area {
+                grid-template-columns: 1fr 1fr;
+                height: calc(100vh - 100px);
+                padding-bottom: 80px;
+            }
+            
+            .bottom-nav {
+                flex-direction: row;
+            }
+            
+            .nav-numbers {
+                max-height: 40px;
+                overflow-y: auto;
             }
         }
     </style>
@@ -539,7 +775,7 @@
             <span>{{ auth()->user()->name }} - BI {{ str_pad(auth()->id(), 6, '0', STR_PAD_LEFT) }}</span>
         </div>
         <div class="user-controls">
-            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Help ?</button>
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm" onclick="HelpGuide.open()">Help ?</button>
             <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
             
             {{-- Integrated Timer Component --}}
@@ -566,10 +802,49 @@
                 // Group passages by part
                 $passagesByPart = $passages->groupBy('part_number');
                 
-                // Get all parts that have questions (including Part 3)
+                // Get all questions excluding passages
                 $allQuestions = $testSet->questions
                     ->where('question_type', '!=', 'passage')
                     ->sortBy(['part_number', 'order_number']);
+                    
+                // Build display array with proper numbering for blanks
+                $displayQuestions = [];
+                $currentQuestionNumber = 1;
+                
+                foreach ($allQuestions as $question) {
+                    $blankCount = 0;
+                    
+                    // Count blanks in this question
+                    preg_match_all('/\[BLANK_\d+\]|\[____\d+____\]/', $question->content, $blankMatches);
+                    preg_match_all('/\[DROPDOWN_\d+\]/', $question->content, $dropdownMatches);
+                    $blankCount = count($blankMatches[0]) + count($dropdownMatches[0]);
+                    
+                    if ($blankCount > 0) {
+                        // Store blank numbers for this question
+                        $blankNumbers = [];
+                        for ($i = 1; $i <= $blankCount; $i++) {
+                            $blankNumbers[$i] = $currentQuestionNumber;
+                            $currentQuestionNumber++;
+                        }
+                        
+                        $displayQuestions[] = [
+                            'question' => $question,
+                            'has_blanks' => true,
+                            'blank_numbers' => $blankNumbers,
+                            'first_number' => $blankNumbers[1]
+                        ];
+                    } else {
+                        // Regular question
+                        $displayQuestions[] = [
+                            'question' => $question,
+                            'has_blanks' => false,
+                            'display_number' => $currentQuestionNumber
+                        ];
+                        $currentQuestionNumber++;
+                    }
+                }
+                
+                $totalQuestionCount = $currentQuestionNumber - 1;
                 $partsWithQuestions = $allQuestions->groupBy('part_number')->keys()->filter()->sort();
             @endphp
             
@@ -652,7 +927,9 @@
                 @csrf
                 
                 @php
-                    $groupedQuestions = $allQuestions->groupBy('part_number');
+                    $groupedQuestions = collect($displayQuestions)->groupBy(function($item) {
+                        return $item['question']->part_number;
+                    });
                 @endphp
                 
                 @foreach ($groupedQuestions as $partNumber => $partQuestions)
@@ -664,7 +941,9 @@
                         @endif
                         
                         @php
-                            $questionGroups = $partQuestions->groupBy('question_group');
+                            $questionGroups = $partQuestions->groupBy(function($item) {
+                                return $item['question']->question_group;
+                            });
                         @endphp
                         
                         @foreach ($questionGroups as $groupName => $questions)
@@ -675,7 +954,7 @@
                             @endif
                             
                             @php
-                                $instructions = $questions->pluck('instructions')->filter()->unique();
+                                $instructions = $questions->pluck('question.instructions')->filter()->unique();
                             @endphp
                             
                             @foreach($instructions as $instruction)
@@ -684,43 +963,47 @@
                                 </div>
                             @endforeach
                             
-                            @foreach ($questions as $question)
-                                <div class="question-box" id="question-{{ $question->order_number }}">
-                                    @php
-                                        // Process content for fill in the blanks
-                                        $processedContent = $question->content;
-                                        $hasBlanks = false;
-                                        $hasDropdowns = false;
-                                        
-                                        // Check for blanks and dropdowns
-                                        if (strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[____') !== false || strpos($processedContent, '[DROPDOWN_') !== false) {
-                                            $hasBlanks = strpos($processedContent, '[BLANK_') !== false || strpos($processedContent, '[____') !== false;
-                                            $hasDropdowns = strpos($processedContent, '[DROPDOWN_') !== false;
+                            @foreach ($questions as $item)
+                                @php
+                                    $question = $item['question'];
+                                    $hasBlanks = $item['has_blanks'];
+                                @endphp
+                                
+                                <div class="question-box" id="question-{{ $question->id }}">
+                                    @if($hasBlanks)
+                                        {{-- Fill-in-the-blanks question with simple numbered blanks --}}
+                                        @php
+                                            $processedContent = $question->content;
+                                            $blankNumbers = $item['blank_numbers'];
                                             
                                             // Replace blanks with simple underline inputs
-                                            $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/', function($matches) use ($question) {
-                                                $blankNum = $matches[1] ?? $matches[2];
-                                                return '<input type="text" 
-                                                        name="answers[' . $question->id . '][blank_' . $blankNum . ']" 
+                                            $blankCounter = 0;
+                                            $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/', function($matches) use ($question, &$blankCounter, $blankNumbers) {
+                                                $blankCounter++;
+                                                $displayNum = $blankNumbers[$blankCounter];
+                                                
+                                                return '<span class="question-number-inline">' . $displayNum . '.</span><input type="text" 
+                                                        name="answers[' . $question->id . '][blank_' . $blankCounter . ']" 
                                                         class="simple-blank" 
-                                                        placeholder="______"
-                                                        autocomplete="off"
-                                                        data-blank="' . $blankNum . '">';
+                                                        placeholder=""
+                                                        data-question-number="' . $displayNum . '">';
                                             }, $processedContent);
                                             
-                                            // Replace dropdowns with simple select fields
+                                            // Replace dropdowns similarly
                                             if ($question->section_specific_data) {
-                                                $sectionData = $question->section_specific_data;
-                                                $dropdownOptions = $sectionData['dropdown_options'] ?? [];
+                                                $dropdownOptions = $question->section_specific_data['dropdown_options'] ?? [];
                                                 
-                                                $processedContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question, $dropdownOptions) {
+                                                $processedContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question, $dropdownOptions, &$blankCounter, $blankNumbers) {
                                                     $dropdownNum = $matches[1];
+                                                    $blankCounter++;
+                                                    $displayNum = $blankNumbers[$blankCounter];
                                                     $options = isset($dropdownOptions[$dropdownNum]) ? explode(',', $dropdownOptions[$dropdownNum]) : [];
                                                     
-                                                    $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
-                                                            class="simple-dropdown" 
-                                                            data-dropdown="' . $dropdownNum . '">
-                                                            <option value="">______</option>';
+                                                    $selectHtml = '<span class="question-number-inline">' . $displayNum . '.</span>
+                                                                   <select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
+                                                                           class="simple-dropdown" 
+                                                                           data-question-number="' . $displayNum . '">
+                                                                   <option value="">______</option>';
                                                     
                                                     foreach ($options as $option) {
                                                         $selectHtml .= '<option value="' . trim($option) . '">' . trim($option) . '</option>';
@@ -730,83 +1013,84 @@
                                                     return $selectHtml;
                                                 }, $processedContent);
                                             }
-                                        }
-                                    @endphp
-                                    
-                                    <div class="question-number">
-                                        {{ $question->order_number }}. 
-                                        @if($hasBlanks || $hasDropdowns)
-                                            <span class="question-content">{!! $processedContent !!}</span>
-                                        @else
-                                            {!! $question->content !!}
-                                        @endif
-                                    </div>
-                                    
-                                    @if ($question->media_path)
-                                        <div class="mb-3">
-                                            <img src="{{ Storage::url($question->media_path) }}" alt="Question Image" class="max-w-full h-auto rounded">
+                                        @endphp
+                                        
+                                        <div class="question-content">
+                                            {!! $processedContent !!}
                                         </div>
-                                    @endif
-                                    
-                                    @if(!$hasBlanks && !$hasDropdowns)
-                                    <div class="options-list">
-                                        @switch($question->question_type)
-                                            @case('multiple_choice')
-                                                @foreach ($question->options as $optionIndex => $option)
-                                                    <div class="option-item">
-                                                        <input type="radio" 
-                                                               name="answers[{{ $question->id }}]" 
-                                                               id="option-{{ $option->id }}" 
-                                                               value="{{ $option->id }}" 
-                                                               class="option-radio">
-                                                        <label for="option-{{ $option->id }}">
-                                                            <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
-                                                        </label>
-                                                    </div>
-                                                @endforeach
-                                                @break
-                                            
-                                            @case('true_false')
-                                            @case('yes_no')
-                                                @foreach ($question->options as $option)
-                                                    <div class="option-item">
-                                                        <input type="radio" 
-                                                               name="answers[{{ $question->id }}]" 
-                                                               id="option-{{ $option->id }}" 
-                                                               value="{{ $option->id }}" 
-                                                               class="option-radio">
-                                                        <label for="option-{{ $option->id }}">{{ $option->content }}</label>
-                                                    </div>
-                                                @endforeach
-                                                @break
-                                            
-                                            @case('matching')
-                                            @case('matching_headings')
-                                            @case('matching_information')
-                                            @case('matching_features')
-                                                <select name="answers[{{ $question->id }}]" class="text-input">
-                                                    <option value="">Select your answer</option>
+                                    @else
+                                        {{-- Regular question --}}
+                                        <div class="question-number">
+                                            {{ $item['display_number'] }}. {!! $question->content !!}
+                                        </div>
+                                        
+                                        @if ($question->media_path)
+                                            <div class="mb-3">
+                                                <img src="{{ Storage::url($question->media_path) }}" alt="Question Image" class="max-w-full h-auto rounded">
+                                            </div>
+                                        @endif
+                                        
+                                        <div class="options-list">
+                                            @switch($question->question_type)
+                                                @case('multiple_choice')
                                                     @foreach ($question->options as $optionIndex => $option)
-                                                        <option value="{{ $option->id }}">
-                                                            {{ chr(65 + $optionIndex) }}. {{ $option->content }}
-                                                        </option>
+                                                        <div class="option-item">
+                                                            <input type="radio" 
+                                                                   name="answers[{{ $question->id }}]" 
+                                                                   id="option-{{ $option->id }}" 
+                                                                   value="{{ $option->id }}" 
+                                                                   class="option-radio"
+                                                                   data-question-number="{{ $item['display_number'] }}">
+                                                            <label for="option-{{ $option->id }}">
+                                                                <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                            </label>
+                                                        </div>
                                                     @endforeach
-                                                </select>
-                                                @break
-                                            
-                                            @case('fill_blanks')
-                                            @case('sentence_completion')
-                                            @case('summary_completion')
-                                            @case('short_answer')
-                                            @default
-                                                <input type="text" 
-                                                       name="answers[{{ $question->id }}]" 
-                                                       class="text-input" 
-                                                       placeholder="Type your answer here"
-                                                       maxlength="100">
-                                                @break
-                                        @endswitch
-                                    </div>
+                                                    @break
+                                                
+                                                @case('true_false')
+                                                @case('yes_no')
+                                                    @foreach ($question->options as $option)
+                                                        <div class="option-item">
+                                                            <input type="radio" 
+                                                                   name="answers[{{ $question->id }}]" 
+                                                                   id="option-{{ $option->id }}" 
+                                                                   value="{{ $option->id }}" 
+                                                                   class="option-radio"
+                                                                   data-question-number="{{ $item['display_number'] }}">
+                                                            <label for="option-{{ $option->id }}">{{ $option->content }}</label>
+                                                        </div>
+                                                    @endforeach
+                                                    @break
+                                                
+                                                @case('matching')
+                                                @case('matching_headings')
+                                                @case('matching_information')
+                                                @case('matching_features')
+                                                    <select name="answers[{{ $question->id }}]" class="text-input" data-question-number="{{ $item['display_number'] }}">
+                                                        <option value="">Select your answer</option>
+                                                        @foreach ($question->options as $optionIndex => $option)
+                                                            <option value="{{ $option->id }}">
+                                                                {{ chr(65 + $optionIndex) }}. {{ $option->content }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @break
+                                                
+                                                @case('fill_blanks')
+                                                @case('sentence_completion')
+                                                @case('summary_completion')
+                                                @case('short_answer')
+                                                @default
+                                                    <input type="text" 
+                                                           name="answers[{{ $question->id }}]" 
+                                                           class="text-input" 
+                                                           placeholder="Type your answer here"
+                                                           maxlength="100"
+                                                           data-question-number="{{ $item['display_number'] }}">
+                                                    @break
+                                            @endswitch
+                                        </div>
                                     @endif
                                 </div>
                             @endforeach
@@ -841,12 +1125,27 @@
                 
                 {{-- Question Numbers --}}
                 <div class="nav-numbers">
-                    @foreach($allQuestions as $index => $question)
-                        <div class="number-btn {{ $index == 0 ? 'active' : '' }}" 
-                             data-question="{{ $question->order_number }}"
-                             data-part="{{ $question->part_number }}">
-                            {{ $question->order_number }}
-                        </div>
+                    @foreach($displayQuestions as $item)
+                        @if($item['has_blanks'])
+                            {{-- Show number for each blank --}}
+                            @foreach($item['blank_numbers'] as $blankIndex => $number)
+                                <div class="number-btn {{ $loop->parent->first && $loop->first ? 'active' : '' }}" 
+                                     data-question="{{ $item['question']->id }}"
+                                     data-blank="{{ $blankIndex }}"
+                                     data-display-number="{{ $number }}"
+                                     data-part="{{ $item['question']->part_number }}">
+                                    {{ $number }}
+                                </div>
+                            @endforeach
+                        @else
+                            {{-- Regular question button --}}
+                            <div class="number-btn {{ $loop->first ? 'active' : '' }}" 
+                                 data-question="{{ $item['question']->id }}"
+                                 data-display-number="{{ $item['display_number'] }}"
+                                 data-part="{{ $item['question']->part_number }}">
+                                {{ $item['display_number'] }}
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             </div>
@@ -866,7 +1165,7 @@
             <div class="modal-message">
                 Are you sure you want to submit your test? You cannot change your answers after submission.
                 <br><br>
-                <strong>Answered Questions: <span id="answered-count">0</span> / {{ $allQuestions->count() }}</strong>
+                <strong>Answered Questions: <span id="answered-count">0</span> / {{ $totalQuestionCount }}</strong>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button class="modal-button" id="confirm-submit-btn">Yes, Submit</button>
@@ -874,6 +1173,8 @@
             </div>
         </div>
     </div>
+
+    <x-help-guide :testType="'reading'" />
     
     @push('scripts')
     <script>
@@ -940,9 +1241,10 @@
                 navButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
                 
-                const questionNumber = this.dataset.question;
+                const questionId = this.dataset.question;
+                const blankIndex = this.dataset.blank;
                 const partNumber = this.dataset.part;
-                const questionElement = document.getElementById(`question-${questionNumber}`);
+                const questionElement = document.getElementById(`question-${questionId}`);
                 
                 if (questionElement) {
                     // Smooth scroll to question
@@ -950,6 +1252,14 @@
                         behavior: 'smooth', 
                         block: 'center' 
                     });
+                    
+                    // If specific blank, focus on it
+                    if (blankIndex) {
+                        const inputs = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
+                        if (inputs[blankIndex - 1]) {
+                            setTimeout(() => inputs[blankIndex - 1].focus(), 300);
+                        }
+                    }
                     
                     // Update active part if needed
                     if (partNumber) {
@@ -970,46 +1280,47 @@
             });
         });
         
-        // Handle answer selection
-        const inputs = document.querySelectorAll('input[type="radio"], input[type="text"], select');
-        inputs.forEach(function(input) {
+        // Handle individual blank/dropdown tracking
+        document.querySelectorAll('.simple-blank, .simple-dropdown').forEach(input => {
             input.addEventListener('change', function() {
-                const question = this.closest('.question-box');
-                const questionNumber = question.id.replace('question-', '');
-                
-                const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
-                if (navButton && this.value) {
-                    navButton.classList.add('answered');
+                const questionNumber = this.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton && this.value.trim()) {
+                        navButton.classList.add('answered');
+                    } else if (navButton && !this.value.trim()) {
+                        navButton.classList.remove('answered');
+                    }
                 }
-                
-                // Check if all blanks/dropdowns in question are filled
-                if (this.classList.contains('simple-blank') || this.classList.contains('simple-dropdown')) {
-                    checkAllBlanksInQuestion(question, navButton);
-                }
-                
                 saveAllAnswers();
             });
             
-            // Also handle text input on blur
-            if (input.type === 'text') {
-                input.addEventListener('blur', function() {
-                    const question = this.closest('.question-box');
-                    const questionNumber = question.id.replace('question-', '');
-                    
-                    const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
-                    if (navButton) {
-                        if (this.classList.contains('simple-blank')) {
-                            checkAllBlanksInQuestion(question, navButton);
-                        } else if (this.value.trim()) {
-                            navButton.classList.add('answered');
-                        } else {
-                            navButton.classList.remove('answered');
-                        }
+            input.addEventListener('blur', function() {
+                const questionNumber = this.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton && this.value.trim()) {
+                        navButton.classList.add('answered');
+                    } else if (navButton && !this.value.trim()) {
+                        navButton.classList.remove('answered');
                     }
-                    
-                    saveAllAnswers();
-                });
-            }
+                }
+                saveAllAnswers();
+            });
+        });
+        
+        // Handle regular questions (radio, text, select)
+        document.querySelectorAll('input[type="radio"], input[type="text"]:not(.simple-blank), select:not(.simple-dropdown)').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionNumber = this.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton && this.value) {
+                        navButton.classList.add('answered');
+                    }
+                }
+                saveAllAnswers();
+            });
         });
         
         // Simple auto-width adjustment for blanks
@@ -1019,11 +1330,9 @@
                 const length = this.value.length;
                 if (length > 8) {
                     this.style.width = (length * 9) + 'px';
+                } else {
+                    this.style.width = '120px';
                 }
-                
-                // Check if all blanks in question are filled
-                const question = this.closest('.question-box');
-                checkAllBlanksInQuestion(question);
             });
             
             // Tab navigation between blanks
@@ -1041,39 +1350,307 @@
             });
         });
         
-        // Handle dropdowns
-        document.querySelectorAll('.simple-dropdown').forEach(dropdown => {
-            dropdown.addEventListener('change', function() {
-                const question = this.closest('.question-box');
-                checkAllBlanksInQuestion(question);
+        // Passage selection functionality with color picker
+        const passageContents = document.querySelectorAll('.passage-content');
+        let currentColorPicker = null;
+        let selectedTextRange = null;
+        
+        // Initialize passage selection
+        passageContents.forEach(passage => {
+            // Prevent text selection on simple click
+            let isSelecting = false;
+            
+            passage.addEventListener('mousedown', function() {
+                isSelecting = false;
+            });
+            
+            passage.addEventListener('mousemove', function() {
+                isSelecting = true;
+            });
+            
+            // Enable text selection with color picker
+            passage.addEventListener('mouseup', function(e) {
+                // Small delay to ensure selection is complete
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    const selectedText = selection.toString().trim();
+                    
+                    if (selectedText.length > 0 && isSelecting) {
+                        // Remove any existing color picker first
+                        removeColorPicker();
+                        
+                        // Store the range for later use
+                        selectedTextRange = selection.getRangeAt(0).cloneRange();
+                        
+                        // Show color picker with slight delay for smooth animation
+                        setTimeout(() => {
+                            showColorPicker(e);
+                        }, 50);
+                    }
+                }, 10);
+            });
+            
+            // Click on highlighted text to remove highlight
+            passage.addEventListener('click', function(e) {
+                if (e.target.classList.contains('highlight-yellow') || 
+                    e.target.classList.contains('highlight-green') || 
+                    e.target.classList.contains('highlight-blue')) {
+                    
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Remove highlight with animation
+                    e.target.style.transition = 'background-color 0.3s';
+                    e.target.style.backgroundColor = 'transparent';
+                    
+                    setTimeout(() => {
+                        const text = e.target.textContent;
+                        e.target.replaceWith(document.createTextNode(text));
+                    }, 300);
+                }
             });
         });
         
-        // Check if all blanks in a question are filled
-        function checkAllBlanksInQuestion(questionElement, navButton) {
-            if (!questionElement) return;
+        // Show color picker with smooth animation
+        function showColorPicker(e) {
+            // Get selection bounds
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
             
-            if (!navButton) {
-                const questionNumber = questionElement.id.replace('question-', '');
-                navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            
+            // Create color picker element
+            const picker = document.createElement('div');
+            picker.className = 'color-picker';
+            picker.style.opacity = '0';
+            picker.style.transform = 'translateY(5px)';
+            picker.innerHTML = `
+                <button class="color-btn yellow" data-color="yellow" title="Yellow highlight"></button>
+                <button class="color-btn green" data-color="green" title="Green highlight"></button>
+                <button class="color-btn blue" data-color="blue" title="Blue highlight"></button>
+                <div class="color-btn remove" title="Cancel">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </div>
+            `;
+            
+            // Add to body first to calculate dimensions
+            document.body.appendChild(picker);
+            
+            // Calculate position
+            const pickerRect = picker.getBoundingClientRect();
+            let top = rect.top - pickerRect.height - 15;
+            let left = rect.left + (rect.width / 2) - (pickerRect.width / 2);
+            
+            // Adjust for viewport bounds
+            if (top < 10) {
+                top = rect.bottom + 15;
+                picker.classList.add('bottom');
             }
             
-            const blanks = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
-            let allFilled = true;
+            if (left < 10) {
+                left = 10;
+            } else if (left + pickerRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - pickerRect.width - 10;
+            }
             
-            blanks.forEach(blank => {
-                if (!blank.value.trim()) {
-                    allFilled = false;
-                }
+            // Apply position
+            picker.style.position = 'fixed';
+            picker.style.top = top + 'px';
+            picker.style.left = left + 'px';
+            picker.style.zIndex = '9999';
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                picker.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
+                picker.style.opacity = '1';
+                picker.style.transform = 'translateY(0)';
             });
             
-            if (navButton) {
-                if (allFilled && blanks.length > 0) {
-                    navButton.classList.add('answered');
-                } else {
-                    navButton.classList.remove('answered');
+            currentColorPicker = picker;
+            
+            // Add click handlers
+            picker.querySelectorAll('.color-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const color = this.dataset.color;
+                    
+                    if (color) {
+                        applyHighlight(color);
+                    }
+                    
+                    removeColorPicker();
+                });
+            });
+        }
+        
+        // Apply highlight to selected text with better handling
+        function applyHighlight(color) {
+            if (!selectedTextRange) return;
+            
+            try {
+                // Restore the selection
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(selectedTextRange);
+                
+                // Check if selection is valid
+                const selectedText = selection.toString().trim();
+                if (!selectedText) return;
+                
+                // Create span with highlight
+                const span = document.createElement('span');
+                span.className = `highlight-${color}`;
+                span.style.transition = 'background-color 0.3s ease-in';
+                
+                try {
+                    // Try to wrap the selected content
+                    selectedTextRange.surroundContents(span);
+                } catch (e) {
+                    // If surroundContents fails, use alternative method
+                    const contents = selectedTextRange.extractContents();
+                    span.appendChild(contents);
+                    selectedTextRange.insertNode(span);
                 }
+                
+                // Animate the highlight
+                requestAnimationFrame(() => {
+                    span.style.backgroundColor = '';
+                });
+                
+            } catch (e) {
+                console.error('Error applying highlight:', e);
+            } finally {
+                // Clear selection
+                window.getSelection().removeAllRanges();
             }
+        }
+        
+        // Remove color picker with animation
+        function removeColorPicker() {
+            if (currentColorPicker) {
+                currentColorPicker.style.opacity = '0';
+                currentColorPicker.style.transform = 'translateY(5px)';
+                
+                setTimeout(() => {
+                    if (currentColorPicker && currentColorPicker.parentNode) {
+                        currentColorPicker.remove();
+                    }
+                    currentColorPicker = null;
+                }, 200);
+            }
+            selectedTextRange = null;
+        }
+        
+        // Close color picker when clicking elsewhere
+        document.addEventListener('mousedown', function(e) {
+            if (currentColorPicker && !e.target.closest('.color-picker') && !e.target.closest('.passage-content')) {
+                removeColorPicker();
+            }
+        });
+        
+        // Close color picker on scroll with debounce
+        let scrollTimeout;
+        document.addEventListener('scroll', function() {
+            if (currentColorPicker) {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    removeColorPicker();
+                }, 100);
+            }
+        }, true);
+        
+        // Keyboard support - ESC to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && currentColorPicker) {
+                removeColorPicker();
+            }
+        });
+        
+        // Mobile touch support
+        if ('ontouchstart' in window) {
+            passageContents.forEach(passage => {
+                let touchTimer;
+                
+                passage.addEventListener('touchstart', function(e) {
+                    touchTimer = setTimeout(() => {
+                        // Long press to select word
+                        const touch = e.touches[0];
+                        const word = getWordAtPoint(touch.clientX, touch.clientY);
+                        
+                        if (word) {
+                            // Select the word
+                            const selection = window.getSelection();
+                            const range = document.createRange();
+                            
+                            // Find and select the word
+                            const textNodes = getTextNodes(passage);
+                            for (let node of textNodes) {
+                                const index = node.textContent.indexOf(word);
+                                if (index !== -1) {
+                                    range.setStart(node, index);
+                                    range.setEnd(node, index + word.length);
+                                    selection.removeAllRanges();
+                                    selection.addRange(range);
+                                    
+                                    // Show color picker
+                                    showColorPicker(e);
+                                    break;
+                                }
+                            }
+                        }
+                    }, 500);
+                });
+                
+                passage.addEventListener('touchend', function() {
+                    clearTimeout(touchTimer);
+                });
+                
+                passage.addEventListener('touchmove', function() {
+                    clearTimeout(touchTimer);
+                });
+            });
+        }
+        
+        // Helper function to get all text nodes
+        function getTextNodes(element) {
+            const textNodes = [];
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+            
+            return textNodes;
+        }
+        
+        // Helper function to get word at click point
+        function getWordAtPoint(x, y) {
+            const range = document.caretRangeFromPoint(x, y);
+            if (range && range.startContainer.nodeType === Node.TEXT_NODE) {
+                const text = range.startContainer.textContent;
+                const offset = range.startOffset;
+                
+                // Find word boundaries
+                let start = offset;
+                let end = offset;
+                
+                while (start > 0 && /\S/.test(text[start - 1])) start--;
+                while (end < text.length && /\S/.test(text[end])) end++;
+                
+                return text.substring(start, end).trim();
+            }
+            return null;
         }
         
         // Review checkbox functionality
@@ -1091,34 +1668,8 @@
         
         // Submit functionality
         submitTestBtn.addEventListener('click', function() {
-            let answeredQuestions = 0;
-            
-            // Count regular questions
-            answeredQuestions += document.querySelectorAll('input[type="radio"]:checked').length;
-            answeredQuestions += document.querySelectorAll('input[type="text"]:not(.simple-blank)[value]:not([value=""])').length;
-            answeredQuestions += document.querySelectorAll('select:not(.simple-dropdown) option:checked:not([value=""])').length;
-            
-            // Count fill-in-the-blank questions
-            const blankQuestions = new Set();
-            document.querySelectorAll('.simple-blank, .simple-dropdown').forEach(input => {
-                const question = input.closest('.question-box');
-                if (question) {
-                    const blanks = question.querySelectorAll('.simple-blank, .simple-dropdown');
-                    let allFilled = true;
-                    blanks.forEach(blank => {
-                        if (!blank.value.trim()) {
-                            allFilled = false;
-                        }
-                    });
-                    if (allFilled && blanks.length > 0) {
-                        blankQuestions.add(question.id);
-                    }
-                }
-            });
-            
-            answeredQuestions += blankQuestions.size;
-            
-            answeredCountSpan.textContent = answeredQuestions;
+            const answeredCount = document.querySelectorAll('.number-btn.answered').length;
+            answeredCountSpan.textContent = answeredCount;
             submitModal.style.display = 'flex';
         });
         
@@ -1167,10 +1718,10 @@
                             const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
                             if (radio) {
                                 radio.checked = true;
-                                const question = radio.closest('.question-box');
-                                if (question) {
-                                    const questionNumber = question.id.replace('question-', '');
-                                    const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+                                // Update nav button
+                                const questionNumber = radio.dataset.questionNumber;
+                                if (questionNumber) {
+                                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
                                     if (navButton) {
                                         navButton.classList.add('answered');
                                     }
@@ -1179,10 +1730,10 @@
                         } else {
                             input.value = value;
                             if (value) {
-                                const question = input.closest('.question-box');
-                                if (question) {
-                                    const questionNumber = question.id.replace('question-', '');
-                                    const navButton = document.querySelector(`.number-btn[data-question="${questionNumber}"]`);
+                                // Update nav button
+                                const questionNumber = input.dataset.questionNumber;
+                                if (questionNumber) {
+                                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
                                     if (navButton) {
                                         navButton.classList.add('answered');
                                     }

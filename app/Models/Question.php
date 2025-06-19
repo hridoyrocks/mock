@@ -23,8 +23,12 @@ class Question extends Model
         'instructions',
         'marks',
         'is_example',
-        'passage_id', // For linking questions to reading passages
-        'section_specific_data' // JSON field for section-specific data
+        'passage_id',
+        'section_specific_data',
+        'blank_count',
+        'is_sub_question', 
+        'parent_question_id',
+        'sub_question_index',
     ];
 
     protected $casts = [
@@ -33,7 +37,10 @@ class Question extends Model
         'marks' => 'integer',
         'part_number' => 'integer',
         'is_example' => 'boolean',
-        'section_specific_data' => 'array'
+        'section_specific_data' => 'array',
+        'blank_count' => 'integer',
+        'is_sub_question' => 'boolean',
+        'sub_question_index' => 'integer',
     ];
     
     public function testSet(): BelongsTo
@@ -64,6 +71,67 @@ class Question extends Model
     public function correctOptions()
     {
         return $this->options()->where('is_correct', true)->get();
+    }
+
+    public function parentQuestion(): BelongsTo
+    {
+        return $this->belongsTo(Question::class, 'parent_question_id');
+    }
+
+    public function subQuestions(): HasMany
+    {
+        return $this->hasMany(Question::class, 'parent_question_id')->orderBy('sub_question_index');
+    }
+
+    /**
+     * Count total blanks/dropdowns in content
+     */
+    public function countBlanks(): int
+    {
+        $content = $this->content;
+        preg_match_all('/\[BLANK_\d+\]|\[____\d+____\]/', $content, $blankMatches);
+        preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
+        
+        return count($blankMatches[0]) + count($dropdownMatches[0]);
+    }
+
+    /**
+     * Get display number for question (considering sub-questions)
+     */
+    public function getDisplayNumber(): string
+    {
+        if ($this->is_sub_question && $this->parentQuestion) {
+            return $this->parentQuestion->order_number . '.' . $this->sub_question_index;
+        }
+        return (string) $this->order_number;
+    }
+
+    /**
+     * Recalculate order numbers for all questions in test set
+     */
+    public static function recalculateOrderNumbers($testSetId)
+    {
+        $questions = self::where('test_set_id', $testSetId)
+            ->where('is_sub_question', false)
+            ->where('question_type', '!=', 'passage')
+            ->orderBy('part_number')
+            ->orderBy('order_number')
+            ->get();
+        
+        $currentNumber = 1;
+        
+        foreach ($questions as $question) {
+            $question->order_number = $currentNumber;
+            $question->save();
+            
+            // Count blanks and adjust
+            $blankCount = $question->countBlanks();
+            if ($blankCount > 0) {
+                $currentNumber += $blankCount;
+            } else {
+                $currentNumber++;
+            }
+        }
     }
 
     /**
