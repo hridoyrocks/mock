@@ -120,29 +120,80 @@ class ReadingTestController extends Controller
         ]);
         
         DB::transaction(function () use ($request, $attempt) {
+            // Load questions with their types to determine how to save answers
+            $attempt->load('testSet.questions.options');
+            $questions = $attempt->testSet->questions->keyBy('id');
+            
             // Save answers
             foreach ($request->answers as $questionId => $answer) {
+                // Skip if no answer provided
+                if (empty($answer)) {
+                    continue;
+                }
+                
+                $question = $questions->get($questionId);
+                if (!$question) {
+                    continue;
+                }
+                
                 if (is_array($answer)) {
-                    // For checkbox/multiple selection questions
-                    foreach ($answer as $optionId) {
-                        StudentAnswer::create([
-                            'attempt_id' => $attempt->id,
-                            'question_id' => $questionId,
-                            'selected_option_id' => $optionId,
-                        ]);
+                    // Handle array answers (could be blanks or multiple selections)
+                    // Check if it's a fill-in-the-blanks question
+                    if (isset($answer['blank_1']) || isset($answer['dropdown_1'])) {
+                        // This is a fill-in-the-blanks question with multiple blanks
+                        $combinedAnswer = json_encode($answer);
+                        StudentAnswer::updateOrCreate(
+                            [
+                                'attempt_id' => $attempt->id,
+                                'question_id' => $questionId,
+                            ],
+                            [
+                                'selected_option_id' => null,
+                                'answer' => $combinedAnswer,
+                            ]
+                        );
+                    } else {
+                        // This is a multiple selection question
+                        foreach ($answer as $value) {
+                            if (is_numeric($value)) {
+                                StudentAnswer::create([
+                                    'attempt_id' => $attempt->id,
+                                    'question_id' => $questionId,
+                                    'selected_option_id' => $value,
+                                    'answer' => null,
+                                ]);
+                            }
+                        }
                     }
                 } else {
-                    // For single answer questions (radio, text input)
-                    StudentAnswer::updateOrCreate(
-                        [
-                            'attempt_id' => $attempt->id,
-                            'question_id' => $questionId,
-                        ],
-                        [
-                            'selected_option_id' => is_numeric($answer) ? $answer : null,
-                            'answer' => !is_numeric($answer) ? $answer : null,
-                        ]
-                    );
+                    // Single answer - determine if it's an option ID or text
+                    $hasOptions = $question->options->count() > 0;
+                    
+                    if ($hasOptions && is_numeric($answer)) {
+                        // This is an option ID (multiple choice, true/false, etc.)
+                        StudentAnswer::updateOrCreate(
+                            [
+                                'attempt_id' => $attempt->id,
+                                'question_id' => $questionId,
+                            ],
+                            [
+                                'selected_option_id' => $answer,
+                                'answer' => null,
+                            ]
+                        );
+                    } else {
+                        // This is a text answer (short answer, fill in the blanks, etc.)
+                        StudentAnswer::updateOrCreate(
+                            [
+                                'attempt_id' => $attempt->id,
+                                'question_id' => $questionId,
+                            ],
+                            [
+                                'selected_option_id' => null,
+                                'answer' => $answer,
+                            ]
+                        );
+                    }
                 }
             }
             
@@ -160,11 +211,65 @@ class ReadingTestController extends Controller
             $attempt->load('answers.selectedOption', 'answers.question');
             
             foreach ($attempt->answers as $answer) {
-                // Count only questions that have options (not text answers)
-                if ($answer->question->options->count() > 0) {
+                $question = $answer->question;
+                
+                // Check if this is a question with options (multiple choice, true/false, etc.)
+                if ($question->options->count() > 0) {
                     $totalQuestions++;
                     if ($answer->selectedOption && $answer->selectedOption->is_correct) {
                         $correctAnswers++;
+                    }
+                } else {
+                    // This is a text-based answer (short answer, fill-in-the-blanks)
+                    $totalQuestions++;
+                    
+                    // Check if answer is JSON (fill-in-the-blanks with multiple blanks)
+                    $studentAnswer = $answer->answer;
+                    if ($this->isJson($studentAnswer)) {
+                        // Handle fill-in-the-blanks with multiple blanks
+                        $studentAnswers = json_decode($studentAnswer, true);
+                        $correctData = $question->section_specific_data;
+                        
+                        if ($correctData) {
+                            $allBlanksCorrect = true;
+                            
+                            // Check each blank answer
+                            if (isset($correctData['blank_answers'])) {
+                                foreach ($correctData['blank_answers'] as $blankNum => $correctAnswer) {
+                                    $studentBlankAnswer = $studentAnswers['blank_' . $blankNum] ?? '';
+                                    if (!$this->checkAnswer($studentBlankAnswer, $correctAnswer)) {
+                                        $allBlanksCorrect = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Check dropdown answers
+                            if (isset($correctData['dropdown_correct'])) {
+                                foreach ($correctData['dropdown_correct'] as $dropdownNum => $correctIndex) {
+                                    $studentDropdownAnswer = $studentAnswers['dropdown_' . $dropdownNum] ?? '';
+                                    $dropdownOptions = $correctData['dropdown_options'][$dropdownNum] ?? '';
+                                    
+                                    if ($dropdownOptions) {
+                                        $options = array_map('trim', explode(',', $dropdownOptions));
+                                        $correctOption = $options[$correctIndex] ?? '';
+                                        
+                                        if (!$this->checkAnswer($studentDropdownAnswer, $correctOption)) {
+                                            $allBlanksCorrect = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if ($allBlanksCorrect) {
+                                $correctAnswers++;
+                            }
+                        }
+                    } else {
+                        // Single text answer - check against correct answer
+                        // This would need to be implemented based on how correct answers are stored
+                        // For now, we'll skip automatic checking of single text answers
                     }
                 }
             }
@@ -180,5 +285,34 @@ class ReadingTestController extends Controller
         
         return redirect()->route('student.results.show', $attempt)
             ->with('success', 'Test submitted successfully!');
+    }
+    
+    /**
+     * Check if a string is valid JSON
+     */
+    private function isJson($string): bool
+    {
+        json_decode($string);
+        return (json_last_error() == JSON_ERROR_NONE);
+    }
+    
+    /**
+     * Check if student answer matches correct answer (case-insensitive, trimmed)
+     */
+    private function checkAnswer($studentAnswer, $correctAnswer): bool
+    {
+        // Normalize both answers
+        $studentAnswer = strtolower(trim($studentAnswer));
+        $correctAnswer = strtolower(trim($correctAnswer));
+        
+        // Exact match
+        if ($studentAnswer === $correctAnswer) {
+            return true;
+        }
+        
+        // You can add more flexible matching here if needed
+        // For example, removing punctuation, checking synonyms, etc.
+        
+        return false;
     }
 }

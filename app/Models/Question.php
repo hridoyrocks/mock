@@ -37,7 +37,7 @@ class Question extends Model
         'marks' => 'integer',
         'part_number' => 'integer',
         'is_example' => 'boolean',
-        'section_specific_data' => 'array',
+        'section_specific_data' => 'array', // এটা খুব গুরুত্বপূর্ণ!
         'blank_count' => 'integer',
         'is_sub_question' => 'boolean',
         'sub_question_index' => 'integer',
