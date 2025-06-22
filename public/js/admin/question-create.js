@@ -1,7 +1,325 @@
-// Question Create Page - Complete JavaScript
+// Question Create Page - Complete JavaScript with Passage Marker & Explanation Editor
 let blankCounter = 0;
 let editor;
 let passageEditor;
+let explanationEditor;
+
+// Passage Marker System
+const PassageMarker = {
+    markers: [],
+    currentQuestion: null,
+
+    init: function () {
+        this.setupMarkerButtons();
+        this.loadExistingMarkers();
+        this.setupMarkerPreview();
+    },
+
+    setupMarkerButtons: function () {
+        // Add marker button to passage editor toolbar
+        if (window.passageEditor) {
+            const toolbar = document.querySelector('.passage-toolbar');
+            if (!toolbar) {
+                const markerToolbar = document.createElement('div');
+                markerToolbar.className = 'passage-toolbar mb-3';
+                markerToolbar.innerHTML = `
+                    <div class="flex gap-2">
+                        <button type="button" onclick="PassageMarker.showMarkerDialog()" 
+                                class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            Mark Answer Location
+                        </button>
+                        <button type="button" onclick="PassageMarker.previewMarkers()" 
+                                class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Preview All Markers
+                        </button>
+                        <button type="button" onclick="PassageMarker.clearMarkers()" 
+                                class="px-3 py-1 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            Clear All Markers
+                        </button>
+                    </div>
+                `;
+
+                const editorContainer = document.querySelector('.tinymce-passage').parentElement;
+                editorContainer.insertBefore(markerToolbar, editorContainer.firstChild);
+            }
+        }
+    },
+
+    showMarkerDialog: function () {
+        // Get selected text in passage editor
+        if (!passageEditor) return;
+
+        const selection = passageEditor.selection.getContent({ format: 'text' });
+        if (!selection) {
+            this.showTooltip('Please select text in the passage first!', 'warning');
+            return;
+        }
+
+        // Create marker dialog
+        const dialog = document.createElement('div');
+        dialog.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+        dialog.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-lg font-semibold mb-4">Mark Answer Location</h3>
+                <p class="text-sm text-gray-600 mb-4">Selected text: <em>"${selection.substring(0, 50)}${selection.length > 50 ? '...' : ''}"</em></p>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Question Number
+                    </label>
+                    <input type="number" id="marker-question-number" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter question number (e.g., 1, 2, 3...)"
+                           min="1" max="40">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Marker Type
+                    </label>
+                    <select id="marker-type" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="exact">Exact Answer</option>
+                        <option value="start-end">Answer Range (Start to End)</option>
+                        <option value="context">Context Area</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end gap-3">
+                    <button onclick="PassageMarker.closeDialog()" 
+                            class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button onclick="PassageMarker.addMarker()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Add Marker
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(dialog);
+        document.getElementById('marker-question-number').focus();
+    },
+
+    addMarker: function () {
+        const questionNum = document.getElementById('marker-question-number').value;
+        const markerType = document.getElementById('marker-type').value;
+
+        if (!questionNum) {
+            alert('Please enter a question number');
+            return;
+        }
+
+        // Get selected content
+        const selection = passageEditor.selection.getContent();
+        const selectedText = passageEditor.selection.getContent({ format: 'text' });
+
+        // Create marker based on type
+        let markerHtml = '';
+
+        switch (markerType) {
+            case 'exact':
+                markerHtml = `<span class="answer-marker" data-question="${questionNum}" style="background-color: #fef3c7; padding: 2px 4px; border-radius: 3px;">[Q${questionNum}] ${selection}</span>`;
+                break;
+
+            case 'start-end':
+                // For range, we need to wrap the selection
+                markerHtml = `<span class="answer-marker-start" data-question="${questionNum}">[Q${questionNum}-START]</span>${selection}<span class="answer-marker-end" data-question="${questionNum}">[Q${questionNum}-END]</span>`;
+                break;
+
+            case 'context':
+                markerHtml = `<span class="answer-context" data-question="${questionNum}" style="background-color: #e0e7ff; padding: 2px 4px; border-radius: 3px;">${selection}</span>`;
+                break;
+        }
+
+        // Replace selection with marked content
+        passageEditor.selection.setContent(markerHtml);
+
+        // Store marker info
+        this.markers.push({
+            question: questionNum,
+            type: markerType,
+            text: selectedText
+        });
+
+        // Update passage reference field
+        this.updatePassageReference(questionNum);
+
+        // Close dialog and show success
+        this.closeDialog();
+        this.showTooltip(`Answer location marked for Question ${questionNum}`, 'success');
+    },
+
+    updatePassageReference: function (questionNum) {
+        // Update the passage_reference field for the current question
+        const passageRefField = document.querySelector('input[name="passage_reference"]');
+        if (passageRefField) {
+            const currentRefs = passageRefField.value ? passageRefField.value.split(';') : [];
+            currentRefs.push(`Q${questionNum} marked in passage`);
+            passageRefField.value = currentRefs.join('; ');
+        }
+    },
+
+    previewMarkers: function () {
+        if (!passageEditor) return;
+
+        const content = passageEditor.getContent();
+
+        // Create preview modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">Passage with Answer Markers</h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[70vh]">
+                    <div class="prose max-w-none">
+                        ${this.renderMarkedContent(content)}
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-gray-50 rounded">
+                        <h4 class="font-semibold mb-2">Marked Questions:</h4>
+                        <ul class="space-y-1">
+                            ${this.markers.map(m => `
+                                <li class="text-sm">
+                                    <span class="font-medium">Q${m.question}</span>: 
+                                    <span class="text-gray-600">${m.text.substring(0, 50)}...</span>
+                                    <span class="text-xs text-gray-500">(${m.type})</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    },
+
+    renderMarkedContent: function (content) {
+        // Process content to highlight markers
+        let processed = content;
+
+        // Highlight different marker types
+        processed = processed.replace(/\[Q(\d+)\]/g, '<span style="background: #fef3c7; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[Q$1]</span>');
+        processed = processed.replace(/\[Q(\d+)-START\]/g, '<span style="background: #bbf7d0; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[Q$1-START]</span>');
+        processed = processed.replace(/\[Q(\d+)-END\]/g, '<span style="background: #fecaca; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[Q$1-END]</span>');
+
+        return processed;
+    },
+
+    clearMarkers: function () {
+        if (!confirm('Are you sure you want to clear all markers?')) return;
+
+        if (passageEditor) {
+            let content = passageEditor.getContent();
+
+            // Remove all markers
+            content = content.replace(/<span[^>]*class="answer-marker[^"]*"[^>]*>([^<]*)<\/span>/g, '$1');
+            content = content.replace(/<span[^>]*class="answer-context"[^>]*>([^<]*)<\/span>/g, '$1');
+            content = content.replace(/\[Q\d+(-START|-END)?\]/g, '');
+
+            passageEditor.setContent(content);
+        }
+
+        this.markers = [];
+        this.showTooltip('All markers cleared', 'info');
+    },
+
+    loadExistingMarkers: function () {
+        // Load markers from passage content on edit
+        if (passageEditor) {
+            passageEditor.on('init', () => {
+                const content = passageEditor.getContent();
+                const markerMatches = content.match(/\[Q(\d+)(?:-START|-END)?\]/g) || [];
+
+                markerMatches.forEach(match => {
+                    const questionNum = match.match(/\d+/)[0];
+                    if (!this.markers.find(m => m.question === questionNum)) {
+                        this.markers.push({
+                            question: questionNum,
+                            type: 'existing',
+                            text: 'Loaded from passage'
+                        });
+                    }
+                });
+            });
+        }
+    },
+
+    closeDialog: function () {
+        const dialog = document.querySelector('.fixed.inset-0');
+        if (dialog) dialog.remove();
+    },
+
+    showTooltip: function (message, type = 'info') {
+        const colors = {
+            info: 'bg-blue-600',
+            success: 'bg-green-600',
+            warning: 'bg-yellow-600',
+            error: 'bg-red-600'
+        };
+
+        const tooltip = document.createElement('div');
+        tooltip.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+        tooltip.textContent = message;
+
+        document.body.appendChild(tooltip);
+
+        setTimeout(() => {
+            tooltip.classList.add('animate-fade-out');
+            setTimeout(() => tooltip.remove(), 300);
+        }, 3000);
+    },
+
+    setupMarkerPreview: function () {
+        // Add marker count display
+        const passageSection = document.getElementById('passage-section');
+        if (passageSection) {
+            const markerCount = document.createElement('div');
+            markerCount.id = 'marker-count';
+            markerCount.className = 'text-sm text-gray-500 mt-2';
+            markerCount.innerHTML = '<span id="marker-count-text">No markers added yet</span>';
+
+            const passageEditor = passageSection.querySelector('.tinymce-passage');
+            if (passageEditor && passageEditor.parentElement) {
+                passageEditor.parentElement.appendChild(markerCount);
+            }
+        }
+    },
+
+    updateMarkerCount: function () {
+        const countEl = document.getElementById('marker-count-text');
+        if (countEl) {
+            if (this.markers.length > 0) {
+                countEl.textContent = `${this.markers.length} answer location(s) marked`;
+            } else {
+                countEl.textContent = 'No markers added yet';
+            }
+        }
+    },
+
+    // Helper method to get marker info for a question
+    getQuestionMarkers: function (questionId) {
+        return this.markers.filter(m => m.question == questionId);
+    }
+};
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function () {
@@ -10,6 +328,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeQuestionNumbering();
     initializeFileUpload();
     initializeRelatedTopics();
+    initializeExplanationEditor();
 });
 
 // Initialize TinyMCE Editors
@@ -98,6 +417,21 @@ function initializeTinyMCE() {
                     color: #92400e;
                     font-family: monospace;
                 }
+                .answer-marker-start,
+                .answer-marker-end {
+                    background-color: #d1fae5;
+                    padding: 1px 4px;
+                    border-radius: 2px;
+                    font-weight: 600;
+                    font-size: 12px;
+                    color: #065f46;
+                    font-family: monospace;
+                }
+                .answer-context {
+                    background-color: #e0e7ff;
+                    padding: 2px 4px;
+                    border-radius: 3px;
+                }
             `,
             setup: function (editor) {
                 passageEditor = editor;
@@ -107,14 +441,226 @@ function initializeTinyMCE() {
                     const words = text.trim().split(/\s+/).filter(word => word.length > 0);
                     const el = document.getElementById('passage-word-count');
                     if (el) el.textContent = words.length;
+
+                    // Update marker count
+                    PassageMarker.updateMarkerCount();
                 });
 
                 editor.on('init', function () {
                     processMarkers();
+                    // Initialize PassageMarker after editor is ready
+                    setTimeout(() => {
+                        PassageMarker.init();
+                    }, 100);
                 });
             }
         });
     }
+}
+
+// Initialize Explanation Editor
+function initializeExplanationEditor() {
+    // Check if explanation field exists
+    const explanationField = document.querySelector('textarea[name="explanation"]');
+    if (!explanationField) return;
+
+    // Create a div for TinyMCE
+    const editorDiv = document.createElement('div');
+    editorDiv.id = 'explanation-editor';
+    editorDiv.className = 'explanation-tinymce';
+    editorDiv.innerHTML = explanationField.value;
+
+    // Insert after the textarea and hide it
+    explanationField.style.display = 'none';
+    explanationField.parentElement.insertBefore(editorDiv, explanationField.nextSibling);
+
+    // Initialize TinyMCE for explanation
+    tinymce.init({
+        selector: '#explanation-editor',
+        height: 300,
+        menubar: false,
+        plugins: [
+            'lists', 'link', 'charmap', 'preview',
+            'searchreplace', 'visualblocks', 'code',
+            'insertdatetime', 'table', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | formatselect | bold italic underline | \
+                  alignleft aligncenter alignright | \
+                  bullist numlist | explanationTools | templates | \
+                  link | removeformat | code',
+        content_style: `
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+                font-size: 14px; 
+                line-height: 1.6; 
+                padding: 12px;
+            }
+            p { margin-bottom: 12px; }
+            ul, ol { margin-bottom: 12px; padding-left: 24px; }
+            li { margin-bottom: 6px; }
+            strong { color: #1a202c; }
+            em { color: #4a5568; }
+            .highlight { background-color: #fef3c7; padding: 2px 4px; border-radius: 2px; }
+            .correct-answer { color: #059669; font-weight: 600; }
+            .incorrect-answer { color: #dc2626; text-decoration: line-through; }
+            .tip { background-color: #dbeafe; padding: 8px 12px; border-left: 3px solid #3b82f6; margin: 12px 0; }
+            blockquote { 
+                border-left: 3px solid #e5e7eb; 
+                padding-left: 16px; 
+                margin: 16px 0; 
+                color: #6b7280; 
+                font-style: italic; 
+            }
+            mark { background-color: #fef3c7; padding: 1px 3px; border-radius: 2px; }
+        `,
+        toolbar_mode: 'sliding',
+        branding: false,
+        promotion: false,
+        setup: function (editor) {
+            explanationEditor = editor;
+
+            // Add custom buttons for common explanation patterns
+            editor.ui.registry.addButton('correctAnswer', {
+                text: '✓ Correct',
+                tooltip: 'Mark as correct answer',
+                onAction: function () {
+                    editor.insertContent('<span class="correct-answer">' + editor.selection.getContent() + '</span>');
+                }
+            });
+
+            editor.ui.registry.addButton('incorrectAnswer', {
+                text: '✗ Incorrect',
+                tooltip: 'Mark as incorrect answer',
+                onAction: function () {
+                    editor.insertContent('<span class="incorrect-answer">' + editor.selection.getContent() + '</span>');
+                }
+            });
+
+            editor.ui.registry.addButton('tipBox', {
+                text: '💡 Tip',
+                tooltip: 'Insert tip box',
+                onAction: function () {
+                    editor.insertContent('<div class="tip">💡 <strong>Tip:</strong> Enter your tip here...</div>');
+                }
+            });
+
+            // Add to toolbar
+            editor.ui.registry.addGroupToolbarButton('explanationTools', {
+                text: 'Explanation',
+                icon: 'info',
+                items: 'correctAnswer incorrectAnswer tipBox'
+            });
+
+            // Quick templates menu
+            editor.ui.registry.addMenuButton('templates', {
+                text: 'Templates',
+                icon: 'template',
+                fetch: function (callback) {
+                    const items = [
+                        {
+                            type: 'menuitem',
+                            text: 'Synonym Explanation',
+                            onAction: function () {
+                                editor.insertContent(`
+                                    <p>The correct answer is <strong class="correct-answer">[OPTION]</strong> because it uses a synonym of "<mark>[WORD]</mark>" from the passage.</p>
+                                    <p>In the passage: "<em>[PASSAGE QUOTE]</em>"</p>
+                                    <p>The word "<mark>[ORIGINAL]</mark>" means the same as "<mark>[SYNONYM]</mark>" in this context.</p>
+                                `);
+                            }
+                        },
+                        {
+                            type: 'menuitem',
+                            text: 'True/False/Not Given',
+                            onAction: function () {
+                                editor.insertContent(`
+                                    <p>The statement is <strong>[TRUE/FALSE/NOT GIVEN]</strong> because:</p>
+                                    <ul>
+                                        <li><strong>TRUE:</strong> The passage directly states this information in [LOCATION].</li>
+                                        <li><strong>FALSE:</strong> The passage contradicts this by stating [CONTRADICTION].</li>
+                                        <li><strong>NOT GIVEN:</strong> This information is not mentioned anywhere in the passage.</li>
+                                    </ul>
+                                `);
+                            }
+                        },
+                        {
+                            type: 'menuitem',
+                            text: 'Main Idea',
+                            onAction: function () {
+                                editor.insertContent(`
+                                    <p>The main idea can be found in <mark>[PARAGRAPH/LINE]</mark> where the author states:</p>
+                                    <blockquote>"[QUOTE FROM PASSAGE]"</blockquote>
+                                    <p>Options <span class="incorrect-answer">[WRONG OPTIONS]</span> are incorrect because they focus on specific details rather than the overall message.</p>
+                                `);
+                            }
+                        },
+                        {
+                            type: 'menuitem',
+                            text: 'Multiple Choice',
+                            onAction: function () {
+                                editor.insertContent(`
+                                    <p><strong>Why Option [X] is correct:</strong></p>
+                                    <ul>
+                                        <li>It accurately reflects [KEY POINT] mentioned in the passage</li>
+                                        <li>The passage states: "<em>[SUPPORTING QUOTE]</em>"</li>
+                                    </ul>
+                                    <p><strong>Why other options are incorrect:</strong></p>
+                                    <ul>
+                                        <li><span class="incorrect-answer">Option A</span>: [REASON]</li>
+                                        <li><span class="incorrect-answer">Option B</span>: [REASON]</li>
+                                        <li><span class="incorrect-answer">Option C</span>: [REASON]</li>
+                                    </ul>
+                                `);
+                            }
+                        },
+                        {
+                            type: 'menuitem',
+                            text: 'Inference Question',
+                            onAction: function () {
+                                editor.insertContent(`
+                                    <p>Although not directly stated, we can infer <strong>[ANSWER]</strong> from the following clues:</p>
+                                    <ol>
+                                        <li>[CLUE 1] in paragraph [X]</li>
+                                        <li>[CLUE 2] when the author mentions "<em>[QUOTE]</em>"</li>
+                                        <li>[CLUE 3] based on the context</li>
+                                    </ol>
+                                    <p>Therefore, the logical conclusion is [INFERENCE].</p>
+                                `);
+                            }
+                        },
+                        {
+                            type: 'menuitem',
+                            text: 'Matching Headings',
+                            onAction: function () {
+                                editor.insertContent(`
+                                    <p>The correct heading is <strong class="correct-answer">[HEADING]</strong> because:</p>
+                                    <ul>
+                                        <li>The paragraph mainly discusses [MAIN TOPIC]</li>
+                                        <li>Key phrases like "<mark>[PHRASE 1]</mark>" and "<mark>[PHRASE 2]</mark>" support this heading</li>
+                                        <li>Other headings don't capture the central theme of [THEME]</li>
+                                    </ul>
+                                `);
+                            }
+                        }
+                    ];
+                    callback(items);
+                }
+            });
+
+            // Keyboard shortcuts
+            editor.addShortcut('ctrl+shift+c', 'Mark as correct', function () {
+                editor.execCommand('mceInsertContent', false, '<span class="correct-answer">' + editor.selection.getContent() + '</span>');
+            });
+
+            editor.addShortcut('ctrl+shift+x', 'Mark as incorrect', function () {
+                editor.execCommand('mceInsertContent', false, '<span class="incorrect-answer">' + editor.selection.getContent() + '</span>');
+            });
+
+            // Sync content back to textarea before form submission
+            editor.on('change', function () {
+                explanationField.value = editor.getContent();
+            });
+        }
+    });
 }
 
 // Initialize Event Listeners
@@ -237,16 +783,7 @@ window.insertDropdown = function () {
 
 // Passage Marker Functions
 window.insertAnswerMarker = function () {
-    if (!passageEditor) return;
-
-    const questionNum = prompt('Enter question number for this answer location:', '');
-    if (!questionNum) return;
-
-    // Use square brackets to avoid blade conflicts
-    const marker = '[Q' + questionNum + ']';
-    passageEditor.insertContent(marker);
-
-    setTimeout(processMarkers, 100);
+    PassageMarker.showMarkerDialog();
 };
 
 function processMarkers() {
@@ -263,18 +800,7 @@ function processMarkers() {
 }
 
 window.previewMarkers = function () {
-    if (!passageEditor) return;
-
-    const content = passageEditor.getContent();
-    const markerMatches = content.match(/\[Q\d+\]/g);
-    const markerCount = markerMatches ? markerMatches.length : 0;
-
-    const modal = createModal('Passage Preview',
-        '<p class="text-sm text-gray-500 mb-4">Found ' + markerCount + ' answer markers</p>' +
-        '<div class="prose max-w-none">' + content + '</div>'
-    );
-
-    document.body.appendChild(modal);
+    PassageMarker.previewMarkers();
 };
 
 // Options Management
@@ -672,6 +1198,14 @@ function handleFormSubmit(e) {
 
     const questionType = document.getElementById('question_type').value;
 
+    // Sync explanation editor content
+    if (explanationEditor) {
+        const explanationField = document.querySelector('textarea[name="explanation"]');
+        if (explanationField) {
+            explanationField.value = explanationEditor.getContent();
+        }
+    }
+
     if (questionType === 'passage') {
         const passageText = passageEditor ? passageEditor.getContent() : '';
 
@@ -747,3 +1281,51 @@ function closeAllModals() {
     closePreview();
     closeBulkOptions();
 }
+
+// Add CSS for animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fade-out {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(10px); }
+    }
+    
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+    }
+    
+    .animate-fade-out {
+        animation: fade-out 0.3s ease-out;
+    }
+    
+    /* Passage toolbar styles */
+    .passage-toolbar {
+        padding: 10px;
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        margin-bottom: 10px;
+    }
+    
+    /* Marker count display */
+    #marker-count {
+        padding: 8px 12px;
+        background-color: #eff6ff;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #1e40af;
+    }
+    
+    /* Explanation editor styles */
+    .explanation-tinymce {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+`;
+document.head.appendChild(style);
