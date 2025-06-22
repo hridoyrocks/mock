@@ -36,6 +36,9 @@ class Question extends Model
         'tips',
         'difficulty_level',
         'related_topics',
+        // Marker system fields
+        'marker_id',
+        'processed_explanation',
     ];
 
     protected $casts = [
@@ -48,8 +51,118 @@ class Question extends Model
         'blank_count' => 'integer',
         'is_sub_question' => 'boolean',
         'sub_question_index' => 'integer',
-        'related_topics' => 'array', // নতুন
+        'related_topics' => 'array',
     ];
+    
+    /**
+     * Process explanation to make {{Q1}} markers clickable
+     */
+    public function processExplanation(): string
+    {
+        if (!$this->explanation) {
+            return '';
+        }
+        
+        // Convert {{Q1}}, {{Q2}} etc to clickable spans
+        $processed = preg_replace(
+            '/\{\{(Q\d+)\}\}/',
+            '<span class="marker-link" data-marker="$1" onclick="highlightMarker(\'$1\')">$1</span>',
+            $this->explanation
+        );
+        
+        return $processed;
+    }
+    
+    /**
+     * Get the marker text from passage
+     */
+    public function getMarkerText(): ?string
+    {
+        if (!$this->marker_id || !$this->testSet) {
+            return null;
+        }
+        
+        // Find passage for this test set
+        $passage = $this->testSet->questions()
+            ->where('question_type', 'passage')
+            ->where('part_number', $this->part_number)
+            ->first();
+            
+        if (!$passage) {
+            return null;
+        }
+        
+        // Extract text between markers
+        $pattern = '/\{\{' . $this->marker_id . '\}\}(.*?)\{\{' . $this->marker_id . '\}\}/s';
+        if (preg_match($pattern, $passage->passage_text ?? $passage->content, $matches)) {
+            return trim($matches[1]);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Process passage to add data attributes to markers (static method)
+     */
+    public static function processPassageForDisplay($passageText, $hideMarkers = true): string
+    {
+        if ($hideMarkers) {
+            // For student view - hide markers but keep text markable
+            $processed = preg_replace(
+                '/\{\{(Q\d+)\}\}(.*?)\{\{\\1\}\}/s',
+                '<span class="marker-text" data-marker="$1" id="marker-$1">$2</span>',
+                $passageText
+            );
+        } else {
+            // For admin view - show markers
+            $processed = preg_replace(
+                '/\{\{(Q\d+)\}\}/g',
+                '<span class="marker-indicator">{{$1}}</span>',
+                $passageText
+            );
+        }
+        
+        return $processed;
+    }
+    
+    /**
+     * Check if question has a marker
+     */
+    public function hasMarker(): bool
+    {
+        return !empty($this->marker_id);
+    }
+    
+    /**
+     * Get all markers from a passage
+     */
+    public static function extractMarkersFromPassage($passageText): array
+    {
+        preg_match_all('/\{\{(Q\d+)\}\}/', $passageText, $matches);
+        return array_unique($matches[1] ?? []);
+    }
+    
+    /**
+     * Validate marker exists in passage
+     */
+    public function validateMarkerInPassage(): bool
+    {
+        if (!$this->marker_id) {
+            return true; // No marker is valid
+        }
+        
+        $passage = $this->testSet->questions()
+            ->where('question_type', 'passage')
+            ->where('part_number', $this->part_number)
+            ->first();
+            
+        if (!$passage) {
+            return false;
+        }
+        
+        $markers = self::extractMarkersFromPassage($passage->passage_text ?? $passage->content);
+        return in_array($this->marker_id, $markers);
+    }
     
     // expLanation
     public function hasExplanation(): bool

@@ -3,7 +3,6 @@
     
     @push('styles')
     <style>
-        /* Results Page Styles */
         .results-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -16,24 +15,22 @@
             padding: 30px;
             border-radius: 12px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
         
         .results-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-top: 30px;
+            gap: 20px;
+            height: calc(100vh - 200px);
         }
         
         /* Passage Section */
         .passage-viewer {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 30px;
-            height: fit-content;
-            max-height: 80vh;
             overflow-y: auto;
             position: sticky;
             top: 20px;
@@ -59,32 +56,29 @@
             text-align: justify;
         }
         
-        /* Answer Highlighting */
-        .answer-highlight {
-            background-color: #fef3c7;
-            padding: 2px 4px;
-            border-radius: 3px;
+        /* Answer highlighting */
+        .answer-location {
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 500;
             transition: all 0.3s ease;
+            cursor: pointer;
             position: relative;
         }
         
-        .answer-highlight.active {
-            background-color: #fde68a;
+        .answer-location.highlight-active {
+            background-color: #fbbf24 !important;
             box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3);
-            animation: pulse 2s infinite;
+            animation: pulseGlow 2s infinite;
         }
         
-        .answer-highlight.correct {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
+        .answer-location.q1 { background-color: #fee2e2; color: #991b1b; }
+        .answer-location.q2 { background-color: #dcfce7; color: #166534; }
+        .answer-location.q3 { background-color: #dbeafe; color: #1e40af; }
+        .answer-location.q4 { background-color: #f3e8ff; color: #7c3aed; }
+        .answer-location.q5 { background-color: #fef3c7; color: #92400e; }
         
-        .answer-highlight.incorrect {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-        
-        @keyframes pulse {
+        @keyframes pulseGlow {
             0% { box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3); }
             50% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.1); }
             100% { box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3); }
@@ -94,8 +88,9 @@
         .questions-list {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 30px;
+            overflow-y: auto;
         }
         
         .question-item {
@@ -114,7 +109,7 @@
         .question-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: between;
             margin-bottom: 12px;
         }
         
@@ -135,119 +130,143 @@
             justify-content: center;
             font-size: 14px;
             font-weight: bold;
-        }
-        
-        .result-badge.correct {
-            background: #10b981;
             color: white;
         }
         
-        .result-badge.incorrect {
-            background: #ef4444;
-            color: white;
-        }
+        .result-badge.correct { background: #10b981; }
+        .result-badge.incorrect { background: #ef4444; }
         
         .question-actions {
             display: flex;
             gap: 8px;
+            margin-top: 12px;
         }
         
         .action-btn {
-            padding: 6px 16px;
+            padding: 8px 16px;
             border-radius: 6px;
             font-size: 14px;
             font-weight: 500;
             border: 1px solid;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .locate-btn {
-            background: #f3f4f6;
-            border-color: #d1d5db;
-            color: #374151;
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: white;
         }
         
         .locate-btn:hover {
-            background: #e5e7eb;
+            background: #d97706;
+            transform: translateY(-1px);
         }
         
         .locate-btn.active {
-            background: #fbbf24;
-            border-color: #f59e0b;
-            color: #78350f;
+            background: #dc2626;
+            border-color: #dc2626;
+            animation: buttonPulse 1s ease-out;
         }
         
         .explain-btn {
-            background: #dbeafe;
-            border-color: #93c5fd;
-            color: #1e40af;
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
         }
         
         .explain-btn:hover {
-            background: #bfdbfe;
+            background: #2563eb;
+            transform: translateY(-1px);
         }
         
-        /* Explanation Panel */
-        .explanation-panel {
-            margin-top: 16px;
-            padding: 20px;
-            background: #f9fafb;
-            border-radius: 8px;
-            border-left: 4px solid #3b82f6;
+        @keyframes buttonPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Explanation Modal */
+        .explanation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1000;
             display: none;
-            animation: slideDown 0.3s ease;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
         
-        .explanation-panel.show {
-            display: block;
+        .explanation-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease-out;
         }
         
-        @keyframes slideDown {
+        @keyframes modalSlideIn {
             from {
                 opacity: 0;
-                transform: translateY(-10px);
+                transform: translateY(-20px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
         
         .explanation-header {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
         }
         
         .explanation-title {
+            font-size: 18px;
             font-weight: 600;
-            color: #1f2937;
-            font-size: 16px;
+            color: #1a202c;
         }
         
-        .close-explanation {
+        .close-btn {
             background: none;
             border: none;
-            color: #6b7280;
+            font-size: 24px;
+            color: #9ca3af;
             cursor: pointer;
             padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
         }
         
-        .explanation-content {
-            color: #4b5563;
-            line-height: 1.6;
+        .close-btn:hover {
+            color: #374151;
+            background: #f3f4f6;
+        }
+        
+        .explanation-body {
+            padding: 20px;
         }
         
         .answer-comparison {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: white;
-            border-radius: 6px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
         }
         
         .answer-box {
@@ -258,78 +277,50 @@
             font-size: 12px;
             color: #6b7280;
             margin-bottom: 4px;
+            text-transform: uppercase;
+            font-weight: 500;
         }
         
         .answer-value {
             font-weight: 600;
-            font-size: 18px;
+            font-size: 16px;
         }
         
-        .answer-value.correct {
-            color: #10b981;
+        .answer-value.correct { color: #10b981; }
+        .answer-value.incorrect { color: #ef4444; }
+        
+        .explanation-text {
+            line-height: 1.6;
+            color: #374151;
         }
         
-        .answer-value.incorrect {
-            color: #ef4444;
-        }
-        
-        /* Tips Section */
-        .tips-section {
-            margin-top: 16px;
-            padding: 12px;
+        .passage-reference {
             background: #fef3c7;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #78350f;
+            color: #92400e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         
-        .tips-icon {
-            display: inline-block;
-            margin-right: 8px;
-        }
-        
-        /* Summary Stats */
-        .summary-stats {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-        
-        .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #1a202c;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #6b7280;
-            margin-top: 4px;
+        .passage-reference:hover {
+            background: #fbbf24;
+            color: white;
         }
         
         /* Mobile Responsive */
         @media (max-width: 1024px) {
             .results-grid {
                 grid-template-columns: 1fr;
+                height: auto;
             }
             
             .passage-viewer {
                 position: relative;
                 max-height: 400px;
                 margin-bottom: 20px;
-            }
-            
-            .summary-stats {
-                grid-template-columns: repeat(2, 1fr);
             }
         }
         
@@ -338,34 +329,19 @@
                 padding: 10px;
             }
             
-            .results-header {
-                padding: 20px;
-            }
-            
             .question-actions {
                 flex-direction: column;
-                width: 100%;
+                gap: 8px;
             }
             
             .action-btn {
-                width: 100%;
+                justify-content: center;
             }
             
             .answer-comparison {
                 grid-template-columns: 1fr;
+                gap: 12px;
             }
-        }
-        
-        /* Loading State */
-        .loading-shimmer {
-            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
         }
     </style>
     @endpush
@@ -373,38 +349,11 @@
     <div class="results-container">
         <!-- Results Header -->
         <div class="results-header">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h1 class="text-3xl font-bold mb-2">Test Results</h1>
-                    <p class="text-xl opacity-90">{{ $attempt->testSet->title }}</p>
-                    <p class="text-sm opacity-75 mt-2">
-                        Completed on {{ $attempt->end_time->format('F j, Y \a\t g:i A') }}
-                    </p>
-                </div>
-                <div class="text-right">
-                    <div class="text-4xl font-bold">{{ $attempt->band_score ?? 'N/A' }}</div>
-                    <div class="text-sm opacity-75">Band Score</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Summary Statistics -->
-        <div class="summary-stats">
-            <div class="stat-card">
-                <div class="stat-value text-green-600">{{ $correctAnswers ?? 0 }}</div>
-                <div class="stat-label">Correct Answers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value text-red-600">{{ $totalQuestions - ($correctAnswers ?? 0) }}</div>
-                <div class="stat-label">Incorrect Answers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value text-blue-600">{{ round($accuracy ?? 0, 1) }}%</div>
-                <div class="stat-label">Accuracy</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value text-purple-600">{{ $totalQuestions }}</div>
-                <div class="stat-label">Total Questions</div>
+            <h1 class="text-3xl font-bold mb-2">Test Results</h1>
+            <p class="text-xl opacity-90">{{ $attempt->testSet->title }}</p>
+            <div class="mt-4">
+                <span class="text-4xl font-bold">{{ $attempt->band_score ?? 'N/A' }}</span>
+                <span class="text-lg ml-2">Band Score</span>
             </div>
         </div>
         
@@ -412,20 +361,47 @@
         <div class="results-grid">
             <!-- Passage Viewer -->
             <div class="passage-viewer" id="passageViewer">
-                <h2 class="passage-title">Reading Passage</h2>
+                <h2 class="passage-title">📖 Reading Passage</h2>
                 <div class="passage-content" id="passageContent">
-                    <!-- Passage will be loaded here -->
-                    <div class="loading-shimmer" style="height: 200px; border-radius: 8px;"></div>
+                    @php
+                        // Get the reading passage for this test
+                        $passage = $attempt->testSet->questions()
+                            ->where('question_type', 'passage')
+                            ->first();
+                    @endphp
+                    
+                    @if($passage)
+                        @php
+                            // Process passage content to add answer location markers
+                            $content = $passage->passage_text ?? $passage->content;
+                            
+                            // Add answer location markers based on questions
+                            $questionNumber = 1;
+                            foreach($attempt->answers as $answer) {
+                                if($answer->question->question_type !== 'passage') {
+                                    // Add markers for answer locations (you can customize this logic)
+                                    $content = $this->addAnswerMarkers($content, $questionNumber, $answer->question);
+                                    $questionNumber++;
+                                }
+                            }
+                        @endphp
+                        
+                        <div id="passageText">
+                            {!! $this->processPassageContent($content) !!}
+                        </div>
+                    @else
+                        <div class="text-center text-gray-500 py-8">
+                            <p>No passage available for this test.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
             
             <!-- Questions List -->
             <div class="questions-list">
-                <h2 class="text-xl font-semibold mb-4">Questions & Answers</h2>
+                <h2 class="text-xl font-semibold mb-4">📝 Questions & Answers</h2>
                 
-                @php
-                    $questionNumber = 1;
-                @endphp
+                @php $questionNumber = 1; @endphp
                 
                 @foreach($attempt->answers as $answer)
                     @if($answer->question->question_type !== 'passage')
@@ -439,83 +415,55 @@
                                             ✗
                                         @endif
                                     </span>
-                                    Question {{ $questionNumber }}
-                                </div>
-                                
-                                <div class="question-actions">
-                                    <button class="action-btn locate-btn" 
-                                            onclick="locateAnswer({{ $answer->question->id }}, '{{ $answer->question->passage_reference }}')"
-                                            data-question-id="{{ $answer->question->id }}">
-                                        📍 Locate
-                                    </button>
-                                    <button class="action-btn explain-btn"
-                                            onclick="toggleExplanation({{ $answer->question->id }})">
-                                        💡 Explain
-                                    </button>
+                                    <span>Question {{ $questionNumber }}</span>
                                 </div>
                             </div>
                             
                             <!-- Question Content -->
                             <div class="question-text mb-3">
-                                {{ strip_tags($answer->question->content) }}
+                                <strong>{{ strip_tags($answer->question->content) }}</strong>
                             </div>
                             
-                            <!-- Explanation Panel -->
-                            <div class="explanation-panel" id="explanation-{{ $answer->question->id }}">
-                                <div class="explanation-header">
-                                    <h3 class="explanation-title">Explanation</h3>
-                                    <button class="close-explanation" onclick="toggleExplanation({{ $answer->question->id }})">
-                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                                
-                                <!-- Answer Comparison -->
-                                <div class="answer-comparison">
-                                    <div class="answer-box">
-                                        <div class="answer-label">Your Answer</div>
-                                        <div class="answer-value {{ $answer->selectedOption && $answer->selectedOption->is_correct ? 'correct' : 'incorrect' }}">
-                                            @if($answer->selectedOption)
-                                                {{ $answer->selectedOption->content }}
-                                            @elseif($answer->answer)
-                                                {{ $answer->answer }}
-                                            @else
-                                                Not Answered
-                                            @endif
-                                        </div>
-                                    </div>
-                                    <div class="answer-box">
-                                        <div class="answer-label">Correct Answer</div>
-                                        <div class="answer-value correct">
-                                            @php
-                                                $correctOption = $answer->question->options->where('is_correct', true)->first();
-                                            @endphp
-                                            @if($correctOption)
-                                                {{ $correctOption->content }}
-                                            @else
-                                                {{ $answer->question->correct_answer ?? 'N/A' }}
-                                            @endif
-                                        </div>
+                            <!-- Answer Comparison -->
+                            <div class="answer-comparison">
+                                <div class="answer-box">
+                                    <div class="answer-label">Your Answer</div>
+                                    <div class="answer-value {{ $answer->selectedOption && $answer->selectedOption->is_correct ? 'correct' : 'incorrect' }}">
+                                        @if($answer->selectedOption)
+                                            {{ $answer->selectedOption->content }}
+                                        @elseif($answer->answer)
+                                            {{ $answer->answer }}
+                                        @else
+                                            Not Answered
+                                        @endif
                                     </div>
                                 </div>
-                                
-                                <!-- Main Explanation -->
-                                <div class="explanation-content">
-                                    @if($answer->question->explanation)
-                                        {!! $answer->question->explanation !!}
-                                    @else
-                                        <p class="text-gray-500 italic">No explanation available for this question.</p>
-                                    @endif
-                                </div>
-                                
-                                <!-- Tips if available -->
-                                @if($answer->question->tips)
-                                    <div class="tips-section">
-                                        <span class="tips-icon">💡</span>
-                                        <strong>Tip:</strong> {{ $answer->question->tips }}
+                                <div class="answer-box">
+                                    <div class="answer-label">Correct Answer</div>
+                                    <div class="answer-value correct">
+                                        @php
+                                            $correctOption = $answer->question->options->where('is_correct', true)->first();
+                                        @endphp
+                                        @if($correctOption)
+                                            {{ $correctOption->content }}
+                                        @else
+                                            See Explanation
+                                        @endif
                                     </div>
-                                @endif
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="question-actions">
+                                <button class="action-btn locate-btn" 
+                                        onclick="locateAnswer({{ $questionNumber }})"
+                                        data-question-number="{{ $questionNumber }}">
+                                    📍 Locate in Passage
+                                </button>
+                                <button class="action-btn explain-btn"
+                                        onclick="showExplanation({{ $answer->question->id }}, {{ $questionNumber }})">
+                                    💡 Explanation
+                                </button>
                             </div>
                         </div>
                         
@@ -536,72 +484,40 @@
         </div>
     </div>
     
+    <!-- Explanation Modal -->
+    <div id="explanationModal" class="explanation-modal">
+        <div class="explanation-content">
+            <div class="explanation-header">
+                <h3 class="explanation-title" id="modalTitle">Question Explanation</h3>
+                <button class="close-btn" onclick="closeExplanation()">&times;</button>
+            </div>
+            <div class="explanation-body" id="modalBody">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
     @push('scripts')
     <script>
-        // Load passage content
-        document.addEventListener('DOMContentLoaded', function() {
-            loadPassageContent();
-        });
+        // Store question explanations data
+        const questionExplanations = {
+            @foreach($attempt->answers as $answer)
+                @if($answer->question->question_type !== 'passage' && $answer->question->explanation)
+                    {{ $answer->question->id }}: {
+                        explanation: `{!! addslashes($answer->question->explanation) !!}`,
+                        correctAnswer: `@if($answer->question->options->where('is_correct', true)->first()){{ $answer->question->options->where('is_correct', true)->first()->content }}@endif`,
+                        userAnswer: `@if($answer->selectedOption){{ $answer->selectedOption->content }}@elseif($answer->answer){{ $answer->answer }}@else Not Answered @endif`,
+                        isCorrect: {{ $answer->selectedOption && $answer->selectedOption->is_correct ? 'true' : 'false' }}
+                    },
+                @endif
+            @endforeach
+        };
         
-        // Load the reading passage
-        function loadPassageContent() {
-            // Get the passage from the test set
-            @php
-                $passage = $attempt->testSet->questions()
-                    ->where('question_type', 'passage')
-                    ->where('part_number', 1) // Assuming Part 1 for now
-                    ->first();
-            @endphp
-            
-            @if($passage)
-                const passageContent = `{!! addslashes($passage->passage_text ?? $passage->content) !!}`;
-                const passageContainer = document.getElementById('passageContent');
-                
-                // Process passage with answer markers
-                let processedContent = passageContent;
-                
-                // Convert line breaks to paragraphs
-                const paragraphs = processedContent.split('\n\n');
-                let htmlContent = '';
-                
-                paragraphs.forEach(para => {
-                    if (para.trim()) {
-                        // Replace answer markers with highlighted spans
-                        para = para.replace(/\[Q(\d+)\]/g, '<span class="answer-highlight" data-question="$1">[Answer $1]</span>');
-                        htmlContent += `<p>${para}</p>`;
-                    }
-                });
-                
-                passageContainer.innerHTML = htmlContent;
-            @else
-                document.getElementById('passageContent').innerHTML = `
-                    <div class="text-center text-gray-500 py-8">
-                        <p>No passage available for this test.</p>
-                    </div>
-                `;
-            @endif
-        }
-        
-        // Toggle explanation panel
-        function toggleExplanation(questionId) {
-            const panel = document.getElementById(`explanation-${questionId}`);
-            if (panel) {
-                panel.classList.toggle('show');
-                
-                // Close other explanations
-                document.querySelectorAll('.explanation-panel').forEach(p => {
-                    if (p.id !== `explanation-${questionId}`) {
-                        p.classList.remove('show');
-                    }
-                });
-            }
-        }
-        
-        // Locate answer in passage
-        function locateAnswer(questionId, passageReference) {
-            // Remove all active highlights first
-            document.querySelectorAll('.answer-highlight').forEach(el => {
-                el.classList.remove('active', 'correct', 'incorrect');
+        // Locate answer in passage with smooth animation
+        function locateAnswer(questionNumber) {
+            // Remove all existing highlights
+            document.querySelectorAll('.answer-location').forEach(el => {
+                el.classList.remove('highlight-active');
             });
             
             // Remove active state from all locate buttons
@@ -610,78 +526,172 @@
             });
             
             // Find and highlight the answer location
-            const highlights = document.querySelectorAll(`.answer-highlight[data-question="${questionId}"]`);
+            const answerLocation = document.querySelector(`.answer-location.q${questionNumber}`);
             
-            if (highlights.length > 0) {
-                highlights.forEach(highlight => {
-                    highlight.classList.add('active');
-                    
-                    // Check if answer is correct or incorrect
-                    const questionItem = document.querySelector(`[data-question-id="${questionId}"]`);
-                    const isCorrect = questionItem.querySelector('.result-badge.correct');
-                    
-                    if (isCorrect) {
-                        highlight.classList.add('correct');
-                    } else {
-                        highlight.classList.add('incorrect');
-                    }
+            if (answerLocation) {
+                // Add highlight animation
+                answerLocation.classList.add('highlight-active');
+                
+                // Smooth scroll to the answer location
+                answerLocation.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'nearest'
                 });
                 
-                // Scroll to first highlight
-                highlights[0].scrollIntoView({ 
+                // Mark locate button as active
+                const locateBtn = document.querySelector(`.locate-btn[data-question-number="${questionNumber}"]`);
+                if (locateBtn) {
+                    locateBtn.classList.add('active');
+                    
+                    // Reset button after animation
+                    setTimeout(() => {
+                        locateBtn.classList.remove('active');
+                    }, 2000);
+                }
+                
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                    answerLocation.classList.remove('highlight-active');
+                }, 3000);
+            } else {
+                // Show message if answer location not found
+                showTooltip('Answer location not marked in this passage', 'warning');
+            }
+        }
+        
+        // Show explanation modal
+        function showExplanation(questionId, questionNumber) {
+            const modal = document.getElementById('explanationModal');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            
+            const data = questionExplanations[questionId];
+            
+            if (data) {
+                title.textContent = `Question ${questionNumber} - Explanation`;
+                
+                body.innerHTML = `
+                    <div class="answer-comparison">
+                        <div class="answer-box">
+                            <div class="answer-label">Your Answer</div>
+                            <div class="answer-value ${data.isCorrect ? 'correct' : 'incorrect'}">${data.userAnswer}</div>
+                        </div>
+                        <div class="answer-box">
+                            <div class="answer-label">Correct Answer</div>
+                            <div class="answer-value correct">${data.correctAnswer}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation-text">
+                        ${processExplanationText(data.explanation, questionNumber)}
+                    </div>
+                `;
+            } else {
+                title.textContent = `Question ${questionNumber} - No Explanation`;
+                body.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <p>No explanation available for this question.</p>
+                    </div>
+                `;
+            }
+            
+            // Show modal
+            modal.style.display = 'flex';
+            
+            // Close on backdrop click
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    closeExplanation();
+                }
+            };
+        }
+        
+        // Process explanation text to add interactive passage references
+        function processExplanationText(explanation, questionNumber) {
+            // Convert passage references to clickable elements
+            let processed = explanation;
+            
+            // Replace "paragraph X" with clickable references
+            processed = processed.replace(/paragraph (\d+)/gi, function(match, num) {
+                return `<span class="passage-reference" onclick="highlightParagraph(${num})">paragraph ${num}</span>`;
+            });
+            
+            // Replace line references
+            processed = processed.replace(/line (\d+)/gi, function(match, num) {
+                return `<span class="passage-reference" onclick="highlightLine(${num})">line ${num}</span>`;
+            });
+            
+            // Add question-specific reference
+            processed += `<br><br><div style="margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 6px; font-size: 14px;">
+                <strong>💡 Quick Tip:</strong> <span class="passage-reference" onclick="locateAnswer(${questionNumber}); closeExplanation();">Click here to see the answer location in the passage</span>
+            </div>`;
+            
+            return processed;
+        }
+        
+        // Highlight specific paragraph
+        function highlightParagraph(paragraphNumber) {
+            const paragraphs = document.querySelectorAll('.passage-content p');
+            
+            if (paragraphs[paragraphNumber - 1]) {
+                // Remove existing highlights
+                paragraphs.forEach(p => p.classList.remove('highlight-active'));
+                
+                // Add highlight to target paragraph
+                const targetParagraph = paragraphs[paragraphNumber - 1];
+                targetParagraph.classList.add('highlight-active');
+                
+                // Scroll to paragraph
+                targetParagraph.scrollIntoView({ 
                     behavior: 'smooth', 
                     block: 'center' 
                 });
                 
-                // Mark locate button as active
-                const locateBtn = document.querySelector(`.locate-btn[data-question-id="${questionId}"]`);
-                if (locateBtn) {
-                    locateBtn.classList.add('active');
-                }
-            } else if (passageReference) {
-                // Try to find by passage reference text
-                const passageContent = document.getElementById('passageContent');
-                const text = passageContent.textContent;
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                    targetParagraph.classList.remove('highlight-active');
+                }, 3000);
                 
-                // Simple text search and highlight
-                // This is a basic implementation - you might want to enhance this
-                console.log(`Looking for reference: ${passageReference}`);
+                // Close modal
+                closeExplanation();
             }
         }
         
-        // Handle keyboard shortcuts
+        // Close explanation modal
+        function closeExplanation() {
+            const modal = document.getElementById('explanationModal');
+            modal.style.display = 'none';
+        }
+        
+        // Show tooltip message
+        function showTooltip(message, type = 'info') {
+            const tooltip = document.createElement('div');
+            tooltip.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 ${
+                type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
+            }`;
+            tooltip.style.animation = 'slideIn 0.3s ease-out';
+            tooltip.textContent = message;
+            
+            document.body.appendChild(tooltip);
+            
+            setTimeout(() => {
+                tooltip.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => tooltip.remove(), 300);
+            }, 3000);
+        }
+        
+        // Keyboard support
         document.addEventListener('keydown', function(e) {
-            // ESC to close all explanations
             if (e.key === 'Escape') {
-                document.querySelectorAll('.explanation-panel.show').forEach(panel => {
-                    panel.classList.remove('show');
-                });
+                closeExplanation();
             }
         });
         
-        // Auto-save user preferences
-        function saveUserPreferences() {
-            const preferences = {
-                showExplanations: document.querySelectorAll('.explanation-panel.show').length > 0
-            };
-            localStorage.setItem('resultPreferences', JSON.stringify(preferences));
-        }
-        
-        // Restore user preferences
-        function restoreUserPreferences() {
-            try {
-                const saved = localStorage.getItem('resultPreferences');
-                if (saved) {
-                    const preferences = JSON.parse(saved);
-                    // Apply preferences if needed
-                }
-            } catch (e) {
-                console.error('Error restoring preferences:', e);
-            }
-        }
-        
-        // Initialize
-        restoreUserPreferences();
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Results page loaded with interactive explanations');
+        });
     </script>
     @endpush
 </x-layout>
