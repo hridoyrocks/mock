@@ -71,17 +71,17 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Add title <span class="text-red-500">*</span>
+                                    Passage Title <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" name="instructions" 
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                       placeholder="e.g., Passage 1, The History of Aviation"
+                                       placeholder="e.g., The History of Navigation"
                                        value="{{ old('instructions', 'Passage ' . $nextQuestionNumber) }}" required>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Add order <span class="text-red-500">*</span>
+                                    Order Number <span class="text-red-500">*</span>
                                 </label>
                                 <input type="number" name="order_number" 
                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -98,72 +98,75 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <h4 class="text-sm font-semibold text-blue-900 mb-2">How to Mark Answer Locations:</h4>
+                                    <h4 class="text-sm font-semibold text-blue-900 mb-2">How to Mark Question Locations:</h4>
                                     <ul class="text-sm text-blue-800 space-y-1">
-                                        <li>• Mark answer locations using: <code class="bg-white px-2 py-0.5 rounded text-xs">{{Q1}}text{{Q1}}</code></li>
-                                        <li>• Example: The Wright brothers achieved <code class="bg-white px-2 py-0.5 rounded text-xs">{{Q1}}first powered flight{{Q1}}</code> in 1903.</li>
-                                        <li>• Use Q1, Q2, Q3... for different questions</li>
-                                        <li>• These markers will be linked to questions later</li>
+                                        <li>• Type <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q1&#125;&#125;</code> before and after the answer text</li>
+                                        <li>• Example: The Wright brothers achieved <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q1&#125;&#125;first powered flight&#123;&#123;Q1&#125;&#125;</code> in 1903.</li>
+                                        <li>• Use <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q2&#125;&#125;</code>, <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q3&#125;&#125;</code>, etc. for different questions</li>
+                                        <li>• Markers will be automatically detected and highlighted</li>
                                     </ul>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Marker Buttons -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quick Insert Markers:</label>
+                            <div class="flex flex-wrap gap-2">
+                                @for($i = 1; $i <= 10; $i++)
+                                <button type="button" onclick="insertQuickMarker({{ $i }})" 
+                                        class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-mono rounded transition-colors">
+                                    &#123;&#123;Q{{ $i }}&#125;&#125;...&#123;&#123;Q{{ $i }}&#125;&#125;
+                                </button>
+                                @endfor
                             </div>
                         </div>
 
                         <!-- Passage Content Editor -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Add Content <span class="text-red-500">*</span>
-                                <svg class="inline-block w-4 h-4 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
+                                Passage Content <span class="text-red-500">*</span>
                             </label>
-                            
-                            <!-- Editor Toolbar -->
-                            <div class="mb-3 flex flex-wrap gap-2">
-                                <button type="button" onclick="insertMarker()" 
-                                        class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                    </svg>
-                                    Mark Answer Location
-                                </button>
-                                <button type="button" onclick="previewPassage()" 
-                                        class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    Preview Markers
-                                </button>
-                                <button type="button" onclick="clearAllMarkers()" 
-                                        class="px-3 py-1 bg-red-600 text-white text-xs font-medium rounded hover:bg-red-700 transition-colors">
-                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                    Clear Markers
-                                </button>
-                            </div>
                             
                             <textarea id="passageEditor" name="content" class="tinymce-passage" required>{{ old('content') }}</textarea>
                             
-                            <!-- Word Count & Markers Info -->
-                            <div class="flex justify-between items-center mt-3 text-sm text-gray-500">
-                                <span>Words: <span id="passage-word-count">0</span></span>
-                                <span id="markers-count">No markers added yet</span>
+                            <!-- Info Bar -->
+                            <div class="flex justify-between items-center mt-3 bg-gray-50 rounded p-2">
+                                <div class="flex gap-4 text-sm">
+                                    <span class="text-gray-600">Words: <span id="passage-word-count" class="font-medium">0</span></span>
+                                    <span class="text-gray-600">Characters: <span id="passage-char-count" class="font-medium">0</span></span>
+                                </div>
+                                <div id="markers-info" class="text-sm">
+                                    <span class="text-gray-600">Markers: <span id="markers-count" class="font-medium text-green-600">0</span></span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Markers List Panel -->
-                        <div id="markers-panel" class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200 hidden">
-                            <h4 class="font-semibold text-sm mb-3 flex items-center text-green-800">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                </svg>
-                                📍 Marked Question Locations:
-                            </h4>
-                            <div id="markers-list" class="space-y-2">
-                                <p class="text-sm text-gray-500">No markers added yet</p>
+                        <!-- Live Markers Detection Panel -->
+                        <div id="markers-panel" class="mt-6 hidden">
+                            <div class="bg-green-50 rounded-lg border border-green-200 p-4">
+                                <h4 class="font-semibold text-sm mb-3 flex items-center text-green-800">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Detected Question Markers:
+                                </h4>
+                                <div id="markers-list" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <!-- Markers will be listed here -->
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- Preview Button -->
+                        <div class="mt-6 flex justify-end">
+                            <button type="button" onclick="previewPassage()" 
+                                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors">
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                Preview with Markers
+                            </button>
                         </div>
                     </div>
                     
@@ -174,14 +177,7 @@
                                 <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                Save Passage
-                            </button>
-                            <button type="button" onclick="previewPassage()" class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors">
-                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                                Preview
+                                Save Passage & Continue
                             </button>
                             <a href="{{ route('admin.test-sets.show', $testSet) }}" class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors text-center">
                                 Cancel
@@ -194,7 +190,7 @@
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span><strong>Next:</strong> After saving this passage, you'll be able to add questions that reference the marked locations ({{Q1}}, {{Q2}}, etc.)</span>
+                                <span><strong>Next:</strong> After saving, you'll add questions that link to these markers.</span>
                             </div>
                         </div>
                     </div>
@@ -205,24 +201,34 @@
     
     <!-- Preview Modal -->
     <div id="preview-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-4/5 shadow-lg rounded-md bg-white">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900">📄 Passage Preview</h3>
-                <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div id="preview-content" class="border rounded-lg p-6 bg-gray-50 max-h-96 overflow-y-auto">
-                <!-- Preview content will be inserted here -->
+        <div class="relative top-10 mx-auto p-5 border w-11/12 lg:w-4/5 shadow-lg rounded-md bg-white">
+            <div class="sticky top-0 bg-white border-b pb-4 mb-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">📄 Passage Preview with Markers</h3>
+                    <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
             
-            <!-- Markers Summary -->
-            <div id="preview-markers" class="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                <h4 class="font-semibold text-sm mb-2 text-green-800">📍 Question Markers Found:</h4>
-                <div id="preview-markers-list" class="text-sm text-green-700">
-                    <!-- Markers will be listed here -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Passage Content -->
+                <div class="lg:col-span-2">
+                    <div id="preview-content" class="prose max-w-none">
+                        <!-- Preview content will be inserted here -->
+                    </div>
+                </div>
+                
+                <!-- Markers Summary Sidebar -->
+                <div class="lg:col-span-1">
+                    <div class="sticky top-20 bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-sm mb-3 text-gray-800">📍 Question Locations:</h4>
+                        <div id="preview-markers-list" class="space-y-2 text-sm">
+                            <!-- Markers will be listed here -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -240,21 +246,25 @@
             border-radius: 0.375rem !important;
         }
         
-        /* Marker highlighting styles */
+        /* Marker highlighting in preview */
         .marker-highlight {
-            background-color: #fef3c7;
-            padding: 2px 6px;
-            border-radius: 3px;
+            background: linear-gradient(to bottom, transparent 60%, #fef3c7 60%);
+            padding: 2px 0;
             font-weight: 600;
             color: #92400e;
-            border: 1px solid #f59e0b;
+            position: relative;
         }
         
-        .marker-text {
-            background-color: #dcfce7;
+        .marker-tag {
+            display: inline-block;
+            background-color: #f59e0b;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
             padding: 1px 4px;
-            border-radius: 2px;
-            border: 1px solid #16a34a;
+            border-radius: 3px;
+            margin: 0 2px;
+            vertical-align: super;
         }
         
         /* Marker list styles */
@@ -262,13 +272,25 @@
             background: white;
             border: 1px solid #d1fae5;
             border-radius: 6px;
-            padding: 8px 12px;
+            padding: 10px;
             transition: all 0.2s;
         }
         
         .marker-item:hover {
             border-color: #16a34a;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Live detection animation */
+        @keyframes markerPulse {
+            0% { opacity: 0.5; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.5; transform: scale(0.95); }
+        }
+        
+        .marker-detected {
+            animation: markerPulse 1s ease-in-out;
         }
     </style>
     @endpush
@@ -276,281 +298,8 @@
     @push('scripts')
     <!-- TinyMCE CDN -->
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-
-    <script>
-        let passageEditor;
-        let markerCounter = 1;
-        let detectedMarkers = new Set();
-
-        // Initialize TinyMCE
-        document.addEventListener('DOMContentLoaded', function() {
-            initializePassageEditor();
-        });
-
-        function initializePassageEditor() {
-            tinymce.init({
-                selector: '.tinymce-passage',
-                height: 500,
-                menubar: true,
-                plugins: [
-                    'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                    'insertdatetime', 'table', 'help', 'wordcount'
-                ],
-                toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | fullscreen preview',
-                content_style: `
-                    body { 
-                        font-family: Georgia, 'Times New Roman', serif; 
-                        font-size: 16px; 
-                        line-height: 1.8; 
-                        color: #333;
-                        padding: 20px;
-                        max-width: none;
-                    }
-                    p { 
-                        margin-bottom: 16px; 
-                        text-indent: 2em;
-                    }
-                    p:first-child, h1 + p, h2 + p, h3 + p {
-                        text-indent: 0;
-                    }
-                    h1, h2, h3 {
-                        text-align: center;
-                        margin-bottom: 20px;
-                        text-indent: 0;
-                    }
-                `,
-                setup: function(editor) {
-                    passageEditor = editor;
-
-                    editor.on('input change', function() {
-                        updateWordCount();
-                        detectMarkers();
-                    });
-
-                    editor.on('init', function() {
-                        updateWordCount();
-                        detectMarkers();
-                    });
-                }
-            });
-        }
-
-        // Insert marker functionality
-        function insertMarker() {
-            if (!passageEditor) return;
-
-            const selection = passageEditor.selection.getContent({ format: 'text' });
-            if (!selection) {
-                showNotification('Please select text in the passage first!', 'warning');
-                return;
-            }
-
-            // Find next available marker number
-            const usedNumbers = Array.from(detectedMarkers).map(m => parseInt(m.replace('Q', '')));
-            const nextNumber = usedNumbers.length > 0 ? Math.max(...usedNumbers) + 1 : markerCounter;
-
-            const markerId = `Q${nextNumber}`;
-            const markedContent = `{{${markerId}}}${selection}{{${markerId}}}`;
-            
-            passageEditor.selection.setContent(markedContent);
-            
-            showNotification(`Answer location marked as ${markerId}`, 'success');
-            markerCounter = nextNumber + 1;
-        }
-
-        // Detect markers in content
-        function detectMarkers() {
-            if (!passageEditor) return;
-
-            const content = passageEditor.getContent({ format: 'text' });
-            const markerRegex = /\{\{(Q\d+)\}\}/g;
-            const foundMarkers = new Set();
-            let match;
-
-            while ((match = markerRegex.exec(content)) !== null) {
-                foundMarkers.add(match[1]);
-            }
-
-            detectedMarkers = foundMarkers;
-            updateMarkersDisplay();
-        }
-
-        // Update markers display
-        function updateMarkersDisplay() {
-            const markersPanel = document.getElementById('markers-panel');
-            const markersList = document.getElementById('markers-list');
-            const markersCount = document.getElementById('markers-count');
-
-            if (detectedMarkers.size > 0) {
-                markersPanel.classList.remove('hidden');
-                markersCount.textContent = `${detectedMarkers.size} marker(s) added`;
-
-                const content = passageEditor.getContent({ format: 'text' });
-                const markerItems = Array.from(detectedMarkers)
-                    .sort((a, b) => parseInt(a.replace('Q', '')) - parseInt(b.replace('Q', '')))
-                    .map(markerId => {
-                        // Extract text between markers
-                        const regex = new RegExp(`\\{\\{${markerId}\\}\\}(.*?)\\{\\{${markerId}\\}\\}`, 's');
-                        const match = content.match(regex);
-                        const text = match ? match[1].substring(0, 50) + (match[1].length > 50 ? '...' : '') : 'No text found';
-
-                        return `
-                            <div class="marker-item flex items-center justify-between">
-                                <div class="flex items-center flex-1">
-                                    <span class="font-semibold text-green-600 mr-3">${markerId}</span>
-                                    <span class="text-sm text-gray-600">"${text}"</span>
-                                </div>
-                                <button onclick="removeMarker('${markerId}')" 
-                                        class="ml-2 text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
-                                        title="Remove marker">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        `;
-                    }).join('');
-
-                markersList.innerHTML = markerItems;
-            } else {
-                markersPanel.classList.add('hidden');
-                markersCount.textContent = 'No markers added yet';
-                markersList.innerHTML = '<p class="text-sm text-gray-500">No markers added yet</p>';
-            }
-        }
-
-        // Remove specific marker
-        function removeMarker(markerId) {
-            if (!confirm(`Remove marker ${markerId}?`)) return;
-
-            let content = passageEditor.getContent();
-            const regex = new RegExp(`\\{\\{${markerId}\\}\\}(.*?)\\{\\{${markerId}\\}\\}`, 'gs');
-            content = content.replace(regex, '$1');
-            
-            passageEditor.setContent(content);
-            showNotification(`Marker ${markerId} removed`, 'info');
-        }
-
-        // Clear all markers
-        function clearAllMarkers() {
-            if (!confirm('Are you sure you want to clear all markers? This cannot be undone.')) return;
-
-            let content = passageEditor.getContent();
-            content = content.replace(/\{\{Q\d+\}\}/g, '');
-            
-            passageEditor.setContent(content);
-            showNotification('All markers cleared', 'info');
-        }
-
-        // Update word count
-        function updateWordCount() {
-            if (!passageEditor) return;
-
-            const text = passageEditor.getContent({ format: 'text' });
-            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-            const wordCountEl = document.getElementById('passage-word-count');
-            
-            if (wordCountEl) {
-                wordCountEl.textContent = words.length;
-            }
-        }
-
-        // Preview passage
-        function previewPassage() {
-            if (!passageEditor) return;
-
-            const modal = document.getElementById('preview-modal');
-            const content = document.getElementById('preview-content');
-            const markersList = document.getElementById('preview-markers-list');
-
-            let passageContent = passageEditor.getContent();
-
-            // Highlight markers for preview
-            passageContent = passageContent.replace(/\{\{(Q\d+)\}\}(.*?)\{\{\\1\}\}/gs, function(match, marker, text) {
-                return `<span class="marker-highlight">[${marker}]</span><span class="marker-text">${text}</span><span class="marker-highlight">[${marker}]</span>`;
-            });
-
-            content.innerHTML = `
-                <div class="prose max-w-none">
-                    ${passageContent}
-                </div>
-            `;
-
-            // Show markers summary
-            if (detectedMarkers.size > 0) {
-                const markerSummary = Array.from(detectedMarkers)
-                    .sort((a, b) => parseInt(a.replace('Q', '')) - parseInt(b.replace('Q', '')))
-                    .map(markerId => {
-                        const originalContent = passageEditor.getContent({ format: 'text' });
-                        const regex = new RegExp(`\\{\\{${markerId}\\}\\}(.*?)\\{\\{${markerId}\\}\\}`, 's');
-                        const match = originalContent.match(regex);
-                        const text = match ? match[1].substring(0, 80) + (match[1].length > 80 ? '...' : '') : '';
-                        
-                        return `<div class="flex items-start mb-2">
-                            <span class="font-medium text-green-600 mr-2">${markerId}:</span>
-                            <span class="text-sm">"${text}"</span>
-                        </div>`;
-                    }).join('');
-                
-                markersList.innerHTML = markerSummary;
-            } else {
-                markersList.innerHTML = '<span class="text-gray-500">No markers found in the passage</span>';
-            }
-
-            modal.classList.remove('hidden');
-        }
-
-        // Close preview
-        function closePreview() {
-            document.getElementById('preview-modal').classList.add('hidden');
-        }
-
-        // Show notification
-        function showNotification(message, type = 'info') {
-            const colors = {
-                info: 'bg-blue-600',
-                success: 'bg-green-600',
-                warning: 'bg-yellow-600',
-                error: 'bg-red-600'
-            };
-
-            const notification = document.createElement('div');
-            notification.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300`;
-            notification.textContent = message;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transform = 'translateY(10px)';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
-        // Form submission handler
-        document.getElementById('passageForm').addEventListener('submit', function(e) {
-            if (passageEditor) {
-                passageEditor.save();
-            }
-
-            const content = passageEditor.getContent({ format: 'text' });
-            if (!content || content.trim() === '') {
-                e.preventDefault();
-                showNotification('Please enter passage content', 'error');
-                return false;
-            }
-
-            // Show success message
-            showNotification('Saving passage...', 'info');
-        });
-
-        // ESC key handler
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closePreview();
-            }
-        });
-    </script>
+    
+    <!-- External JavaScript File -->
+    <script src="{{ asset('js/admin/reading-passage.js') }}"></script>
     @endpush
 </x-layout>
