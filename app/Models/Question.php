@@ -29,6 +29,13 @@ class Question extends Model
         'is_sub_question', 
         'parent_question_id',
         'sub_question_index',
+        // নতুন fields
+        'explanation',
+        'passage_reference',
+        'common_mistakes',
+        'tips',
+        'difficulty_level',
+        'related_topics',
     ];
 
     protected $casts = [
@@ -37,11 +44,28 @@ class Question extends Model
         'marks' => 'integer',
         'part_number' => 'integer',
         'is_example' => 'boolean',
-        'section_specific_data' => 'array', // এটা খুব গুরুত্বপূর্ণ!
+        'section_specific_data' => 'array',
         'blank_count' => 'integer',
         'is_sub_question' => 'boolean',
         'sub_question_index' => 'integer',
+        'related_topics' => 'array', // নতুন
     ];
+    
+    // expLanation
+    public function hasExplanation(): bool
+    {
+        return !empty($this->explanation);
+    }
+    
+    public function getDifficultyBadgeClass(): string
+    {
+        return match($this->difficulty_level) {
+            'easy' => 'bg-green-100 text-green-800',
+            'medium' => 'bg-yellow-100 text-yellow-800',
+            'hard' => 'bg-red-100 text-red-800',
+            default => 'bg-gray-100 text-gray-800'
+        };
+    }
     
     public function testSet(): BelongsTo
     {

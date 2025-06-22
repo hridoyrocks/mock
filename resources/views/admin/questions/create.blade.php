@@ -25,7 +25,7 @@
     <div class="bg-gray-50 min-h-screen">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             
-            <!-- Question Status Card - NEW ADDITION -->
+            <!-- Question Status Card -->
             <div class="bg-white rounded-lg shadow-sm mb-6 border-l-4 border-blue-500">
                 <div class="p-4">
                     <div class="flex items-center justify-between">
@@ -259,17 +259,50 @@
                                        placeholder="e.g., The History of Navigation">
                             </div>
                             
+                            <!-- Quick Reference Guide -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                                <div class="flex items-start space-x-4">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-semibold text-blue-900 mb-2">How to Mark Answer Locations:</h4>
+                                        <ul class="text-sm text-blue-800 space-y-1">
+                                            <li>• Use <code class="bg-white px-2 py-0.5 rounded text-xs">[Q1]</code> where Question 1's answer is located</li>
+                                            <li>• Use <code class="bg-white px-2 py-0.5 rounded text-xs">[Q2]</code> where Question 2's answer is located</li>
+                                            <li>• Example: The scientist discovered <code class="bg-white px-2 py-0.5 rounded text-xs">[Q1]</code> a new species in 2023.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- TinyMCE Editor for Passage -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Passage Text <span class="text-red-500">*</span>
                                 </label>
-                                <textarea name="passage_text" rows="20" 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                                          placeholder="Paste or type your reading passage here...">{{ old('passage_text') }}</textarea>
-                                <div class="flex justify-between items-center mt-2">
-                                    <p class="text-xs text-gray-500">
-                                        Tip: Use empty lines to separate paragraphs. The passage will display in the left column during the test.
-                                    </p>
+                                <textarea name="passage_text" id="passage-editor" class="tinymce-passage">{{ old('passage_text') }}</textarea>
+                                
+                                <div class="flex justify-between items-center mt-3">
+                                    <div class="flex space-x-4">
+                                        <button type="button" onclick="insertAnswerMarker()" 
+                                                class="inline-flex items-center text-sm text-blue-600 hover:text-blue-700">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Insert Answer Marker
+                                        </button>
+                                        <button type="button" onclick="previewMarkers()" 
+                                                class="inline-flex items-center text-sm text-green-600 hover:text-green-700">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            Preview Markers
+                                        </button>
+                                    </div>
                                     <span class="text-xs text-gray-500">
                                         <span id="passage-word-count">0</span> words
                                     </span>
@@ -296,6 +329,115 @@
                                     class="mt-4 w-full md:w-auto px-4 py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-md hover:border-gray-400 hover:text-gray-600 transition-all">
                                 + Add Option
                             </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Explanation & Learning Section -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                <svg class="inline-block w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                                Explanation & Learning Resources
+                            </h3>
+                        </div>
+                        
+                        <div class="p-6 space-y-6">
+                            <!-- Difficulty Level -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Difficulty Level
+                                </label>
+                                <select name="difficulty_level" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Select difficulty...</option>
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Main Explanation -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Explanation <span class="text-gray-500">(Why is this the correct answer?)</span>
+                                </label>
+                                <textarea name="explanation" rows="4" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                          placeholder="Provide a clear explanation of why the correct answer is correct. Reference specific parts of the passage if applicable.">{{ old('explanation') }}</textarea>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    💡 Tip: Good explanations reference specific lines/paragraphs and explain the logic clearly.
+                                </p>
+                            </div>
+                            
+                            <!-- Passage Reference -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Passage Reference <span class="text-gray-500">(For Reading questions)</span>
+                                </label>
+                                <input type="text" name="passage_reference" 
+                                       value="{{ old('passage_reference') }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                       placeholder="e.g., Paragraph 2, Lines 15-20 OR Third paragraph, second sentence">
+                                <p class="mt-1 text-xs text-gray-500">
+                                    📍 This helps students locate the answer in the passage
+                                </p>
+                            </div>
+                            
+                            <!-- Common Mistakes -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Common Mistakes <span class="text-gray-500">(What errors do students often make?)</span>
+                                </label>
+                                <textarea name="common_mistakes" rows="3" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                          placeholder="e.g., Students often choose option A because it contains keywords from the passage, but it actually contradicts the main idea.">{{ old('common_mistakes') }}</textarea>
+                            </div>
+                            
+                            <!-- Tips -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Tips & Strategies
+                                </label>
+                                <textarea name="tips" rows="3" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                          placeholder="e.g., For True/False/Not Given questions, if the statement contains information not mentioned in the passage at all, the answer is usually 'Not Given'.">{{ old('tips') }}</textarea>
+                            </div>
+                            
+                            <!-- Related Topics -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Related Topics <span class="text-gray-500">(Comma separated)</span>
+                                </label>
+                                <input type="text" name="related_topics_input" 
+                                       id="related-topics-input"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                       placeholder="e.g., vocabulary, synonyms, main idea, inference">
+                                <div id="topic-tags" class="mt-2 flex flex-wrap gap-2"></div>
+                            </div>
+                            
+                            <!-- Quick Templates -->
+                            <div class="border-t pt-4">
+                                <p class="text-sm font-medium text-gray-700 mb-2">Quick Templates:</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" onclick="useExplanationTemplate('synonym')" 
+                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
+                                        Synonym Question
+                                    </button>
+                                    <button type="button" onclick="useExplanationTemplate('true_false')" 
+                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
+                                        True/False/NG
+                                    </button>
+                                    <button type="button" onclick="useExplanationTemplate('main_idea')" 
+                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
+                                        Main Idea
+                                    </button>
+                                    <button type="button" onclick="useExplanationTemplate('inference')" 
+                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
+                                        Inference
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -449,537 +591,35 @@
             font-size: 0.75rem;
             margin-top: 0.25rem;
         }
+        
+        /* Answer marker styling */
+        .answer-marker {
+            background-color: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #92400e;
+            font-family: monospace;
+        }
     </style>
     @endpush
 
     @push('scripts')
-    <!-- TinyMCE -->
+    {{-- TinyMCE CDN --}}
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 
+    {{-- Pass PHP data to JavaScript safely --}}
     <script>
-        let blankCounter = 0;
-        let editor;
+        // Initialize global variables
+        window.existingQuestions = [];
         
-        // Initialize TinyMCE
-        tinymce.init({
-            selector: '.tinymce',
-            height: 350,
-            menubar: true,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-            content_style: `
-                body { 
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-                    font-size: 14px; 
-                    line-height: 1.6; 
-                }
-                .blank-placeholder {
-                    background-color: #fef3c7;
-                    border-bottom: 2px solid #f59e0b;
-                    padding: 0 8px;
-                    margin: 0 4px;
-                    display: inline-block;
-                    min-width: 60px;
-                    text-align: center;
-                    font-family: monospace;
-                    font-size: 13px;
-                }
-                .dropdown-placeholder {
-                    background-color: #d1fae5;
-                    border: 1px solid #10b981;
-                    color: #065f46;
-                    padding: 2px 8px;
-                    margin: 0 2px;
-                    border-radius: 4px;
-                    font-weight: 500;
-                    display: inline-block;
-                }
-            `,
-            setup: function(ed) {
-                editor = ed;
-                ed.on('input change', function() {
-                    updateWordCount();
-                    updateBlanks();
-                });
-            }
-        });
-        
-        // Question number display update
-        document.addEventListener('DOMContentLoaded', function() {
-            const orderInput = document.querySelector('input[name="order_number"]');
-            const numberDisplay = document.getElementById('question-number-display');
-            const existingNumbers = {{ $existingQuestions->pluck('order_number')->toJson() }};
-            
-            if (orderInput && numberDisplay) {
-                orderInput.addEventListener('input', function() {
-                    const value = this.value || '?';
-                    numberDisplay.textContent = '#' + value;
-                    
-                    // Check duplicate
-                    if (existingNumbers.includes(parseInt(value))) {
-                        // Add small warning below input
-                        let warning = this.parentElement.querySelector('.duplicate-warning');
-                        if (!warning) {
-                            warning = document.createElement('p');
-                            warning.className = 'duplicate-warning text-xs text-yellow-600 mt-1';
-                            warning.innerHTML = '⚠️ This number already exists. Existing questions will be reordered.';
-                            this.parentElement.appendChild(warning);
-                        }
-                    } else {
-                        // Remove warning if exists
-                        const warning = this.parentElement.querySelector('.duplicate-warning');
-                        if (warning) warning.remove();
-                    }
-                });
-            }
-        });
-        
-        // Enhanced Insert Blank
-        function insertBlank() {
-            if (editor) {
-                blankCounter++;
-                const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[____${blankCounter}____]</span>`;
-                editor.insertContent(blankHtml);
-                updateBlanks();
-                
-                // Show tooltip
-                showTooltip('Blank inserted! It will appear as ____ in student view.');
-            }
-        }
-        
-        // Insert dropdown
-        function insertDropdown() {
-            if (editor) {
-                const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
-                if (options) {
-                    blankCounter++;
-                    const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${blankCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${blankCounter}]</span>`;
-                    editor.insertContent(dropdownHtml);
-                    updateBlanks();
-                    showTooltip('Dropdown inserted! Students will see a dropdown menu.');
-                }
-            }
-        }
-        
-        // Show tooltip function
-        function showTooltip(message) {
-            const tooltip = document.getElementById('editor-tooltip');
-            tooltip.textContent = message;
-            tooltip.style.display = 'block';
-            tooltip.style.opacity = '1';
-            
-            setTimeout(() => {
-                tooltip.style.opacity = '0';
-                setTimeout(() => {
-                    tooltip.style.display = 'none';
-                }, 300);
-            }, 3000);
-        }
-        
-        // Update blanks
-        function updateBlanks() {
-            if (!editor) return;
-            
-            const content = editor.getContent();
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            
-            const blanks = tempDiv.querySelectorAll('[data-blank], [data-dropdown]');
-            const blanksManager = document.getElementById('blanks-manager');
-            const blanksList = document.getElementById('blanks-list');
-            
-            if (blanks.length > 0) {
-                blanksManager.classList.remove('hidden');
-                blanksList.innerHTML = '';
-                
-                blanks.forEach((blank) => {
-                    const isDropdown = blank.hasAttribute('data-dropdown');
-                    const num = blank.getAttribute(isDropdown ? 'data-dropdown' : 'data-blank');
-                    
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'flex items-center space-x-2';
-                    
-                    if (isDropdown) {
-                        const options = blank.getAttribute('data-options');
-                        itemDiv.innerHTML = `
-                            <span class="text-sm font-medium">Dropdown ${num}:</span>
-                            <input type="text" value="${options}" name="dropdown_options[${num}]" 
-                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded">
-                            <select name="dropdown_correct[${num}]" class="px-2 py-1 text-sm border border-gray-300 rounded">
-                                ${options.split(',').map((opt, idx) => `<option value="${idx}">${opt.trim()}</option>`).join('')}
-                            </select>
-                        `;
-                    } else {
-                        itemDiv.innerHTML = `
-                            <span class="text-sm font-medium">Blank ${num}:</span>
-                            <input type="text" name="blank_answers[${num}]" 
-                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-                                   placeholder="Correct answer">
-                        `;
-                    }
-                    
-                    blanksList.appendChild(itemDiv);
-                });
-            } else {
-                blanksManager.classList.add('hidden');
-            }
-        }
-        
-        // Handle question type change
-        document.getElementById('question_type').addEventListener('change', function() {
-            const type = this.value;
-            const optionsCard = document.getElementById('options-card');
-            const passageSection = document.getElementById('passage-section');
-            const mainContentSection = document.getElementById('main-content-section');
-            
-            const optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching', 'matching_headings'];
-            
-            // Handle passage type
-            if (type === 'passage') {
-                passageSection.classList.remove('hidden');
-                optionsCard.classList.add('hidden');
-                mainContentSection.classList.add('hidden');
-                
-                // Auto-set some fields for passage
-                const orderInput = document.querySelector('input[name="order_number"]');
-                const marksInput = document.querySelector('input[name="marks"]');
-                
-                if (orderInput) orderInput.value = '0';
-                if (marksInput) marksInput.value = '0';
-            } else {
-                passageSection.classList.add('hidden');
-                mainContentSection.classList.remove('hidden');
-                
-                // Reset marks to default
-                const marksInput = document.querySelector('input[name="marks"]');
-                if (marksInput && marksInput.value === '0') {
-                    marksInput.value = '1';
-                }
-                
-                if (optionTypes.includes(type)) {
-                    optionsCard.classList.remove('hidden');
-                    setupDefaultOptions(type);
-                } else {
-                    optionsCard.classList.add('hidden');
-                }
-            }
-        });
-        
-        // Update passage word count
-        const passageTextarea = document.querySelector('textarea[name="passage_text"]');
-        if (passageTextarea) {
-            passageTextarea.addEventListener('input', function() {
-                const words = this.value.trim().split(/\s+/).filter(word => word.length > 0);
-                document.getElementById('passage-word-count').textContent = words.length;
-            });
-        }
-        
-        // Setup default options
-        function setupDefaultOptions(type) {
-            const container = document.getElementById('options-container');
-            container.innerHTML = '';
-            
-            if (type === 'true_false') {
-                addOption('TRUE', true);
-                addOption('FALSE', false);
-                addOption('NOT GIVEN', false);
-                document.getElementById('add-option-btn').style.display = 'none';
-            } else if (type === 'yes_no') {
-                addOption('YES', true);
-                addOption('NO', false);
-                addOption('NOT GIVEN', false);
-                document.getElementById('add-option-btn').style.display = 'none';
-            } else {
-                for (let i = 0; i < 4; i++) {
-                    addOption('', i === 0);
-                }
-                document.getElementById('add-option-btn').style.display = 'inline-block';
-            }
-        }
-        
-        // Add option
-        function addOption(content = '', isCorrect = false) {
-            const container = document.getElementById('options-container');
-            const index = container.children.length;
-            
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
-            
-            optionDiv.innerHTML = `
-                <input type="radio" name="correct_option" value="${index}" 
-                       class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
-                <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
-                <input type="text" name="options[${index}][content]" value="${content}" 
-                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                       placeholder="Enter option text..." required>
-                <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            `;
-            
-            container.appendChild(optionDiv);
-        }
-        
-        // Remove option
-        function removeOption(btn) {
-            btn.parentElement.remove();
-            reindexOptions();
-        }
-        
-        // Reindex options
-        function reindexOptions() {
-            const options = document.querySelectorAll('#options-container > div');
-            options.forEach((option, index) => {
-                option.querySelector('input[type="radio"]').value = index;
-                option.querySelector('input[type="text"]').name = `options[${index}][content]`;
-                option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
-            });
-        }
-        
-        // Add option button
-        document.getElementById('add-option-btn').addEventListener('click', () => addOption());
-        
-        // Word count
-        function updateWordCount() {
-            if (editor) {
-                const text = editor.getContent({format: 'text'});
-                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-                const chars = text.length;
-                
-                document.getElementById('word-count').textContent = words.length;
-                document.getElementById('char-count').textContent = chars;
-            }
-        }
-        
-        // Template functions
-        function showTemplates() {
-            document.getElementById('template-modal').classList.remove('hidden');
-        }
-        
-        function closeTemplates() {
-            document.getElementById('template-modal').classList.add('hidden');
-        }
-        
-        function useTemplate(template) {
-            document.getElementById('instructions').value = template;
-            closeTemplates();
-        }
-        
-        // Preview function
-        function previewQuestion() {
-            const modal = document.getElementById('preview-modal');
-            const content = document.getElementById('preview-content');
-            
-            const questionType = document.getElementById('question_type').value;
-            
-            let previewHtml = '<div class="space-y-4">';
-            
-            if (questionType === 'passage') {
-                const passageTitle = document.querySelector('input[name="passage_title"]').value;
-                const passageText = document.querySelector('textarea[name="passage_text"]').value;
-                
-                if (passageTitle) {
-                    previewHtml += `<h3 class="text-lg font-semibold">${passageTitle}</h3>`;
-                }
-                previewHtml += `<div class="whitespace-pre-wrap">${passageText}</div>`;
-            } else {
-                const instructions = document.getElementById('instructions').value;
-                const questionContent = editor ? editor.getContent() : '';
-                
-                if (instructions) {
-                    previewHtml += `<div class="text-sm text-gray-600 italic">${instructions}</div>`;
-                }
-                
-                previewHtml += `<div class="text-gray-900">${questionContent}</div>`;
-                
-                const optionsContainer = document.getElementById('options-container');
-                if (optionsContainer && optionsContainer.children.length > 0) {
-                    previewHtml += '<div class="mt-4 space-y-2">';
-                    const options = optionsContainer.querySelectorAll('input[type="text"]');
-                    options.forEach((option, index) => {
-                        if (option.value) {
-                            previewHtml += `<div class="flex items-center space-x-2">
-                                <span class="font-medium">${String.fromCharCode(65 + index)}.</span>
-                                <span>${option.value}</span>
-                            </div>`;
-                        }
-                    });
-                    previewHtml += '</div>';
-                }
-            }
-            
-            previewHtml += '</div>';
-            
-            content.innerHTML = previewHtml;
-            modal.classList.remove('hidden');
-        }
-        
-        function closePreview() {
-            document.getElementById('preview-modal').classList.add('hidden');
-        }
-        
-        // Bulk options
-        function showBulkOptions() {
-            document.getElementById('bulk-modal').classList.remove('hidden');
-        }
-        
-        function closeBulkOptions() {
-            document.getElementById('bulk-modal').classList.add('hidden');
-            document.getElementById('bulk-text').value = '';
-        }
-        
-        function addBulkOptions() {
-            const text = document.getElementById('bulk-text').value;
-            if (text) {
-                const container = document.getElementById('options-container');
-                container.innerHTML = '';
-                
-                const options = text.split('\n').filter(opt => opt.trim());
-                options.forEach((opt, index) => {
-                    addOption(opt.trim(), index === 0);
-                });
-                
-                closeBulkOptions();
-            }
-        }
-        
-        // Drag and drop
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('media');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
-        });
-        
-        dropZone.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                handleFiles(files);
-            }
-        }
-        
-        fileInput.addEventListener('change', function(e) {
-            handleFiles(this.files);
-        });
-        
-        function handleFiles(files) {
-            if (files.length > 0) {
-                const file = files[0];
-                const preview = document.getElementById('media-preview');
-                preview.innerHTML = '';
-                preview.classList.remove('hidden');
-                
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        preview.innerHTML = `
-                            <div class="relative inline-block">
-                                <img src="${e.target.result}" class="max-h-48 rounded">
-                                <button type="button" onclick="clearMedia()" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
-                        `;
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file.type.startsWith('audio/')) {
-                    preview.innerHTML = `
-                        <div class="relative">
-                            <audio controls class="w-full">
-                                <source src="${URL.createObjectURL(file)}" type="${file.type}">
-                            </audio>
-                            <button type="button" onclick="clearMedia()" class="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="text-sm text-gray-600 mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
-                    `;
-                }
-            }
-        }
-        
-        function clearMedia() {
-            document.getElementById('media').value = '';
-            document.getElementById('media-preview').innerHTML = '';
-            document.getElementById('media-preview').classList.add('hidden');
-        }
-        
-        // Form submission handler
-        document.getElementById('questionForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const questionType = document.getElementById('question_type').value;
-            
-            // Custom validation based on question type
-            if (questionType === 'passage') {
-                const passageText = document.querySelector('textarea[name="passage_text"]').value;
-                
-                if (!passageText || passageText.trim() === '') {
-                    alert('Please enter passage text');
-                    return false;
-                }
-                
-                // Set content for passage
-                const contentTextarea = document.getElementById('content');
-                if (editor) {
-                    editor.setContent(passageText);
-                    editor.save();
-                } else if (contentTextarea) {
-                    contentTextarea.value = passageText;
-                }
-            } else {
-                // For regular questions
-                if (editor) {
-                    editor.save();
-                }
-                
-                // Check if content is provided
-                const content = editor ? editor.getContent() : document.getElementById('content').value;
-                if (!content || content.trim() === '') {
-                    alert('Please enter question content');
-                    return false;
-                }
-            }
-            
-            // Submit form
-            this.submit();
-        });
-        
-        // Close modals on ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeTemplates();
-                closePreview();
-                closeBulkOptions();
-            }
-        });
+        @if(isset($existingQuestions) && $existingQuestions->count() > 0)
+            window.existingQuestions = {!! json_encode($existingQuestions->pluck('order_number')->toArray()) !!};
+        @endif
     </script>
+
+    {{-- Main JavaScript File --}}
+    <script src="{{ asset('js/admin/question-create.js') }}"></script>
     @endpush
 </x-layout>
