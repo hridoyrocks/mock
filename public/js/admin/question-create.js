@@ -1,12 +1,12 @@
-// Question Create Page - Complete JavaScript with Passage Marker & Explanation Editor
+// Question Create Page - Complete JavaScript with Enhanced Passage Marker & Explanation Editor
 let blankCounter = 0;
 let editor;
 let passageEditor;
 let explanationEditor;
 
-// Passage Marker System
+// Enhanced Passage Marker System
 const PassageMarker = {
-    markers: [],
+    markers: new Map(),
     currentQuestion: null,
 
     init: function () {
@@ -53,6 +53,34 @@ const PassageMarker = {
                 editorContainer.insertBefore(markerToolbar, editorContainer.firstChild);
             }
         }
+
+        // Also add marker list panel
+        this.addMarkerListPanel();
+    },
+
+    addMarkerListPanel: function () {
+        const passageSection = document.getElementById('passage-section');
+        if (!passageSection || document.getElementById('markers-panel')) return;
+
+        const panel = document.createElement('div');
+        panel.id = 'markers-panel';
+        panel.className = 'mt-4 p-4 bg-blue-50 rounded-lg';
+        panel.innerHTML = `
+            <h4 class="font-semibold text-sm mb-2 flex items-center">
+                <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                </svg>
+                Marked Questions:
+            </h4>
+            <div id="markers-list" class="space-y-2">
+                <p class="text-sm text-gray-500">No markers added yet</p>
+            </div>
+        `;
+
+        const contentDiv = passageSection.querySelector('.p-6');
+        if (contentDiv) {
+            contentDiv.appendChild(panel);
+        }
     },
 
     showMarkerDialog: function () {
@@ -65,6 +93,10 @@ const PassageMarker = {
             return;
         }
 
+        // Get next available marker number
+        const usedNumbers = Array.from(this.markers.keys()).map(k => parseInt(k.replace('Q', '')));
+        const nextNumber = usedNumbers.length > 0 ? Math.max(...usedNumbers) + 1 : 1;
+
         // Create marker dialog
         const dialog = document.createElement('div');
         dialog.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
@@ -75,23 +107,13 @@ const PassageMarker = {
                 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Question Number
+                        Question Number (This will be Q#)
                     </label>
                     <input type="number" id="marker-question-number" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                            placeholder="Enter question number (e.g., 1, 2, 3...)"
+                           value="${nextNumber}"
                            min="1" max="40">
-                </div>
-                
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Marker Type
-                    </label>
-                    <select id="marker-type" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                        <option value="exact">Exact Answer</option>
-                        <option value="start-end">Answer Range (Start to End)</option>
-                        <option value="context">Context Area</option>
-                    </select>
                 </div>
                 
                 <div class="flex justify-end gap-3">
@@ -113,7 +135,6 @@ const PassageMarker = {
 
     addMarker: function () {
         const questionNum = document.getElementById('marker-question-number').value;
-        const markerType = document.getElementById('marker-type').value;
 
         if (!questionNum) {
             alert('Please enter a question number');
@@ -121,52 +142,119 @@ const PassageMarker = {
         }
 
         // Get selected content
-        const selection = passageEditor.selection.getContent();
-        const selectedText = passageEditor.selection.getContent({ format: 'text' });
+        const selection = passageEditor.selection.getContent({ format: 'text' });
+        const markerId = `Q${questionNum}`;
 
-        // Create marker based on type
-        let markerHtml = '';
-
-        switch (markerType) {
-            case 'exact':
-                markerHtml = `<span class="answer-marker" data-question="${questionNum}" style="background-color: #fef3c7; padding: 2px 4px; border-radius: 3px;">[Q${questionNum}] ${selection}</span>`;
-                break;
-
-            case 'start-end':
-                // For range, we need to wrap the selection
-                markerHtml = `<span class="answer-marker-start" data-question="${questionNum}">[Q${questionNum}-START]</span>${selection}<span class="answer-marker-end" data-question="${questionNum}">[Q${questionNum}-END]</span>`;
-                break;
-
-            case 'context':
-                markerHtml = `<span class="answer-context" data-question="${questionNum}" style="background-color: #e0e7ff; padding: 2px 4px; border-radius: 3px;">${selection}</span>`;
-                break;
+        // Check if marker already exists
+        if (this.markers.has(markerId)) {
+            if (!confirm(`Marker ${markerId} already exists. Replace it?`)) {
+                return;
+            }
+            // Remove old marker first
+            this.removeMarkerFromPassage(markerId);
         }
 
         // Replace selection with marked content
-        passageEditor.selection.setContent(markerHtml);
+        const markedContent = `{{${markerId}}}${selection}{{${markerId}}}`;
+        passageEditor.selection.setContent(markedContent);
 
         // Store marker info
-        this.markers.push({
-            question: questionNum,
-            type: markerType,
-            text: selectedText
+        this.markers.set(markerId, {
+            text: selection,
+            position: passageEditor.selection.getBookmark()
         });
 
-        // Update passage reference field
-        this.updatePassageReference(questionNum);
+        // Update UI
+        this.updateMarkersList();
+        this.updateMarkerDropdown();
 
         // Close dialog and show success
         this.closeDialog();
         this.showTooltip(`Answer location marked for Question ${questionNum}`, 'success');
     },
 
-    updatePassageReference: function (questionNum) {
-        // Update the passage_reference field for the current question
-        const passageRefField = document.querySelector('input[name="passage_reference"]');
-        if (passageRefField) {
-            const currentRefs = passageRefField.value ? passageRefField.value.split(';') : [];
-            currentRefs.push(`Q${questionNum} marked in passage`);
-            passageRefField.value = currentRefs.join('; ');
+    removeMarkerFromPassage: function (markerId) {
+        const content = passageEditor.getContent();
+        const regex = new RegExp(`\\{\\{${markerId}\\}\\}(.*?)\\{\\{${markerId}\\}\\}`, 'gs');
+        const newContent = content.replace(regex, '$1');
+        passageEditor.setContent(newContent);
+    },
+
+    updateMarkersList: function () {
+        const markersList = document.getElementById('markers-list');
+        if (!markersList) return;
+
+        if (this.markers.size === 0) {
+            markersList.innerHTML = '<p class="text-sm text-gray-500">No markers added yet</p>';
+            return;
+        }
+
+        markersList.innerHTML = Array.from(this.markers.entries())
+            .sort((a, b) => {
+                const numA = parseInt(a[0].replace('Q', ''));
+                const numB = parseInt(b[0].replace('Q', ''));
+                return numA - numB;
+            })
+            .map(([id, data]) => `
+                <div class="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div class="flex items-center flex-1">
+                        <span class="font-semibold text-blue-600 mr-2">${id}</span>
+                        <span class="text-sm text-gray-600 truncate">"${data.text.substring(0, 40)}${data.text.length > 40 ? '...' : ''}"</span>
+                    </div>
+                    <button onclick="PassageMarker.removeMarker('${id}')" 
+                            class="ml-2 text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Remove marker">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+    },
+
+    removeMarker: function (markerId) {
+        if (!confirm(`Remove marker ${markerId}?`)) return;
+
+        // Remove from passage
+        this.removeMarkerFromPassage(markerId);
+
+        // Remove from map
+        this.markers.delete(markerId);
+
+        // Update UI
+        this.updateMarkersList();
+        this.updateMarkerDropdown();
+
+        this.showTooltip(`Marker ${markerId} removed`, 'info');
+    },
+
+    updateMarkerDropdown: function () {
+        // Update marker dropdown in main question form
+        const markerField = document.getElementById('marker-field');
+        if (!markerField) return;
+
+        const questionType = document.getElementById('question_type').value;
+
+        // Show/hide based on question type
+        if (questionType && questionType !== 'passage' && this.markers.size > 0) {
+            markerField.classList.remove('hidden');
+
+            const select = markerField.querySelector('select[name="marker_id"]');
+            if (select) {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- No marker (optional) --</option>' +
+                    Array.from(this.markers.keys())
+                        .sort((a, b) => {
+                            const numA = parseInt(a.replace('Q', ''));
+                            const numB = parseInt(b.replace('Q', ''));
+                            return numA - numB;
+                        })
+                        .map(id =>
+                            `<option value="${id}" ${currentValue === id ? 'selected' : ''}>${id} - "${this.markers.get(id).text.substring(0, 30)}..."</option>`
+                        ).join('');
+            }
+        } else {
+            markerField.classList.add('hidden');
         }
     },
 
@@ -194,16 +282,15 @@ const PassageMarker = {
                     </div>
                     
                     <div class="mt-6 p-4 bg-gray-50 rounded">
-                        <h4 class="font-semibold mb-2">Marked Questions:</h4>
-                        <ul class="space-y-1">
-                            ${this.markers.map(m => `
-                                <li class="text-sm">
-                                    <span class="font-medium">Q${m.question}</span>: 
-                                    <span class="text-gray-600">${m.text.substring(0, 50)}...</span>
-                                    <span class="text-xs text-gray-500">(${m.type})</span>
-                                </li>
+                        <h4 class="font-semibold mb-2">Marked Questions Summary:</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            ${Array.from(this.markers.entries()).map(([id, data]) => `
+                                <div class="flex items-start">
+                                    <span class="font-medium text-blue-600 mr-2">${id}:</span>
+                                    <span class="text-sm text-gray-600">"${data.text.substring(0, 50)}..."</span>
+                                </div>
                             `).join('')}
-                        </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -216,29 +303,32 @@ const PassageMarker = {
         // Process content to highlight markers
         let processed = content;
 
-        // Highlight different marker types
-        processed = processed.replace(/\[Q(\d+)\]/g, '<span style="background: #fef3c7; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[Q$1]</span>');
-        processed = processed.replace(/\[Q(\d+)-START\]/g, '<span style="background: #bbf7d0; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[Q$1-START]</span>');
-        processed = processed.replace(/\[Q(\d+)-END\]/g, '<span style="background: #fecaca; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[Q$1-END]</span>');
+        // Highlight markers with different colors
+        processed = processed.replace(/\{\{(Q\d+)\}\}(.*?)\{\{\\1\}\}/gs, function (match, marker, text) {
+            const num = parseInt(marker.replace('Q', ''));
+            const colors = ['#fef3c7', '#dcfce7', '#dbeafe', '#f3e8ff', '#fee2e2'];
+            const color = colors[(num - 1) % colors.length];
+            return `<span style="background: ${color}; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[${marker}]</span>${text}<span style="background: ${color}; padding: 2px 6px; border-radius: 3px; font-weight: 600;">[${marker}]</span>`;
+        });
 
         return processed;
     },
 
     clearMarkers: function () {
-        if (!confirm('Are you sure you want to clear all markers?')) return;
+        if (!confirm('Are you sure you want to clear all markers? This cannot be undone.')) return;
 
         if (passageEditor) {
             let content = passageEditor.getContent();
 
             // Remove all markers
-            content = content.replace(/<span[^>]*class="answer-marker[^"]*"[^>]*>([^<]*)<\/span>/g, '$1');
-            content = content.replace(/<span[^>]*class="answer-context"[^>]*>([^<]*)<\/span>/g, '$1');
-            content = content.replace(/\[Q\d+(-START|-END)?\]/g, '');
+            content = content.replace(/\{\{Q\d+\}\}/g, '');
 
             passageEditor.setContent(content);
         }
 
-        this.markers = [];
+        this.markers.clear();
+        this.updateMarkersList();
+        this.updateMarkerDropdown();
         this.showTooltip('All markers cleared', 'info');
     },
 
@@ -247,18 +337,23 @@ const PassageMarker = {
         if (passageEditor) {
             passageEditor.on('init', () => {
                 const content = passageEditor.getContent();
-                const markerMatches = content.match(/\[Q(\d+)(?:-START|-END)?\]/g) || [];
+                const regex = /\{\{(Q\d+)\}\}(.*?)\{\{\\1\}\}/gs;
+                let match;
 
-                markerMatches.forEach(match => {
-                    const questionNum = match.match(/\d+/)[0];
-                    if (!this.markers.find(m => m.question === questionNum)) {
-                        this.markers.push({
-                            question: questionNum,
-                            type: 'existing',
-                            text: 'Loaded from passage'
-                        });
-                    }
-                });
+                while ((match = regex.exec(content)) !== null) {
+                    const markerId = match[1];
+                    const markedText = match[2];
+
+                    this.markers.set(markerId, {
+                        text: markedText,
+                        position: null
+                    });
+                }
+
+                if (this.markers.size > 0) {
+                    this.updateMarkersList();
+                    this.updateMarkerDropdown();
+                }
             });
         }
     },
@@ -307,8 +402,8 @@ const PassageMarker = {
     updateMarkerCount: function () {
         const countEl = document.getElementById('marker-count-text');
         if (countEl) {
-            if (this.markers.length > 0) {
-                countEl.textContent = `${this.markers.length} answer location(s) marked`;
+            if (this.markers.size > 0) {
+                countEl.textContent = `${this.markers.size} answer location(s) marked`;
             } else {
                 countEl.textContent = 'No markers added yet';
             }
@@ -317,7 +412,10 @@ const PassageMarker = {
 
     // Helper method to get marker info for a question
     getQuestionMarkers: function (questionId) {
-        return this.markers.filter(m => m.question == questionId);
+        return Array.from(this.markers.entries()).filter(([id, data]) => {
+            const num = parseInt(id.replace('Q', ''));
+            return num === questionId;
+        });
     }
 };
 
@@ -329,7 +427,31 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeFileUpload();
     initializeRelatedTopics();
     initializeExplanationEditor();
+
+    // Add marker field to form
+    addMarkerField();
 });
+
+// Add marker dropdown field to the form
+function addMarkerField() {
+    const questionTypeDiv = document.querySelector('#question_type').closest('div');
+    if (!questionTypeDiv || document.getElementById('marker-field')) return;
+
+    const markerField = document.createElement('div');
+    markerField.id = 'marker-field';
+    markerField.className = 'hidden';
+    markerField.innerHTML = `
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+            Answer Location Marker
+        </label>
+        <select name="marker_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">-- No marker (optional) --</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500">Link this question to a marked location in the passage</p>
+    `;
+
+    questionTypeDiv.parentElement.insertBefore(markerField, questionTypeDiv.nextSibling);
+}
 
 // Initialize TinyMCE Editors
 function initializeTinyMCE() {
@@ -408,30 +530,6 @@ function initializeTinyMCE() {
                 p:first-child {
                     text-indent: 0;
                 }
-                .answer-marker {
-                    background-color: #fef3c7;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-weight: 600;
-                    font-size: 14px;
-                    color: #92400e;
-                    font-family: monospace;
-                }
-                .answer-marker-start,
-                .answer-marker-end {
-                    background-color: #d1fae5;
-                    padding: 1px 4px;
-                    border-radius: 2px;
-                    font-weight: 600;
-                    font-size: 12px;
-                    color: #065f46;
-                    font-family: monospace;
-                }
-                .answer-context {
-                    background-color: #e0e7ff;
-                    padding: 2px 4px;
-                    border-radius: 3px;
-                }
             `,
             setup: function (editor) {
                 passageEditor = editor;
@@ -447,7 +545,6 @@ function initializeTinyMCE() {
                 });
 
                 editor.on('init', function () {
-                    processMarkers();
                     // Initialize PassageMarker after editor is ready
                     setTimeout(() => {
                         PassageMarker.init();
@@ -544,11 +641,30 @@ function initializeExplanationEditor() {
                 }
             });
 
+            editor.ui.registry.addButton('insertMarkerRef', {
+                text: '{{Q}}',
+                tooltip: 'Reference a marker',
+                onAction: function () {
+                    // Show marker reference dialog
+                    if (PassageMarker.markers.size === 0) {
+                        alert('No markers available. Please mark locations in the passage first.');
+                        return;
+                    }
+
+                    const markers = Array.from(PassageMarker.markers.keys()).sort();
+                    const selected = prompt('Enter marker to reference (e.g., Q1, Q2):', markers[0]);
+
+                    if (selected && PassageMarker.markers.has(selected)) {
+                        editor.insertContent(`<mark>{{${selected}}}</mark>`);
+                    }
+                }
+            });
+
             // Add to toolbar
             editor.ui.registry.addGroupToolbarButton('explanationTools', {
                 text: 'Explanation',
                 icon: 'info',
-                items: 'correctAnswer incorrectAnswer tipBox'
+                items: 'correctAnswer incorrectAnswer tipBox insertMarkerRef'
             });
 
             // Quick templates menu
@@ -559,11 +675,21 @@ function initializeExplanationEditor() {
                     const items = [
                         {
                             type: 'menuitem',
+                            text: 'Marker Reference',
+                            onAction: function () {
+                                editor.insertContent(`
+                                    <p>The answer can be found in the passage where it says <mark>{{Q1}}</mark>.</p>
+                                    <p>The passage states: "<em>[QUOTE FROM PASSAGE]</em>"</p>
+                                `);
+                            }
+                        },
+                        {
+                            type: 'menuitem',
                             text: 'Synonym Explanation',
                             onAction: function () {
                                 editor.insertContent(`
                                     <p>The correct answer is <strong class="correct-answer">[OPTION]</strong> because it uses a synonym of "<mark>[WORD]</mark>" from the passage.</p>
-                                    <p>In the passage: "<em>[PASSAGE QUOTE]</em>"</p>
+                                    <p>In the passage <mark>{{Q1}}</mark>: "<em>[PASSAGE QUOTE]</em>"</p>
                                     <p>The word "<mark>[ORIGINAL]</mark>" means the same as "<mark>[SYNONYM]</mark>" in this context.</p>
                                 `);
                             }
@@ -575,7 +701,7 @@ function initializeExplanationEditor() {
                                 editor.insertContent(`
                                     <p>The statement is <strong>[TRUE/FALSE/NOT GIVEN]</strong> because:</p>
                                     <ul>
-                                        <li><strong>TRUE:</strong> The passage directly states this information in [LOCATION].</li>
+                                        <li><strong>TRUE:</strong> The passage directly states this information in <mark>{{Q1}}</mark>.</li>
                                         <li><strong>FALSE:</strong> The passage contradicts this by stating [CONTRADICTION].</li>
                                         <li><strong>NOT GIVEN:</strong> This information is not mentioned anywhere in the passage.</li>
                                     </ul>
@@ -587,7 +713,7 @@ function initializeExplanationEditor() {
                             text: 'Main Idea',
                             onAction: function () {
                                 editor.insertContent(`
-                                    <p>The main idea can be found in <mark>[PARAGRAPH/LINE]</mark> where the author states:</p>
+                                    <p>The main idea can be found in <mark>{{Q1}}</mark> where the author states:</p>
                                     <blockquote>"[QUOTE FROM PASSAGE]"</blockquote>
                                     <p>Options <span class="incorrect-answer">[WRONG OPTIONS]</span> are incorrect because they focus on specific details rather than the overall message.</p>
                                 `);
@@ -600,7 +726,7 @@ function initializeExplanationEditor() {
                                 editor.insertContent(`
                                     <p><strong>Why Option [X] is correct:</strong></p>
                                     <ul>
-                                        <li>It accurately reflects [KEY POINT] mentioned in the passage</li>
+                                        <li>It accurately reflects [KEY POINT] mentioned in <mark>{{Q1}}</mark></li>
                                         <li>The passage states: "<em>[SUPPORTING QUOTE]</em>"</li>
                                     </ul>
                                     <p><strong>Why other options are incorrect:</strong></p>
@@ -619,7 +745,7 @@ function initializeExplanationEditor() {
                                 editor.insertContent(`
                                     <p>Although not directly stated, we can infer <strong>[ANSWER]</strong> from the following clues:</p>
                                     <ol>
-                                        <li>[CLUE 1] in paragraph [X]</li>
+                                        <li>[CLUE 1] in <mark>{{Q1}}</mark></li>
                                         <li>[CLUE 2] when the author mentions "<em>[QUOTE]</em>"</li>
                                         <li>[CLUE 3] based on the context</li>
                                     </ol>
@@ -635,7 +761,7 @@ function initializeExplanationEditor() {
                                     <p>The correct heading is <strong class="correct-answer">[HEADING]</strong> because:</p>
                                     <ul>
                                         <li>The paragraph mainly discusses [MAIN TOPIC]</li>
-                                        <li>Key phrases like "<mark>[PHRASE 1]</mark>" and "<mark>[PHRASE 2]</mark>" support this heading</li>
+                                        <li>Key phrases in <mark>{{Q1}}</mark> like "<mark>[PHRASE 1]</mark>" and "<mark>[PHRASE 2]</mark>" support this heading</li>
                                         <li>Other headings don't capture the central theme of [THEME]</li>
                                     </ul>
                                 `);
@@ -755,6 +881,9 @@ function handleQuestionTypeChange() {
             if (optionsCard) optionsCard.classList.add('hidden');
         }
     }
+
+    // Update marker dropdown visibility
+    PassageMarker.updateMarkerDropdown();
 }
 
 // Blank and Dropdown Functions
@@ -779,28 +908,6 @@ window.insertDropdown = function () {
             showTooltip('Dropdown inserted! Students will see a dropdown menu.');
         }
     }
-};
-
-// Passage Marker Functions
-window.insertAnswerMarker = function () {
-    PassageMarker.showMarkerDialog();
-};
-
-function processMarkers() {
-    if (!passageEditor) return;
-
-    let content = passageEditor.getContent();
-
-    // Replace [Q1] style markers with styled spans
-    content = content.replace(/\[Q(\d+)\]/g, function (match, num) {
-        return '<span class="answer-marker" contenteditable="false">[Q' + num + ']</span>';
-    });
-
-    passageEditor.setContent(content);
-}
-
-window.previewMarkers = function () {
-    PassageMarker.previewMarkers();
 };
 
 // Options Management
@@ -1280,6 +1387,7 @@ function closeAllModals() {
     closeTemplates();
     closePreview();
     closeBulkOptions();
+    PassageMarker.closeDialog();
 }
 
 // Add CSS for animations
@@ -1326,6 +1434,18 @@ style.textContent = `
         border: 1px solid #d1d5db;
         border-radius: 6px;
         overflow: hidden;
+    }
+    
+    /* Markers panel */
+    #markers-panel {
+        background-color: #eff6ff;
+        border: 1px solid #dbeafe;
+    }
+    
+    #markers-list:empty::after {
+        content: 'No markers added yet';
+        color: #9ca3af;
+        font-size: 14px;
     }
 `;
 document.head.appendChild(style);

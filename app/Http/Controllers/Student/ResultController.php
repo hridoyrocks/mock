@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\StudentAttempt;
+use App\Models\Question;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -35,15 +36,43 @@ class ResultController extends Controller
         // Load all necessary relationships separately to avoid issues
         $attempt->load('testSet', 'testSet.section');
         
-        // Load passages separately
+        // Load passages separately and process them
         $passages = $attempt->testSet->questions()
             ->where('question_type', 'passage')
             ->orderBy('part_number')
             ->orderBy('order_number')
-            ->get();
+            ->get()
+            ->map(function($passage) {
+                // Process passage content to convert markers to HTML
+                $passage->processed_content = Question::processPassageForDisplay(
+                    $passage->passage_text ?? $passage->content,
+                    true // hide markers for student view
+                );
+                return $passage;
+            });
         
         // Load answers with their relationships
         $attempt->load(['answers.question', 'answers.selectedOption']);
+        
+        // Process questions to include marker info
+        $questionsWithMarkers = collect();
+        foreach ($attempt->answers as $answer) {
+            if ($answer->question->question_type !== 'passage') {
+                $question = $answer->question;
+                
+                // Check if question has marker and get marker text
+                if ($question->marker_id) {
+                    $question->marker_text = $question->getMarkerText();
+                }
+                
+                // Process explanation to make marker references clickable
+                if ($question->explanation) {
+                    $question->processed_explanation = $question->processExplanation();
+                }
+                
+                $questionsWithMarkers->push($answer);
+            }
+        }
         
         // Calculate statistics for automatically scored sections
         if (in_array($attempt->testSet->section->name, ['listening', 'reading'])) {
@@ -83,12 +112,13 @@ class ResultController extends Controller
                 'correctAnswers', 
                 'totalQuestions', 
                 'accuracy',
-                'passages'
+                'passages',
+                'questionsWithMarkers'
             ));
         }
         
         // For manually evaluated sections (Writing and Speaking)
-        return view('student.results.show', compact('attempt'));
+        return view('student.results.show', compact('attempt', 'passages'));
     }
     
     /**
@@ -196,7 +226,7 @@ class ResultController extends Controller
             } else {
                 // Text answer
                 $isCorrect = $this->checkTextAnswer($answer);
-                $correctAnswer = 'See explanation';
+                $correctAnswer = 'See Explanation';
             }
             
             $details[] = [
@@ -209,6 +239,8 @@ class ResultController extends Controller
                 'passage_reference' => $answer->question->passage_reference,
                 'tips' => $answer->question->tips,
                 'difficulty' => $answer->question->difficulty_level,
+                'marker_id' => $answer->question->marker_id,
+                'marker_text' => $answer->question->getMarkerText(),
             ];
         }
         

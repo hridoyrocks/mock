@@ -108,16 +108,22 @@ class Question extends Model
     {
         if ($hideMarkers) {
             // For student view - hide markers but keep text markable
-            $processed = preg_replace(
+            $processed = preg_replace_callback(
                 '/\{\{(Q\d+)\}\}(.*?)\{\{\\1\}\}/s',
-                '<span class="marker-text" data-marker="$1" id="marker-$1">$2</span>',
+                function($matches) {
+                    $markerId = $matches[1];
+                    $text = $matches[2];
+                    return '<span class="marker-text" data-marker="' . $markerId . '" id="marker-' . $markerId . '">' . $text . '</span>';
+                },
                 $passageText
             );
         } else {
             // For admin view - show markers
-            $processed = preg_replace(
-                '/\{\{(Q\d+)\}\}/g',
-                '<span class="marker-indicator">{{$1}}</span>',
+            $processed = preg_replace_callback(
+                '/\{\{(Q\d+)\}\}/',
+                function($matches) {
+                    return '<span class="marker-indicator">{{' . $matches[1] . '}}</span>';
+                },
                 $passageText
             );
         }

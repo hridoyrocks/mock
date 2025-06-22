@@ -56,32 +56,70 @@
             text-align: justify;
         }
         
-        /* Answer highlighting */
-        .answer-location {
+        /* Marker highlighting */
+        .marker-text {
             padding: 3px 6px;
             border-radius: 4px;
-            font-weight: 500;
             transition: all 0.3s ease;
             cursor: pointer;
             position: relative;
         }
         
-        .answer-location.highlight-active {
-            background-color: #fbbf24 !important;
-            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3);
+        .marker-text[data-marker="Q1"] { background-color: #fee2e2; }
+        .marker-text[data-marker="Q2"] { background-color: #dcfce7; }
+        .marker-text[data-marker="Q3"] { background-color: #dbeafe; }
+        .marker-text[data-marker="Q4"] { background-color: #f3e8ff; }
+        .marker-text[data-marker="Q5"] { background-color: #fef3c7; }
+        .marker-text[data-marker="Q6"] { background-color: #e0e7ff; }
+        .marker-text[data-marker="Q7"] { background-color: #fce7f3; }
+        .marker-text[data-marker="Q8"] { background-color: #d1fae5; }
+        .marker-text[data-marker="Q9"] { background-color: #fed7aa; }
+        .marker-text[data-marker="Q10"] { background-color: #bae6fd; }
+        
+        .marker-text.highlight-active {
             animation: pulseGlow 2s infinite;
+            transform: scale(1.05);
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4);
+            z-index: 10;
+            background-color: #fbbf24 !important;
         }
         
-        .answer-location.q1 { background-color: #fee2e2; color: #991b1b; }
-        .answer-location.q2 { background-color: #dcfce7; color: #166534; }
-        .answer-location.q3 { background-color: #dbeafe; color: #1e40af; }
-        .answer-location.q4 { background-color: #f3e8ff; color: #7c3aed; }
-        .answer-location.q5 { background-color: #fef3c7; color: #92400e; }
-        
         @keyframes pulseGlow {
-            0% { box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3); }
-            50% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.1); }
-            100% { box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3); }
+            0% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.1); }
+            100% { box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4); }
+        }
+        
+        /* Marker tooltip */
+        .marker-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            margin-bottom: 8px;
+        }
+        
+        .marker-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1f2937;
+        }
+        
+        .marker-text:hover .marker-tooltip {
+            opacity: 1;
         }
         
         /* Questions Section */
@@ -109,7 +147,7 @@
         .question-header {
             display: flex;
             align-items: center;
-            justify-content: between;
+            justify-content: space-between;
             margin-bottom: 12px;
         }
         
@@ -135,6 +173,15 @@
         
         .result-badge.correct { background: #10b981; }
         .result-badge.incorrect { background: #ef4444; }
+        
+        .marker-indicator {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
         
         .question-actions {
             display: flex;
@@ -172,6 +219,13 @@
             animation: buttonPulse 1s ease-out;
         }
         
+        .locate-btn:disabled {
+            background: #e5e7eb;
+            border-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        
         .explain-btn {
             background: #3b82f6;
             border-color: #3b82f6;
@@ -207,7 +261,7 @@
         .explanation-content {
             background: white;
             border-radius: 12px;
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
             max-height: 80vh;
             overflow-y: auto;
@@ -294,20 +348,58 @@
             color: #374151;
         }
         
-        .passage-reference {
-            background: #fef3c7;
+        .explanation-text p {
+            margin-bottom: 12px;
+        }
+        
+        .explanation-text ul,
+        .explanation-text ol {
+            margin-bottom: 12px;
+            padding-left: 24px;
+        }
+        
+        .explanation-text li {
+            margin-bottom: 6px;
+        }
+        
+        /* Marker links in explanation */
+        .marker-link {
+            background-color: #fef3c7;
             color: #92400e;
             padding: 2px 6px;
             border-radius: 3px;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
         
-        .passage-reference:hover {
-            background: #fbbf24;
+        .marker-link:hover {
+            background-color: #fbbf24;
             color: white;
+            transform: translateY(-1px);
+        }
+        
+        /* Split view mode */
+        .split-view-mode {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+        
+        .split-view-passage {
+            overflow-y: auto;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        .split-view-explanation {
+            overflow-y: auto;
+            padding: 20px;
         }
         
         /* Mobile Responsive */
@@ -342,6 +434,10 @@
                 grid-template-columns: 1fr;
                 gap: 12px;
             }
+            
+            .explanation-content {
+                width: 95%;
+            }
         }
     </style>
     @endpush
@@ -355,6 +451,12 @@
                 <span class="text-4xl font-bold">{{ $attempt->band_score ?? 'N/A' }}</span>
                 <span class="text-lg ml-2">Band Score</span>
             </div>
+            @if(isset($accuracy))
+                <div class="mt-2 opacity-80">
+                    <span class="text-lg">Accuracy: {{ number_format($accuracy, 1) }}%</span>
+                    <span class="text-sm ml-2">({{ $correctAnswers }}/{{ $totalQuestions }})</span>
+                </div>
+            @endif
         </div>
         
         <!-- Main Content Grid -->
@@ -363,32 +465,18 @@
             <div class="passage-viewer" id="passageViewer">
                 <h2 class="passage-title">📖 Reading Passage</h2>
                 <div class="passage-content" id="passageContent">
-                    @php
-                        // Get the reading passage for this test
-                        $passage = $attempt->testSet->questions()
-                            ->where('question_type', 'passage')
-                            ->first();
-                    @endphp
-                    
-                    @if($passage)
-                        @php
-                            // Process passage content to add answer location markers
-                            $content = $passage->passage_text ?? $passage->content;
-                            
-                            // Add answer location markers based on questions
-                            $questionNumber = 1;
-                            foreach($attempt->answers as $answer) {
-                                if($answer->question->question_type !== 'passage') {
-                                    // Add markers for answer locations (you can customize this logic)
-                                    $content = $this->addAnswerMarkers($content, $questionNumber, $answer->question);
-                                    $questionNumber++;
-                                }
-                            }
-                        @endphp
-                        
-                        <div id="passageText">
-                            {!! $this->processPassageContent($content) !!}
-                        </div>
+                    @if($passages && $passages->count() > 0)
+                        @foreach($passages as $passage)
+                            <div class="passage-wrapper" data-part="{{ $passage->part_number }}">
+                                @if($passage->instructions)
+                                    <h3 class="text-lg font-semibold mb-3">{{ $passage->instructions }}</h3>
+                                @endif
+                                
+                                <div id="passageText-{{ $passage->id }}">
+                                    {!! $passage->processed_content !!}
+                                </div>
+                            </div>
+                        @endforeach
                     @else
                         <div class="text-center text-gray-500 py-8">
                             <p>No passage available for this test.</p>
@@ -403,7 +491,7 @@
                 
                 @php $questionNumber = 1; @endphp
                 
-                @foreach($attempt->answers as $answer)
+                @foreach($questionsWithMarkers ?? $attempt->answers as $answer)
                     @if($answer->question->question_type !== 'passage')
                         <div class="question-item" data-question-id="{{ $answer->question->id }}">
                             <div class="question-header">
@@ -416,12 +504,15 @@
                                         @endif
                                     </span>
                                     <span>Question {{ $questionNumber }}</span>
+                                    @if($answer->question->marker_id)
+                                        <span class="marker-indicator">{{ $answer->question->marker_id }}</span>
+                                    @endif
                                 </div>
                             </div>
                             
                             <!-- Question Content -->
                             <div class="question-text mb-3">
-                                <strong>{{ strip_tags($answer->question->content) }}</strong>
+                                <strong>{!! strip_tags($answer->question->content) !!}</strong>
                             </div>
                             
                             <!-- Answer Comparison -->
@@ -455,15 +546,24 @@
                             
                             <!-- Action Buttons -->
                             <div class="question-actions">
-                                <button class="action-btn locate-btn" 
-                                        onclick="locateAnswer({{ $questionNumber }})"
-                                        data-question-number="{{ $questionNumber }}">
-                                    📍 Locate in Passage
-                                </button>
-                                <button class="action-btn explain-btn"
-                                        onclick="showExplanation({{ $answer->question->id }}, {{ $questionNumber }})">
-                                    💡 Explanation
-                                </button>
+                                @if($answer->question->marker_id)
+                                    <button class="action-btn locate-btn" 
+                                            onclick="locateAnswer('{{ $answer->question->marker_id }}')"
+                                            data-marker="{{ $answer->question->marker_id }}">
+                                        📍 Locate in Passage
+                                    </button>
+                                @else
+                                    <button class="action-btn locate-btn" disabled title="No marker available for this question">
+                                        📍 No Location Marked
+                                    </button>
+                                @endif
+                                
+                                @if($answer->question->explanation)
+                                    <button class="action-btn explain-btn"
+                                            onclick="showExplanation({{ $answer->question->id }}, {{ $questionNumber }})">
+                                        💡 Explanation
+                                    </button>
+                                @endif
                             </div>
                         </div>
                         
@@ -499,24 +599,34 @@
     
     @push('scripts')
     <script>
-        // Store question explanations data
-        const questionExplanations = {
-            @foreach($attempt->answers as $answer)
-                @if($answer->question->question_type !== 'passage' && $answer->question->explanation)
+        // Store question data
+        const questionData = {
+            @foreach($questionsWithMarkers ?? $attempt->answers as $answer)
+                @if($answer->question->question_type !== 'passage')
                     {{ $answer->question->id }}: {
-                        explanation: `{!! addslashes($answer->question->explanation) !!}`,
+                        explanation: `{!! addslashes($answer->question->processed_explanation ?? $answer->question->explanation ?? '') !!}`,
                         correctAnswer: `@if($answer->question->options->where('is_correct', true)->first()){{ $answer->question->options->where('is_correct', true)->first()->content }}@endif`,
                         userAnswer: `@if($answer->selectedOption){{ $answer->selectedOption->content }}@elseif($answer->answer){{ $answer->answer }}@else Not Answered @endif`,
-                        isCorrect: {{ $answer->selectedOption && $answer->selectedOption->is_correct ? 'true' : 'false' }}
+                        isCorrect: {{ $answer->selectedOption && $answer->selectedOption->is_correct ? 'true' : 'false' }},
+                        markerId: `{{ $answer->question->marker_id ?? '' }}`,
+                        markerText: `{{ addslashes($answer->question->marker_text ?? '') }}`,
+                        passageReference: `{{ addslashes($answer->question->passage_reference ?? '') }}`,
+                        tips: `{{ addslashes($answer->question->tips ?? '') }}`,
+                        commonMistakes: `{{ addslashes($answer->question->common_mistakes ?? '') }}`
                     },
                 @endif
             @endforeach
         };
         
-        // Locate answer in passage with smooth animation
-        function locateAnswer(questionNumber) {
+        // Active marker tracking
+        let activeMarker = null;
+        
+        // Locate answer in passage with enhanced animation
+        function locateAnswer(markerId) {
+            if (!markerId) return;
+            
             // Remove all existing highlights
-            document.querySelectorAll('.answer-location').forEach(el => {
+            document.querySelectorAll('.marker-text').forEach(el => {
                 el.classList.remove('highlight-active');
             });
             
@@ -525,22 +635,23 @@
                 btn.classList.remove('active');
             });
             
-            // Find and highlight the answer location
-            const answerLocation = document.querySelector(`.answer-location.q${questionNumber}`);
+            // Find the marker in passage
+            const markerElement = document.querySelector(`[data-marker="${markerId}"]`);
             
-            if (answerLocation) {
+            if (markerElement) {
                 // Add highlight animation
-                answerLocation.classList.add('highlight-active');
+                markerElement.classList.add('highlight-active');
+                activeMarker = markerId;
                 
-                // Smooth scroll to the answer location
-                answerLocation.scrollIntoView({ 
+                // Smooth scroll to the marker
+                markerElement.scrollIntoView({ 
                     behavior: 'smooth', 
                     block: 'center',
                     inline: 'nearest'
                 });
                 
                 // Mark locate button as active
-                const locateBtn = document.querySelector(`.locate-btn[data-question-number="${questionNumber}"]`);
+                const locateBtn = document.querySelector(`.locate-btn[data-marker="${markerId}"]`);
                 if (locateBtn) {
                     locateBtn.classList.add('active');
                     
@@ -550,51 +661,110 @@
                     }, 2000);
                 }
                 
-                // Remove highlight after 3 seconds
+                // Remove highlight after 5 seconds
                 setTimeout(() => {
-                    answerLocation.classList.remove('highlight-active');
-                }, 3000);
+                    markerElement.classList.remove('highlight-active');
+                    activeMarker = null;
+                }, 5000);
             } else {
-                // Show message if answer location not found
-                showTooltip('Answer location not marked in this passage', 'warning');
+                // Show message if marker not found
+                showTooltip('Answer location not found in passage', 'warning');
             }
         }
         
-        // Show explanation modal
+        // Highlight marker from explanation
+        function highlightMarker(markerId) {
+            // Close modal first for better UX
+            closeExplanation();
+            
+            // Small delay to allow modal to close
+            setTimeout(() => {
+                locateAnswer(markerId);
+            }, 300);
+        }
+        
+        // Show explanation modal with enhanced content
         function showExplanation(questionId, questionNumber) {
             const modal = document.getElementById('explanationModal');
             const title = document.getElementById('modalTitle');
             const body = document.getElementById('modalBody');
             
-            const data = questionExplanations[questionId];
+            const data = questionData[questionId];
             
-            if (data) {
-                title.textContent = `Question ${questionNumber} - Explanation`;
-                
-                body.innerHTML = `
-                    <div class="answer-comparison">
-                        <div class="answer-box">
-                            <div class="answer-label">Your Answer</div>
-                            <div class="answer-value ${data.isCorrect ? 'correct' : 'incorrect'}">${data.userAnswer}</div>
-                        </div>
-                        <div class="answer-box">
-                            <div class="answer-label">Correct Answer</div>
-                            <div class="answer-value correct">${data.correctAnswer}</div>
-                        </div>
+            if (!data) {
+                showTooltip('No explanation available', 'info');
+                return;
+            }
+            
+            title.innerHTML = `Question ${questionNumber} - Explanation`;
+            
+            let explanationContent = `
+                <div class="answer-comparison">
+                    <div class="answer-box">
+                        <div class="answer-label">Your Answer</div>
+                        <div class="answer-value ${data.isCorrect ? 'correct' : 'incorrect'}">${data.userAnswer}</div>
                     </div>
-                    
-                    <div class="explanation-text">
-                        ${processExplanationText(data.explanation, questionNumber)}
+                    <div class="answer-box">
+                        <div class="answer-label">Correct Answer</div>
+                        <div class="answer-value correct">${data.correctAnswer || 'See explanation below'}</div>
                     </div>
-                `;
-            } else {
-                title.textContent = `Question ${questionNumber} - No Explanation`;
-                body.innerHTML = `
-                    <div class="text-center text-gray-500 py-8">
-                        <p>No explanation available for this question.</p>
+                </div>
+            `;
+            
+            // Add marker reference if exists
+            if (data.markerId && data.markerText) {
+                explanationContent += `
+                    <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                        <p class="text-sm font-semibold text-blue-800 mb-1">📍 Answer Location:</p>
+                        <p class="text-sm text-blue-700">
+                            Look for <span class="marker-link" onclick="highlightMarker('${data.markerId}')">${data.markerId}</span> in the passage:
+                            <em>"${data.markerText.substring(0, 100)}${data.markerText.length > 100 ? '...' : ''}"</em>
+                        </p>
                     </div>
                 `;
             }
+            
+            // Add main explanation
+            if (data.explanation) {
+                explanationContent += `
+                    <div class="explanation-text mb-4">
+                        <h4 class="font-semibold mb-2">Explanation:</h4>
+                        ${data.explanation}
+                    </div>
+                `;
+            }
+            
+            // Add passage reference
+            if (data.passageReference) {
+                explanationContent += `
+                    <div class="mb-3 p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm font-semibold text-gray-700 mb-1">📖 Passage Reference:</p>
+                        <p class="text-sm text-gray-600">${data.passageReference}</p>
+                    </div>
+                `;
+            }
+            
+            // Add common mistakes
+            if (data.commonMistakes) {
+                explanationContent += `
+                    <div class="mb-3 p-3 bg-red-50 rounded-lg">
+                        <p class="text-sm font-semibold text-red-800 mb-1">⚠️ Common Mistakes:</p>
+                        <p class="text-sm text-red-700">${data.commonMistakes}</p>
+                    </div>
+                `;
+            }
+            
+            // Add tips
+            if (data.tips) {
+                explanationContent += `
+                    <div class="p-3 bg-green-50 rounded-lg">
+                        <p class="text-sm font-semibold text-green-800 mb-1">💡 Tips:</p>
+                        <p class="text-sm text-green-700">${data.tips}</p>
+                    </div>
+                `;
+            }
+            
+            body.innerHTML = explanationContent;
             
             // Show modal
             modal.style.display = 'flex';
@@ -607,57 +777,6 @@
             };
         }
         
-        // Process explanation text to add interactive passage references
-        function processExplanationText(explanation, questionNumber) {
-            // Convert passage references to clickable elements
-            let processed = explanation;
-            
-            // Replace "paragraph X" with clickable references
-            processed = processed.replace(/paragraph (\d+)/gi, function(match, num) {
-                return `<span class="passage-reference" onclick="highlightParagraph(${num})">paragraph ${num}</span>`;
-            });
-            
-            // Replace line references
-            processed = processed.replace(/line (\d+)/gi, function(match, num) {
-                return `<span class="passage-reference" onclick="highlightLine(${num})">line ${num}</span>`;
-            });
-            
-            // Add question-specific reference
-            processed += `<br><br><div style="margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 6px; font-size: 14px;">
-                <strong>💡 Quick Tip:</strong> <span class="passage-reference" onclick="locateAnswer(${questionNumber}); closeExplanation();">Click here to see the answer location in the passage</span>
-            </div>`;
-            
-            return processed;
-        }
-        
-        // Highlight specific paragraph
-        function highlightParagraph(paragraphNumber) {
-            const paragraphs = document.querySelectorAll('.passage-content p');
-            
-            if (paragraphs[paragraphNumber - 1]) {
-                // Remove existing highlights
-                paragraphs.forEach(p => p.classList.remove('highlight-active'));
-                
-                // Add highlight to target paragraph
-                const targetParagraph = paragraphs[paragraphNumber - 1];
-                targetParagraph.classList.add('highlight-active');
-                
-                // Scroll to paragraph
-                targetParagraph.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-                
-                // Remove highlight after 3 seconds
-                setTimeout(() => {
-                    targetParagraph.classList.remove('highlight-active');
-                }, 3000);
-                
-                // Close modal
-                closeExplanation();
-            }
-        }
-        
         // Close explanation modal
         function closeExplanation() {
             const modal = document.getElementById('explanationModal');
@@ -666,10 +785,15 @@
         
         // Show tooltip message
         function showTooltip(message, type = 'info') {
+            const colors = {
+                info: 'bg-blue-600',
+                success: 'bg-green-600',
+                warning: 'bg-yellow-600',
+                error: 'bg-red-600'
+            };
+            
             const tooltip = document.createElement('div');
-            tooltip.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 ${
-                type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
-            }`;
+            tooltip.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white text-sm font-medium z-50 ${colors[type]}`;
             tooltip.style.animation = 'slideIn 0.3s ease-out';
             tooltip.textContent = message;
             
@@ -681,17 +805,83 @@
             }, 3000);
         }
         
-        // Keyboard support
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeExplanation();
-            }
+        // Add marker hover effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover tooltips to markers
+            document.querySelectorAll('.marker-text').forEach(marker => {
+                const markerId = marker.dataset.marker;
+                
+                // Create tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'marker-tooltip';
+                tooltip.textContent = `Click to see ${markerId} explanation`;
+                marker.appendChild(tooltip);
+                
+                // Click handler
+                marker.addEventListener('click', function() {
+                    // Find question with this marker
+                    for (let [questionId, data] of Object.entries(questionData)) {
+                        if (data.markerId === markerId) {
+                            // Find question number
+                            const questionItems = document.querySelectorAll('.question-item');
+                            let questionNumber = 1;
+                            
+                            questionItems.forEach((item, index) => {
+                                if (item.dataset.questionId == questionId) {
+                                    questionNumber = index + 1;
+                                }
+                            });
+                            
+                            showExplanation(questionId, questionNumber);
+                            break;
+                        }
+                    }
+                });
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeExplanation();
+                }
+            });
         });
         
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Results page loaded with interactive explanations');
-        });
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+            }
+            
+            /* Smooth transitions */
+            .marker-text {
+                transition: all 0.3s ease;
+            }
+            
+            .marker-text:hover {
+                transform: scale(1.02);
+            }
+        `;
+        document.head.appendChild(style);
     </script>
     @endpush
 </x-layout>
