@@ -332,114 +332,27 @@
                         </div>
                     </div>
                     
-                    <!-- Explanation & Learning Section -->
-                    <div class="bg-white rounded-lg shadow-sm">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">
-                                <svg class="inline-block w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                                </svg>
-                                Explanation & Learning Resources
-                            </h3>
-                        </div>
-                        
-                        <div class="p-6 space-y-6">
-                            <!-- Difficulty Level -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Difficulty Level
-                                </label>
-                                <select name="difficulty_level" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select difficulty...</option>
-                                    <option value="easy">Easy</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="hard">Hard</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Main Explanation -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Explanation <span class="text-gray-500">(Why is this the correct answer?)</span>
-                                </label>
-                                <textarea name="explanation" rows="4" 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                          placeholder="Provide a clear explanation of why the correct answer is correct. Reference specific parts of the passage if applicable.">{{ old('explanation') }}</textarea>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    💡 Tip: Good explanations reference specific lines/paragraphs and explain the logic clearly.
-                                </p>
-                            </div>
-                            
-                            <!-- Passage Reference -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Passage Reference <span class="text-gray-500">(For Reading questions)</span>
-                                </label>
-                                <input type="text" name="passage_reference" 
-                                       value="{{ old('passage_reference') }}"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                       placeholder="e.g., Paragraph 2, Lines 15-20 OR Third paragraph, second sentence">
-                                <p class="mt-1 text-xs text-gray-500">
-                                    📍 This helps students locate the answer in the passage
-                                </p>
-                            </div>
-                            
-                            <!-- Common Mistakes -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Common Mistakes <span class="text-gray-500">(What errors do students often make?)</span>
-                                </label>
-                                <textarea name="common_mistakes" rows="3" 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                          placeholder="e.g., Students often choose option A because it contains keywords from the passage, but it actually contradicts the main idea.">{{ old('common_mistakes') }}</textarea>
-                            </div>
-                            
-                            <!-- Tips -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Tips & Strategies
-                                </label>
-                                <textarea name="tips" rows="3" 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                          placeholder="e.g., For True/False/Not Given questions, if the statement contains information not mentioned in the passage at all, the answer is usually 'Not Given'.">{{ old('tips') }}</textarea>
-                            </div>
-                            
-                            <!-- Related Topics -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Related Topics <span class="text-gray-500">(Comma separated)</span>
-                                </label>
-                                <input type="text" name="related_topics_input" 
-                                       id="related-topics-input"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                       placeholder="e.g., vocabulary, synonyms, main idea, inference">
-                                <div id="topic-tags" class="mt-2 flex flex-wrap gap-2"></div>
-                            </div>
-                            
-                            <!-- Quick Templates -->
-                            <div class="border-t pt-4">
-                                <p class="text-sm font-medium text-gray-700 mb-2">Quick Templates:</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <button type="button" onclick="useExplanationTemplate('synonym')" 
-                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
-                                        Synonym Question
-                                    </button>
-                                    <button type="button" onclick="useExplanationTemplate('true_false')" 
-                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
-                                        True/False/NG
-                                    </button>
-                                    <button type="button" onclick="useExplanationTemplate('main_idea')" 
-                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
-                                        Main Idea
-                                    </button>
-                                    <button type="button" onclick="useExplanationTemplate('inference')" 
-                                            class="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200">
-                                        Inference
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                   {{-- Explanation Section - Replace the existing complex one --}}
+<div class="bg-white rounded-lg shadow-sm">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">
+            Question Explanation
+        </h3>
+    </div>
+    
+    <div class="p-6">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Explanation <span class="text-gray-500">(Optional)</span>
+            </label>
+            <textarea name="explanation" 
+                      id="explanation-editor"
+                      rows="6" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      placeholder="Explain why this is the correct answer...">{{ old('explanation') }}</textarea>
+        </div>
+    </div>
+</div>
                     
                     <!-- Media Files Section -->
                     <div class="bg-white rounded-lg shadow-sm">
