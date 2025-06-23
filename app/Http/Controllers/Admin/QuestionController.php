@@ -292,13 +292,13 @@ class QuestionController extends Controller
     /**
      * Store Reading Passage (Step 1)
      */
-    private function storeReadingPassage(Request $request, TestSet $testSet): RedirectResponse
+     private function storeReadingPassage(Request $request, TestSet $testSet): RedirectResponse
     {
         // Validate passage data
-        $request->validate([
+        $validated = $request->validate([
             'test_set_id' => 'required|exists:test_sets,id',
             'instructions' => 'required|string|max:255', // Passage title
-            'content' => 'required|string|min:200', // Passage content
+            'content' => 'required|string|min:200', // Passage content from TinyMCE
             'order_number' => 'required|integer|min:0',
             'part_number' => 'integer|min:1|max:3',
         ]);
@@ -314,7 +314,7 @@ class QuestionController extends Controller
                 $existingPassage->update([
                     'instructions' => $request->instructions,
                     'content' => $request->content,
-                    'passage_text' => $request->content,
+                    'passage_text' => $request->content, // Store in both fields
                     'order_number' => $request->order_number,
                     'part_number' => $request->part_number ?? 1,
                     'marks' => 0,
@@ -324,9 +324,9 @@ class QuestionController extends Controller
                 Question::create([
                     'test_set_id' => $testSet->id,
                     'question_type' => 'passage',
-                    'content' => $request->content,
-                    'passage_text' => $request->content,
-                    'instructions' => $request->instructions,
+                    'content' => $request->content, // Main content
+                    'passage_text' => $request->content, // Duplicate for compatibility
+                    'instructions' => $request->instructions, // Title
                     'order_number' => $request->order_number,
                     'part_number' => $request->part_number ?? 1,
                     'marks' => 0,
