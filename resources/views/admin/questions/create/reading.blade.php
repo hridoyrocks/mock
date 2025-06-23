@@ -128,7 +128,7 @@
                                 Passage Content <span class="text-red-500">*</span>
                             </label>
                             
-                            <textarea id="passageEditor" name="content" class="tinymce-passage" required>{{ old('content') }}</textarea>
+                            <textarea id="passageEditor" class="tinymce-passage">{{ old('content') }}</textarea>
                             
                             <!-- Info Bar -->
                             <div class="flex justify-between items-center mt-3 bg-gray-50 rounded p-2">
@@ -173,7 +173,9 @@
                     <!-- Actions -->
                     <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
                         <div class="flex flex-col sm:flex-row gap-3">
-                            <button type="submit" class="flex-1 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors">
+                            <button type="submit" 
+                                    id="save-passage-btn"
+                                    class="flex-1 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors">
                                 <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -301,5 +303,42 @@
     
     <!-- External JavaScript File -->
     <script src="{{ asset('js/admin/reading-passage.js') }}"></script>
+    
+    <!-- Inline script for form submission -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Override form submission
+        var form = document.getElementById('passageForm');
+        var saveBtn = document.getElementById('save-passage-btn');
+        
+        if (form && saveBtn) {
+            saveBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Wait for TinyMCE to be ready
+                if (typeof tinymce !== 'undefined' && tinymce.get('passageEditor')) {
+                    var content = tinymce.get('passageEditor').getContent();
+                    
+                    if (!content || content.trim() === '') {
+                        alert('Please enter passage content');
+                        return;
+                    }
+                    
+                    // Create hidden input for content
+                    var contentInput = document.createElement('input');
+                    contentInput.type = 'hidden';
+                    contentInput.name = 'content';
+                    contentInput.value = content;
+                    form.appendChild(contentInput);
+                    
+                    // Submit the form
+                    form.submit();
+                } else {
+                    alert('Editor not ready. Please wait and try again.');
+                }
+            });
+        }
+    });
+    </script>
     @endpush
 </x-layout>
