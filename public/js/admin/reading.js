@@ -1,4 +1,4 @@
-// Reading section specific functionality
+// Simple Reading section functionality
 let passageEditor = null;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const questionType = document.getElementById('question_type');
     if (questionType) {
         questionType.addEventListener('change', handleReadingQuestionTypeChange);
+        // Trigger on load if value exists
+        if (questionType.value) {
+            handleReadingQuestionTypeChange.call(questionType);
+        }
     }
 });
 
@@ -17,13 +21,11 @@ function handleReadingQuestionTypeChange() {
     const type = this.value;
     const questionContentField = document.getElementById('question-content-field');
     const passageContentField = document.getElementById('passage-content-field');
-    const markerSelectField = document.getElementById('marker-select-field');
     const blanksManager = document.getElementById('blanks-manager');
 
     // Reset displays
     if (questionContentField) questionContentField.classList.remove('hidden');
     if (passageContentField) passageContentField.classList.add('hidden');
-    if (markerSelectField) markerSelectField.classList.add('hidden');
     if (blanksManager) blanksManager.classList.add('hidden');
 
     if (type === 'passage') {
@@ -32,8 +34,10 @@ function handleReadingQuestionTypeChange() {
         if (passageContentField) passageContentField.classList.remove('hidden');
 
         // Initialize passage editor if not already done
-        if (!passageEditor) {
-            initializePassageEditor();
+        if (!passageEditor && typeof tinymce !== 'undefined') {
+            setTimeout(() => {
+                initializePassageEditor();
+            }, 100);
         }
 
         // Set default values
@@ -53,121 +57,44 @@ function handleReadingQuestionTypeChange() {
             marksInput.value = '1';
         }
 
-        // Check if we have markers available
-        checkAvailableMarkers();
-
         // Show blanks manager for fill_blanks type
         if (type === 'fill_blanks') {
-            // Content editor will handle blanks
+            if (blanksManager) blanksManager.classList.remove('hidden');
+            // Initialize blanks functionality
+            if (typeof updateBlanks === 'function') {
+                updateBlanks();
+            }
         }
     }
 }
 
 // Initialize passage editor
 function initializePassageEditor() {
+    // First check if element exists
+    const passageTextarea = document.querySelector('.tinymce-passage');
+    if (!passageTextarea) {
+        console.log('Passage textarea not found');
+        return;
+    }
+
+    // Initialize TinyMCE for passage
     tinymce.init({
         selector: '.tinymce-passage',
         height: 500,
         menubar: true,
         plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime table help wordcount',
-        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | markerTools | removeformat | fullscreen preview',
+        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | fullscreen preview',
         content_style: 'body { font-family: Georgia, Times New Roman, serif; font-size: 16px; line-height: 1.8; color: #333; }',
         setup: function (editor) {
             passageEditor = editor;
-
-            // Add marker toolbar button
-            editor.ui.registry.addMenuButton('markerTools', {
-                text: 'Markers',
-                icon: 'bookmark',
-                fetch: function (callback) {
-                    const items = [];
-                    for (let i = 1; i <= 10; i++) {
-                        items.push({
-                            type: 'menuitem',
-                            text: 'Insert Q' + i + ' Marker',
-                            onAction: function () {
-                                insertMarker(i);
-                            }
-                        });
-                    }
-                    callback(items);
-                }
-            });
-
-            editor.on('change keyup', function () {
-                detectMarkers();
-            });
         }
     });
-}
-
-// Insert marker in passage
-function insertMarker(number) {
-    if (passageEditor) {
-        const selection = passageEditor.selection.getContent({ format: 'text' });
-        const text = selection || 'answer location';
-        const marker = '{{Q' + number + '}}' + text + '{{Q' + number + '}}';
-        passageEditor.insertContent(marker);
-    }
-}
-
-// Detect markers in passage
-function detectMarkers() {
-    if (!passageEditor) return;
-
-    const content = passageEditor.getContent({ format: 'text' });
-    const regex = /\{\{(Q\d+)\}\}/g;
-    const markers = [];
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-        if (!markers.includes(match[1])) {
-            markers.push(match[1]);
-        }
-    }
-
-    // Update marker dropdown
-    updateMarkerDropdown(markers);
-}
-
-// Update marker dropdown for questions
-function updateMarkerDropdown(markers) {
-    const markerSelect = document.querySelector('select[name="marker_id"]');
-    if (!markerSelect) return;
-
-    markerSelect.innerHTML = '<option value="">-- No specific location --</option>';
-
-    markers.sort((a, b) => {
-        const numA = parseInt(a.replace('Q', ''));
-        const numB = parseInt(b.replace('Q', ''));
-        return numA - numB;
-    });
-
-    markers.forEach(marker => {
-        const option = document.createElement('option');
-        option.value = marker;
-        option.textContent = marker + ' - Marked location in passage';
-        markerSelect.appendChild(option);
-    });
-}
-
-// Check available markers on page load
-function checkAvailableMarkers() {
-    // This would check if there's already a passage with markers
-    // For now, just show/hide the marker field
-    const markerField = document.getElementById('marker-select-field');
-    const questionType = document.getElementById('question_type').value;
-
-    if (markerField && questionType && questionType !== 'passage') {
-        // Show marker field for question types (not for passage)
-        markerField.classList.remove('hidden');
-    }
 }
 
 // Insert blank for fill-in-the-blanks
 window.insertBlank = function () {
     if (editor) {
-        const blankCounter = document.querySelectorAll('[data-blank]').length + 1;
+        const blankCounter = (document.querySelectorAll('[data-blank]').length || 0) + 1;
         const blankHtml = '<span class="blank-placeholder" data-blank="' + blankCounter + '" contenteditable="false" style="background:#fef3c7;padding:2px 8px;margin:0 4px;border-bottom:2px solid #f59e0b;">[____' + blankCounter + '____]</span>';
         editor.insertContent(blankHtml);
         updateBlanks();
@@ -179,7 +106,7 @@ window.insertDropdown = function () {
     if (editor) {
         const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
         if (options) {
-            const dropdownCounter = document.querySelectorAll('[data-dropdown]').length + 1;
+            const dropdownCounter = (document.querySelectorAll('[data-dropdown]').length || 0) + 1;
             const dropdownHtml = '<span class="dropdown-placeholder" data-dropdown="' + dropdownCounter + '" data-options="' + options + '" contenteditable="false" style="background:#d1fae5;border:1px solid #10b981;padding:2px 8px;margin:0 4px;border-radius:4px;">[DROPDOWN_' + dropdownCounter + ']</span>';
             editor.insertContent(dropdownHtml);
             updateBlanks();
@@ -247,21 +174,29 @@ document.addEventListener('DOMContentLoaded', function () {
         form.addEventListener('submit', function (e) {
             const questionType = document.getElementById('question_type').value;
 
+            // Save all TinyMCE editors first
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
+
             if (questionType === 'passage') {
-                // For passage type, move passage content to main content field
+                // For passage type, ensure passage content is properly submitted
                 if (passageEditor) {
                     const passageContent = passageEditor.getContent();
 
-                    // Set content field
+                    // Find the passage_text field
+                    const passageTextField = document.getElementById('passage_text');
+                    if (passageTextField) {
+                        passageTextField.value = passageContent;
+                    }
+
+                    // Also set in content field as backup
                     const contentField = document.getElementById('content');
                     if (contentField) {
-                        // If TinyMCE is active on content field
-                        if (window.editor) {
-                            window.editor.setContent(passageContent);
-                        } else {
-                            contentField.value = passageContent;
-                        }
+                        contentField.value = passageContent;
                     }
+
+                    console.log('Passage content set:', passageContent.length + ' characters');
                 }
             }
 
@@ -279,3 +214,6 @@ function handleSectionSpecificChange(type) {
         handleReadingQuestionTypeChange.call(questionType);
     }
 }
+
+// Export functions for use in other scripts
+window.updateBlanks = updateBlanks;

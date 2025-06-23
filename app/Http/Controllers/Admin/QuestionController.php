@@ -76,14 +76,8 @@ class QuestionController extends Controller
         // Get section name
         $section = $testSet->section->name;
         
-        // Handle Reading section specially
-        if ($section === 'reading') {
-            return $this->handleReadingCreate($testSet, $request);
-        }
-        
-        // Common data for all other sections
+        // Common data for all sections
         $existingQuestions = $testSet->questions()
-            ->where('question_type', '!=', 'passage')
             ->orderBy('part_number')
             ->orderBy('order_number')
             ->get();
@@ -97,238 +91,8 @@ class QuestionController extends Controller
             'nextQuestionNumber' => $nextQuestionNumber,
         ];
         
-        // Add section-specific data
-        switch ($section) {
-            case 'listening':
-                $data['questionTypes'] = [
-                    'multiple_choice' => 'Multiple Choice',
-                    'form_completion' => 'Form Completion',
-                    'note_completion' => 'Note Completion',
-                    'sentence_completion' => 'Sentence Completion',
-                    'short_answer' => 'Short Answer',
-                    'matching' => 'Matching',
-                    'plan_map_diagram' => 'Plan/Map/Diagram Labeling'
-                ];
-                $data['audioFormats'] = ['mp3', 'wav', 'ogg'];
-                break;
-                
-            case 'writing':
-                $data['questionTypes'] = [
-                    'task1_line_graph' => 'Task 1: Line Graph',
-                    'task1_bar_chart' => 'Task 1: Bar Chart',
-                    'task1_pie_chart' => 'Task 1: Pie Chart',
-                    'task1_table' => 'Task 1: Table',
-                    'task1_process' => 'Task 1: Process Diagram',
-                    'task1_map' => 'Task 1: Map',
-                    'task2_opinion' => 'Task 2: Opinion Essay',
-                    'task2_discussion' => 'Task 2: Discussion Essay',
-                    'task2_problem_solution' => 'Task 2: Problem/Solution',
-                    'task2_advantage_disadvantage' => 'Task 2: Advantages/Disadvantages'
-                ];
-                $data['defaultWordLimits'] = ['task1' => 150, 'task2' => 250];
-                $data['defaultTimeLimits'] = ['task1' => 20, 'task2' => 40];
-                break;
-                
-            case 'speaking':
-                $data['questionTypes'] = [
-                    'part1_personal' => 'Part 1: Personal Questions',
-                    'part2_cue_card' => 'Part 2: Cue Card',
-                    'part3_discussion' => 'Part 3: Discussion'
-                ];
-                $data['defaultTimeLimits'] = [
-                    'part1' => 1,
-                    'part2' => 2,
-                    'part3' => 5
-                ];
-                break;
-        }
-        
         // Return section-specific view
         return view('admin.questions.create.' . $section, $data);
-    }
-
-    /**
-     * Handle Reading section creation logic (2-step process)
-     */
-    private function handleReadingCreate(TestSet $testSet, Request $request)
-    {
-        // Check if there's already a passage for this test set
-        $existingPassage = $testSet->questions()
-            ->where('question_type', 'passage')
-            ->first();
-        
-        // If no passage exists, show Step 1: Create Passage
-        if (!$existingPassage) {
-            $existingQuestions = $testSet->questions()->orderBy('order_number')->get();
-            $nextQuestionNumber = 0; // Passages start at 0
-            
-            return view('admin.questions.create.reading', compact(
-                'testSet', 
-                'existingQuestions', 
-                'nextQuestionNumber'
-            ));
-        }
-        
-        // If passage exists, show Step 2: Add Questions
-        return $this->showReadingQuestionForm($testSet, $existingPassage);
-    }
-
-    /**
-     * Show Reading Question Creation Form (Step 2)
-     */
-    private function showReadingQuestionForm(TestSet $testSet, Question $passage)
-    {
-        // Get existing questions (excluding passage and sub-questions)
-        $existingQuestions = $testSet->questions()
-            ->where('question_type', '!=', 'passage')
-            ->where('is_sub_question', false)
-            ->orderBy('order_number')
-            ->get();
-        
-        $nextQuestionNumber = $this->calculateNextQuestionNumber($testSet);
-        
-        // Process passage content to extract markers
-        $passageContent = $passage->passage_text ?? $passage->content;
-        $availableMarkers = $this->extractMarkersFromPassage($passageContent);
-        $markerTexts = $this->getMarkerTexts($passageContent, $availableMarkers);
-        $processedPassage = $this->processPassageForDisplay($passageContent);
-        
-        // Question types for reading
-        $questionTypes = [
-            'multiple_choice' => 'Multiple Choice',
-            'true_false' => 'True/False/Not Given',
-            'yes_no' => 'Yes/No/Not Given',
-            'matching_headings' => 'Matching Headings',
-            'matching_information' => 'Matching Information',
-            'matching_features' => 'Matching Features',
-            'sentence_completion' => 'Sentence Completion',
-            'summary_completion' => 'Summary Completion',
-            'short_answer' => 'Short Answer',
-            'fill_blanks' => 'Fill in the Blanks',
-            'flow_chart' => 'Flow Chart Completion',
-            'table_completion' => 'Table Completion'
-        ];
-        
-        return view('admin.questions.create.reading-question', compact(
-            'testSet', 
-            'passage', 
-            'existingQuestions', 
-            'nextQuestionNumber',
-            'availableMarkers',
-            'markerTexts',
-            'processedPassage',
-            'questionTypes'
-        ));
-    }
-
-    /**
-     * Extract markers from passage content
-     */
-    private function extractMarkersFromPassage(string $passageContent): array
-    {
-        preg_match_all('/\{\{(Q\d+)\}\}/', $passageContent, $matches);
-        return array_unique($matches[1] ?? []);
-    }
-
-    /**
-     * Get text content for each marker
-     */
-    private function getMarkerTexts(string $passageContent, array $markers): array
-    {
-        $markerTexts = [];
-        
-        foreach ($markers as $marker) {
-            $pattern = '/\{\{' . preg_quote($marker) . '\}\}(.*?)\{\{' . preg_quote($marker) . '\}\}/s';
-            if (preg_match($pattern, $passageContent, $matches)) {
-                $markerTexts[$marker] = trim(strip_tags($matches[1]));
-            }
-        }
-        
-        return $markerTexts;
-    }
-
-    /**
-     * Process passage for display with highlighted markers
-     */
-    private function processPassageForDisplay(string $passageContent): string
-    {
-        // Convert markers to highlighted spans for display
-        $processed = preg_replace_callback(
-            '/\{\{(Q\d+)\}\}(.*?)\{\{\\1\}\}/s',
-            function($matches) {
-                $markerId = $matches[1];
-                $text = $matches[2];
-                return '<span class="marker-highlight" data-marker="' . $markerId . '" title="Question Location: ' . $markerId . '">' . $text . '</span>';
-            },
-            $passageContent
-        );
-        
-        return $processed;
-    }
-
-    /**
-     * Show form for creating reading passage specifically
-     */
-    public function createReadingPassage(TestSet $testSet): View
-    {
-        // Ensure this is a reading test set
-        if ($testSet->section->name !== 'reading') {
-            abort(404);
-        }
-        
-        $existingQuestions = $testSet->questions()->orderBy('order_number')->get();
-        $nextQuestionNumber = $existingQuestions->count() > 0 
-            ? $existingQuestions->max('order_number') + 1 
-            : 0; // Passage starts at 0
-        
-        return view('admin.questions.create.reading', compact('testSet', 'existingQuestions', 'nextQuestionNumber'));
-    }
-
-    /**
-     * Create Reading Question (Step 2)
-     */
-    public function createReadingQuestion(TestSet $testSet): View
-    {
-        // Ensure this is a reading test set
-        if ($testSet->section->name !== 'reading') {
-            abort(404);
-        }
-        
-        // Find the passage for this test set
-        $passage = $testSet->questions()
-            ->where('question_type', 'passage')
-            ->first();
-        
-        if (!$passage) {
-            return redirect()->route('admin.questions.create', ['test_set' => $testSet->id])
-                ->with('error', 'Please create a reading passage first before adding questions.');
-        }
-        
-        return $this->showReadingQuestionForm($testSet, $passage);
-    }
-
-    /**
-     * API route for getting passage markers (AJAX)
-     */
-    public function getPassageMarkers(TestSet $testSet): JsonResponse
-    {
-        $passage = $testSet->questions()
-            ->where('question_type', 'passage')
-            ->first();
-        
-        if (!$passage) {
-            return response()->json(['markers' => [], 'markerTexts' => []]);
-        }
-        
-        $passageContent = $passage->passage_text ?? $passage->content;
-        $availableMarkers = $this->extractMarkersFromPassage($passageContent);
-        $markerTexts = $this->getMarkerTexts($passageContent, $availableMarkers);
-        
-        return response()->json([
-            'markers' => $availableMarkers,
-            'markerTexts' => $markerTexts,
-            'passageContent' => $passageContent
-        ]);
     }
 
     /**
@@ -336,127 +100,58 @@ class QuestionController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // Enhanced logging
-    \Log::info('=== Question Store Request Started ===');
-    \Log::info('Section: ' . ($request->test_set_id ? TestSet::find($request->test_set_id)->section->name : 'Unknown'));
-    \Log::info('Request Method: ' . $request->method());
-    \Log::info('Content Type: ' . $request->header('Content-Type'));
-    
-    // Log all request data
-    \Log::info('All Request Data:', $request->all());
-    
-    // Log file uploads
-    if ($request->hasFile('media')) {
-        $file = $request->file('media');
-        \Log::info('Media File:', [
-            'name' => $file->getClientOriginalName(),
-            'size' => $file->getSize(),
-            'mime' => $file->getMimeType(),
-            'valid' => $file->isValid()
-        ]);
-    } else {
-        \Log::info('No media file uploaded');
-    }
-        
         // Get test set to determine section
         $testSet = TestSet::with('section')->findOrFail($request->test_set_id);
         $section = $testSet->section->name;
         
-        // Handle Reading section specially
-        if ($section === 'reading') {
-            return $this->handleReadingStore($request, $testSet);
-        }
-        
-        // Handle other sections with existing logic
-        return $this->handleRegularStore($request, $testSet);
-    }
-
-    /**
-     * Handle Reading section storage (both passage and questions)
-     */
-    private function handleReadingStore(Request $request, TestSet $testSet): RedirectResponse
-    {
-        $questionType = $request->question_type;
-        
-        if ($questionType === 'passage') {
-            return $this->storeReadingPassage($request, $testSet);
-        } else {
-            return $this->storeReadingQuestion($request, $testSet);
-        }
-    }
-
-    /**
-     * Store Reading Passage (Step 1)
-     */
-     private function storeReadingPassage(Request $request, TestSet $testSet): RedirectResponse
-    {
-        // Validate passage data
-        $validated = $request->validate([
-            'test_set_id' => 'required|exists:test_sets,id',
-            'instructions' => 'required|string|max:255', // Passage title
-            'content' => 'required|string|min:200', // Passage content from TinyMCE
-            'order_number' => 'required|integer|min:0',
-            'part_number' => 'integer|min:1|max:3',
-        ]);
-        
-        DB::transaction(function () use ($request, $testSet) {
-            // Check if passage already exists for this test set
-            $existingPassage = $testSet->questions()
-                ->where('question_type', 'passage')
-                ->first();
-            
-            if ($existingPassage) {
-                // Update existing passage
-                $existingPassage->update([
-                    'instructions' => $request->instructions,
-                    'content' => $request->content,
-                    'passage_text' => $request->content, // Store in both fields
-                    'order_number' => $request->order_number,
-                    'part_number' => $request->part_number ?? 1,
-                    'marks' => 0,
-                ]);
-            } else {
-                // Create new passage
-                Question::create([
-                    'test_set_id' => $testSet->id,
-                    'question_type' => 'passage',
-                    'content' => $request->content, // Main content
-                    'passage_text' => $request->content, // Duplicate for compatibility
-                    'instructions' => $request->instructions, // Title
-                    'order_number' => $request->order_number,
-                    'part_number' => $request->part_number ?? 1,
-                    'marks' => 0,
-                    'is_example' => false,
-                ]);
-            }
-        });
-        
-        // Redirect to Step 2: Add Questions
-        return redirect()->route('admin.questions.create', ['test_set' => $testSet->id])
-            ->with('success', 'Reading passage saved successfully! Now you can add questions.');
-    }
-
-    /**
-     * Store Reading Question (Step 2)
-     */
-    private function storeReadingQuestion(Request $request, TestSet $testSet): RedirectResponse
-    {
-        // Base validation rules for reading questions
+        // Base validation rules
         $rules = [
             'test_set_id' => 'required|exists:test_sets,id',
             'question_type' => 'required|string',
-            'content' => 'required|string',
-            'order_number' => 'required|integer|min:1',
-            'part_number' => 'integer|min:1|max:3',
-            'marks' => 'integer|min:0|max:10',
+            'order_number' => 'required|integer|min:0',
+            'part_number' => 'nullable|integer',
+            'marks' => 'nullable|integer|min:0|max:10',
             'instructions' => 'nullable|string',
-            'marker_id' => 'nullable|string', // Q1, Q2, etc.
-            'explanation' => 'nullable|string',
-            'passage_reference' => 'nullable|string',
-            'tips' => 'nullable|string',
-            'common_mistakes' => 'nullable|string',
-            'difficulty_level' => 'nullable|in:easy,medium,hard',
         ];
+        
+        // Handle content validation based on question type
+        if ($request->question_type === 'passage') {
+            // For passage type, content can come from either field
+            if (!$request->filled('content') && !$request->filled('passage_text')) {
+                return redirect()->back()
+                    ->withErrors(['content' => 'Passage content is required'])
+                    ->withInput();
+            }
+            $rules['content'] = 'nullable|string';
+            $rules['passage_text'] = 'nullable|string';
+        } else {
+            // For other question types, content is required
+            $rules['content'] = 'required|string';
+        }
+        
+        // Section-specific validation
+        switch ($section) {
+            case 'listening':
+                $rules['media'] = 'required_if:question_type,!=,passage|file|mimes:mp3,wav,ogg|max:51200';
+                $rules['part_number'] = 'required|integer|min:1|max:4';
+                break;
+                
+            case 'reading':
+                $rules['part_number'] = 'required|integer|min:1|max:3';
+                break;
+                
+            case 'writing':
+                $rules['word_limit'] = 'required|integer|min:50|max:500';
+                $rules['time_limit'] = 'required|integer|min:1|max:60';
+                if (strpos($request->question_type, 'task1') !== false) {
+                    $rules['media'] = 'required|file|mimes:jpg,jpeg,png,gif|max:5120';
+                }
+                break;
+                
+            case 'speaking':
+                $rules['time_limit'] = 'required|integer|min:1|max:10';
+                break;
+        }
         
         // Add options validation if needed
         if ($this->requiresOptions($request->question_type)) {
@@ -480,18 +175,22 @@ class QuestionController extends Controller
         
         $request->validate($rules);
         
-        DB::transaction(function () use ($request, $testSet) {
+        // Handle file upload
+        $mediaPath = null;
+        if ($request->hasFile('media')) {
+            $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
+        }
+        
+        DB::transaction(function () use ($request, $testSet, $mediaPath) {
             // Check if we need to reorder existing questions
-            $existingQuestion = Question::where('test_set_id', $testSet->id)
+            $existingQuestion = Question::where('test_set_id', $request->test_set_id)
                 ->where('order_number', $request->order_number)
-                ->where('question_type', '!=', 'passage')
                 ->exists();
                 
             if ($existingQuestion) {
                 // Increment order numbers of existing questions
-                Question::where('test_set_id', $testSet->id)
+                Question::where('test_set_id', $request->test_set_id)
                     ->where('order_number', '>=', $request->order_number)
-                    ->where('question_type', '!=', 'passage')
                     ->increment('order_number');
             }
             
@@ -505,48 +204,51 @@ class QuestionController extends Controller
                 ];
             }
             
-            // Create the question
-            $question = Question::create([
-                'test_set_id' => $testSet->id,
+            // Prepare question data
+            $questionData = [
+                'test_set_id' => $request->test_set_id,
                 'question_type' => $request->question_type,
-                'content' => $request->content,
                 'order_number' => $request->order_number,
                 'part_number' => $request->part_number ?? 1,
                 'marks' => $request->marks ?? 1,
                 'instructions' => $request->instructions,
-                'marker_id' => $request->marker_id,
-                'explanation' => $request->explanation,
-                'passage_reference' => $request->passage_reference,
-                'tips' => $request->tips,
-                'common_mistakes' => $request->common_mistakes,
-                'difficulty_level' => $request->difficulty_level,
+                'media_path' => $mediaPath,
+                'word_limit' => $request->word_limit ?? null,
+                'time_limit' => $request->time_limit ?? null,
+                'audio_transcript' => $request->audio_transcript ?? null,
                 'section_specific_data' => $sectionSpecificData,
-                'is_example' => false,
-            ]);
+            ];
             
-            // Handle blanks if present
-            $blankCount = $question->countBlanks();
-            if ($blankCount > 0) {
-                $question->blank_count = $blankCount;
-                $question->save();
+            // Handle content based on question type
+            if ($request->question_type === 'passage') {
+                // For passages, prioritize passage_text, then content
+                $passageContent = $request->filled('passage_text') ? $request->passage_text : $request->content;
                 
-                // Create sub-questions for tracking each blank separately
-                for ($i = 1; $i <= $blankCount; $i++) {
-                    Question::create([
-                        'test_set_id' => $question->test_set_id,
-                        'question_type' => 'sub_blank',
-                        'content' => "Blank {$i} of Question {$question->order_number}",
-                        'order_number' => $question->order_number + $i,
-                        'part_number' => $question->part_number,
-                        'marks' => 1,
-                        'is_sub_question' => true,
-                        'parent_question_id' => $question->id,
-                        'sub_question_index' => $i,
-                    ]);
+                $questionData['content'] = $passageContent;
+                $questionData['passage_text'] = $passageContent;
+                
+                // Passages typically have 0 marks
+                $questionData['marks'] = 0;
+            } else {
+                // For regular questions
+                $questionData['content'] = $request->content;
+            }
+
+            $question = Question::create($questionData);
+            
+            // Handle blanks counting for fill_blanks type
+            if ($request->question_type === 'fill_blanks') {
+                // Count blanks in content
+                $content = $question->content;
+                preg_match_all('/\[____\d+____\]/', $content, $blankMatches);
+                preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
+                
+                $blankCount = count($blankMatches[0]) + count($dropdownMatches[0]);
+                
+                if ($blankCount > 0) {
+                    $question->blank_count = $blankCount;
+                    $question->save();
                 }
-                
-                // Recalculate all order numbers for the test set
-                Question::recalculateOrderNumbers($question->test_set_id);
             }
             
             // Create options if applicable
@@ -563,222 +265,13 @@ class QuestionController extends Controller
         
         // Redirect based on action
         if ($request->action === 'save_and_new') {
-            return redirect()->route('admin.questions.create', ['test_set' => $testSet->id])
+            return redirect()->route('admin.questions.create', ['test_set' => $request->test_set_id])
                 ->with('success', 'Question created successfully. Add another question.');
         }
         
-        return redirect()->route('admin.test-sets.show', $testSet->id)
-            ->with('success', 'Reading question created successfully.');
+        return redirect()->route('admin.test-sets.show', $request->test_set_id)
+            ->with('success', 'Question created successfully.');
     }
-
-    /**
-     * Handle regular (non-reading) question storage
-     */
-    private function handleRegularStore(Request $request, TestSet $testSet): RedirectResponse
-{
-    // Debug logging
-    \Log::info('Question Store Request', [
-        'question_type' => $request->question_type,
-        'has_content' => $request->has('content'),
-        'has_passage_text' => $request->has('passage_text'),
-        'content_length' => strlen($request->content ?? ''),
-        'passage_text_length' => strlen($request->passage_text ?? ''),
-        'blank_answers' => $request->blank_answers ?? [],
-        'dropdown_options' => $request->dropdown_options ?? [],
-        'dropdown_correct' => $request->dropdown_correct ?? []
-    ]);
-    
-    $section = $testSet->section->name;
-    
-    // Base validation rules
-    $rules = [
-        'test_set_id' => 'required|exists:test_sets,id',
-        'question_type' => 'required|string',
-        'order_number' => 'required|integer|min:0',
-        'part_number' => 'nullable|integer',
-        'question_group' => 'nullable|string',
-        'marks' => 'nullable|integer|min:0|max:10',
-        'is_example' => 'nullable|boolean',
-        'instructions' => 'nullable|string',
-        'passage_text' => 'nullable|string',
-        'audio_transcript' => 'nullable|string',
-    ];
-    
-    // Handle content validation based on question type
-    if ($request->question_type === 'passage') {
-        // For passage type, content can come from either field
-        if (!$request->filled('content') && !$request->filled('passage_text')) {
-            return redirect()->back()
-                ->withErrors(['content' => 'Passage content is required'])
-                ->withInput();
-        }
-        $rules['content'] = 'nullable|string';
-        $rules['passage_text'] = 'nullable|string';
-    } else {
-        // For other question types, content is required
-        $rules['content'] = 'required|string';
-    }
-    
-    // Section-specific validation
-    if ($section === 'listening') {
-        $rules['media'] = 'required_if:question_type,!=,passage|file|mimes:mp3,wav,ogg|max:51200';
-        $rules['part_number'] = 'required|integer|min:1|max:4';
-    } elseif ($section === 'writing') {
-        $rules['word_limit'] = 'required|integer|min:50|max:500';
-        $rules['time_limit'] = 'required|integer|min:1|max:60';
-        if (strpos($request->question_type, 'task1') !== false) {
-            $rules['media'] = 'required|file|mimes:jpg,jpeg,png,gif|max:5120';
-        }
-    } elseif ($section === 'speaking') {
-        $rules['time_limit'] = 'required|integer|min:1|max:10';
-    }
-    
-    // Add options validation if needed
-    if ($this->requiresOptions($request->question_type)) {
-        $rules['options'] = 'required|array|min:2';
-        $rules['options.*.content'] = 'required|string';
-        $rules['correct_option'] = 'required|integer|min:0';
-    }
-    
-    // Add validation for gap fill answers
-    if ($request->has('blank_answers')) {
-        $rules['blank_answers'] = 'array';
-        $rules['blank_answers.*'] = 'nullable|string';
-    }
-    
-    if ($request->has('dropdown_options')) {
-        $rules['dropdown_options'] = 'array';
-        $rules['dropdown_options.*'] = 'nullable|string';
-        $rules['dropdown_correct'] = 'array';
-        $rules['dropdown_correct.*'] = 'nullable|integer';
-    }
-    
-    $request->validate($rules);
-    
-    // Handle file upload
-    $mediaPath = null;
-    if ($request->hasFile('media')) {
-        $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
-    }
-    
-    DB::transaction(function () use ($request, $mediaPath, $testSet) {
-        // Check if we need to reorder existing questions
-        $existingQuestion = Question::where('test_set_id', $request->test_set_id)
-            ->where('order_number', $request->order_number)
-            ->exists();
-            
-        if ($existingQuestion) {
-            // Increment order numbers of existing questions
-            Question::where('test_set_id', $request->test_set_id)
-                ->where('order_number', '>=', $request->order_number)
-                ->increment('order_number');
-        }
-        
-        // Prepare section specific data for gap fill/dropdown
-        $sectionSpecificData = null;
-        if ($request->has('blank_answers') || $request->has('dropdown_options')) {
-            $sectionSpecificData = [
-                'blank_answers' => $request->blank_answers ?? [],
-                'dropdown_options' => $request->dropdown_options ?? [],
-                'dropdown_correct' => $request->dropdown_correct ?? []
-            ];
-            
-            \Log::info('Saving Gap Fill/Dropdown Data', [
-                'section_specific_data' => $sectionSpecificData
-            ]);
-        }
-        
-        // Prepare question data
-        $questionData = [
-            'test_set_id' => $request->test_set_id,
-            'question_type' => $request->question_type,
-            'order_number' => $request->order_number,
-            'part_number' => $request->part_number,
-            'question_group' => $request->question_group,
-            'marks' => $request->marks ?? 1,
-            'is_example' => $request->is_example ?? false,
-            'instructions' => $request->instructions,
-            'audio_transcript' => $request->audio_transcript,
-            'word_limit' => $request->word_limit ?? null,
-            'time_limit' => $request->time_limit ?? null,
-            'media_path' => $mediaPath,
-            'section_specific_data' => $sectionSpecificData,
-        ];
-        
-        // Handle content based on question type
-        if ($request->question_type === 'passage') {
-            // For passages, prioritize passage_text, then content
-            $passageContent = $request->filled('passage_text') ? $request->passage_text : $request->content;
-            
-            $questionData['content'] = $passageContent;
-            $questionData['passage_text'] = $passageContent;
-            
-            // If marks not set for passage, default to 0
-            if (!isset($questionData['marks'])) {
-                $questionData['marks'] = 0;
-            }
-            
-            \Log::info('Saving passage with content length: ' . strlen($passageContent));
-        } else {
-            // For regular questions
-            $questionData['content'] = $request->content;
-            $questionData['passage_text'] = $request->passage_text;
-        }
-
-        $question = Question::create($questionData);
-        
-        // Count and store blanks/dropdowns for fill-in-the-blanks questions
-        $blankCount = $question->countBlanks();
-        if ($blankCount > 0) {
-            $question->blank_count = $blankCount;
-            $question->save();
-            
-            \Log::info('Question with Blanks Saved', [
-                'question_id' => $question->id,
-                'blank_count' => $blankCount,
-                'section_specific_data' => $question->section_specific_data,
-            ]);
-            
-            // Create sub-questions for tracking each blank separately
-            for ($i = 1; $i <= $blankCount; $i++) {
-                Question::create([
-                    'test_set_id' => $question->test_set_id,
-                    'question_type' => 'sub_blank',
-                    'content' => "Blank {$i} of Question {$question->order_number}",
-                    'order_number' => $question->order_number + $i,
-                    'part_number' => $question->part_number,
-                    'marks' => 1,
-                    'is_sub_question' => true,
-                    'parent_question_id' => $question->id,
-                    'sub_question_index' => $i,
-                ]);
-            }
-            
-            // Recalculate all order numbers for the test set
-            Question::recalculateOrderNumbers($question->test_set_id);
-        }
-        
-        // Create options if applicable
-        if ($this->requiresOptions($request->question_type) && isset($request->options)) {
-            foreach ($request->options as $index => $option) {
-                QuestionOption::create([
-                    'question_id' => $question->id,
-                    'content' => $option['content'],
-                    'is_correct' => ($request->correct_option == $index),
-                ]);
-            }
-        }
-    });
-    
-    // Redirect based on action
-    if ($request->action === 'save_and_new') {
-        return redirect()->route('admin.questions.create', ['test_set' => $request->test_set_id])
-            ->with('success', 'Question created successfully. Add another question.');
-    }
-    
-    return redirect()->route('admin.test-sets.show', $request->test_set_id)
-        ->with('success', 'Question created successfully.');
-}
 
     /**
      * Display the specified question.
@@ -806,41 +299,7 @@ class QuestionController extends Controller
             'testSet' => $question->testSet,
         ];
         
-        // Handle Reading section specially
-        if ($section === 'reading') {
-            // If it's a passage, use special passage edit view
-            if ($question->question_type === 'passage') {
-                // Get questions linked to this passage
-                $linkedQuestions = $question->testSet->questions()
-                    ->where('question_type', '!=', 'passage')
-                    ->where('part_number', $question->part_number)
-                    ->orderBy('order_number')
-                    ->get();
-                    
-                $data['linkedQuestions'] = $linkedQuestions;
-                
-                // Check if view exists
-                if (view()->exists('admin.questions.edit.reading-passage')) {
-                    return view('admin.questions.edit.reading-passage', $data);
-                }
-            } else {
-                // For regular reading questions
-                $passage = $question->testSet->questions()
-                    ->where('question_type', 'passage')
-                    ->where('part_number', $question->part_number)
-                    ->first();
-                    
-                if ($passage) {
-                    $passageContent = $passage->passage_text ?? $passage->content;
-                    $data['passage'] = $passage;
-                    $data['availableMarkers'] = $this->extractMarkersFromPassage($passageContent);
-                    $data['markerTexts'] = $this->getMarkerTexts($passageContent, $data['availableMarkers']);
-                    $data['processedPassage'] = $this->processPassageForDisplay($passageContent);
-                }
-            }
-        }
-        
-        // Add section-specific data
+        // Add section-specific question types
         switch ($section) {
             case 'listening':
                 $data['questionTypes'] = [
@@ -913,21 +372,17 @@ class QuestionController extends Controller
         $testSet = TestSet::with('section')->findOrFail($request->test_set_id ?? $question->test_set_id);
         $section = $testSet->section->name;
         
-        // Use same validation as store
+        // Base validation rules
         $rules = [
             'question_type' => 'required|string',
             'content' => 'required|string',
-            'order_number' => 'required|integer|min:1',
+            'order_number' => 'required|integer|min:0',
             'part_number' => 'nullable|integer',
-            'question_group' => 'nullable|string',
-            'marks' => 'nullable|integer|min:1|max:10',
-            'is_example' => 'nullable|boolean',
+            'marks' => 'nullable|integer|min:0|max:10',
             'instructions' => 'nullable|string',
-            'passage_text' => 'nullable|string',
-            'audio_transcript' => 'nullable|string',
         ];
         
-        // Add section-specific rules (similar to store)
+        // Add section-specific rules
         $this->addSectionSpecificRules($rules, $section, $request);
         
         $request->validate($rules);
@@ -949,19 +404,6 @@ class QuestionController extends Controller
         }
         
         DB::transaction(function () use ($request, $question, $mediaPath) {
-            // Delete existing sub-questions if any
-            $question->subQuestions()->delete();
-            
-            // Prepare section specific data for gap fill/dropdown
-            $sectionSpecificData = null;
-            if ($request->has('blank_answers') || $request->has('dropdown_options')) {
-                $sectionSpecificData = [
-                    'blank_answers' => $request->blank_answers ?? [],
-                    'dropdown_options' => $request->dropdown_options ?? [],
-                    'dropdown_correct' => $request->dropdown_correct ?? []
-                ];
-            }
-            
             // Update the question
             $updateData = [
                 'question_type' => $request->question_type,
@@ -969,43 +411,15 @@ class QuestionController extends Controller
                 'media_path' => $mediaPath,
                 'order_number' => $request->order_number,
                 'part_number' => $request->part_number,
-                'question_group' => $request->question_group,
                 'marks' => $request->marks ?? 1,
-                'is_example' => $request->is_example ?? false,
                 'instructions' => $request->instructions,
                 'passage_text' => $request->passage_text,
                 'audio_transcript' => $request->audio_transcript,
                 'word_limit' => $request->word_limit ?? null,
                 'time_limit' => $request->time_limit ?? null,
-                'section_specific_data' => $sectionSpecificData,
             ];
 
             $question->update($updateData);
-            
-            // Recount blanks and create sub-questions if needed
-            $blankCount = $question->countBlanks();
-            $question->blank_count = $blankCount;
-            $question->save();
-            
-            if ($blankCount > 0) {
-                // Create new sub-questions for each blank
-                for ($i = 1; $i <= $blankCount; $i++) {
-                    Question::create([
-                        'test_set_id' => $question->test_set_id,
-                        'question_type' => 'sub_blank',
-                        'content' => "Blank {$i} of Question {$question->order_number}",
-                        'order_number' => $question->order_number + $i,
-                        'part_number' => $question->part_number,
-                        'marks' => 1,
-                        'is_sub_question' => true,
-                        'parent_question_id' => $question->id,
-                        'sub_question_index' => $i,
-                    ]);
-                }
-            }
-            
-            // Recalculate all order numbers for the test set
-            Question::recalculateOrderNumbers($question->test_set_id);
             
             // Update options if applicable
             if ($this->requiresOptions($request->question_type) && isset($request->options)) {
@@ -1076,7 +490,7 @@ class QuestionController extends Controller
             case 'reading':
                 $rules['part_number'] = 'required|integer|min:1|max:3';
                 if ($request->question_type === 'passage') {
-                    $rules['passage_text'] = 'required|string|min:200';
+                    $rules['content'] = 'required|string|min:200';
                 }
                 break;
                 
@@ -1111,18 +525,11 @@ class QuestionController extends Controller
     private function calculateNextQuestionNumber(TestSet $testSet): int
     {
         $lastQuestion = $testSet->questions()
-            ->where('question_type', '!=', 'passage')
-            ->where('is_sub_question', false)
             ->orderBy('order_number', 'desc')
             ->first();
             
         if (!$lastQuestion) {
             return 1;
-        }
-        
-        // If last question has blanks, account for sub-questions
-        if ($lastQuestion->blank_count > 0) {
-            return $lastQuestion->order_number + $lastQuestion->blank_count + 1;
         }
         
         return $lastQuestion->order_number + 1;

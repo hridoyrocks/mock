@@ -43,11 +43,20 @@ function initializeEventListeners() {
 
     const questionForm = document.getElementById('questionForm');
     if (questionForm) {
-        // Simple form submit handler - just save TinyMCE content
+        // Enhanced form submit handler
         questionForm.addEventListener('submit', function (e) {
-            // Save TinyMCE content if exists
+            // Debug logging
+            console.log('Form submission started');
+
+            // Save all TinyMCE content
             if (typeof tinymce !== 'undefined') {
+                console.log('Saving TinyMCE content...');
                 tinymce.triggerSave();
+
+                // Log all editors
+                tinymce.editors.forEach(function (ed) {
+                    console.log('Editor ID:', ed.id, 'Content length:', ed.getContent().length);
+                });
             }
 
             // Validate basic requirements
@@ -58,6 +67,34 @@ function initializeEventListeners() {
                 return false;
             }
 
+            // Additional validation for content based on question type
+            const questionTypeValue = questionType ? questionType.value : '';
+
+            if (questionTypeValue === 'passage') {
+                // For passage type, check if we have content
+                const passageTextField = document.getElementById('passage-text');
+                const contentField = document.getElementById('content');
+
+                let hasContent = false;
+
+                if (passageTextField && passageTextField.value.trim()) {
+                    hasContent = true;
+                    console.log('Passage text field has content:', passageTextField.value.length);
+                }
+
+                if (contentField && contentField.value.trim()) {
+                    hasContent = true;
+                    console.log('Content field has content:', contentField.value.length);
+                }
+
+                if (!hasContent) {
+                    e.preventDefault();
+                    alert('Please enter passage content');
+                    return false;
+                }
+            }
+
+            console.log('Form validation passed, submitting...');
             // Let form submit normally
             return true;
         });
@@ -84,6 +121,7 @@ function handleQuestionTypeChange() {
         handleSectionSpecificChange(type);
     }
 }
+
 
 // Options Management
 function setupDefaultOptions(type) {
@@ -257,6 +295,25 @@ function initializeQuestionNumbering() {
 }
 
 // Modal Functions
+window.showTemplates = function () {
+    const modal = document.getElementById('template-modal');
+    if (modal) {
+        loadTemplatesForSection();
+        modal.classList.remove('hidden');
+    }
+};
+
+window.closeTemplates = function () {
+    const modal = document.getElementById('template-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.useTemplate = function (template) {
+    const instructionsEl = document.getElementById('instructions');
+    if (instructionsEl) instructionsEl.value = template;
+    closeTemplates();
+};
+
 window.showTemplates = function () {
     const modal = document.getElementById('template-modal');
     if (modal) {

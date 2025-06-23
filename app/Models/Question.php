@@ -230,13 +230,50 @@ class Question extends Model
      * Count total blanks/dropdowns in content
      */
     public function countBlanks(): int
-    {
-        $content = $this->content;
-        preg_match_all('/\[BLANK_\d+\]|\[____\d+____\]/', $content, $blankMatches);
-        preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
-        
-        return count($blankMatches[0]) + count($dropdownMatches[0]);
+{
+    $content = $this->content;
+    preg_match_all('/\[____\d+____\]/', $content, $blankMatches);
+    preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
+    
+    return count($blankMatches[0]) + count($dropdownMatches[0]);
+}
+
+public function getBlankAnswers(): array
+{
+    if ($this->section_specific_data && isset($this->section_specific_data['blank_answers'])) {
+        return $this->section_specific_data['blank_answers'];
     }
+    return [];
+}
+
+public function getDropdownData(): array
+{
+    if ($this->section_specific_data) {
+        return [
+            'options' => $this->section_specific_data['dropdown_options'] ?? [],
+            'correct' => $this->section_specific_data['dropdown_correct'] ?? []
+        ];
+    }
+    return ['options' => [], 'correct' => []];
+}
+
+
+public function checkBlankAnswer($blankNumber, $studentAnswer): bool
+{
+    $blankAnswers = $this->getBlankAnswers();
+    $correctAnswer = $blankAnswers[$blankNumber] ?? '';
+    
+    // Case-insensitive comparison, trimmed
+    return strtolower(trim($studentAnswer)) === strtolower(trim($correctAnswer));
+}
+
+public function checkDropdownAnswer($dropdownNumber, $selectedIndex): bool
+{
+    $dropdownData = $this->getDropdownData();
+    $correctIndex = $dropdownData['correct'][$dropdownNumber] ?? null;
+    
+    return $selectedIndex == $correctIndex;
+}
 
     /**
      * Get display number for question (considering sub-questions)
@@ -454,4 +491,8 @@ class Question extends Model
 
         return $this->instructions ?? $instructions[$this->question_type] ?? '';
     }
+
+
+
+    
 }
