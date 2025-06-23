@@ -236,6 +236,61 @@
         </div>
     </div>
 
+
+<!-- Debug Panel -->
+<div class="fixed bottom-4 right-4 bg-yellow-100 border border-yellow-400 rounded-lg p-4 max-w-xs shadow-lg" id="debug-panel">
+    <h4 class="font-bold text-yellow-800 mb-2">Debug Info</h4>
+    <div class="text-xs text-yellow-700 space-y-1">
+        <p>Form ID: <span id="debug-form-id"></span></p>
+        <p>Test Set: {{ $testSet->id ?? 'N/A' }}</p>
+        <p>Section: {{ $testSet->section->name ?? 'N/A' }}</p>
+        <p>Required Fields: <span id="debug-required"></span></p>
+        <p>TinyMCE Loaded: <span id="debug-tinymce"></span></p>
+    </div>
+    <button onclick="debugFormData()" class="mt-2 px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700">
+        Check Form Data
+    </button>
+</div>
+
+<script>
+// Debug script
+document.addEventListener('DOMContentLoaded', function() {
+    // Update debug panel
+    const form = document.getElementById('questionForm');
+    document.getElementById('debug-form-id').textContent = form ? 'Found' : 'NOT FOUND';
+    document.getElementById('debug-tinymce').textContent = typeof tinymce !== 'undefined' ? 'Yes' : 'No';
+    
+    // Count required fields
+    const requiredFields = form ? form.querySelectorAll('[required]').length : 0;
+    document.getElementById('debug-required').textContent = requiredFields;
+});
+
+function debugFormData() {
+    const form = document.getElementById('questionForm');
+    if (!form) {
+        alert('Form not found!');
+        return;
+    }
+    
+    const formData = new FormData(form);
+    let debugInfo = 'Form Data:\n\n';
+    
+    for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+            debugInfo += `${key}: [File: ${value.name}, ${value.size} bytes]\n`;
+        } else if (typeof value === 'string' && value.length > 50) {
+            debugInfo += `${key}: [${value.length} characters]\n`;
+        } else {
+            debugInfo += `${key}: ${value}\n`;
+        }
+    }
+    
+    console.log(debugInfo);
+    alert(debugInfo);
+}
+</script>
+
+
     @push('styles')
     <style>
         /* TinyMCE Editor Styling */
@@ -298,47 +353,183 @@
     @endpush
 
     @push('scripts')
-    <!-- TinyMCE CDN -->
-    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- TinyMCE CDN -->
+<script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+<!-- Reading Passage JavaScript -->
+<script src="{{ asset('js/admin/reading-passage.js') }}"></script>
+
+<!-- Enhanced Form Submission Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Reading passage form initialized');
     
-    <!-- External JavaScript File -->
-    <script src="{{ asset('js/admin/reading-passage.js') }}"></script>
+    // Get form and button references
+    const form = document.getElementById('passageForm');
+    const saveBtn = document.getElementById('save-passage-btn');
     
-    <!-- Inline script for form submission -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Override form submission
-        var form = document.getElementById('passageForm');
-        var saveBtn = document.getElementById('save-passage-btn');
+    if (!form || !saveBtn) {
+        console.error('Form or save button not found');
+        return;
+    }
+    
+    // Override form submit event
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('Form submit intercepted');
+        submitPassageForm();
+    });
+    
+    // Handle button click
+    saveBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Save button clicked');
+        submitPassageForm();
+    });
+    
+    // Submit function
+    function submitPassageForm() {
+        console.log('Submitting passage form...');
         
-        if (form && saveBtn) {
-            saveBtn.addEventListener('click', function(e) {
-                e.preventDefault();
+        // Wait for TinyMCE
+        if (typeof tinymce === 'undefined') {
+            alert('Editor not loaded. Please wait and try again.');
+            return;
+        }
+        
+        // Get the editor instance
+        const editor = tinymce.get('passageEditor');
+        if (!editor) {
+            console.error('TinyMCE editor not found');
+            alert('Editor not initialized. Please refresh the page.');
+            return;
+        }
+        
+        // Get content from editor
+        const content = editor.getContent();
+        console.log('Editor content length:', content.length);
+        
+        // Validate content
+        if (!content || content.trim() === '') {
+            alert('Please enter passage content');
+            return;
+        }
+        
+        // Check if content input already exists
+        let contentInput = form.querySelector('input[name="content"]');
+        if (contentInput) {
+            // Update existing input
+            contentInput.value = content;
+        } else {
+            // Create new hidden input
+            contentInput = document.createElement('input');
+            contentInput.type = 'hidden';
+            contentInput.name = 'content';
+            contentInput.value = content;
+            form.appendChild(contentInput);
+        }
+        
+        // Also ensure passage_text is set (for compatibility)
+        let passageTextInput = form.querySelector('input[name="passage_text"]');
+        if (!passageTextInput) {
+            passageTextInput = document.createElement('input');
+            passageTextInput.type = 'hidden';
+            passageTextInput.name = 'passage_text';
+            passageTextInput.value = content;
+            form.appendChild(passageTextInput);
+        } else {
+            passageTextInput.value = content;
+        }
+        
+        // Debug: Log all form data
+        console.log('Form data before submission:');
+        const formData = new FormData(form);
+        for (let [key, value] of formData.entries()) {
+            if (key === 'content' || key === 'passage_text') {
+                console.log(key + ':', value.substring(0, 100) + '...');
+            } else {
+                console.log(key + ':', value);
+            }
+        }
+        
+        // Submit the form
+        console.log('Submitting form...');
+        form.submit();
+    }
+    
+    // Initialize TinyMCE with proper setup
+    tinymce.init({
+        selector: '#passageEditor',
+        height: 500,
+        menubar: true,
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'table', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | fullscreen code preview',
+        content_style: 'body { font-family: Georgia, Times New Roman, serif; font-size: 16px; line-height: 1.8; color: #333; padding: 20px; }',
+        setup: function(editor) {
+            // Store editor reference globally
+            window.passageEditor = editor;
+            
+            editor.on('init', function() {
+                console.log('TinyMCE initialized');
                 
-                // Wait for TinyMCE to be ready
-                if (typeof tinymce !== 'undefined' && tinymce.get('passageEditor')) {
-                    var content = tinymce.get('passageEditor').getContent();
-                    
-                    if (!content || content.trim() === '') {
-                        alert('Please enter passage content');
-                        return;
-                    }
-                    
-                    // Create hidden input for content
-                    var contentInput = document.createElement('input');
-                    contentInput.type = 'hidden';
-                    contentInput.name = 'content';
-                    contentInput.value = content;
-                    form.appendChild(contentInput);
-                    
-                    // Submit the form
-                    form.submit();
-                } else {
-                    alert('Editor not ready. Please wait and try again.');
+                // If there's existing content, load it
+                const existingContent = document.getElementById('passageEditor').value;
+                if (existingContent) {
+                    editor.setContent(existingContent);
                 }
             });
+            
+            editor.on('change keyup paste', function() {
+                // Update word count
+                const text = editor.getContent({ format: 'text' });
+                const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+                const wordCountEl = document.getElementById('passage-word-count');
+                const charCountEl = document.getElementById('passage-char-count');
+                
+                if (wordCountEl) wordCountEl.textContent = words.length;
+                if (charCountEl) charCountEl.textContent = text.length;
+                
+                // Detect markers
+                detectAndHighlightMarkers();
+            });
+        },
+        init_instance_callback: function(editor) {
+            console.log('Editor ready:', editor.id);
         }
     });
-    </script>
-    @endpush
+});
+
+// Prevent accidental navigation
+window.addEventListener('beforeunload', function(e) {
+    if (window.passageEditor && window.passageEditor.isDirty()) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+    }
+});
+
+// Helper function to detect markers
+function detectAndHighlightMarkers() {
+    if (!window.passageEditor) return;
+    
+    const content = window.passageEditor.getContent({ format: 'text' });
+    const regex = /\{\{Q(\d+)\}\}/g;
+    const markers = [];
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+        markers.push('Q' + match[1]);
+    }
+    
+    // Update markers count
+    const markersCountEl = document.getElementById('markers-count');
+    if (markersCountEl) {
+        markersCountEl.textContent = markers.length;
+    }
+}
+</script>
+@endpush
 </x-layout>

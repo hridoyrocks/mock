@@ -419,19 +419,6 @@ const PassageMarker = {
     }
 };
 
-// DOM Ready
-document.addEventListener('DOMContentLoaded', function () {
-    initializeTinyMCE();
-    initializeEventListeners();
-    initializeQuestionNumbering();
-    initializeFileUpload();
-    initializeRelatedTopics();
-    initializeExplanationEditor();
-
-    // Add marker field to form
-    addMarkerField();
-});
-
 // Add marker dropdown field to the form
 function addMarkerField() {
     const questionTypeDiv = document.querySelector('#question_type').closest('div');
@@ -794,27 +781,32 @@ function initializeEventListeners() {
     // Question Type Change
     const questionTypeSelect = document.getElementById('question_type');
     if (questionTypeSelect) {
+        // Remove existing listener first
+        questionTypeSelect.removeEventListener('change', handleQuestionTypeChange);
+        // Then add new one
         questionTypeSelect.addEventListener('change', handleQuestionTypeChange);
     }
 
     // Add Option Button
     const addOptionBtn = document.getElementById('add-option-btn');
     if (addOptionBtn) {
-        addOptionBtn.addEventListener('click', () => addOption());
+        // Create a new function reference to avoid duplicate listeners
+        const addOptionHandler = () => addOption();
+        addOptionBtn.removeEventListener('click', addOptionHandler);
+        addOptionBtn.addEventListener('click', addOptionHandler);
     }
 
-    // Form Submit
-    const questionForm = document.getElementById('questionForm');
-    if (questionForm) {
-        questionForm.addEventListener('submit', handleFormSubmit);
-    }
+    // Form Submit is already handled in main DOMContentLoaded
 
-    // ESC key handlers
-    document.addEventListener('keydown', function (e) {
+    // ESC key handlers - use named function to prevent duplicates
+    const escHandler = function (e) {
         if (e.key === 'Escape') {
             closeAllModals();
         }
-    });
+    };
+
+    document.removeEventListener('keydown', escHandler);
+    document.addEventListener('keydown', escHandler);
 }
 
 // Initialize Question Numbering
@@ -1302,46 +1294,237 @@ function initializeRelatedTopics() {
 // Form Submit Handler
 function handleFormSubmit(e) {
     e.preventDefault();
+    console.log('Form submission started...');
 
     const questionType = document.getElementById('question_type').value;
 
-    // Sync explanation editor content
-    if (explanationEditor) {
-        const explanationField = document.querySelector('textarea[name="explanation"]');
-        if (explanationField) {
-            explanationField.value = explanationEditor.getContent();
-        }
+    // Validate question type
+    if (!questionType) {
+        alert('Please select a question type');
+        return false;
     }
 
+    // Save all TinyMCE editors content
+    if (typeof tinymce !== 'undefined') {
+        tinymce.triggerSave();
+        console.log('TinyMCE content saved');
+    }
+
+    // Handle different question types
     if (questionType === 'passage') {
-        const passageText = passageEditor ? passageEditor.getContent() : '';
-
-        if (!passageText || passageText.trim() === '') {
-            alert('Please enter passage text');
+        // For passage type
+        if (!handlePassageSubmission()) {
             return false;
-        }
-
-        const contentTextarea = document.getElementById('content');
-        if (editor) {
-            editor.setContent(passageText);
-            editor.save();
-        } else if (contentTextarea) {
-            contentTextarea.value = passageText;
         }
     } else {
-        if (editor) {
-            editor.save();
-        }
-
-        const content = editor ? editor.getContent() : document.getElementById('content').value;
-        if (!content || content.trim() === '') {
-            alert('Please enter question content');
+        // For regular questions
+        if (!handleRegularQuestionSubmission()) {
             return false;
         }
     }
 
+    // Handle explanation editor specially
+    if (window.explanationEditor) {
+        const explanationField = document.querySelector('textarea[name="explanation"]');
+        if (explanationField) {
+            explanationField.value = window.explanationEditor.getContent();
+            console.log('Explanation content synced');
+        }
+    }
+
+    // Sync any other TinyMCE content
+    syncAllEditorContent();
+
+    // Log form data for debugging
+    logFormData(this);
+
+    console.log('Submitting form...');
+    // Allow form to submit
     this.submit();
 }
+
+// Handle passage submission
+function handlePassageSubmission() {
+    console.log('Handling passage submission...');
+
+    if (!window.passageEditor) {
+        alert('Passage editor not initialized');
+        return false;
+    }
+
+    const passageContent = window.passageEditor.getContent();
+
+    if (!passageContent || passageContent.trim() === '') {
+        alert('Please enter passage text');
+        return false;
+    }
+
+    // Ensure content field has passage content
+    let contentField = document.getElementById('content');
+    if (!contentField) {
+        // Create textarea if not exists
+        contentField = document.createElement('textarea');
+        contentField.id = 'content';
+        contentField.name = 'content';
+        contentField.style.display = 'none';
+        document.getElementById('questionForm').appendChild(contentField);
+    }
+    contentField.value = passageContent;
+
+    // Also set in passage_text field if exists
+    const passageTextField = document.querySelector('input[name="passage_text"], textarea[name="passage_text"]');
+    if (passageTextField) {
+        passageTextField.value = passageContent;
+    }
+
+    console.log('Passage content set, length:', passageContent.length);
+    return true;
+}
+
+// Handle regular question submission
+function handleRegularQuestionSubmission() {
+    console.log('Handling regular question submission...');
+
+    let content = '';
+
+    // Try to get content from TinyMCE editor
+    if (window.editor) {
+        content = window.editor.getContent();
+    } else {
+        // Fallback to textarea
+        const contentField = document.getElementById('content');
+        if (contentField) {
+            content = contentField.value;
+        }
+    }
+
+    if (!content || content.trim() === '') {
+        alert('Please enter question content');
+        return false;
+    }
+
+    // Update content field
+    const contentField = document.getElementById('content');
+    if (contentField) {
+        contentField.value = content;
+    }
+
+    console.log('Question content set, length:', content.length);
+    return true;
+}
+
+// Sync all TinyMCE editor content
+function syncAllEditorContent() {
+    if (typeof tinymce === 'undefined') return;
+
+    // Get all TinyMCE editors
+    const editors = tinymce.get();
+
+    editors.forEach(editor => {
+        const editorId = editor.id;
+        const textarea = document.getElementById(editorId);
+
+        if (textarea) {
+            const content = editor.getContent();
+            textarea.value = content;
+            console.log(`Synced editor ${editorId}, content length:`, content.length);
+        }
+    });
+}
+
+// Log form data for debugging
+function logFormData(form) {
+    console.log('=== Form Data Debug ===');
+    const formData = new FormData(form);
+
+    for (let [key, value] of formData.entries()) {
+        if (typeof value === 'string' && value.length > 100) {
+            console.log(`${key}: [${value.length} characters]`);
+        } else {
+            console.log(`${key}:`, value);
+        }
+    }
+
+    // Also check hidden fields
+    const hiddenInputs = form.querySelectorAll('input[type="hidden"], textarea[style*="display: none"]');
+    console.log('Hidden fields count:', hiddenInputs.length);
+
+    hiddenInputs.forEach(input => {
+        if (input.value) {
+            console.log(`Hidden field ${input.name}: [${input.value.length} characters]`);
+        }
+    });
+}
+
+// Single DOM Ready Handler
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('Question create form initializing...');
+
+    // Get form reference
+    const questionForm = document.getElementById('questionForm');
+    if (!questionForm) {
+        console.error('Question form not found!');
+        return;
+    }
+
+    // Remove any existing listeners
+    questionForm.removeEventListener('submit', handleFormSubmit);
+
+    // Add new submit listener
+    questionForm.addEventListener('submit', handleFormSubmit);
+    console.log('Form submit handler attached');
+
+    // Also handle submit button clicks
+    const submitButtons = questionForm.querySelectorAll('button[type="submit"]');
+    submitButtons.forEach(button => {
+        button.addEventListener('click', function (e) {
+            // Let the form handle submission
+            console.log('Submit button clicked:', this.value);
+        });
+    });
+
+    // Initialize all components
+    initializeEventListeners();
+    initializeQuestionNumbering();
+    initializeFileUpload();
+    initializeRelatedTopics();
+
+    // Add marker field to form
+    addMarkerField();
+
+    // Delay TinyMCE initialization to ensure DOM is ready
+    setTimeout(() => {
+        initializeTinyMCE();
+        initializeExplanationEditor();
+    }, 100);
+});
+
+// Backup save function for direct button onclick
+window.saveQuestion = function (action) {
+    console.log('Direct save called with action:', action);
+
+    const form = document.getElementById('questionForm');
+    if (!form) {
+        alert('Form not found!');
+        return;
+    }
+
+    // Set action if provided
+    if (action) {
+        let actionInput = form.querySelector('input[name="action"]');
+        if (!actionInput) {
+            actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            form.appendChild(actionInput);
+        }
+        actionInput.value = action;
+    }
+
+    // Trigger form submission
+    const submitEvent = new Event('submit', { cancelable: true });
+    form.dispatchEvent(submitEvent);
+};
 
 // Utility Functions
 function showTooltip(message) {
