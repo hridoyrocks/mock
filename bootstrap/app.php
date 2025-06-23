@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register your middleware aliases here
         $middleware->alias([
             'role' => CheckRole::class,
+            
+            // Subscription related middleware
+            'subscription' => \App\Http\Middleware\CheckSubscription::class,
+            'feature' => \App\Http\Middleware\CheckFeatureAccess::class,
+            'usage.limit' => \App\Http\Middleware\TrackUsageLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

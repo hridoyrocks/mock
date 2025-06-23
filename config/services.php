@@ -32,11 +32,41 @@ return [
     'api_key' => env('TINYMCE_API_KEY'),
 ],
 
+'stripe' => [
+    'key' => env('STRIPE_KEY'),
+    'secret' => env('STRIPE_SECRET'),
+    'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+],
+
+'bkash' => [
+    'base_url' => env('BKASH_BASE_URL', 'https://checkout.sandbox.bka.sh/v1.2.0-beta'),
+    'username' => env('BKASH_USERNAME'),
+    'password' => env('BKASH_PASSWORD'),
+    'app_key' => env('BKASH_APP_KEY'),
+    'app_secret' => env('BKASH_APP_SECRET'),
+],
+
+'nagad' => [
+    'base_url' => env('NAGAD_BASE_URL', 'https://api.mynagad.com'),
+    'merchant_id' => env('NAGAD_MERCHANT_ID'),
+    'public_key' => env('NAGAD_PUBLIC_KEY'),
+    'private_key' => env('NAGAD_PRIVATE_KEY'),
+],
+
+'openai' => [
+    'api_key' => env('OPENAI_API_KEY'),
+    'organization' => env('OPENAI_ORGANIZATION'),
+],
+
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+
+
+    
 
 ];
