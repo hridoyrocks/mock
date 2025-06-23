@@ -56,38 +56,95 @@ class QuestionController extends Controller
      */
     public function create(Request $request): View
     {
-        // If test_set is provided, use that specific test set
-        if ($request->has('test_set')) {
-            $testSet = TestSet::with('section')->findOrFail($request->test_set);
+        // If no test set selected, show selection page
+        if (!$request->has('test_set')) {
+            $testSets = TestSet::with('section')->where('active', true)->get();
+            $sections = TestSection::all();
             
-            // Section-based blade file selection
-            $sectionView = match($testSet->section->name) {
-                'listening' => 'admin.questions.create.listening',
-                'reading' => $this->handleReadingCreate($testSet, $request),
-                'writing' => 'admin.questions.create.writing',
-                'speaking' => 'admin.questions.create.speaking',
-                default => 'admin.questions.create.reading' // fallback
-            };
-            
-            // If it's not reading or returns a view directly, handle normally
-            if ($testSet->section->name !== 'reading' || is_string($sectionView)) {
-                $existingQuestions = $testSet->questions()->orderBy('order_number')->get();
-                $nextQuestionNumber = $existingQuestions->count() > 0 
-                    ? $existingQuestions->max('order_number') + 1 
-                    : 1;
-                
-                return view($sectionView, compact('testSet', 'existingQuestions', 'nextQuestionNumber'));
-            }
-            
-            // For reading, the view response is already handled in handleReadingCreate
-            return $sectionView;
+            return view('admin.questions.select-test-set', compact('testSets', 'sections'));
         }
         
-        // Otherwise show test set selection
-        $testSets = TestSet::with('section')->where('active', true)->get();
-        $sections = TestSection::all();
+        // Get test set with section
+        $testSet = TestSet::with('section')->findOrFail($request->test_set);
         
-        return view('admin.questions.select-test-set', compact('testSets', 'sections'));
+        // Check if test set exists and is active
+        if (!$testSet->active) {
+            return redirect()->route('admin.test-sets.index')
+                ->with('error', 'This test set is not active.');
+        }
+        
+        // Get section name
+        $section = $testSet->section->name;
+        
+        // Handle Reading section specially
+        if ($section === 'reading') {
+            return $this->handleReadingCreate($testSet, $request);
+        }
+        
+        // Common data for all other sections
+        $existingQuestions = $testSet->questions()
+            ->where('question_type', '!=', 'passage')
+            ->orderBy('part_number')
+            ->orderBy('order_number')
+            ->get();
+            
+        $nextQuestionNumber = $this->calculateNextQuestionNumber($testSet);
+        
+        // Section-specific data
+        $data = [
+            'testSet' => $testSet,
+            'existingQuestions' => $existingQuestions,
+            'nextQuestionNumber' => $nextQuestionNumber,
+        ];
+        
+        // Add section-specific data
+        switch ($section) {
+            case 'listening':
+                $data['questionTypes'] = [
+                    'multiple_choice' => 'Multiple Choice',
+                    'form_completion' => 'Form Completion',
+                    'note_completion' => 'Note Completion',
+                    'sentence_completion' => 'Sentence Completion',
+                    'short_answer' => 'Short Answer',
+                    'matching' => 'Matching',
+                    'plan_map_diagram' => 'Plan/Map/Diagram Labeling'
+                ];
+                $data['audioFormats'] = ['mp3', 'wav', 'ogg'];
+                break;
+                
+            case 'writing':
+                $data['questionTypes'] = [
+                    'task1_line_graph' => 'Task 1: Line Graph',
+                    'task1_bar_chart' => 'Task 1: Bar Chart',
+                    'task1_pie_chart' => 'Task 1: Pie Chart',
+                    'task1_table' => 'Task 1: Table',
+                    'task1_process' => 'Task 1: Process Diagram',
+                    'task1_map' => 'Task 1: Map',
+                    'task2_opinion' => 'Task 2: Opinion Essay',
+                    'task2_discussion' => 'Task 2: Discussion Essay',
+                    'task2_problem_solution' => 'Task 2: Problem/Solution',
+                    'task2_advantage_disadvantage' => 'Task 2: Advantages/Disadvantages'
+                ];
+                $data['defaultWordLimits'] = ['task1' => 150, 'task2' => 250];
+                $data['defaultTimeLimits'] = ['task1' => 20, 'task2' => 40];
+                break;
+                
+            case 'speaking':
+                $data['questionTypes'] = [
+                    'part1_personal' => 'Part 1: Personal Questions',
+                    'part2_cue_card' => 'Part 2: Cue Card',
+                    'part3_discussion' => 'Part 3: Discussion'
+                ];
+                $data['defaultTimeLimits'] = [
+                    'part1' => 1,
+                    'part2' => 2,
+                    'part3' => 5
+                ];
+                break;
+        }
+        
+        // Return section-specific view
+        return view('admin.questions.create.' . $section, $data);
     }
 
     /**
@@ -103,11 +160,13 @@ class QuestionController extends Controller
         // If no passage exists, show Step 1: Create Passage
         if (!$existingPassage) {
             $existingQuestions = $testSet->questions()->orderBy('order_number')->get();
-            $nextQuestionNumber = $existingQuestions->count() > 0 
-                ? $existingQuestions->max('order_number') + 1 
-                : 0; // Passage starts at 0
+            $nextQuestionNumber = 0; // Passages start at 0
             
-            return view('admin.questions.create.reading', compact('testSet', 'existingQuestions', 'nextQuestionNumber'));
+            return view('admin.questions.create.reading', compact(
+                'testSet', 
+                'existingQuestions', 
+                'nextQuestionNumber'
+            ));
         }
         
         // If passage exists, show Step 2: Add Questions
@@ -126,15 +185,29 @@ class QuestionController extends Controller
             ->orderBy('order_number')
             ->get();
         
-        $nextQuestionNumber = $existingQuestions->count() > 0 
-            ? $existingQuestions->max('order_number') + 1 
-            : 1;
+        $nextQuestionNumber = $this->calculateNextQuestionNumber($testSet);
         
         // Process passage content to extract markers
         $passageContent = $passage->passage_text ?? $passage->content;
         $availableMarkers = $this->extractMarkersFromPassage($passageContent);
         $markerTexts = $this->getMarkerTexts($passageContent, $availableMarkers);
         $processedPassage = $this->processPassageForDisplay($passageContent);
+        
+        // Question types for reading
+        $questionTypes = [
+            'multiple_choice' => 'Multiple Choice',
+            'true_false' => 'True/False/Not Given',
+            'yes_no' => 'Yes/No/Not Given',
+            'matching_headings' => 'Matching Headings',
+            'matching_information' => 'Matching Information',
+            'matching_features' => 'Matching Features',
+            'sentence_completion' => 'Sentence Completion',
+            'summary_completion' => 'Summary Completion',
+            'short_answer' => 'Short Answer',
+            'fill_blanks' => 'Fill in the Blanks',
+            'flow_chart' => 'Flow Chart Completion',
+            'table_completion' => 'Table Completion'
+        ];
         
         return view('admin.questions.create.reading-question', compact(
             'testSet', 
@@ -143,7 +216,8 @@ class QuestionController extends Controller
             'nextQuestionNumber',
             'availableMarkers',
             'markerTexts',
-            'processedPassage'
+            'processedPassage',
+            'questionTypes'
         ));
     }
 
@@ -694,8 +768,114 @@ class QuestionController extends Controller
      */
     public function edit(Question $question): View
     {
-        $question->load(['testSet', 'options']);
-        return view('admin.questions.edit', compact('question'));
+        // Load relationships
+        $question->load(['testSet', 'testSet.section', 'options']);
+        
+        // Get section name
+        $section = $question->testSet->section->name;
+        
+        // Prepare common data
+        $data = [
+            'question' => $question,
+            'testSet' => $question->testSet,
+        ];
+        
+        // Handle Reading section specially
+        if ($section === 'reading') {
+            // If it's a passage, use special passage edit view
+            if ($question->question_type === 'passage') {
+                // Get questions linked to this passage
+                $linkedQuestions = $question->testSet->questions()
+                    ->where('question_type', '!=', 'passage')
+                    ->where('part_number', $question->part_number)
+                    ->orderBy('order_number')
+                    ->get();
+                    
+                $data['linkedQuestions'] = $linkedQuestions;
+                
+                // Check if view exists
+                if (view()->exists('admin.questions.edit.reading-passage')) {
+                    return view('admin.questions.edit.reading-passage', $data);
+                }
+            } else {
+                // For regular reading questions
+                $passage = $question->testSet->questions()
+                    ->where('question_type', 'passage')
+                    ->where('part_number', $question->part_number)
+                    ->first();
+                    
+                if ($passage) {
+                    $passageContent = $passage->passage_text ?? $passage->content;
+                    $data['passage'] = $passage;
+                    $data['availableMarkers'] = $this->extractMarkersFromPassage($passageContent);
+                    $data['markerTexts'] = $this->getMarkerTexts($passageContent, $data['availableMarkers']);
+                    $data['processedPassage'] = $this->processPassageForDisplay($passageContent);
+                }
+            }
+        }
+        
+        // Add section-specific data
+        switch ($section) {
+            case 'listening':
+                $data['questionTypes'] = [
+                    'multiple_choice' => 'Multiple Choice',
+                    'form_completion' => 'Form Completion',
+                    'note_completion' => 'Note Completion',
+                    'sentence_completion' => 'Sentence Completion',
+                    'short_answer' => 'Short Answer',
+                    'matching' => 'Matching',
+                    'plan_map_diagram' => 'Plan/Map/Diagram Labeling'
+                ];
+                break;
+                
+            case 'reading':
+                $data['questionTypes'] = [
+                    'passage' => '📄 Reading Passage',
+                    'multiple_choice' => 'Multiple Choice',
+                    'true_false' => 'True/False/Not Given',
+                    'yes_no' => 'Yes/No/Not Given',
+                    'matching_headings' => 'Matching Headings',
+                    'matching_information' => 'Matching Information',
+                    'matching_features' => 'Matching Features',
+                    'sentence_completion' => 'Sentence Completion',
+                    'summary_completion' => 'Summary Completion',
+                    'short_answer' => 'Short Answer',
+                    'fill_blanks' => 'Fill in the Blanks'
+                ];
+                break;
+                
+            case 'writing':
+                $data['questionTypes'] = [
+                    'task1_line_graph' => 'Task 1: Line Graph',
+                    'task1_bar_chart' => 'Task 1: Bar Chart',
+                    'task1_pie_chart' => 'Task 1: Pie Chart',
+                    'task1_table' => 'Task 1: Table',
+                    'task1_process' => 'Task 1: Process Diagram',
+                    'task1_map' => 'Task 1: Map',
+                    'task2_opinion' => 'Task 2: Opinion Essay',
+                    'task2_discussion' => 'Task 2: Discussion Essay',
+                    'task2_problem_solution' => 'Task 2: Problem/Solution',
+                    'task2_advantage_disadvantage' => 'Task 2: Advantages/Disadvantages'
+                ];
+                break;
+                
+            case 'speaking':
+                $data['questionTypes'] = [
+                    'part1_personal' => 'Part 1: Personal Questions',
+                    'part2_cue_card' => 'Part 2: Cue Card',
+                    'part3_discussion' => 'Part 3: Discussion'
+                ];
+                break;
+        }
+        
+        // Check if section-specific edit view exists
+        $sectionView = 'admin.questions.edit.' . $section;
+        if (view()->exists($sectionView)) {
+            return view($sectionView, $data);
+        }
+        
+        // Otherwise use common edit view
+        return view('admin.questions.edit.common', $data);
     }
 
     /**
@@ -897,5 +1077,28 @@ class QuestionController extends Controller
                             ->get();
 
         return response()->json($questions);
+    }
+    
+    /**
+     * Calculate next question number for a test set
+     */
+    private function calculateNextQuestionNumber(TestSet $testSet): int
+    {
+        $lastQuestion = $testSet->questions()
+            ->where('question_type', '!=', 'passage')
+            ->where('is_sub_question', false)
+            ->orderBy('order_number', 'desc')
+            ->first();
+            
+        if (!$lastQuestion) {
+            return 1;
+        }
+        
+        // If last question has blanks, account for sub-questions
+        if ($lastQuestion->blank_count > 0) {
+            return $lastQuestion->order_number + $lastQuestion->blank_count + 1;
+        }
+        
+        return $lastQuestion->order_number + 1;
     }
 }
