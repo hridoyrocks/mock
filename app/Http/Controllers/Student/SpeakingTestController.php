@@ -186,6 +186,9 @@ class SpeakingTestController extends Controller
             'status' => 'completed',
         ]);
         
+        // INCREMENT TEST COUNT - NEW ADDITION
+        auth()->user()->incrementTestCount();
+        
         return redirect()->route('student.results.show', $attempt)
             ->with('success', 'Test submitted successfully!');
     }

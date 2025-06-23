@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<x-layout>
 <div class="container mx-auto px-4 py-16">
     <div class="max-w-4xl mx-auto text-center">
         {{-- Success Icon --}}
@@ -69,4 +67,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-layout>

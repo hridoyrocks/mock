@@ -19,7 +19,7 @@ class PaymentTransaction extends Model
         'notes'
     ];
 
-    protected $casts = {
+    protected $casts = [
         'amount' => 'decimal:2',
         'gateway_response' => 'array',
     ];

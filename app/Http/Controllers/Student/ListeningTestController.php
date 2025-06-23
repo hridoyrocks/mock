@@ -23,25 +23,25 @@ class ListeningTestController extends Controller
         return view('student.test.listening.index', compact('testSets'));
     }
     
-   public function confirmDetails(TestSet $testSet)
-{
-    if ($testSet->section->name !== 'listening') {
-        abort(404);
-    }
-    
-    // Check if user has already completed this test
-    $existingAttempt = StudentAttempt::where('user_id', auth()->id())
-        ->where('test_set_id', $testSet->id)
-        ->where('status', 'completed')
-        ->first();
+    public function confirmDetails(TestSet $testSet)
+    {
+        if ($testSet->section->name !== 'listening') {
+            abort(404);
+        }
         
-    if ($existingAttempt) {
-        return redirect()->route('student.results.show', $existingAttempt)
-            ->with('info', 'You have already completed this test.');
+        // Check if user has already completed this test
+        $existingAttempt = StudentAttempt::where('user_id', auth()->id())
+            ->where('test_set_id', $testSet->id)
+            ->where('status', 'completed')
+            ->first();
+            
+        if ($existingAttempt) {
+            return redirect()->route('student.results.show', $existingAttempt)
+                ->with('info', 'You have already completed this test.');
+        }
+        
+        return view('student.test.listening.onboarding.confirm-details', compact('testSet'));
     }
-    
-    return view('student.test.listening.onboarding.confirm-details', compact('testSet'));
-}
 
     public function soundCheck(TestSet $testSet): View
     {
@@ -61,41 +61,41 @@ class ListeningTestController extends Controller
         return view('student.test.listening.onboarding.instructions', compact('testSet'));
     }
     
-   public function start(TestSet $testSet)
-{
-    if ($testSet->section->name !== 'listening') {
-        abort(404);
-    }
-    
-    // Check if user has already completed this test
-    $existingAttempt = StudentAttempt::where('user_id', auth()->id())
-        ->where('test_set_id', $testSet->id)
-        ->where('status', 'completed')
-        ->first();
+    public function start(TestSet $testSet)
+    {
+        if ($testSet->section->name !== 'listening') {
+            abort(404);
+        }
         
-    if ($existingAttempt) {
-        return redirect()->route('student.results.show', $existingAttempt)
-            ->with('info', 'You have already completed this test.');
-    }
-    
-    // Check if there's an ongoing attempt
-    $attempt = StudentAttempt::where('user_id', auth()->id())
-        ->where('test_set_id', $testSet->id)
-        ->where('status', 'in_progress')
-        ->first();
+        // Check if user has already completed this test
+        $existingAttempt = StudentAttempt::where('user_id', auth()->id())
+            ->where('test_set_id', $testSet->id)
+            ->where('status', 'completed')
+            ->first();
+            
+        if ($existingAttempt) {
+            return redirect()->route('student.results.show', $existingAttempt)
+                ->with('info', 'You have already completed this test.');
+        }
         
-    if (!$attempt) {
-        // Create a new attempt only if no ongoing attempt exists
-        $attempt = StudentAttempt::create([
-            'user_id' => auth()->id(),
-            'test_set_id' => $testSet->id,
-            'start_time' => now(),
-            'status' => 'in_progress',
-        ]);
+        // Check if there's an ongoing attempt
+        $attempt = StudentAttempt::where('user_id', auth()->id())
+            ->where('test_set_id', $testSet->id)
+            ->where('status', 'in_progress')
+            ->first();
+            
+        if (!$attempt) {
+            // Create a new attempt only if no ongoing attempt exists
+            $attempt = StudentAttempt::create([
+                'user_id' => auth()->id(),
+                'test_set_id' => $testSet->id,
+                'start_time' => now(),
+                'status' => 'in_progress',
+            ]);
+        }
+        
+        return view('student.test.listening.test', compact('testSet', 'attempt'));
     }
-    
-    return view('student.test.listening.test', compact('testSet', 'attempt'));
-}
     
     public function submit(Request $request, StudentAttempt $attempt): RedirectResponse
     {
@@ -131,6 +131,9 @@ class ListeningTestController extends Controller
                 'end_time' => now(),
                 'status' => 'completed',
             ]);
+            
+            // INCREMENT TEST COUNT - NEW ADDITION
+            auth()->user()->incrementTestCount();
             
             // Calculate band score
             $correctAnswers = 0;

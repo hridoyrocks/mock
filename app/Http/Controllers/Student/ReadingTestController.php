@@ -203,6 +203,9 @@ class ReadingTestController extends Controller
                 'status' => 'completed',
             ]);
             
+            // INCREMENT TEST COUNT - NEW ADDITION
+            auth()->user()->incrementTestCount();
+            
             // Calculate automatic band score for reading
             $correctAnswers = 0;
             $totalQuestions = 0;

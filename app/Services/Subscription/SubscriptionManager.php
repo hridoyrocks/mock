@@ -134,7 +134,7 @@ class SubscriptionManager
         ]);
 
         // Send expiration notification
-        // TODO: Implement notification
+        $subscription->user->notify(new \App\Notifications\SubscriptionExpired($subscription));
     }
 
     /**

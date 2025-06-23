@@ -192,7 +192,9 @@ class WritingTestController extends Controller
                 'end_time' => now(),
                 'status' => 'completed',
             ]);
-        });
+
+            auth()->user()->incrementTestCount();
+       
         
         return redirect()->route('student.results.show', $attempt)
             ->with('success', 'Test submitted successfully!');

@@ -1,6 +1,7 @@
-@extends('layouts.app')
-
-@section('content')
+<x-layout>
+    <x-slot:title>My Subscription</x-slot>
+    
+ 
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-6xl mx-auto">
         {{-- Header --}}
@@ -238,4 +239,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-layout>

@@ -1,6 +1,6 @@
-@extends('layouts.app')
+<x-layout>
 
-@section('content')
+    
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto">
         {{-- Header --}}
@@ -232,4 +232,4 @@
     });
 </script>
 @endpush
-@endsection
+</x-layout>

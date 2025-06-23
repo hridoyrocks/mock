@@ -2,11 +2,21 @@
 
 namespace App\Models;
 
-// ... existing imports ...
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\SubscriptionPlan;
+use App\Models\UserSubscription;
+use App\Models\PaymentTransaction;
+use App\Models\StudentAttempt;
+
 
 class User extends Authenticatable
 {
-    // ... existing code ...
+   use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -30,7 +40,27 @@ class User extends Authenticatable
         'ai_evaluations_used' => 'integer',
     ];
 
-    // ... existing relationships ...
+     public function attempts(): HasMany
+    {
+        return $this->hasMany(StudentAttempt::class);
+    }
+
+
+    protected static function boot()
+{
+    parent::boot();
+    
+    // When user is created, give them free plan
+    static::created(function ($user) {
+        if (!$user->is_admin) {
+            $freePlan = SubscriptionPlan::where('slug', 'free')->first();
+            if ($freePlan) {
+                $user->subscribeTo($freePlan);
+            }
+        }
+    });
+}
+
 
     /**
      * Get user's subscriptions.
@@ -162,27 +192,15 @@ class User extends Authenticatable
     /**
      * Subscribe to a plan.
      */
-    public function subscribeTo(SubscriptionPlan $plan, array $paymentDetails = []): UserSubscription
+     public function subscribeTo(SubscriptionPlan $plan, array $paymentDetails = []): UserSubscription
     {
-        // Cancel any existing active subscription
-        $this->subscriptions()->active()->update(['status' => 'cancelled']);
-
-        // Create new subscription
-        $subscription = $this->subscriptions()->create([
-            'plan_id' => $plan->id,
-            'status' => 'active',
-            'starts_at' => now(),
-            'ends_at' => now()->addDays($plan->duration_days),
-            'payment_method' => $paymentDetails['payment_method'] ?? null,
-            'payment_reference' => $paymentDetails['payment_reference'] ?? null,
-        ]);
-
-        // Update user's subscription status
-        $this->update([
-            'subscription_status' => $plan->slug,
-            'subscription_ends_at' => $subscription->ends_at,
-        ]);
-
+        // Use SubscriptionManager service
+        $subscriptionManager = app(\App\Services\Subscription\SubscriptionManager::class);
+        $subscription = $subscriptionManager->subscribe($this, $plan, $paymentDetails);
+        
+        // Send welcome notification
+        $this->notify(new \App\Notifications\SubscriptionCreated($subscription));
+        
         return $subscription;
     }
 

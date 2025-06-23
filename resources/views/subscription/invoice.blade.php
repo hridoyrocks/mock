@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<x-layout>
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
@@ -99,4 +97,4 @@
     }
 </style>
 @endpush
-@endsection
+</x-layout>

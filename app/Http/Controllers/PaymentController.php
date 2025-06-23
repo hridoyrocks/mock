@@ -166,11 +166,25 @@ class PaymentController extends Controller
     /**
      * Handle payment gateway webhooks.
      */
-    public function webhook(Request $request, $provider)
+     public function webhook(Request $request, $provider)
     {
         try {
+            // Log webhook for debugging
+            Log::channel('webhooks')->info('Webhook received', [
+                'provider' => $provider,
+                'headers' => $request->headers->all(),
+                'payload' => $request->all(),
+            ]);
+            
             $gateway = $this->gatewayFactory->make($provider);
-            $response = $gateway->handleWebhook($request);
+            
+            // Pass full request for signature verification
+            $response = $gateway->handleWebhook([
+                'headers' => $request->headers->all(),
+                'body' => $request->getContent(),
+                'payload' => $request->all(),
+                'signature' => $request->header($this->getSignatureHeader($provider)),
+            ]);
 
             if ($response['status'] === 'success') {
                 $transaction = PaymentTransaction::where('transaction_id', $response['transaction_id'])->first();
@@ -181,7 +195,7 @@ class PaymentController extends Controller
                     $transaction->markAsCompleted($response['data'] ?? []);
 
                     // Get plan and subscribe user
-                    $plan = SubscriptionPlan::find($response['plan_id'] ?? session('subscription_plan_id'));
+                    $plan = SubscriptionPlan::find($response['plan_id'] ?? $transaction->gateway_response['plan_id'] ?? null);
                     if ($plan) {
                         $subscription = $transaction->user->subscribeTo($plan, [
                             'payment_method' => $transaction->payment_method,
@@ -193,6 +207,11 @@ class PaymentController extends Controller
 
                     DB::commit();
                 }
+            } elseif ($response['status'] === 'failed') {
+                $transaction = PaymentTransaction::where('transaction_id', $response['transaction_id'])->first();
+                if ($transaction) {
+                    $transaction->markAsFailed($response['data'] ?? []);
+                }
             }
 
             return response()->json(['status' => 'success']);
@@ -201,10 +220,22 @@ class PaymentController extends Controller
             Log::error('Webhook processing failed', [
                 'provider' => $provider,
                 'error' => $e->getMessage(),
-                'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json(['status' => 'error'], 500);
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
+
+      private function getSignatureHeader($provider): string
+    {
+        return match($provider) {
+            'stripe' => 'Stripe-Signature',
+            'bkash' => 'X-Signature',
+            'nagad' => 'X-Nagad-Signature',
+            default => 'X-Signature',
+        };
+    }
+
+
 }

@@ -18,9 +18,17 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AIEvaluationController;
+use App\Http\Controllers\Admin\SubscriptionManagementController;
+
+
 
 // Home route
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Webhook routes (outside auth middleware - MUST be outside auth)
+Route::post('/payment/webhook/{provider}', [PaymentController::class, 'webhook'])
+    ->name('payment.webhook')
+    ->middleware(['verify.webhook:{provider}']);
 
 // Profile routes (authenticated)
 Route::middleware(['auth'])->group(function () {
@@ -49,12 +57,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/invoice/{transaction}', [SubscriptionController::class, 'invoice'])->name('invoice');
     });
 
-    // Payment routes
+    // Payment routes (inside auth - except webhook which is outside)
     Route::prefix('payment')->name('payment.')->group(function () {
         Route::post('/process', [PaymentController::class, 'process'])->name('process');
         Route::get('/success', [PaymentController::class, 'success'])->name('success');
         Route::get('/failed', [PaymentController::class, 'failed'])->name('failed');
-        Route::post('/webhook/{provider}', [PaymentController::class, 'webhook'])->name('webhook')->withoutMiddleware(['auth']);
     });
     
     // Student routes
@@ -196,12 +203,12 @@ Route::middleware(['auth'])->group(function () {
         
         // Subscription management (admin)
         Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
-            Route::get('/', 'Admin\SubscriptionManagementController@index')->name('index');
-            Route::get('/users', 'Admin\SubscriptionManagementController@users')->name('users');
-            Route::get('/transactions', 'Admin\SubscriptionManagementController@transactions')->name('transactions');
-            Route::post('/grant/{user}', 'Admin\SubscriptionManagementController@grantSubscription')->name('grant');
-            Route::post('/revoke/{subscription}', 'Admin\SubscriptionManagementController@revokeSubscription')->name('revoke');
-        });
+    Route::get('/', [SubscriptionManagementController::class, 'index'])->name('index');
+    Route::get('/users', [SubscriptionManagementController::class, 'users'])->name('users');
+    Route::get('/transactions', [SubscriptionManagementController::class, 'transactions'])->name('transactions');
+    Route::post('/grant/{user}', [SubscriptionManagementController::class, 'grantSubscription'])->name('grant');
+    Route::post('/revoke/{subscription}', [SubscriptionManagementController::class, 'revokeSubscription'])->name('revoke');
+});
     });
 });
 
