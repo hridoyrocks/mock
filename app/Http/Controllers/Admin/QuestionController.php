@@ -194,13 +194,45 @@ class QuestionController extends Controller
                     ->increment('order_number');
             }
             
-            // Prepare section specific data for gap fill/dropdown
+            // Prepare section specific data for gap fill/dropdown - FIXED VERSION
             $sectionSpecificData = null;
             if ($request->has('blank_answers') || $request->has('dropdown_options')) {
+                $blankAnswers = [];
+                $dropdownOptions = [];
+                $dropdownCorrect = [];
+                
+                // Process blank answers - ensure consistent numeric keys
+                if ($request->has('blank_answers')) {
+                    foreach ($request->blank_answers as $key => $answer) {
+                        // Ensure numeric keys starting from 1
+                        if (is_numeric($key) && !empty(trim($answer))) {
+                            $blankAnswers[(int)$key] = trim($answer);
+                        }
+                    }
+                }
+                
+                // Process dropdown options
+                if ($request->has('dropdown_options')) {
+                    foreach ($request->dropdown_options as $key => $options) {
+                        if (is_numeric($key) && !empty(trim($options))) {
+                            $dropdownOptions[(int)$key] = trim($options);
+                        }
+                    }
+                }
+                
+                // Process dropdown correct answers
+                if ($request->has('dropdown_correct')) {
+                    foreach ($request->dropdown_correct as $key => $correctIndex) {
+                        if (is_numeric($key)) {
+                            $dropdownCorrect[(int)$key] = (int)$correctIndex;
+                        }
+                    }
+                }
+                
                 $sectionSpecificData = [
-                    'blank_answers' => $request->blank_answers ?? [],
-                    'dropdown_options' => $request->dropdown_options ?? [],
-                    'dropdown_correct' => $request->dropdown_correct ?? []
+                    'blank_answers' => $blankAnswers,
+                    'dropdown_options' => $dropdownOptions,
+                    'dropdown_correct' => $dropdownCorrect
                 ];
             }
             
@@ -385,6 +417,19 @@ class QuestionController extends Controller
         // Add section-specific rules
         $this->addSectionSpecificRules($rules, $section, $request);
         
+        // Add validation for gap fill answers
+        if ($request->has('blank_answers')) {
+            $rules['blank_answers'] = 'array';
+            $rules['blank_answers.*'] = 'nullable|string';
+        }
+        
+        if ($request->has('dropdown_options')) {
+            $rules['dropdown_options'] = 'array';
+            $rules['dropdown_options.*'] = 'nullable|string';
+            $rules['dropdown_correct'] = 'array';
+            $rules['dropdown_correct.*'] = 'nullable|integer';
+        }
+        
         $request->validate($rules);
         
         // Handle file upload
@@ -404,6 +449,48 @@ class QuestionController extends Controller
         }
         
         DB::transaction(function () use ($request, $question, $mediaPath) {
+            // Prepare section specific data for gap fill/dropdown - FIXED VERSION
+            $sectionSpecificData = null;
+            if ($request->has('blank_answers') || $request->has('dropdown_options')) {
+                $blankAnswers = [];
+                $dropdownOptions = [];
+                $dropdownCorrect = [];
+                
+                // Process blank answers - ensure consistent numeric keys
+                if ($request->has('blank_answers')) {
+                    foreach ($request->blank_answers as $key => $answer) {
+                        // Ensure numeric keys starting from 1
+                        if (is_numeric($key) && !empty(trim($answer))) {
+                            $blankAnswers[(int)$key] = trim($answer);
+                        }
+                    }
+                }
+                
+                // Process dropdown options
+                if ($request->has('dropdown_options')) {
+                    foreach ($request->dropdown_options as $key => $options) {
+                        if (is_numeric($key) && !empty(trim($options))) {
+                            $dropdownOptions[(int)$key] = trim($options);
+                        }
+                    }
+                }
+                
+                // Process dropdown correct answers
+                if ($request->has('dropdown_correct')) {
+                    foreach ($request->dropdown_correct as $key => $correctIndex) {
+                        if (is_numeric($key)) {
+                            $dropdownCorrect[(int)$key] = (int)$correctIndex;
+                        }
+                    }
+                }
+                
+                $sectionSpecificData = [
+                    'blank_answers' => $blankAnswers,
+                    'dropdown_options' => $dropdownOptions,
+                    'dropdown_correct' => $dropdownCorrect
+                ];
+            }
+            
             // Update the question
             $updateData = [
                 'question_type' => $request->question_type,
@@ -417,6 +504,7 @@ class QuestionController extends Controller
                 'audio_transcript' => $request->audio_transcript,
                 'word_limit' => $request->word_limit ?? null,
                 'time_limit' => $request->time_limit ?? null,
+                'section_specific_data' => $sectionSpecificData,
             ];
 
             $question->update($updateData);

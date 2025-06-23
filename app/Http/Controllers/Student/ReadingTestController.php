@@ -213,6 +213,11 @@ class ReadingTestController extends Controller
             foreach ($attempt->answers as $answer) {
                 $question = $answer->question;
                 
+                // Skip passage type questions
+                if ($question->question_type === 'passage') {
+                    continue;
+                }
+                
                 // Check if this is a question with options (multiple choice, true/false, etc.)
                 if ($question->options->count() > 0) {
                     $totalQuestions++;
@@ -236,7 +241,9 @@ class ReadingTestController extends Controller
                             // Check each blank answer
                             if (isset($correctData['blank_answers'])) {
                                 foreach ($correctData['blank_answers'] as $blankNum => $correctAnswer) {
-                                    $studentBlankAnswer = $studentAnswers['blank_' . $blankNum] ?? '';
+                                    // Handle both formats: blank_1 and 1
+                                    $studentBlankAnswer = $studentAnswers['blank_' . $blankNum] ?? $studentAnswers[$blankNum] ?? '';
+                                    
                                     if (!$this->checkAnswer($studentBlankAnswer, $correctAnswer)) {
                                         $allBlanksCorrect = false;
                                         break;
@@ -247,7 +254,8 @@ class ReadingTestController extends Controller
                             // Check dropdown answers
                             if (isset($correctData['dropdown_correct'])) {
                                 foreach ($correctData['dropdown_correct'] as $dropdownNum => $correctIndex) {
-                                    $studentDropdownAnswer = $studentAnswers['dropdown_' . $dropdownNum] ?? '';
+                                    // Handle both formats: dropdown_1 and 1
+                                    $studentDropdownAnswer = $studentAnswers['dropdown_' . $dropdownNum] ?? $studentAnswers[$dropdownNum] ?? '';
                                     $dropdownOptions = $correctData['dropdown_options'][$dropdownNum] ?? '';
                                     
                                     if ($dropdownOptions) {
@@ -268,8 +276,8 @@ class ReadingTestController extends Controller
                         }
                     } else {
                         // Single text answer - check against correct answer
-                        // This would need to be implemented based on how correct answers are stored
                         // For now, we'll skip automatic checking of single text answers
+                        // as we need the correct answer logic
                     }
                 }
             }
@@ -310,8 +318,24 @@ class ReadingTestController extends Controller
             return true;
         }
         
-        // You can add more flexible matching here if needed
-        // For example, removing punctuation, checking synonyms, etc.
+        // Additional flexible matching can be added here
+        // For example:
+        // - Remove punctuation
+        $studentAnswer = preg_replace('/[^\w\s]/', '', $studentAnswer);
+        $correctAnswer = preg_replace('/[^\w\s]/', '', $correctAnswer);
+        
+        // - Check again after removing punctuation
+        if ($studentAnswer === $correctAnswer) {
+            return true;
+        }
+        
+        // - Handle common variations (e.g., "don't" vs "dont")
+        $studentAnswer = str_replace(['dont', 'wont', 'cant'], ["don't", "won't", "can't"], $studentAnswer);
+        $correctAnswer = str_replace(['dont', 'wont', 'cant'], ["don't", "won't", "can't"], $correctAnswer);
+        
+        if ($studentAnswer === $correctAnswer) {
+            return true;
+        }
         
         return false;
     }
