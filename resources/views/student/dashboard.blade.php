@@ -13,6 +13,17 @@
                         <p class="text-xl text-blue-100">Ready to ace your IELTS exam? Let's continue your journey.</p>
                     </div>
                     <div class="mt-6 md:mt-0 flex flex-col items-end">
+                        <!-- Subscription Badge -->
+                        <div class="mb-4">
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold
+                                @if(auth()->user()->subscription_status === 'pro') bg-purple-500 text-white
+                                @elseif(auth()->user()->subscription_status === 'premium') bg-blue-500 text-white
+                                @else bg-gray-200 text-gray-700
+                                @endif">
+                                <i class="fas fa-crown mr-2"></i>
+                                {{ ucfirst(auth()->user()->subscription_status) }} Member
+                            </span>
+                        </div>
                         <div class="bg-white/20 backdrop-blur-lg rounded-xl px-6 py-4 border border-white/30">
                             <p class="text-sm text-blue-100 mb-1">Overall Progress</p>
                             <div class="flex items-baseline">
@@ -32,8 +43,18 @@
                     <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:bg-white/20 transition-all">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-blue-100">Total Tests</p>
-                                <p class="text-3xl font-bold mt-1">{{ $stats['total_attempts'] }}</p>
+                                <p class="text-sm text-blue-100">Tests This Month</p>
+                                <p class="text-3xl font-bold mt-1">{{ auth()->user()->tests_taken_this_month }}</p>
+                                @php
+                                    $testLimit = auth()->user()->getFeatureLimit('mock_tests_per_month');
+                                @endphp
+                                <p class="text-xs text-blue-200 mt-1">
+                                    @if($testLimit === 'unlimited')
+                                        Unlimited
+                                    @else
+                                        of {{ $testLimit }} used
+                                    @endif
+                                </p>
                             </div>
                             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,12 +67,19 @@
                     <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:bg-white/20 transition-all">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-blue-100">Completed</p>
-                                <p class="text-3xl font-bold mt-1">{{ $stats['completed_attempts'] }}</p>
+                                <p class="text-sm text-blue-100">AI Evaluations</p>
+                                <p class="text-3xl font-bold mt-1">{{ auth()->user()->ai_evaluations_used }}</p>
+                                <p class="text-xs text-blue-200 mt-1">
+                                    @if(auth()->user()->hasFeature('ai_writing_evaluation'))
+                                        Available
+                                    @else
+                                        <a href="{{ route('subscription.plans') }}" class="underline">Upgrade</a>
+                                    @endif
+                                </p>
                             </div>
                             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                                 </svg>
                             </div>
                         </div>
@@ -60,8 +88,14 @@
                     <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:bg-white/20 transition-all">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm text-blue-100">In Progress</p>
-                                <p class="text-3xl font-bold mt-1">{{ $stats['in_progress_attempts'] }}</p>
+                                <p class="text-sm text-blue-100">Days Left</p>
+                                @if(auth()->user()->activeSubscription())
+                                    <p class="text-3xl font-bold mt-1">{{ auth()->user()->activeSubscription()->days_remaining }}</p>
+                                    <p class="text-xs text-blue-200 mt-1">Until renewal</p>
+                                @else
+                                    <p class="text-2xl font-bold mt-1">Free</p>
+                                    <p class="text-xs text-blue-200 mt-1">Forever</p>
+                                @endif
                             </div>
                             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,6 +110,7 @@
                             <div>
                                 <p class="text-sm text-blue-100">Study Streak</p>
                                 <p class="text-3xl font-bold mt-1">7</p>
+                                <p class="text-xs text-blue-200 mt-1">Days in a row</p>
                             </div>
                             <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,6 +125,42 @@
 
         <!-- Main Content -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-8">
+            <!-- Subscription Alert (if needed) -->
+            @if(auth()->user()->subscription_status === 'free')
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-xl p-6 mb-8 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-rocket text-3xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold">Unlock Your Full Potential!</h3>
+                            <p class="text-purple-100">Upgrade to Premium for unlimited tests, AI evaluation, and personalized study plans.</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('subscription.plans') }}" class="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">
+                        Upgrade Now
+                    </a>
+                </div>
+            </div>
+            @endif
+
+            @if(auth()->user()->activeSubscription() && auth()->user()->activeSubscription()->days_remaining <= 7)
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            Your subscription expires in {{ auth()->user()->activeSubscription()->days_remaining }} days. 
+                            <a href="{{ route('subscription.index') }}" class="font-medium underline">Renew now</a> to keep your premium features.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Practice Tests Section -->
             <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
                 <div class="flex items-center justify-between mb-6">
@@ -103,6 +174,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Test sections cards (same as before) -->
                     <!-- Listening Section -->
                     <a href="{{ route('student.listening.index') }}" class="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 hover:shadow-lg transition-all duration-300 border border-blue-200">
                         <div class="absolute top-0 right-0 w-24 h-24 bg-blue-200 rounded-full -mr-12 -mt-12 opacity-50 group-hover:scale-110 transition-transform"></div>
@@ -156,9 +228,13 @@
                             <p class="text-sm text-gray-600 mb-4">Essay & report writing</p>
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-gray-500">{{ $testSections->where('name', 'writing')->first()?->testSets->count() ?? 0 }} Tests</span>
-                                <svg class="w-5 h-5 text-yellow-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                </svg>
+                                @if(!auth()->user()->hasFeature('ai_writing_evaluation'))
+                                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">AI Pro</span>
+                                @else
+                                    <svg class="w-5 h-5 text-yellow-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                @endif
                             </div>
                         </div>
                     </a>
@@ -176,9 +252,13 @@
                             <p class="text-sm text-gray-600 mb-4">Interview practice</p>
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-gray-500">{{ $testSections->where('name', 'speaking')->first()?->testSets->count() ?? 0 }} Tests</span>
-                                <svg class="w-5 h-5 text-purple-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                </svg>
+                                @if(!auth()->user()->hasFeature('ai_speaking_evaluation'))
+                                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">AI Pro</span>
+                                @else
+                                    <svg class="w-5 h-5 text-purple-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                @endif
                             </div>
                         </div>
                     </a>
@@ -241,6 +321,11 @@
                                             @if($attempt->band_score)
                                                 <div class="text-2xl font-bold text-gray-900">{{ number_format($attempt->band_score, 1) }}</div>
                                                 <p class="text-xs text-gray-600">Band Score</p>
+                                                @if($attempt->ai_band_score)
+                                                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full mt-1 inline-block">
+                                                        <i class="fas fa-robot mr-1"></i> AI: {{ number_format($attempt->ai_band_score, 1) }}
+                                                    </span>
+                                                @endif
                                             @else
                                                 <span class="inline-flex px-3 py-1 text-xs font-medium rounded-full
                                                     @if($attempt->status === 'completed') bg-green-100 text-green-800
@@ -253,10 +338,17 @@
                                         </div>
                                     </div>
                                     @if($attempt->status === 'completed')
-                                        <div class="mt-4 pt-4 border-t border-gray-200">
+                                        <div class="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
                                             <a href="{{ route('student.results.show', $attempt) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                                                 View Detailed Results →
                                             </a>
+                                            @if(in_array($attempt->testSet->section->name, ['writing', 'speaking']) && !$attempt->ai_evaluated_at)
+                                                @if(auth()->user()->hasFeature('ai_' . $attempt->testSet->section->name . '_evaluation'))
+                                                    <button class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                                                        <i class="fas fa-robot mr-1"></i> Get AI Evaluation
+                                                    </button>
+                                                @endif
+                                            @endif
                                         </div>
                                     @endif
                                 </div>
@@ -273,53 +365,92 @@
                     @endif
                 </div>
 
-                <!-- Performance Overview -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Performance Overview</h2>
-                    
-                    @if($sectionPerformance->where('attempts_count', '>', 0)->isNotEmpty())
-                        <div class="space-y-6">
-                            @foreach($sectionPerformance as $performance)
-                                @if($performance['attempts_count'] > 0)
-                                    <div>
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h4 class="text-sm font-semibold text-gray-700 capitalize">{{ $performance['name'] }}</h4>
-                                            <span class="text-sm font-bold text-gray-900">{{ number_format($performance['average_score'], 1) }}</span>
-                                        </div>
-                                        <div class="relative w-full bg-gray-200 rounded-full h-3">
-                                            <div class="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r
-                                                @switch($performance['name'])
-                                                    @case('listening') from-blue-400 to-blue-600 @break
-                                                    @case('reading') from-green-400 to-green-600 @break
-                                                    @case('writing') from-yellow-400 to-yellow-600 @break
-                                                    @case('speaking') from-purple-400 to-purple-600 @break
-                                                @endswitch"
-                                                style="width: {{ min(($performance['average_score'] / 9) * 100, 100) }}%">
+                <!-- Performance Overview & Premium Features -->
+                <div class="space-y-8">
+                    <!-- Performance Overview -->
+                    <div class="bg-white rounded-2xl shadow-xl p-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Performance Overview</h2>
+                        
+                        @if($sectionPerformance->where('attempts_count', '>', 0)->isNotEmpty())
+                            <div class="space-y-6">
+                                @foreach($sectionPerformance as $performance)
+                                    @if($performance['attempts_count'] > 0)
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <h4 class="text-sm font-semibold text-gray-700 capitalize">{{ $performance['name'] }}</h4>
+                                                <span class="text-sm font-bold text-gray-900">{{ number_format($performance['average_score'], 1) }}</span>
+                                            </div>
+                                            <div class="relative w-full bg-gray-200 rounded-full h-3">
+                                                <div class="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r
+                                                    @switch($performance['name'])
+                                                        @case('listening') from-blue-400 to-blue-600 @break
+                                                        @case('reading') from-green-400 to-green-600 @break
+                                                        @case('writing') from-yellow-400 to-yellow-600 @break
+                                                        @case('speaking') from-purple-400 to-purple-600 @break
+                                                    @endswitch"
+                                                    style="width: {{ min(($performance['average_score'] / 9) * 100, 100) }}%">
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-between mt-1">
+                                                <span class="text-xs text-gray-500">{{ $performance['attempts_count'] }} attempts</span>
+                                                <span class="text-xs text-gray-500">Best: {{ number_format($performance['best_score'], 1) }}</span>
                                             </div>
                                         </div>
-                                        <div class="flex justify-between mt-1">
-                                            <span class="text-xs text-gray-500">{{ $performance['attempts_count'] }} attempts</span>
-                                            <span class="text-xs text-gray-500">Best: {{ number_format($performance['best_score'], 1) }}</span>
-                                        </div>
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
-
-                        <div class="mt-8 p-4 bg-indigo-50 rounded-lg">
-                            <p class="text-sm text-indigo-900 font-medium mb-2">Pro Tip:</p>
-                            <p class="text-xs text-indigo-700">Focus on your weakest section to improve your overall band score. Consistent practice leads to better results!</p>
-                        </div>
-                    @else
-                        <div class="text-center py-8">
-                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                </svg>
+                                    @endif
+                                @endforeach
                             </div>
-                            <p class="text-gray-500 text-sm">No performance data yet</p>
-                            <p class="text-xs text-gray-400 mt-1">Complete some tests to track your progress</p>
-                        </div>
+
+                            <div class="mt-8 p-4 bg-indigo-50 rounded-lg">
+                                <p class="text-sm text-indigo-900 font-medium mb-2">Pro Tip:</p>
+                                <p class="text-xs text-indigo-700">Focus on your weakest section to improve your overall band score. Consistent practice leads to better results!</p>
+                            </div>
+                        @else
+                            <div class="text-center py-8">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-gray-500 text-sm">No performance data yet</p>
+                                <p class="text-xs text-gray-400 mt-1">Complete some tests to track your progress</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Premium Features Card -->
+                    @if(auth()->user()->subscription_status !== 'free')
+                    <div class="bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl shadow-xl p-8 text-white">
+                        <h3 class="text-xl font-bold mb-4">Your Premium Features</h3>
+                        <ul class="space-y-3">
+                            @if(auth()->user()->hasFeature('ai_writing_evaluation'))
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle mr-3"></i>
+                                <span>AI Writing Evaluation</span>
+                            </li>
+                            @endif
+                            @if(auth()->user()->hasFeature('ai_speaking_evaluation'))
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle mr-3"></i>
+                                <span>AI Speaking Evaluation</span>
+                            </li>
+                            @endif
+                            @if(auth()->user()->hasFeature('detailed_analytics'))
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle mr-3"></i>
+                                <span>Detailed Analytics</span>
+                            </li>
+                            @endif
+                            @if(auth()->user()->hasFeature('priority_support'))
+                            <li class="flex items-center">
+                                <i class="fas fa-check-circle mr-3"></i>
+                                <span>Priority Support</span>
+                            </li>
+                            @endif
+                        </ul>
+                        <a href="{{ route('subscription.index') }}" class="inline-block mt-6 bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">
+                            Manage Subscription
+                        </a>
+                    </div>
                     @endif
                 </div>
             </div>

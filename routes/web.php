@@ -134,7 +134,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::middleware(['usage.limit:mock_test'])->group(function () {
                     Route::prefix('onboarding')->name('onboarding.')->group(function () {
                         Route::get('/{testSet}', [SpeakingTestController::class, 'confirmDetails'])->name('confirm-details');
-                        Route::get('/microphone-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('onboarding.microphone-check');
+                        Route::get('/microphone-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('microphone-check');
                         Route::get('/instructions/{testSet}', [SpeakingTestController::class, 'instructions'])->name('instructions');
                     });
                     

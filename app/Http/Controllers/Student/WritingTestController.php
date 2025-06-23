@@ -194,7 +194,7 @@ class WritingTestController extends Controller
             ]);
 
             auth()->user()->incrementTestCount();
-       
+        });
         
         return redirect()->route('student.results.show', $attempt)
             ->with('success', 'Test submitted successfully!');

@@ -28,9 +28,11 @@
                                 @php
                                     $startTime = $attempt->start_time;
                                     $endTime = $attempt->end_time ?? $attempt->updated_at;
-                                    $timeSpent = $startTime->diffInMinutes($endTime);
+                                    $totalSeconds = $startTime->diffInSeconds($endTime);
+                                    $minutes = floor($totalSeconds / 60);
+                                    $seconds = $totalSeconds % 60;
                                 @endphp
-                                <p class="font-medium">{{ $timeSpent }} minutes</p>
+                                <p class="font-medium">{{ $minutes }} Min {{ $seconds }} Seconds</p>
                             </div>
                             
                             <div>
@@ -50,6 +52,45 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- AI Evaluation Button for Writing/Speaking --}}
+                    @if(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
+                        <div class="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">AI Evaluation</h3>
+                            
+                            @if(auth()->user()->hasFeature('ai_' . $attempt->testSet->section->name . '_evaluation'))
+                                @if(!$attempt->ai_evaluated_at)
+                                    <button onclick="startAIEvaluation({{ $attempt->id }}, '{{ $attempt->testSet->section->name }}')" 
+                                            id="ai-eval-btn"
+                                            class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
+                                        <i class="fas fa-robot mr-2"></i>
+                                        Get AI Evaluation
+                                    </button>
+                                @else
+                                    <div class="space-y-4">
+                                        <div class="bg-white p-4 rounded-lg">
+                                            <p class="text-sm text-gray-600 mb-2">AI Evaluation Completed</p>
+                                            <p class="text-2xl font-bold text-purple-600">Band Score: {{ $attempt->ai_band_score ?? 'N/A' }}</p>
+                                        </div>
+                                        <a href="{{ route('ai.evaluation.get', $attempt->id) }}" 
+                                           class="inline-block bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-teal-700 transition-all">
+                                            <i class="fas fa-chart-line mr-2"></i>
+                                            View Detailed AI Evaluation
+                                        </a>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="bg-white/70 p-4 rounded-lg">
+                                    <p class="text-gray-700 mb-3">Upgrade to Premium to unlock AI evaluation for instant feedback and band score prediction.</p>
+                                    <a href="{{ route('subscription.plans') }}" 
+                                       class="inline-block bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all">
+                                        <i class="fas fa-crown mr-2"></i>
+                                        Upgrade to Premium
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
                     
                     @if(in_array($attempt->testSet->section->name, ['listening', 'reading']) && isset($correctAnswers))
                         <div class="mb-6">
@@ -131,60 +172,43 @@
                         </div>
                     @elseif(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
                         <div class="mb-6">
-                            <h3 class="text-lg font-medium mb-3">Feedback</h3>
+                            <h3 class="text-lg font-medium mb-3">Your Submission</h3>
                             
-                            @if($attempt->feedback)
-                                <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                                    <div class="prose max-w-none">
-                                        {!! nl2br(e($attempt->feedback)) !!}
-                                    </div>
-                                </div>
-                            @else
-                                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                                    <p class="text-yellow-700">Your test is currently being evaluated. Please check back later for feedback and band score.</p>
-                                </div>
-                            @endif
-                        </div>
-                        
-                        @if($attempt->testSet->section->name === 'writing')
-                            <div class="mb-6">
-                                <h3 class="text-lg font-medium mb-3">Your Responses</h3>
-                                
+                            @if($attempt->testSet->section->name === 'writing')
                                 @foreach($attempt->answers->sortBy('question.order_number') as $answer)
-                                    <div class="mb-6">
-                                        <h4 class="font-medium mb-2">Task {{ $answer->question->order_number }}</h4>
-                                        <div class="bg-gray-50 p-4 rounded-lg">
-                                            <div class="prose max-w-none">
+                                    <div class="mb-6 bg-gray-50 p-6 rounded-lg">
+                                        <h4 class="font-semibold mb-3 text-gray-800">Task {{ $answer->question->order_number }}</h4>
+                                        <div class="bg-white p-4 rounded border border-gray-200">
+                                            <div class="prose max-w-none text-gray-700">
                                                 {!! nl2br(e($answer->answer)) !!}
+                                            </div>
+                                            <div class="mt-3 text-sm text-gray-500">
+                                                Word count: {{ str_word_count($answer->answer) }}
                                             </div>
                                         </div>
                                     </div>
                                 @endforeach
-                            </div>
-                        @elseif($attempt->testSet->section->name === 'speaking')
-                            <div class="mb-6">
-                                <h3 class="text-lg font-medium mb-3">Your Recordings</h3>
-                                
+                            @elseif($attempt->testSet->section->name === 'speaking')
                                 @foreach($attempt->answers->sortBy('question.order_number') as $answer)
-                                    <div class="mb-4">
-                                        <h4 class="font-medium mb-2">Question {{ $answer->question->order_number }}</h4>
+                                    <div class="mb-4 bg-gray-50 p-4 rounded-lg">
+                                        <h4 class="font-medium mb-2">Part {{ $answer->question->order_number }}</h4>
                                         
                                         @if($answer->speakingRecording)
-                                            <div class="bg-gray-50 p-4 rounded-lg">
+                                            <div class="bg-white p-4 rounded border border-gray-200">
                                                 <audio controls class="w-full">
                                                     <source src="{{ asset('storage/' . $answer->speakingRecording->file_path) }}" type="audio/mpeg">
                                                     Your browser does not support the audio element.
                                                 </audio>
                                             </div>
                                         @else
-                                            <div class="bg-gray-50 p-4 rounded-lg">
+                                            <div class="bg-white p-4 rounded border border-gray-200">
                                                 <p class="text-gray-500">No recording available.</p>
                                             </div>
                                         @endif
                                     </div>
                                 @endforeach
-                            </div>
-                        @endif
+                            @endif
+                        </div>
                     @endif
                     
                     <div class="mt-8">
@@ -196,4 +220,57 @@
             </div>
         </div>
     </div>
+
+    {{-- AI Evaluation Modal --}}
+    <div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 class="text-xl font-bold mb-4">Starting AI Evaluation...</h3>
+            <div class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            </div>
+            <p class="text-center text-gray-600">Please wait while we analyze your response...</p>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+    function startAIEvaluation(attemptId, type) {
+        // Show loading modal
+        document.getElementById('aiEvalModal').classList.remove('hidden');
+        
+        // Disable button
+        const button = document.getElementById('ai-eval-btn');
+        button.disabled = true;
+        
+        // Make API call
+        fetch(`/ai/evaluate/${type}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                attempt_id: attemptId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to evaluation result or reload page
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to start evaluation');
+                document.getElementById('aiEvalModal').classList.add('hidden');
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            document.getElementById('aiEvalModal').classList.add('hidden');
+            button.disabled = false;
+        });
+    }
+    </script>
+    @endpush
 </x-layout>
