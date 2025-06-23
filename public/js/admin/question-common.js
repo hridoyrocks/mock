@@ -43,7 +43,24 @@ function initializeEventListeners() {
 
     const questionForm = document.getElementById('questionForm');
     if (questionForm) {
-        questionForm.addEventListener('submit', handleFormSubmit);
+        // Simple form submit handler - just save TinyMCE content
+        questionForm.addEventListener('submit', function (e) {
+            // Save TinyMCE content if exists
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
+
+            // Validate basic requirements
+            const questionType = document.getElementById('question_type');
+            if (questionType && !questionType.value) {
+                e.preventDefault();
+                alert('Please select a question type');
+                return false;
+            }
+
+            // Let form submit normally
+            return true;
+        });
     }
 }
 
@@ -236,22 +253,6 @@ function initializeQuestionNumbering() {
             const value = this.value || '?';
             numberDisplay.textContent = '#' + value;
         });
-    }
-}
-
-// Form Submit
-function handleFormSubmit(e) {
-    // Basic validation
-    const questionType = document.getElementById('question_type').value;
-    if (!questionType) {
-        e.preventDefault();
-        alert('Please select a question type');
-        return false;
-    }
-
-    // Save TinyMCE content if exists
-    if (editor) {
-        editor.save();
     }
 }
 

@@ -1,21 +1,21 @@
 <x-layout>
-    <x-slot:title>Add Reading Passage - {{ $testSet->title }}</x-slot>
+    <x-slot:title>Add Question - Reading</x-slot>
     
-    <!-- Modern Header -->
+    <!-- Header -->
     <div class="bg-gradient-to-r from-green-600 to-green-700 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="py-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h1 class="text-2xl font-semibold">📄 Add Reading Passage</h1>
-                        <p class="text-green-100 text-sm mt-1">{{ $testSet->title }} - Reading Section</p>
+                        <h1 class="text-2xl font-semibold">📖 Add Reading Question</h1>
+                        <p class="text-green-100 text-sm mt-1">{{ $testSet->title }}</p>
                     </div>
                     <a href="{{ route('admin.test-sets.show', $testSet) }}" 
                        class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
-                        Back to Test Set
+                        Back
                     </a>
                 </div>
             </div>
@@ -23,513 +23,186 @@
     </div>
 
     <div class="bg-gray-50 min-h-screen">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             
-            <!-- Step Indicator -->
-            <div class="mb-8">
-                <div class="flex items-center">
-                    <div class="flex items-center text-green-600">
-                        <div class="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full text-sm font-medium">1</div>
-                        <span class="ml-2 text-sm font-medium">Add Passage</span>
-                    </div>
-                    <div class="flex-1 mx-4">
-                        <div class="h-1 bg-gray-200 rounded"></div>
-                    </div>
-                    <div class="flex items-center text-gray-400">
-                        <div class="flex items-center justify-center w-8 h-8 bg-gray-200 text-gray-500 rounded-full text-sm font-medium">2</div>
-                        <span class="ml-2 text-sm">Add Questions</span>
-                    </div>
-                </div>
-            </div>
-
-            <form action="{{ route('admin.questions.store') }}" method="POST" id="passageForm">
+            @include('admin.questions.partials.question-header')
+            
+            <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm">
                 @csrf
                 <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
-                <input type="hidden" name="question_type" value="passage">
-                <input type="hidden" name="part_number" value="1">
-                <input type="hidden" name="marks" value="0">
                 
-                <!-- Main Form Card -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <!-- Header -->
-                    <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-medium text-gray-900">
-                                <svg class="inline-block w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                </svg>
-                                Reading Passage Content
-                            </h3>
-                            <div class="text-sm text-green-600 font-medium">
-                                Passage Order: #{{ $nextQuestionNumber }}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-6">
-                        <!-- Title and Order Row -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Passage Title <span class="text-red-500">*</span>
-                                </label>
-                                <input type="text" name="instructions" 
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                       placeholder="e.g., The History of Navigation"
-                                       value="{{ old('instructions', 'Passage ' . $nextQuestionNumber) }}" required>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Order Number <span class="text-red-500">*</span>
-                                </label>
-                                <input type="number" name="order_number" 
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                       value="{{ old('order_number', $nextQuestionNumber) }}" min="0" required>
-                            </div>
-                        </div>
-
-                        <!-- Marker Instructions -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-                            <div class="flex items-start space-x-3">
-                                <div class="flex-shrink-0">
-                                    <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <h4 class="text-sm font-semibold text-blue-900 mb-2">How to Mark Question Locations:</h4>
-                                    <ul class="text-sm text-blue-800 space-y-1">
-                                        <li>• Type <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q1&#125;&#125;</code> before and after the answer text</li>
-                                        <li>• Example: The Wright brothers achieved <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q1&#125;&#125;first powered flight&#123;&#123;Q1&#125;&#125;</code> in 1903.</li>
-                                        <li>• Use <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q2&#125;&#125;</code>, <code class="bg-white px-2 py-0.5 rounded text-xs font-mono">&#123;&#123;Q3&#125;&#125;</code>, etc. for different questions</li>
-                                        <li>• Markers will be automatically detected and highlighted</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Marker Buttons -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Quick Insert Markers:</label>
-                            <div class="flex flex-wrap gap-2">
-                                @for($i = 1; $i <= 10; $i++)
-                                <button type="button" onclick="insertQuickMarker({{ $i }})" 
-                                        class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-mono rounded transition-colors">
-                                    &#123;&#123;Q{{ $i }}&#125;&#125;...&#123;&#123;Q{{ $i }}&#125;&#125;
-                                </button>
-                                @endfor
-                            </div>
-                        </div>
-
-                        <!-- Passage Content Editor -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Passage Content <span class="text-red-500">*</span>
-                            </label>
-                            
-                            <textarea id="passageEditor" class="tinymce-passage">{{ old('content') }}</textarea>
-                            
-                            <!-- Info Bar -->
-                            <div class="flex justify-between items-center mt-3 bg-gray-50 rounded p-2">
-                                <div class="flex gap-4 text-sm">
-                                    <span class="text-gray-600">Words: <span id="passage-word-count" class="font-medium">0</span></span>
-                                    <span class="text-gray-600">Characters: <span id="passage-char-count" class="font-medium">0</span></span>
-                                </div>
-                                <div id="markers-info" class="text-sm">
-                                    <span class="text-gray-600">Markers: <span id="markers-count" class="font-medium text-green-600">0</span></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Live Markers Detection Panel -->
-                        <div id="markers-panel" class="mt-6 hidden">
-                            <div class="bg-green-50 rounded-lg border border-green-200 p-4">
-                                <h4 class="font-semibold text-sm mb-3 flex items-center text-green-800">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    Detected Question Markers:
-                                </h4>
-                                <div id="markers-list" class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <!-- Markers will be listed here -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Preview Button -->
-                        <div class="mt-6 flex justify-end">
-                            <button type="button" onclick="previewPassage()" 
-                                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors">
-                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                                Preview with Markers
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Actions -->
-                    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <button type="submit" 
-                                    id="save-passage-btn"
-                                    class="flex-1 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors">
-                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                Save Passage & Continue
-                            </button>
-                            <a href="{{ route('admin.test-sets.show', $testSet) }}" class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors text-center">
-                                Cancel
-                            </a>
+                <div class="space-y-6">
+                    <!-- Question Content -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Question Content</h3>
                         </div>
                         
-                        <!-- Next Step Info -->
-                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                            <div class="flex items-center text-blue-800 text-sm">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span><strong>Next:</strong> After saving, you'll add questions that link to these markers.</span>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-6">
+                                    <!-- Instructions -->
+                                    <div>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="block text-sm font-medium text-gray-700">Instructions</label>
+                                            <button type="button" onclick="showTemplates()" class="text-sm text-blue-600 hover:text-blue-700">
+                                                Use Template ▼
+                                            </button>
+                                        </div>
+                                        <textarea id="instructions" name="instructions" rows="3" 
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                  placeholder="e.g., Questions 1-5: Choose the correct letter, A, B, C or D.">{{ old('instructions') }}</textarea>
+                                    </div>
+                                    
+                                    <!-- Question Content -->
+                                    <div id="question-content-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Question <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="mb-3 flex space-x-2">
+                                            <button type="button" onclick="insertBlank()" class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700">
+                                                Insert Blank
+                                            </button>
+                                            <button type="button" onclick="insertDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">
+                                                Insert Dropdown
+                                            </button>
+                                        </div>
+                                        <textarea id="content" name="content" class="tinymce">{{ old('content') }}</textarea>
+                                    </div>
+                                    
+                                    <!-- Passage Content (Hidden by default) -->
+                                    <div id="passage-content-field" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Passage Content <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="mb-3">
+                                            <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm">
+                                                <p class="text-blue-800">💡 Tip: Use markers like to mark answer locations in the passage.</p>
+                                            </div>
+                                        </div>
+                                        <textarea id="passage-text" name="passage_text" class="tinymce-passage">{{ old('passage_text') }}</textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-6">
+                                    @include('admin.questions.partials.question-settings', [
+                                        'questionTypes' => [
+                                            'passage' => '📄 Reading Passage',
+                                            'multiple_choice' => 'Multiple Choice',
+                                            'true_false' => 'True/False/Not Given',
+                                            'yes_no' => 'Yes/No/Not Given',
+                                            'matching_headings' => 'Matching Headings',
+                                            'matching_information' => 'Matching Information',
+                                            'matching_features' => 'Matching Features',
+                                            'sentence_completion' => 'Sentence Completion',
+                                            'summary_completion' => 'Summary Completion',
+                                            'short_answer' => 'Short Answer',
+                                            'fill_blanks' => 'Fill in the Blanks',
+                                            'flow_chart' => 'Flow Chart Completion',
+                                            'table_completion' => 'Table Completion'
+                                        ]
+                                    ])
+                                    
+                                    <!-- Marker Selection (for questions) -->
+                                    <div id="marker-select-field" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                            Answer Location in Passage
+                                        </label>
+                                        <select name="marker_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                            <option value="">-- No specific location --</option>
+                                        </select>
+                                        <p class="text-xs text-gray-500 mt-1">Link to marked location in passage</p>
+                                    </div>
+                                    
+                                    <!-- Blanks Manager -->
+                                    <div id="blanks-manager" class="hidden">
+                                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                                            <h4 class="text-sm font-medium text-yellow-800 mb-2">Fill in the Blanks Configuration</h4>
+                                            <div id="blanks-list" class="space-y-2">
+                                                <!-- Dynamically populated -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Options Manager -->
+                    @include('admin.questions.partials.options-manager')
+                    
+                    <!-- Explanation & Tips -->
+                    <div class="bg-white rounded-lg shadow-sm">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-medium text-gray-900">Explanation & Learning</h3>
+                        </div>
+                        
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Explanation
+                                </label>
+                                <textarea name="explanation" rows="4" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                          placeholder="Explain why this is the correct answer...">{{ old('explanation') }}</textarea>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Passage Reference
+                                    </label>
+                                    <input type="text" name="passage_reference" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                           placeholder="e.g., Paragraph 2, Lines 10-15">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Difficulty Level
+                                    </label>
+                                    <select name="difficulty_level" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select...</option>
+                                        <option value="easy">Easy</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Tips & Strategies
+                                    </label>
+                                    <textarea name="tips" rows="3" 
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                              placeholder="Tips for solving this type of question...">{{ old('tips') }}</textarea>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Common Mistakes
+                                    </label>
+                                    <textarea name="common_mistakes" rows="3" 
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                              placeholder="Common mistakes students make...">{{ old('common_mistakes') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    @include('admin.questions.partials.action-buttons')
                 </div>
             </form>
         </div>
     </div>
+
+    @include('admin.questions.partials.modals')
     
-    <!-- Preview Modal -->
-    <div id="preview-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-10 mx-auto p-5 border w-11/12 lg:w-4/5 shadow-lg rounded-md bg-white">
-            <div class="sticky top-0 bg-white border-b pb-4 mb-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-gray-900">📄 Passage Preview with Markers</h3>
-                    <button onclick="closePreview()" class="text-gray-400 hover:text-gray-600">
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Passage Content -->
-                <div class="lg:col-span-2">
-                    <div id="preview-content" class="prose max-w-none">
-                        <!-- Preview content will be inserted here -->
-                    </div>
-                </div>
-                
-                <!-- Markers Summary Sidebar -->
-                <div class="lg:col-span-1">
-                    <div class="sticky top-20 bg-gray-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-sm mb-3 text-gray-800">📍 Question Locations:</h4>
-                        <div id="preview-markers-list" class="space-y-2 text-sm">
-                            <!-- Markers will be listed here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-<!-- Debug Panel -->
-<div class="fixed bottom-4 right-4 bg-yellow-100 border border-yellow-400 rounded-lg p-4 max-w-xs shadow-lg" id="debug-panel">
-    <h4 class="font-bold text-yellow-800 mb-2">Debug Info</h4>
-    <div class="text-xs text-yellow-700 space-y-1">
-        <p>Form ID: <span id="debug-form-id"></span></p>
-        <p>Test Set: {{ $testSet->id ?? 'N/A' }}</p>
-        <p>Section: {{ $testSet->section->name ?? 'N/A' }}</p>
-        <p>Required Fields: <span id="debug-required"></span></p>
-        <p>TinyMCE Loaded: <span id="debug-tinymce"></span></p>
-    </div>
-    <button onclick="debugFormData()" class="mt-2 px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700">
-        Check Form Data
-    </button>
-</div>
-
-<script>
-// Debug script
-document.addEventListener('DOMContentLoaded', function() {
-    // Update debug panel
-    const form = document.getElementById('questionForm');
-    document.getElementById('debug-form-id').textContent = form ? 'Found' : 'NOT FOUND';
-    document.getElementById('debug-tinymce').textContent = typeof tinymce !== 'undefined' ? 'Yes' : 'No';
-    
-    // Count required fields
-    const requiredFields = form ? form.querySelectorAll('[required]').length : 0;
-    document.getElementById('debug-required').textContent = requiredFields;
-});
-
-function debugFormData() {
-    const form = document.getElementById('questionForm');
-    if (!form) {
-        alert('Form not found!');
-        return;
-    }
-    
-    const formData = new FormData(form);
-    let debugInfo = 'Form Data:\n\n';
-    
-    for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-            debugInfo += `${key}: [File: ${value.name}, ${value.size} bytes]\n`;
-        } else if (typeof value === 'string' && value.length > 50) {
-            debugInfo += `${key}: [${value.length} characters]\n`;
-        } else {
-            debugInfo += `${key}: ${value}\n`;
-        }
-    }
-    
-    console.log(debugInfo);
-    alert(debugInfo);
-}
-</script>
-
-
-    @push('styles')
-    <style>
-        /* TinyMCE Editor Styling */
-        .tox .tox-editor-header {
-            border-bottom: 1px solid #e5e7eb !important;
-        }
-        
-        .tox.tox-tinymce {
-            border: 1px solid #d1d5db !important;
-            border-radius: 0.375rem !important;
-        }
-        
-        /* Marker highlighting in preview */
-        .marker-highlight {
-            background: linear-gradient(to bottom, transparent 60%, #fef3c7 60%);
-            padding: 2px 0;
-            font-weight: 600;
-            color: #92400e;
-            position: relative;
-        }
-        
-        .marker-tag {
-            display: inline-block;
-            background-color: #f59e0b;
-            color: white;
-            font-size: 11px;
-            font-weight: bold;
-            padding: 1px 4px;
-            border-radius: 3px;
-            margin: 0 2px;
-            vertical-align: super;
-        }
-        
-        /* Marker list styles */
-        .marker-item {
-            background: white;
-            border: 1px solid #d1fae5;
-            border-radius: 6px;
-            padding: 10px;
-            transition: all 0.2s;
-        }
-        
-        .marker-item:hover {
-            border-color: #16a34a;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transform: translateY(-1px);
-        }
-
-        /* Live detection animation */
-        @keyframes markerPulse {
-            0% { opacity: 0.5; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0.5; transform: scale(0.95); }
-        }
-        
-        .marker-detected {
-            animation: markerPulse 1s ease-in-out;
-        }
-    </style>
-    @endpush
-
     @push('scripts')
-<!-- TinyMCE CDN -->
-<script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-
-<!-- Reading Passage JavaScript -->
-<script src="{{ asset('js/admin/reading-passage.js') }}"></script>
-
-<!-- Enhanced Form Submission Script -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Reading passage form initialized');
-    
-    // Get form and button references
-    const form = document.getElementById('passageForm');
-    const saveBtn = document.getElementById('save-passage-btn');
-    
-    if (!form || !saveBtn) {
-        console.error('Form or save button not found');
-        return;
-    }
-    
-    // Override form submit event
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        console.log('Form submit intercepted');
-        submitPassageForm();
-    });
-    
-    // Handle button click
-    saveBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        console.log('Save button clicked');
-        submitPassageForm();
-    });
-    
-    // Submit function
-    function submitPassageForm() {
-        console.log('Submitting passage form...');
-        
-        // Wait for TinyMCE
-        if (typeof tinymce === 'undefined') {
-            alert('Editor not loaded. Please wait and try again.');
-            return;
-        }
-        
-        // Get the editor instance
-        const editor = tinymce.get('passageEditor');
-        if (!editor) {
-            console.error('TinyMCE editor not found');
-            alert('Editor not initialized. Please refresh the page.');
-            return;
-        }
-        
-        // Get content from editor
-        const content = editor.getContent();
-        console.log('Editor content length:', content.length);
-        
-        // Validate content
-        if (!content || content.trim() === '') {
-            alert('Please enter passage content');
-            return;
-        }
-        
-        // Check if content input already exists
-        let contentInput = form.querySelector('input[name="content"]');
-        if (contentInput) {
-            // Update existing input
-            contentInput.value = content;
-        } else {
-            // Create new hidden input
-            contentInput = document.createElement('input');
-            contentInput.type = 'hidden';
-            contentInput.name = 'content';
-            contentInput.value = content;
-            form.appendChild(contentInput);
-        }
-        
-        // Also ensure passage_text is set (for compatibility)
-        let passageTextInput = form.querySelector('input[name="passage_text"]');
-        if (!passageTextInput) {
-            passageTextInput = document.createElement('input');
-            passageTextInput.type = 'hidden';
-            passageTextInput.name = 'passage_text';
-            passageTextInput.value = content;
-            form.appendChild(passageTextInput);
-        } else {
-            passageTextInput.value = content;
-        }
-        
-        // Debug: Log all form data
-        console.log('Form data before submission:');
-        const formData = new FormData(form);
-        for (let [key, value] of formData.entries()) {
-            if (key === 'content' || key === 'passage_text') {
-                console.log(key + ':', value.substring(0, 100) + '...');
-            } else {
-                console.log(key + ':', value);
-            }
-        }
-        
-        // Submit the form
-        console.log('Submitting form...');
-        form.submit();
-    }
-    
-    // Initialize TinyMCE with proper setup
-    tinymce.init({
-        selector: '#passageEditor',
-        height: 500,
-        menubar: true,
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'table', 'help', 'wordcount'
-        ],
-        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | fullscreen code preview',
-        content_style: 'body { font-family: Georgia, Times New Roman, serif; font-size: 16px; line-height: 1.8; color: #333; padding: 20px; }',
-        setup: function(editor) {
-            // Store editor reference globally
-            window.passageEditor = editor;
-            
-            editor.on('init', function() {
-                console.log('TinyMCE initialized');
-                
-                // If there's existing content, load it
-                const existingContent = document.getElementById('passageEditor').value;
-                if (existingContent) {
-                    editor.setContent(existingContent);
-                }
-            });
-            
-            editor.on('change keyup paste', function() {
-                // Update word count
-                const text = editor.getContent({ format: 'text' });
-                const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-                const wordCountEl = document.getElementById('passage-word-count');
-                const charCountEl = document.getElementById('passage-char-count');
-                
-                if (wordCountEl) wordCountEl.textContent = words.length;
-                if (charCountEl) charCountEl.textContent = text.length;
-                
-                // Detect markers
-                detectAndHighlightMarkers();
-            });
-        },
-        init_instance_callback: function(editor) {
-            console.log('Editor ready:', editor.id);
-        }
-    });
-});
-
-// Prevent accidental navigation
-window.addEventListener('beforeunload', function(e) {
-    if (window.passageEditor && window.passageEditor.isDirty()) {
-        e.preventDefault();
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-    }
-});
-
-// Helper function to detect markers
-function detectAndHighlightMarkers() {
-    if (!window.passageEditor) return;
-    
-    const content = window.passageEditor.getContent({ format: 'text' });
-    const regex = /\{\{Q(\d+)\}\}/g;
-    const markers = [];
-    let match;
-    
-    while ((match = regex.exec(content)) !== null) {
-        markers.push('Q' + match[1]);
-    }
-    
-    // Update markers count
-    const markersCountEl = document.getElementById('markers-count');
-    if (markersCountEl) {
-        markersCountEl.textContent = markers.length;
-    }
-}
-</script>
-@endpush
+    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
+    <script src="{{ asset('js/admin/question-common.js') }}"></script>
+    <script src="{{ asset('js/admin/question-reading.js') }}"></script>
+    @endpush
 </x-layout>
