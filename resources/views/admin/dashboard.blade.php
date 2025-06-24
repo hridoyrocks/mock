@@ -262,6 +262,10 @@
                         <button onclick="showGrantModal()" class="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition">
                             <i class="fas fa-gift mr-2"></i> Grant Subscription
                         </button>
+<a href="{{ route('admin.subscription-plans.index') }}" class="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition">
+    <i class="fas fa-tags mr-2"></i> Manage Plans
+</a>
+
                     </div>
                 </div>
             </div>

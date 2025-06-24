@@ -209,6 +209,30 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/grant/{user}', [SubscriptionManagementController::class, 'grantSubscription'])->name('grant');
     Route::post('/revoke/{subscription}', [SubscriptionManagementController::class, 'revokeSubscription'])->name('revoke');
 });
+
+ // Subscription Plans Management
+    Route::prefix('subscription-plans')->name('subscription-plans.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'store'])->name('store');
+        Route::get('/{subscriptionPlan}/edit', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'edit'])->name('edit');
+        Route::put('/{subscriptionPlan}', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'update'])->name('update');
+        Route::delete('/{subscriptionPlan}', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'destroy'])->name('destroy');
+        Route::patch('/{subscriptionPlan}/toggle-status', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/reorder', [App\Http\Controllers\Admin\SubscriptionPlanController::class, 'reorder'])->name('reorder');
+    });
+    
+    // Subscription Features Management
+    Route::prefix('subscription-features')->name('subscription-features.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'store'])->name('store');
+        Route::get('/{subscriptionFeature}/edit', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'edit'])->name('edit');
+        Route::put('/{subscriptionFeature}', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'update'])->name('update');
+        Route::delete('/{subscriptionFeature}', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'destroy'])->name('destroy');
+    });
+
+
     });
 });
 

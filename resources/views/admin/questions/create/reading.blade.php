@@ -267,548 +267,638 @@
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script>
     // All Reading specific functionality
-    let passageEditor = null;
-    let contentEditor = null;
-    let blankCounter = 0;
-    let dropdownCounter = 0;
+let passageEditor = null;
+let contentEditor = null;
+let blankCounter = 0;
+let dropdownCounter = 0;
 
-    document.addEventListener('DOMContentLoaded', function () {
-        // Initialize TinyMCE with full page configuration
-        initializeTinyMCE();
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize TinyMCE with full page configuration
+    initializeTinyMCE();
 
-        // Setup question type handler
-        const questionType = document.getElementById('question_type');
-        if (questionType) {
-            questionType.addEventListener('change', handleReadingQuestionTypeChange);
-            if (questionType.value) {
-                handleReadingQuestionTypeChange.call(questionType);
-            }
+    // Setup question type handler
+    const questionType = document.getElementById('question_type');
+    if (questionType) {
+        questionType.addEventListener('change', handleReadingQuestionTypeChange);
+        if (questionType.value) {
+            handleReadingQuestionTypeChange.call(questionType);
         }
+    }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.altKey && document.getElementById('question_type')?.value === 'fill_blanks') {
-                if (e.key === 'b' || e.key === 'B') {
-                    e.preventDefault();
-                    insertBlank();
-                } else if (e.key === 'd' || e.key === 'D') {
-                    e.preventDefault();
-                    insertDropdown();
-                }
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.altKey && document.getElementById('question_type')?.value === 'fill_blanks') {
+            if (e.key === 'b' || e.key === 'B') {
+                e.preventDefault();
+                insertBlank();
+            } else if (e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                insertDropdown();
             }
-        });
-
-        // Form submission handler
-        const form = document.getElementById('questionForm');
-        if (form) {
-            form.addEventListener('submit', function (e) {
-                const questionType = document.getElementById('question_type').value;
-
-                if (typeof tinymce !== 'undefined') {
-                    tinymce.triggerSave();
-                }
-
-                if (questionType === 'passage' && passageEditor) {
-                    const passageContent = passageEditor.getContent();
-                    const passageTextField = document.getElementById('passage_text');
-                    if (passageTextField) {
-                        passageTextField.value = passageContent;
-                    }
-                    const contentField = document.getElementById('content');
-                    if (contentField) {
-                        contentField.value = passageContent;
-                    }
-                }
-
-                return true;
-            });
         }
     });
 
-    // Initialize TinyMCE with professional settings
-    function initializeTinyMCE() {
-        const commonConfig = {
-            height: '100%',
-            menubar: true,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'table', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | table | code | fullscreen',
-            content_style: `
-                body { 
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-                    font-size: 14px; 
-                    line-height: 1.6; 
-                    color: #374151;
-                    padding: 12px;
-                }
-                p { margin: 0 0 10px 0; }
-            `,
-            toolbar_mode: 'sliding',
-            contextmenu: false,
-            branding: false,
-            resize: false,
-            elementpath: false,
-            setup: function(editor) {
-                // Remove emoji plugin if loaded
-                editor.on('init', function() {
-                    const emojiButton = editor.ui.registry.getAll().buttons.emoticons;
-                    if (emojiButton) {
-                        editor.ui.registry.remove('button', 'emoticons');
-                    }
-                });
-            }
-        };
+    // Form submission handler
+    const form = document.getElementById('questionForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            const questionType = document.getElementById('question_type').value;
 
-        // Initialize content editor
-        tinymce.init({
-            ...commonConfig,
-            selector: '#content',
-            setup: function(editor) {
-                contentEditor = editor;
-                commonConfig.setup(editor);
-                
-                editor.on('NodeChange KeyUp', function() {
-                    if (document.getElementById('question_type')?.value === 'fill_blanks') {
-                        updateBlanks();
-                    }
-                });
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
             }
+
+            if (questionType === 'passage' && passageEditor) {
+                const passageContent = passageEditor.getContent();
+                const passageTextField = document.getElementById('passage_text');
+                if (passageTextField) {
+                    passageTextField.value = passageContent;
+                }
+                const contentField = document.getElementById('content');
+                if (contentField) {
+                    contentField.value = passageContent;
+                }
+            }
+
+            return true;
         });
     }
+});
 
-    // Handle question type changes
-    function handleReadingQuestionTypeChange() {
-        const type = this.value;
-        const questionContentField = document.getElementById('question-content-field');
-        const passageContentField = document.getElementById('passage-content-field');
-        const blanksManager = document.getElementById('blanks-manager');
-        const blankButtons = document.getElementById('blank-buttons');
-
-        // Reset displays
-        questionContentField?.classList.remove('hidden');
-        passageContentField?.classList.add('hidden');
-        blanksManager?.classList.add('hidden');
-        if (blankButtons) blankButtons.style.display = 'none';
-
-        // Reset counters when changing type
-        blankCounter = 0;
-        dropdownCounter = 0;
-
-        if (type === 'passage') {
-            questionContentField?.classList.add('hidden');
-            passageContentField?.classList.remove('hidden');
-
-            // Initialize passage editor
-            if (!passageEditor && typeof tinymce !== 'undefined') {
-                setTimeout(() => {
-                    tinymce.init({
-                        selector: '.tinymce-passage',
-                        height: '100%',
-                        menubar: true,
-                        plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime table help wordcount',
-                        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | fullscreen',
-                        content_style: `
-                            body { 
-                                font-family: Georgia, 'Times New Roman', serif; 
-                                font-size: 16px; 
-                                line-height: 1.8; 
-                                color: #1F2937;
-                                padding: 20px;
-                            }
-                        `,
-                        branding: false,
-                        resize: false,
-                        setup: function (editor) {
-                            passageEditor = editor;
-                        }
-                    });
-                }, 100);
+// Initialize TinyMCE with professional settings
+function initializeTinyMCE() {
+    const commonConfig = {
+        height: '100%',
+        menubar: true,
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'table', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | table | code | fullscreen',
+        content_style: `
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                font-size: 14px; 
+                line-height: 1.6; 
+                color: #374151;
+                padding: 12px;
             }
+            p { margin: 0 0 10px 0; }
+        `,
+        toolbar_mode: 'sliding',
+        contextmenu: false,
+        branding: false,
+        resize: false,
+        elementpath: false,
+        setup: function(editor) {
+            // Remove emoji plugin if loaded
+            editor.on('init', function() {
+                const emojiButton = editor.ui.registry.getAll().buttons.emoticons;
+                if (emojiButton) {
+                    editor.ui.registry.remove('button', 'emoticons');
+                }
+            });
+        }
+    };
 
-            // Set defaults for passage
-            const orderInput = document.querySelector('input[name="order_number"]');
-            const marksInput = document.querySelector('input[name="marks"]');
-            if (orderInput && !orderInput.value) orderInput.value = '0';
-            if (marksInput) marksInput.value = '0';
-
-        } else if (type === 'fill_blanks') {
-            // Show blank buttons and manager
-            if (blankButtons) blankButtons.style.display = 'flex';
-            blanksManager?.classList.remove('hidden');
+    // Initialize content editor
+    tinymce.init({
+        ...commonConfig,
+        selector: '#content',
+        setup: function(editor) {
+            contentEditor = editor;
+            commonConfig.setup(editor);
             
-            // Initial update
-            setTimeout(updateBlanks, 500);
+            editor.on('NodeChange KeyUp', function() {
+                if (document.getElementById('question_type')?.value === 'fill_blanks') {
+                    updateBlanks();
+                }
+            });
+        }
+    });
+}
+
+// Handle question type changes
+function handleReadingQuestionTypeChange() {
+    const type = this.value;
+    const questionContentField = document.getElementById('question-content-field');
+    const passageContentField = document.getElementById('passage-content-field');
+    const blanksManager = document.getElementById('blanks-manager');
+    const blankButtons = document.getElementById('blank-buttons');
+    const optionsCard = document.getElementById('options-card');
+
+    // Reset displays
+    questionContentField?.classList.remove('hidden');
+    passageContentField?.classList.add('hidden');
+    blanksManager?.classList.add('hidden');
+    if (blankButtons) blankButtons.style.display = 'none';
+
+    // Reset counters when changing type
+    blankCounter = 0;
+    dropdownCounter = 0;
+
+    // Define option types that need the options card
+    const optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching',
+        'matching_headings', 'matching_information', 'matching_features'];
+
+    // Handle options card visibility
+    if (optionsCard) {
+        if (optionTypes.includes(type)) {
+            optionsCard.classList.remove('hidden');
+            setupDefaultOptions(type);
+        } else {
+            optionsCard.classList.add('hidden');
         }
     }
 
-    // Insert blank function with professional feedback
-    window.insertBlank = function() {
-        if (!contentEditor && typeof tinymce !== 'undefined') {
-            contentEditor = tinymce.get('content');
+    if (type === 'passage') {
+        questionContentField?.classList.add('hidden');
+        passageContentField?.classList.remove('hidden');
+
+        // Initialize passage editor
+        if (!passageEditor && typeof tinymce !== 'undefined') {
+            setTimeout(() => {
+                tinymce.init({
+                    selector: '.tinymce-passage',
+                    height: '100%',
+                    menubar: true,
+                    plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime table help wordcount',
+                    toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | fullscreen',
+                    content_style: `
+                        body { 
+                            font-family: Georgia, 'Times New Roman', serif; 
+                            font-size: 16px; 
+                            line-height: 1.8; 
+                            color: #1F2937;
+                            padding: 20px;
+                        }
+                    `,
+                    branding: false,
+                    resize: false,
+                    setup: function (editor) {
+                        passageEditor = editor;
+                    }
+                });
+            }, 100);
         }
+
+        // Set defaults for passage
+        const orderInput = document.querySelector('input[name="order_number"]');
+        const marksInput = document.querySelector('input[name="marks"]');
+        if (orderInput && !orderInput.value) orderInput.value = '0';
+        if (marksInput) marksInput.value = '0';
+
+    } else if (type === 'fill_blanks') {
+        // Show blank buttons and manager
+        if (blankButtons) blankButtons.style.display = 'flex';
+        blanksManager?.classList.remove('hidden');
         
-        if (contentEditor) {
-            blankCounter++;
-            const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[____${blankCounter}____]</span>&nbsp;`;
-            contentEditor.insertContent(blankHtml);
+        // Initial update
+        setTimeout(updateBlanks, 500);
+    }
+}
+
+// Setup default options based on question type
+function setupDefaultOptions(type) {
+    const container = document.getElementById('options-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (type === 'true_false') {
+        addOption('TRUE', true);
+        addOption('FALSE', false);
+        addOption('NOT GIVEN', false);
+        const addBtn = document.getElementById('add-option-btn');
+        if (addBtn) addBtn.style.display = 'none';
+    } else if (type === 'yes_no') {
+        addOption('YES', true);
+        addOption('NO', false);
+        addOption('NOT GIVEN', false);
+        const addBtn = document.getElementById('add-option-btn');
+        if (addBtn) addBtn.style.display = 'none';
+    } else {
+        // Default to 4 empty options
+        for (let i = 0; i < 4; i++) {
+            addOption('', i === 0);
+        }
+        const addBtn = document.getElementById('add-option-btn');
+        if (addBtn) addBtn.style.display = 'inline-block';
+    }
+}
+
+// Add option function
+function addOption(content = '', isCorrect = false) {
+    const container = document.getElementById('options-container');
+    if (!container) return;
+
+    const index = container.children.length;
+
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+
+    optionDiv.innerHTML = `
+        <input type="radio" name="correct_option" value="${index}" 
+               class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
+        <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
+        <input type="text" name="options[${index}][content]" value="${content}" 
+               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+               placeholder="Enter option text..." required>
+        <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+
+    container.appendChild(optionDiv);
+}
+
+// Remove option
+window.removeOption = function(btn) {
+    btn.parentElement.remove();
+    reindexOptions();
+};
+
+// Reindex options after removal
+function reindexOptions() {
+    const options = document.querySelectorAll('#options-container > div');
+    options.forEach((option, index) => {
+        option.querySelector('input[type="radio"]').value = index;
+        option.querySelector('input[type="text"]').name = `options[${index}][content]`;
+        option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
+    });
+}
+
+// Insert blank function with professional feedback
+window.insertBlank = function() {
+    if (!contentEditor && typeof tinymce !== 'undefined') {
+        contentEditor = tinymce.get('content');
+    }
+    
+    if (contentEditor) {
+        blankCounter++;
+        const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[____${blankCounter}____]</span>&nbsp;`;
+        contentEditor.insertContent(blankHtml);
+        
+        // Professional notification
+        showNotification(`Blank ${blankCounter} added`, 'success');
+        
+        setTimeout(updateBlanks, 100);
+    }
+};
+
+// Insert dropdown function
+window.insertDropdown = function() {
+    if (!contentEditor && typeof tinymce !== 'undefined') {
+        contentEditor = tinymce.get('content');
+    }
+    
+    if (contentEditor) {
+        const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
+        if (options) {
+            dropdownCounter++;
+            const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${dropdownCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${dropdownCounter}]</span>&nbsp;`;
+            contentEditor.insertContent(dropdownHtml);
             
-            // Professional notification
-            showNotification(`Blank ${blankCounter} added`, 'success');
+            showNotification(`Dropdown ${dropdownCounter} added`, 'success');
             
             setTimeout(updateBlanks, 100);
         }
-    };
+    }
+};
 
-    // Insert dropdown function
-    window.insertDropdown = function() {
-        if (!contentEditor && typeof tinymce !== 'undefined') {
-            contentEditor = tinymce.get('content');
-        }
-        
-        if (contentEditor) {
-            const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
-            if (options) {
-                dropdownCounter++;
-                const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${dropdownCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${dropdownCounter}]</span>&nbsp;`;
-                contentEditor.insertContent(dropdownHtml);
-                
-                showNotification(`Dropdown ${dropdownCounter} added`, 'success');
-                
-                setTimeout(updateBlanks, 100);
-            }
-        }
-    };
+// Professional notification function
+function showNotification(message, type = 'info') {
+    // Remove existing notification
+    const existing = document.querySelector('.success-notification');
+    if (existing) existing.remove();
     
-    // Professional notification function
-    function showNotification(message, type = 'info') {
-        // Remove existing notification
-        const existing = document.querySelector('.success-notification');
-        if (existing) existing.remove();
-        
-        // Create notification
-        const notification = document.createElement('div');
-        notification.className = 'success-notification';
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // Show notification
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
-        
-        // Hide after 2 seconds
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 2000);
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = 'success-notification';
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+    
+    // Hide after 2 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
+}
+
+// Store blank answers
+const blankAnswersStore = {};
+const dropdownStore = {
+    options: {},
+    correct: {}
+};
+
+// Update blanks display
+function updateBlanks() {
+    if (!contentEditor) {
+        contentEditor = tinymce.get('content');
+    }
+    
+    if (!contentEditor) return;
+
+    // Save current values
+    saveCurrentBlankValues();
+
+    const content = contentEditor.getContent();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+
+    const blanks = tempDiv.querySelectorAll('[data-blank]');
+    const dropdowns = tempDiv.querySelectorAll('[data-dropdown]');
+    
+    const blanksManager = document.getElementById('blanks-manager');
+    const blanksList = document.getElementById('blanks-list');
+
+    if (!blanksManager || !blanksList) return;
+
+    // Update counters
+    if (blanks.length > 0) {
+        blankCounter = Math.max(...Array.from(blanks).map(b => parseInt(b.getAttribute('data-blank'))));
+    }
+    if (dropdowns.length > 0) {
+        dropdownCounter = Math.max(...Array.from(dropdowns).map(d => parseInt(d.getAttribute('data-dropdown'))));
     }
 
-    // Store blank answers
-    const blankAnswersStore = {};
-    const dropdownStore = {
-        options: {},
-        correct: {}
-    };
+    if (blanks.length > 0 || dropdowns.length > 0) {
+        blanksManager.classList.remove('hidden');
+        blanksList.innerHTML = '';
 
-    // Update blanks display
-    function updateBlanks() {
-        if (!contentEditor) {
-            contentEditor = tinymce.get('content');
-        }
-        
-        if (!contentEditor) return;
+        // Add blanks
+        blanks.forEach((blank) => {
+            const num = blank.getAttribute('data-blank');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
+            
+            const storedValue = blankAnswersStore[num] || '';
+            
+            itemDiv.innerHTML = `
+                <span class="text-sm font-medium text-gray-700 min-w-[80px]">Blank ${num}:</span>
+                <input type="text" 
+                       id="blank_answer_${num}"
+                       name="blank_answers[${num}]" 
+                       class="blank-answer-input flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                       placeholder="Enter correct answer"
+                       value="${storedValue}"
+                       data-blank-num="${num}"
+                       required>
+                <button type="button" onclick="removeBlank(${num})" class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
 
-        // Save current values
-        saveCurrentBlankValues();
-
-        const content = contentEditor.getContent();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-
-        const blanks = tempDiv.querySelectorAll('[data-blank]');
-        const dropdowns = tempDiv.querySelectorAll('[data-dropdown]');
-        
-        const blanksManager = document.getElementById('blanks-manager');
-        const blanksList = document.getElementById('blanks-list');
-
-        if (!blanksManager || !blanksList) return;
-
-        // Update counters
-        if (blanks.length > 0) {
-            blankCounter = Math.max(...Array.from(blanks).map(b => parseInt(b.getAttribute('data-blank'))));
-        }
-        if (dropdowns.length > 0) {
-            dropdownCounter = Math.max(...Array.from(dropdowns).map(d => parseInt(d.getAttribute('data-dropdown'))));
-        }
-
-        if (blanks.length > 0 || dropdowns.length > 0) {
-            blanksManager.classList.remove('hidden');
-            blanksList.innerHTML = '';
-
-            // Add blanks
-            blanks.forEach((blank) => {
-                const num = blank.getAttribute('data-blank');
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
-                
-                const storedValue = blankAnswersStore[num] || '';
-                
-                itemDiv.innerHTML = `
-                    <span class="text-sm font-medium text-gray-700 min-w-[80px]">Blank ${num}:</span>
-                    <input type="text" 
-                           id="blank_answer_${num}"
-                           name="blank_answers[${num}]" 
-                           class="blank-answer-input flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                           placeholder="Enter correct answer"
-                           value="${storedValue}"
-                           data-blank-num="${num}"
-                           required>
-                    <button type="button" onclick="removeBlank(${num})" class="text-red-500 hover:text-red-700 p-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                `;
-
-                blanksList.appendChild(itemDiv);
-                
-                // Add input event listener
-                const input = itemDiv.querySelector(`#blank_answer_${num}`);
-                if (input) {
-                    input.addEventListener('input', function() {
-                        blankAnswersStore[num] = this.value;
-                        
-                        // Professional validation feedback
-                        if (this.value.trim()) {
-                            this.classList.add('validated');
-                        } else {
-                            this.classList.remove('validated');
-                        }
-                    });
+            blanksList.appendChild(itemDiv);
+            
+            // Add input event listener
+            const input = itemDiv.querySelector(`#blank_answer_${num}`);
+            if (input) {
+                input.addEventListener('input', function() {
+                    blankAnswersStore[num] = this.value;
                     
-                    // Check if already has value
-                    if (input.value.trim()) {
-                        input.classList.add('validated');
+                    // Professional validation feedback
+                    if (this.value.trim()) {
+                        this.classList.add('validated');
+                    } else {
+                        this.classList.remove('validated');
                     }
+                });
+                
+                // Check if already has value
+                if (input.value.trim()) {
+                    input.classList.add('validated');
                 }
-            });
-
-            // Add dropdowns
-            dropdowns.forEach((dropdown) => {
-                const num = dropdown.getAttribute('data-dropdown');
-                const options = dropdown.getAttribute('data-options');
-
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
-                
-                const storedOptions = dropdownStore.options[num] || options;
-                const storedCorrect = dropdownStore.correct[num] || '0';
-                
-                itemDiv.innerHTML = `
-                    <span class="text-sm font-medium text-gray-700 min-w-[80px]">Dropdown ${num}:</span>
-                    <input type="text" 
-                           id="dropdown_options_${num}"
-                           value="${storedOptions}" 
-                           name="dropdown_options[${num}]" 
-                           class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="Options (comma separated)"
-                           data-dropdown-num="${num}">
-                    <select id="dropdown_correct_${num}" name="dropdown_correct[${num}]" 
-                            class="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                            data-dropdown-num="${num}">
-                        ${storedOptions.split(',').map((opt, idx) => `<option value="${idx}" ${idx == storedCorrect ? 'selected' : ''}>${opt.trim()}</option>`).join('')}
-                    </select>
-                    <button type="button" onclick="removeDropdown(${num})" class="text-red-500 hover:text-red-700 p-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                `;
-
-                blanksList.appendChild(itemDiv);
-                
-                // Add event listeners
-                const optionsInput = itemDiv.querySelector(`#dropdown_options_${num}`);
-                const correctSelect = itemDiv.querySelector(`#dropdown_correct_${num}`);
-                
-                if (optionsInput) {
-                    optionsInput.addEventListener('input', function() {
-                        dropdownStore.options[num] = this.value;
-                        updateDropdownSelect(num, this.value);
-                    });
-                }
-                
-                if (correctSelect) {
-                    correctSelect.addEventListener('change', function() {
-                        dropdownStore.correct[num] = this.value;
-                    });
-                }
-            });
-
-            // Update counter badge
-            const counterBadge = document.getElementById('blank-counter');
-            if (counterBadge) {
-                const total = blanks.length + dropdowns.length;
-                counterBadge.textContent = total;
-                counterBadge.style.display = total > 0 ? 'inline-flex' : 'none';
-            }
-
-        } else {
-            blanksManager.classList.add('hidden');
-            const counterBadge = document.getElementById('blank-counter');
-            if (counterBadge) {
-                counterBadge.style.display = 'none';
-            }
-        }
-    }
-    
-    // Save current blank values
-    function saveCurrentBlankValues() {
-        document.querySelectorAll('.blank-answer-input').forEach(input => {
-            const num = input.getAttribute('data-blank-num');
-            if (num) {
-                blankAnswersStore[num] = input.value;
             }
         });
+
+        // Add dropdowns
+        dropdowns.forEach((dropdown) => {
+            const num = dropdown.getAttribute('data-dropdown');
+            const options = dropdown.getAttribute('data-options');
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
+            
+            const storedOptions = dropdownStore.options[num] || options;
+            const storedCorrect = dropdownStore.correct[num] || '0';
+            
+            itemDiv.innerHTML = `
+                <span class="text-sm font-medium text-gray-700 min-w-[80px]">Dropdown ${num}:</span>
+                <input type="text" 
+                       id="dropdown_options_${num}"
+                       value="${storedOptions}" 
+                       name="dropdown_options[${num}]" 
+                       class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       placeholder="Options (comma separated)"
+                       data-dropdown-num="${num}">
+                <select id="dropdown_correct_${num}" name="dropdown_correct[${num}]" 
+                        class="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        data-dropdown-num="${num}">
+                    ${storedOptions.split(',').map((opt, idx) => `<option value="${idx}" ${idx == storedCorrect ? 'selected' : ''}>${opt.trim()}</option>`).join('')}
+                </select>
+                <button type="button" onclick="removeDropdown(${num})" class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+
+            blanksList.appendChild(itemDiv);
+            
+            // Add event listeners
+            const optionsInput = itemDiv.querySelector(`#dropdown_options_${num}`);
+            const correctSelect = itemDiv.querySelector(`#dropdown_correct_${num}`);
+            
+            if (optionsInput) {
+                optionsInput.addEventListener('input', function() {
+                    dropdownStore.options[num] = this.value;
+                    updateDropdownSelect(num, this.value);
+                });
+            }
+            
+            if (correctSelect) {
+                correctSelect.addEventListener('change', function() {
+                    dropdownStore.correct[num] = this.value;
+                });
+            }
+        });
+
+        // Update counter badge
+        const counterBadge = document.getElementById('blank-counter');
+        if (counterBadge) {
+            const total = blanks.length + dropdowns.length;
+            counterBadge.textContent = total;
+            counterBadge.style.display = total > 0 ? 'inline-flex' : 'none';
+        }
+
+    } else {
+        blanksManager.classList.add('hidden');
+        const counterBadge = document.getElementById('blank-counter');
+        if (counterBadge) {
+            counterBadge.style.display = 'none';
+        }
+    }
+}
+
+// Save current blank values
+function saveCurrentBlankValues() {
+    document.querySelectorAll('.blank-answer-input').forEach(input => {
+        const num = input.getAttribute('data-blank-num');
+        if (num) {
+            blankAnswersStore[num] = input.value;
+        }
+    });
+    
+    document.querySelectorAll('[id^="dropdown_options_"]').forEach(input => {
+        const num = input.getAttribute('data-dropdown-num');
+        if (num) {
+            dropdownStore.options[num] = input.value;
+        }
+    });
+    
+    document.querySelectorAll('[id^="dropdown_correct_"]').forEach(select => {
+        const num = select.getAttribute('data-dropdown-num');
+        if (num) {
+            dropdownStore.correct[num] = select.value;
+        }
+    });
+}
+
+// Update dropdown select options
+function updateDropdownSelect(num, optionsString) {
+    const select = document.querySelector(`#dropdown_correct_${num}`);
+    if (select) {
+        const currentValue = select.value;
+        const options = optionsString.split(',').map(opt => opt.trim());
         
-        document.querySelectorAll('.dropdown-options-input').forEach(input => {
-            const num = input.getAttribute('data-dropdown-num');
-            if (num) {
-                dropdownStore.options[num] = input.value;
-            }
-        });
-        
-        document.querySelectorAll('.dropdown-correct-select').forEach(select => {
-            const num = select.getAttribute('data-dropdown-num');
-            if (num) {
-                dropdownStore.correct[num] = select.value;
-            }
-        });
+        select.innerHTML = options.map((opt, idx) => 
+            `<option value="${idx}" ${idx == currentValue ? 'selected' : ''}>${opt}</option>`
+        ).join('');
     }
-    
-    // Update dropdown select options
-    function updateDropdownSelect(num, optionsString) {
-        const select = document.querySelector(`#dropdown_correct_${num}`);
-        if (select) {
-            const currentValue = select.value;
-            const options = optionsString.split(',').map(opt => opt.trim());
-            
-            select.innerHTML = options.map((opt, idx) => 
-                `<option value="${idx}" ${idx == currentValue ? 'selected' : ''}>${opt}</option>`
-            ).join('');
-        }
-    }
+}
 
-    // Remove blank
-    window.removeBlank = function(num) {
-        if (contentEditor) {
-            delete blankAnswersStore[num];
-            
-            let content = contentEditor.getContent();
-            const regex = new RegExp(`<span[^>]*data-blank="${num}"[^>]*>\\[____${num}____\\]</span>`, 'g');
-            content = content.replace(regex, '');
-            contentEditor.setContent(content);
-            
-            renumberBlanks();
-            showNotification('Blank removed', 'info');
-        }
-    };
-
-    // Remove dropdown
-    window.removeDropdown = function(num) {
-        if (contentEditor) {
-            delete dropdownStore.options[num];
-            delete dropdownStore.correct[num];
-            
-            let content = contentEditor.getContent();
-            const regex = new RegExp(`<span[^>]*data-dropdown="${num}"[^>]*>\\[DROPDOWN_${num}\\]</span>`, 'g');
-            content = content.replace(regex, '');
-            contentEditor.setContent(content);
-            
-            renumberDropdowns();
-            showNotification('Dropdown removed', 'info');
-        }
-    };
-    
-    // Renumber blanks after deletion
-    function renumberBlanks() {
-        if (!contentEditor) return;
+// Remove blank
+window.removeBlank = function(num) {
+    if (contentEditor) {
+        delete blankAnswersStore[num];
         
         let content = contentEditor.getContent();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
+        const regex = new RegExp(`<span[^>]*data-blank="${num}"[^>]*>\\[____${num}____\\]</span>`, 'g');
+        content = content.replace(regex, '');
+        contentEditor.setContent(content);
         
-        const blanks = tempDiv.querySelectorAll('[data-blank]');
-        const newStore = {};
-        
-        blanks.forEach((blank, index) => {
-            const oldNum = blank.getAttribute('data-blank');
-            const newNum = index + 1;
-            
-            blank.setAttribute('data-blank', newNum);
-            blank.innerHTML = `[____${newNum}____]`;
-            
-            if (blankAnswersStore[oldNum]) {
-                newStore[newNum] = blankAnswersStore[oldNum];
-            }
-        });
-        
-        Object.keys(blankAnswersStore).forEach(key => delete blankAnswersStore[key]);
-        Object.assign(blankAnswersStore, newStore);
-        
-        blankCounter = blanks.length;
-        
-        contentEditor.setContent(tempDiv.innerHTML);
-        
-        setTimeout(updateBlanks, 100);
+        renumberBlanks();
+        showNotification('Blank removed', 'info');
     }
-    
-    // Renumber dropdowns after deletion
-    function renumberDropdowns() {
-        if (!contentEditor) return;
+};
+
+// Remove dropdown
+window.removeDropdown = function(num) {
+    if (contentEditor) {
+        delete dropdownStore.options[num];
+        delete dropdownStore.correct[num];
         
         let content = contentEditor.getContent();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
+        const regex = new RegExp(`<span[^>]*data-dropdown="${num}"[^>]*>\\[DROPDOWN_${num}\\]</span>`, 'g');
+        content = content.replace(regex, '');
+        contentEditor.setContent(content);
         
-        const dropdowns = tempDiv.querySelectorAll('[data-dropdown]');
-        const newOptionsStore = {};
-        const newCorrectStore = {};
-        
-        dropdowns.forEach((dropdown, index) => {
-            const oldNum = dropdown.getAttribute('data-dropdown');
-            const newNum = index + 1;
-            
-            dropdown.setAttribute('data-dropdown', newNum);
-            dropdown.innerHTML = `[DROPDOWN_${newNum}]`;
-            
-            if (dropdownStore.options[oldNum]) {
-                newOptionsStore[newNum] = dropdownStore.options[oldNum];
-            }
-            if (dropdownStore.correct[oldNum]) {
-                newCorrectStore[newNum] = dropdownStore.correct[oldNum];
-            }
-        });
-        
-        dropdownStore.options = newOptionsStore;
-        dropdownStore.correct = newCorrectStore;
-        
-        dropdownCounter = dropdowns.length;
-        
-        contentEditor.setContent(tempDiv.innerHTML);
-        
-        setTimeout(updateBlanks, 100);
+        renumberDropdowns();
+        showNotification('Dropdown removed', 'info');
     }
+};
+
+// Renumber blanks after deletion
+function renumberBlanks() {
+    if (!contentEditor) return;
     
-    // Refresh blanks
-    window.refreshBlanks = function() {
-        updateBlanks();
-        showNotification('Configuration refreshed', 'info');
-    };
+    let content = contentEditor.getContent();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    const blanks = tempDiv.querySelectorAll('[data-blank]');
+    const newStore = {};
+    
+    blanks.forEach((blank, index) => {
+        const oldNum = blank.getAttribute('data-blank');
+        const newNum = index + 1;
+        
+        blank.setAttribute('data-blank', newNum);
+        blank.innerHTML = `[____${newNum}____]`;
+        
+        if (blankAnswersStore[oldNum]) {
+            newStore[newNum] = blankAnswersStore[oldNum];
+        }
+    });
+    
+    Object.keys(blankAnswersStore).forEach(key => delete blankAnswersStore[key]);
+    Object.assign(blankAnswersStore, newStore);
+    
+    blankCounter = blanks.length;
+    
+    contentEditor.setContent(tempDiv.innerHTML);
+    
+    setTimeout(updateBlanks, 100);
+}
+
+// Renumber dropdowns after deletion
+function renumberDropdowns() {
+    if (!contentEditor) return;
+    
+    let content = contentEditor.getContent();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    const dropdowns = tempDiv.querySelectorAll('[data-dropdown]');
+    const newOptionsStore = {};
+    const newCorrectStore = {};
+    
+    dropdowns.forEach((dropdown, index) => {
+        const oldNum = dropdown.getAttribute('data-dropdown');
+        const newNum = index + 1;
+        
+        dropdown.setAttribute('data-dropdown', newNum);
+        dropdown.innerHTML = `[DROPDOWN_${newNum}]`;
+        
+        if (dropdownStore.options[oldNum]) {
+            newOptionsStore[newNum] = dropdownStore.options[oldNum];
+        }
+        if (dropdownStore.correct[oldNum]) {
+            newCorrectStore[newNum] = dropdownStore.correct[oldNum];
+        }
+    });
+    
+    dropdownStore.options = newOptionsStore;
+    dropdownStore.correct = newCorrectStore;
+    
+    dropdownCounter = dropdowns.length;
+    
+    contentEditor.setContent(tempDiv.innerHTML);
+    
+    setTimeout(updateBlanks, 100);
+}
+
+// Refresh blanks
+window.refreshBlanks = function() {
+    updateBlanks();
+    showNotification('Configuration refreshed', 'info');
+};
+
+// Make add option available globally
+window.addOption = addOption;
     </script>
     @endpush
 </x-layout>
