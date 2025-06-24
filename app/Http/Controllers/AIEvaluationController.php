@@ -20,8 +20,12 @@ class AIEvaluationController extends Controller
     /**
      * Evaluate writing with AI.
      */
-    public function evaluateWriting(Request $request, StudentAttempt $attempt)
+    public function evaluateWriting(Request $request)
     {
+        // Get attempt ID from request
+        $attemptId = $request->input('attempt_id');
+        $attempt = StudentAttempt::findOrFail($attemptId);
+
         // Check if user owns this attempt
         if ($attempt->user_id !== auth()->id()) {
             abort(403, 'Unauthorized access to this attempt.');
@@ -35,7 +39,7 @@ class AIEvaluationController extends Controller
         }
 
         // Check if attempt is for writing section
-        if ($attempt->section->type !== 'writing') {
+        if ($attempt->testSet->section->name !== 'writing') {
             return response()->json([
                 'error' => 'This attempt is not for writing section.'
             ], 400);
@@ -50,7 +54,7 @@ class AIEvaluationController extends Controller
             $evaluations = [];
 
             foreach ($answers as $answer) {
-                if (empty($answer->answer_text)) {
+                if (empty($answer->answer)) {
                     continue;
                 }
 
@@ -62,9 +66,9 @@ class AIEvaluationController extends Controller
 
                 // Evaluate with AI
                 $evaluation = $this->aiService->evaluateWriting(
-                    $answer->answer_text,
-                    $answer->question->title,
-                    $answer->question->part // Task 1 or Task 2
+                    $answer->answer,
+                    $answer->question->content,
+                    $answer->question->order_number // Task 1 or Task 2
                 );
 
                 // Store evaluation
@@ -111,8 +115,12 @@ class AIEvaluationController extends Controller
     /**
      * Evaluate speaking with AI.
      */
-    public function evaluateSpeaking(Request $request, StudentAttempt $attempt)
+    public function evaluateSpeaking(Request $request)
     {
+        // Get attempt ID from request
+        $attemptId = $request->input('attempt_id');
+        $attempt = StudentAttempt::findOrFail($attemptId);
+
         // Check if user owns this attempt
         if ($attempt->user_id !== auth()->id()) {
             abort(403, 'Unauthorized access to this attempt.');
@@ -126,7 +134,7 @@ class AIEvaluationController extends Controller
         }
 
         // Check if attempt is for speaking section
-        if ($attempt->section->type !== 'speaking') {
+        if ($attempt->testSet->section->name !== 'speaking') {
             return response()->json([
                 'error' => 'This attempt is not for speaking section.'
             ], 400);
@@ -135,8 +143,8 @@ class AIEvaluationController extends Controller
         try {
             // Get speaking answers with audio
             $answers = $attempt->answers()
-                ->with('question')
-                ->whereNotNull('audio_path')
+                ->with('question', 'speakingRecording')
+                ->whereHas('speakingRecording')
                 ->get();
 
             $evaluations = [];
@@ -148,11 +156,14 @@ class AIEvaluationController extends Controller
                     continue;
                 }
 
+                // Get audio path
+                $audioPath = $answer->speakingRecording->file_path;
+
                 // Transcribe and evaluate with AI
                 $evaluation = $this->aiService->evaluateSpeaking(
-                    $answer->audio_path,
-                    $answer->question->title,
-                    $answer->question->part
+                    $audioPath,
+                    $answer->question->content,
+                    $answer->question->order_number
                 );
 
                 // Store evaluation
@@ -215,8 +226,8 @@ class AIEvaluationController extends Controller
             ->map(function ($answer) {
                 return [
                     'question_id' => $answer->question_id,
-                    'question_title' => $answer->question->title,
-                    'part' => $answer->question->part,
+                    'question_title' => $answer->question->content,
+                    'part' => $answer->question->order_number,
                     'evaluation' => $answer->ai_evaluation,
                     'band_score' => $answer->ai_band_score,
                     'evaluated_at' => $answer->ai_evaluated_at,
@@ -225,7 +236,7 @@ class AIEvaluationController extends Controller
 
         return response()->json([
             'attempt_id' => $attempt->id,
-            'section' => $attempt->section->name,
+            'section' => $attempt->testSet->section->name,
             'overall_band' => $attempt->ai_band_score,
             'evaluations' => $evaluations,
             'evaluated_at' => $attempt->ai_evaluated_at,

@@ -235,42 +235,49 @@
     @push('scripts')
     <script>
     function startAIEvaluation(attemptId, type) {
-        // Show loading modal
-        document.getElementById('aiEvalModal').classList.remove('hidden');
-        
-        // Disable button
-        const button = document.getElementById('ai-eval-btn');
-        button.disabled = true;
-        
-        // Make API call
-        fetch(`/ai/evaluate/${type}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-                attempt_id: attemptId
-            })
+    // Show loading modal
+    document.getElementById('aiEvalModal').classList.remove('hidden');
+    
+    // Disable button
+    const button = document.getElementById('ai-eval-btn');
+    button.disabled = true;
+    
+    // Route ঠিক করুন - type অনুযায়ী সঠিক endpoint
+    const endpoint = type === 'writing' ? '/ai/evaluate/writing' : '/ai/evaluate/speaking';
+    
+    // Make API call
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            attempt_id: attemptId
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Redirect to evaluation result or reload page
-                window.location.reload();
-            } else {
-                alert(data.error || 'Failed to start evaluation');
-                document.getElementById('aiEvalModal').classList.add('hidden');
-                button.disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to start evaluation');
             document.getElementById('aiEvalModal').classList.add('hidden');
             button.disabled = false;
-        });
-    }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.error || 'An error occurred. Please try again.');
+        document.getElementById('aiEvalModal').classList.add('hidden');
+        button.disabled = false;
+    });
+}
     </script>
     @endpush
 </x-layout>
