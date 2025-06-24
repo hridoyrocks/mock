@@ -3,15 +3,15 @@
     
     <!-- Header -->
     <div class="bg-gradient-to-r from-green-600 to-green-700 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <div class="flex items-center justify-between">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+            <div class="py-4 sm:py-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 class="text-2xl font-semibold">📖 Add Reading Question</h1>
+                        <h1 class="text-xl sm:text-2xl font-semibold">Add Reading Question</h1>
                         <p class="text-green-100 text-sm mt-1">{{ $testSet->title }}</p>
                     </div>
                     <a href="{{ route('admin.test-sets.show', $testSet) }}" 
-                       class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
+                       class="inline-flex items-center px-3 sm:px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
@@ -23,7 +23,7 @@
     </div>
 
     <div class="bg-gray-50 min-h-screen">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
             
             @include('admin.questions.partials.question-header')
             
@@ -31,23 +31,23 @@
                 @csrf
                 <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
                 
-                <div class="space-y-6">
+                <div class="space-y-4 sm:space-y-6">
                     <!-- Question Content -->
-                    <div class="bg-white rounded-lg shadow-sm">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Question Content</h3>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                            <h3 class="text-base sm:text-lg font-medium text-gray-900">Question Content</h3>
                         </div>
                         
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-6">
+                        <div class="p-4 sm:p-6">
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+                                <div class="space-y-4 sm:space-y-6">
                                     <!-- Instructions -->
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                             Instructions / Passage Title
                                         </label>
                                         <textarea id="instructions" name="instructions" rows="2" 
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
                                                   placeholder="e.g., 'The History of Aviation' OR 'Questions 1-5: Choose the correct letter'">{{ old('instructions') }}</textarea>
                                     </div>
                                     
@@ -56,29 +56,31 @@
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                             Question <span class="text-red-500">*</span>
                                         </label>
-                                        <div class="mb-3 flex space-x-2" id="blank-buttons" style="display: none;">
+                                        <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
                                             <button type="button" onclick="insertBlank()" class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors">
-                                                Insert Blank ____
+                                                Insert Blank
                                             </button>
                                             <button type="button" onclick="insertDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
-                                                Insert Dropdown ▼
+                                                Insert Dropdown
                                             </button>
-                                            <span class="text-xs text-gray-500 flex items-center ml-3">
+                                            <span class="text-xs text-gray-500 flex items-center">
                                                 <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
                                                 <span class="mx-1">or</span>
                                                 <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
                                             </span>
                                         </div>
-                                        <textarea id="content" name="content" class="tinymce">{{ old('content') }}</textarea>
+                                        <div class="border border-gray-300 rounded-md overflow-hidden" style="height: 400px;">
+                                            <textarea id="content" name="content" class="tinymce">{{ old('content') }}</textarea>
+                                        </div>
                                     </div>
                                     
                                     <!-- Blanks Manager -->
                                     <div id="blanks-manager" class="hidden">
-                                        <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                                        <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
                                             <div class="flex items-center justify-between mb-3">
                                                 <div class="flex items-center">
-                                                    <h4 class="text-sm font-medium text-blue-900">Fill in the Blanks Configuration</h4>
-                                                    <span id="blank-counter" class="blank-counter-badge">0</span>
+                                                    <h4 class="text-sm font-medium text-gray-900">Fill in the Blanks Configuration</h4>
+                                                    <span id="blank-counter" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">0</span>
                                                 </div>
                                                 <button type="button" onclick="refreshBlanks()" class="text-xs text-blue-600 hover:text-blue-800">
                                                     <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,7 +89,7 @@
                                                     Refresh
                                                 </button>
                                             </div>
-                                            <div id="blanks-list" class="space-y-2">
+                                            <div id="blanks-list" class="space-y-2 max-h-64 overflow-y-auto">
                                                 <!-- Dynamically populated -->
                                             </div>
                                         </div>
@@ -98,14 +100,16 @@
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                             Passage Content <span class="text-red-500">*</span>
                                         </label>
-                                        <textarea id="passage_text" name="passage_text" class="tinymce-passage">{{ old('passage_text') }}</textarea>
+                                        <div class="border border-gray-300 rounded-md overflow-hidden" style="height: 500px;">
+                                            <textarea id="passage_text" name="passage_text" class="tinymce-passage">{{ old('passage_text') }}</textarea>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <div class="space-y-6">
+                                <div class="space-y-4 sm:space-y-6">
                                     @include('admin.questions.partials.question-settings', [
                                         'questionTypes' => [
-                                            'passage' => '📄 Reading Passage',
+                                            'passage' => 'Reading Passage',
                                             'multiple_choice' => 'Multiple Choice',
                                             'true_false' => 'True/False/Not Given',
                                             'yes_no' => 'Yes/No/Not Given',
@@ -126,7 +130,20 @@
                     <!-- Options Manager -->
                     @include('admin.questions.partials.options-manager')
                     
-                    @include('admin.questions.partials.action-buttons')
+                    <!-- Action Buttons - Made Sticky on Mobile -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky bottom-0 z-10 border-t sm:border-t-0 sm:relative">
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button type="submit" name="action" value="save" class="flex-1 py-2.5 sm:py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base">
+                                Save Question
+                            </button>
+                            <button type="submit" name="action" value="save_and_new" class="flex-1 py-2.5 sm:py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors text-sm sm:text-base">
+                                Save & Add Another
+                            </button>
+                            <button type="button" onclick="previewQuestion()" class="flex-1 py-2.5 sm:py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors text-sm sm:text-base">
+                                Preview
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -136,136 +153,133 @@
     
     @push('styles')
     <style>
+        /* Professional styles without emojis */
         .blank-placeholder {
-            background-color: #fef3c7 !important;
-            padding: 2px 8px !important;
-            margin: 0 4px !important;
-            border-bottom: 2px solid #f59e0b !important;
-            border-radius: 2px !important;
-            font-weight: 500 !important;
-            color: #92400e !important;
-            cursor: not-allowed !important;
-            user-select: none !important;
-            display: inline-block !important;
-            min-width: 60px !important;
-            transition: all 0.3s ease !important;
+            background-color: #FEF3C7;
+            padding: 2px 8px;
+            margin: 0 4px;
+            border-bottom: 2px solid #F59E0B;
+            border-radius: 2px;
+            font-weight: 500;
+            color: #92400E;
+            cursor: not-allowed;
+            user-select: none;
+            display: inline-block;
+            min-width: 60px;
+            transition: background-color 0.2s ease;
         }
         
         .blank-placeholder:hover {
-            background-color: #fde68a !important;
-            transform: scale(1.05);
+            background-color: #FDE68A;
         }
         
         .dropdown-placeholder {
-            background-color: #d1fae5 !important;
-            border: 1px solid #10b981 !important;
-            padding: 2px 8px !important;
-            margin: 0 4px !important;
-            border-radius: 4px !important;
-            font-weight: 500 !important;
-            color: #064e3b !important;
-            cursor: not-allowed !important;
-            user-select: none !important;
-            display: inline-block !important;
-            min-width: 80px !important;
-            transition: all 0.3s ease !important;
+            background-color: #D1FAE5;
+            border: 1px solid #10B981;
+            padding: 2px 8px;
+            margin: 0 4px;
+            border-radius: 4px;
+            font-weight: 500;
+            color: #064E3B;
+            cursor: not-allowed;
+            user-select: none;
+            display: inline-block;
+            min-width: 80px;
+            transition: background-color 0.2s ease;
         }
         
         .dropdown-placeholder:hover {
-            background-color: #a7f3d0 !important;
-            transform: scale(1.05);
+            background-color: #A7F3D0;
         }
         
-        /* Better visibility in TinyMCE */
-        .mce-content-body .blank-placeholder,
-        .mce-content-body .dropdown-placeholder {
-            display: inline-block !important;
-        }
-        
-        /* Pulse animation for new blanks */
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
-                transform: scale(1);
-            }
-            50% {
-                box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
-                transform: scale(1.05);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
-                transform: scale(1);
-            }
-        }
-        
-        /* Notification animation */
-        .blank-notification {
-            opacity: 0;
-            transform: translateX(100%);
-        }
-        
-        /* Input field animations */
+        /* Professional success indicator */
         .blank-answer-input {
+            transition: all 0.2s ease;
+        }
+        
+        .blank-answer-input.validated {
+            border-color: #10B981;
+            background-color: #F0FDF4;
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 640px) {
+            .tox-tinymce {
+                height: 300px !important;
+            }
+            
+            /* Make modals full screen on mobile */
+            .modal-content {
+                margin: 0;
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+        }
+        
+        /* Hide TinyMCE emoji button */
+        .tox-tbtn[aria-label="Emoticons"] {
+            display: none !important;
+        }
+        
+        /* Full page editor styles */
+        .tox-editor-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        /* Clean notification style */
+        .success-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10B981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(100px);
+            opacity: 0;
             transition: all 0.3s ease;
+            z-index: 1000;
         }
         
-        .blank-answer-input:focus {
-            transform: scale(1.02);
+        .success-notification.show {
+            transform: translateY(0);
+            opacity: 1;
         }
         
-        .blank-answer-input.ring-2 {
-            animation: successPulse 0.5s ease;
-        }
-        
-        @keyframes successPulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
-            }
-            50% {
-                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-            }
-        }
-        
-        /* Answer indicator animation */
-        .answer-indicator {
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+        /* Sticky header on scroll */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
     </style>
     @endpush
     
     @push('scripts')
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
-    <script src="{{ asset('js/admin/question-common.js') }}"></script>
     <script>
-    // All Reading specific functionality in one place
+    // All Reading specific functionality
     let passageEditor = null;
     let contentEditor = null;
     let blankCounter = 0;
     let dropdownCounter = 0;
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize TinyMCE
-        initializeTinyMCE('.tinymce');
+        // Initialize TinyMCE with full page configuration
+        initializeTinyMCE();
 
         // Setup question type handler
         const questionType = document.getElementById('question_type');
         if (questionType) {
             questionType.addEventListener('change', handleReadingQuestionTypeChange);
-            // Trigger on load if value exists
             if (questionType.value) {
                 handleReadingQuestionTypeChange.call(questionType);
             }
@@ -290,7 +304,6 @@
             form.addEventListener('submit', function (e) {
                 const questionType = document.getElementById('question_type').value;
 
-                // Save all TinyMCE editors
                 if (typeof tinymce !== 'undefined') {
                     tinymce.triggerSave();
                 }
@@ -307,22 +320,64 @@
                     }
                 }
 
-                // Debug log for fill_blanks
-                if (questionType === 'fill_blanks') {
-                    console.log('Submitting fill_blanks question');
-                    const formData = new FormData(form);
-                    console.log('Form data:');
-                    for (let [key, value] of formData.entries()) {
-                        if (key.startsWith('blank_answers') || key.startsWith('dropdown_')) {
-                            console.log(key + ': ' + value);
-                        }
-                    }
-                }
-
                 return true;
             });
         }
     });
+
+    // Initialize TinyMCE with professional settings
+    function initializeTinyMCE() {
+        const commonConfig = {
+            height: '100%',
+            menubar: true,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'table', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | table | code | fullscreen',
+            content_style: `
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                    font-size: 14px; 
+                    line-height: 1.6; 
+                    color: #374151;
+                    padding: 12px;
+                }
+                p { margin: 0 0 10px 0; }
+            `,
+            toolbar_mode: 'sliding',
+            contextmenu: false,
+            branding: false,
+            resize: false,
+            elementpath: false,
+            setup: function(editor) {
+                // Remove emoji plugin if loaded
+                editor.on('init', function() {
+                    const emojiButton = editor.ui.registry.getAll().buttons.emoticons;
+                    if (emojiButton) {
+                        editor.ui.registry.remove('button', 'emoticons');
+                    }
+                });
+            }
+        };
+
+        // Initialize content editor
+        tinymce.init({
+            ...commonConfig,
+            selector: '#content',
+            setup: function(editor) {
+                contentEditor = editor;
+                commonConfig.setup(editor);
+                
+                editor.on('NodeChange KeyUp', function() {
+                    if (document.getElementById('question_type')?.value === 'fill_blanks') {
+                        updateBlanks();
+                    }
+                });
+            }
+        });
+    }
 
     // Handle question type changes
     function handleReadingQuestionTypeChange() {
@@ -351,11 +406,21 @@
                 setTimeout(() => {
                     tinymce.init({
                         selector: '.tinymce-passage',
-                        height: 500,
+                        height: '100%',
                         menubar: true,
                         plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime table help wordcount',
-                        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | help',
-                        content_style: 'body { font-family: Georgia, Times New Roman, serif; font-size: 16px; line-height: 1.8; color: #333; }',
+                        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | removeformat | fullscreen',
+                        content_style: `
+                            body { 
+                                font-family: Georgia, 'Times New Roman', serif; 
+                                font-size: 16px; 
+                                line-height: 1.8; 
+                                color: #1F2937;
+                                padding: 20px;
+                            }
+                        `,
+                        branding: false,
+                        resize: false,
                         setup: function (editor) {
                             passageEditor = editor;
                         }
@@ -374,23 +439,12 @@
             if (blankButtons) blankButtons.style.display = 'flex';
             blanksManager?.classList.remove('hidden');
             
-            // Get content editor
-            if (!contentEditor && typeof tinymce !== 'undefined') {
-                contentEditor = tinymce.get('content');
-            }
-            
             // Initial update
             setTimeout(updateBlanks, 500);
-        } else {
-            // Regular questions
-            const marksInput = document.querySelector('input[name="marks"]');
-            if (marksInput && marksInput.value === '0') {
-                marksInput.value = '1';
-            }
         }
     }
 
-    // Insert blank function with visual feedback
+    // Insert blank function with professional feedback
     window.insertBlank = function() {
         if (!contentEditor && typeof tinymce !== 'undefined') {
             contentEditor = tinymce.get('content');
@@ -401,22 +455,14 @@
             const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[____${blankCounter}____]</span>&nbsp;`;
             contentEditor.insertContent(blankHtml);
             
-            // Visual feedback
-            showNotification(`Blank ${blankCounter} added successfully!`, 'success');
-            
-            // Highlight the new blank briefly
-            setTimeout(() => {
-                const newBlank = contentEditor.getBody().querySelector(`[data-blank="${blankCounter}"]`);
-                if (newBlank) {
-                    newBlank.style.animation = 'pulse 1s ease-in-out';
-                }
-            }, 100);
+            // Professional notification
+            showNotification(`Blank ${blankCounter} added`, 'success');
             
             setTimeout(updateBlanks, 100);
         }
     };
 
-    // Insert dropdown function with visual feedback
+    // Insert dropdown function
     window.insertDropdown = function() {
         if (!contentEditor && typeof tinymce !== 'undefined') {
             contentEditor = tinymce.get('content');
@@ -429,56 +475,39 @@
                 const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${dropdownCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${dropdownCounter}]</span>&nbsp;`;
                 contentEditor.insertContent(dropdownHtml);
                 
-                // Visual feedback
-                showNotification(`Dropdown ${dropdownCounter} added successfully!`, 'success');
+                showNotification(`Dropdown ${dropdownCounter} added`, 'success');
                 
                 setTimeout(updateBlanks, 100);
             }
         }
     };
     
-    // Notification function
+    // Professional notification function
     function showNotification(message, type = 'info') {
         // Remove existing notification
-        const existing = document.querySelector('.blank-notification');
+        const existing = document.querySelector('.success-notification');
         if (existing) existing.remove();
         
         // Create notification
         const notification = document.createElement('div');
-        notification.className = `blank-notification fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 ${
-            type === 'success' ? 'bg-green-500 text-white' : 
-            type === 'error' ? 'bg-red-500 text-white' : 
-            'bg-blue-500 text-white'
-        }`;
-        notification.innerHTML = `
-            <div class="flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    ${type === 'success' ? 
-                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' :
-                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
-                    }
-                </svg>
-                <span class="font-medium">${message}</span>
-            </div>
-        `;
+        notification.className = 'success-notification';
+        notification.textContent = message;
         
         document.body.appendChild(notification);
         
-        // Animate in
+        // Show notification
         setTimeout(() => {
-            notification.style.opacity = '1';
-            notification.style.transform = 'translateX(0)';
+            notification.classList.add('show');
         }, 10);
         
-        // Remove after 3 seconds
+        // Hide after 2 seconds
         setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateX(100%)';
+            notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
-        }, 3000);
+        }, 2000);
     }
 
-    // Store blank answers to preserve them
+    // Store blank answers
     const blankAnswersStore = {};
     const dropdownStore = {
         options: {},
@@ -493,7 +522,7 @@
         
         if (!contentEditor) return;
 
-        // First, save current values before updating
+        // Save current values
         saveCurrentBlankValues();
 
         const content = contentEditor.getContent();
@@ -524,13 +553,12 @@
             blanks.forEach((blank) => {
                 const num = blank.getAttribute('data-blank');
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'flex items-center space-x-2 mb-2 p-2 bg-white rounded border border-gray-200';
+                itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
                 
-                // Get stored value or empty
                 const storedValue = blankAnswersStore[num] || '';
                 
                 itemDiv.innerHTML = `
-                    <span class="text-sm font-medium text-gray-700 w-20">Blank ${num}:</span>
+                    <span class="text-sm font-medium text-gray-700 min-w-[80px]">Blank ${num}:</span>
                     <input type="text" 
                            id="blank_answer_${num}"
                            name="blank_answers[${num}]" 
@@ -548,24 +576,23 @@
 
                 blanksList.appendChild(itemDiv);
                 
-                // Add input event listener to save value
+                // Add input event listener
                 const input = itemDiv.querySelector(`#blank_answer_${num}`);
                 if (input) {
                     input.addEventListener('input', function() {
                         blankAnswersStore[num] = this.value;
                         
-                        // Visual feedback when answer is added
+                        // Professional validation feedback
                         if (this.value.trim()) {
-                            this.classList.add('ring-2', 'ring-green-500', 'border-green-500');
-                            showAnswerFeedback(num, 'added');
+                            this.classList.add('validated');
                         } else {
-                            this.classList.remove('ring-2', 'ring-green-500', 'border-green-500');
+                            this.classList.remove('validated');
                         }
                     });
                     
                     // Check if already has value
                     if (input.value.trim()) {
-                        input.classList.add('ring-2', 'ring-green-500', 'border-green-500');
+                        input.classList.add('validated');
                     }
                 }
             });
@@ -574,26 +601,24 @@
             dropdowns.forEach((dropdown) => {
                 const num = dropdown.getAttribute('data-dropdown');
                 const options = dropdown.getAttribute('data-options');
-                const optionsArray = options.split(',').map(opt => opt.trim());
 
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'flex items-center space-x-2 mb-2 p-2 bg-white rounded border border-gray-200';
+                itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
                 
-                // Get stored values
                 const storedOptions = dropdownStore.options[num] || options;
                 const storedCorrect = dropdownStore.correct[num] || '0';
                 
                 itemDiv.innerHTML = `
-                    <span class="text-sm font-medium text-gray-700 w-20">Dropdown ${num}:</span>
+                    <span class="text-sm font-medium text-gray-700 min-w-[80px]">Dropdown ${num}:</span>
                     <input type="text" 
                            id="dropdown_options_${num}"
                            value="${storedOptions}" 
                            name="dropdown_options[${num}]" 
-                           class="dropdown-options-input flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Options (comma separated)"
                            data-dropdown-num="${num}">
                     <select id="dropdown_correct_${num}" name="dropdown_correct[${num}]" 
-                            class="dropdown-correct-select px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            class="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                             data-dropdown-num="${num}">
                         ${storedOptions.split(',').map((opt, idx) => `<option value="${idx}" ${idx == storedCorrect ? 'selected' : ''}>${opt.trim()}</option>`).join('')}
                     </select>
@@ -624,12 +649,6 @@
                 }
             });
 
-            // Add summary
-            const summaryDiv = document.createElement('div');
-            summaryDiv.className = 'mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600';
-            summaryDiv.innerHTML = `<strong>Total:</strong> ${blanks.length} blank(s), ${dropdowns.length} dropdown(s)`;
-            blanksList.appendChild(summaryDiv);
-            
             // Update counter badge
             const counterBadge = document.getElementById('blank-counter');
             if (counterBadge) {
@@ -640,7 +659,6 @@
 
         } else {
             blanksManager.classList.add('hidden');
-            // Hide counter when no blanks
             const counterBadge = document.getElementById('blank-counter');
             if (counterBadge) {
                 counterBadge.style.display = 'none';
@@ -648,9 +666,8 @@
         }
     }
     
-    // Save current blank values before updating
+    // Save current blank values
     function saveCurrentBlankValues() {
-        // Save blank answers
         document.querySelectorAll('.blank-answer-input').forEach(input => {
             const num = input.getAttribute('data-blank-num');
             if (num) {
@@ -658,7 +675,6 @@
             }
         });
         
-        // Save dropdown values
         document.querySelectorAll('.dropdown-options-input').forEach(input => {
             const num = input.getAttribute('data-dropdown-num');
             if (num) {
@@ -687,51 +703,34 @@
         }
     }
 
-    // Update dropdown options in editor
-    window.updateDropdownOptions = function(num, newOptions) {
-        if (contentEditor) {
-            let content = contentEditor.getContent();
-            const regex = new RegExp(`data-options="[^"]*"`, 'g');
-            const newContent = content.replace(
-                `data-dropdown="${num}"`,
-                `data-dropdown="${num}" data-options="${newOptions}"`
-            );
-            contentEditor.setContent(newContent);
-        }
-    };
-
     // Remove blank
     window.removeBlank = function(num) {
         if (contentEditor) {
-            // Remove from store
             delete blankAnswersStore[num];
             
-            // Remove from editor
             let content = contentEditor.getContent();
             const regex = new RegExp(`<span[^>]*data-blank="${num}"[^>]*>\\[____${num}____\\]</span>`, 'g');
             content = content.replace(regex, '');
             contentEditor.setContent(content);
             
-            // Renumber remaining blanks
             renumberBlanks();
+            showNotification('Blank removed', 'info');
         }
     };
 
     // Remove dropdown
     window.removeDropdown = function(num) {
         if (contentEditor) {
-            // Remove from store
             delete dropdownStore.options[num];
             delete dropdownStore.correct[num];
             
-            // Remove from editor
             let content = contentEditor.getContent();
             const regex = new RegExp(`<span[^>]*data-dropdown="${num}"[^>]*>\\[DROPDOWN_${num}\\]</span>`, 'g');
             content = content.replace(regex, '');
             contentEditor.setContent(content);
             
-            // Renumber dropdowns
             renumberDropdowns();
+            showNotification('Dropdown removed', 'info');
         }
     };
     
@@ -746,31 +745,25 @@
         const blanks = tempDiv.querySelectorAll('[data-blank]');
         const newStore = {};
         
-        // Renumber each blank
         blanks.forEach((blank, index) => {
             const oldNum = blank.getAttribute('data-blank');
             const newNum = index + 1;
             
-            // Update the element
             blank.setAttribute('data-blank', newNum);
             blank.innerHTML = `[____${newNum}____]`;
             
-            // Transfer stored value to new number
             if (blankAnswersStore[oldNum]) {
                 newStore[newNum] = blankAnswersStore[oldNum];
             }
         });
         
-        // Update store
-        blankAnswersStore = newStore;
+        Object.keys(blankAnswersStore).forEach(key => delete blankAnswersStore[key]);
+        Object.assign(blankAnswersStore, newStore);
         
-        // Update counter
         blankCounter = blanks.length;
         
-        // Set the updated content
         contentEditor.setContent(tempDiv.innerHTML);
         
-        // Update display
         setTimeout(updateBlanks, 100);
     }
     
@@ -786,16 +779,13 @@
         const newOptionsStore = {};
         const newCorrectStore = {};
         
-        // Renumber each dropdown
         dropdowns.forEach((dropdown, index) => {
             const oldNum = dropdown.getAttribute('data-dropdown');
             const newNum = index + 1;
             
-            // Update the element
             dropdown.setAttribute('data-dropdown', newNum);
             dropdown.innerHTML = `[DROPDOWN_${newNum}]`;
             
-            // Transfer stored values
             if (dropdownStore.options[oldNum]) {
                 newOptionsStore[newNum] = dropdownStore.options[oldNum];
             }
@@ -804,100 +794,21 @@
             }
         });
         
-        // Update store
         dropdownStore.options = newOptionsStore;
         dropdownStore.correct = newCorrectStore;
         
-        // Update counter
         dropdownCounter = dropdowns.length;
         
-        // Set the updated content
         contentEditor.setContent(tempDiv.innerHTML);
         
-        // Update display
         setTimeout(updateBlanks, 100);
-    }
-
-    // Show answer feedback
-    function showAnswerFeedback(num, action) {
-        // Visual indicator in editor
-        if (contentEditor) {
-            const editorBody = contentEditor.getBody();
-            const blank = editorBody.querySelector(`[data-blank="${num}"]`);
-            
-            if (blank) {
-                // Add checkmark or indicator
-                if (action === 'added') {
-                    blank.style.backgroundColor = '#86efac';
-                    blank.style.transition = 'background-color 0.5s ease';
-                    
-                    // Create a small checkmark
-                    const checkmark = document.createElement('span');
-                    checkmark.innerHTML = ' ✓';
-                    checkmark.style.color = '#059669';
-                    checkmark.style.fontWeight = 'bold';
-                    checkmark.className = 'answer-checkmark';
-                    
-                    // Remove existing checkmark if any
-                    const existingCheck = blank.querySelector('.answer-checkmark');
-                    if (existingCheck) existingCheck.remove();
-                    
-                    blank.appendChild(checkmark);
-                    
-                    // Revert color after 2 seconds
-                    setTimeout(() => {
-                        blank.style.backgroundColor = '#fef3c7';
-                    }, 2000);
-                }
-            }
-        }
-        
-        // Update the blank item visual
-        const blankItem = document.querySelector(`#blank_answer_${num}`).closest('.flex');
-        if (blankItem) {
-            const indicator = blankItem.querySelector('.answer-indicator') || document.createElement('span');
-            indicator.className = 'answer-indicator ml-2 text-green-600 font-medium text-sm';
-            indicator.innerHTML = '✓ Saved';
-            
-            if (!blankItem.querySelector('.answer-indicator')) {
-                blankItem.appendChild(indicator);
-            }
-            
-            // Fade out after 2 seconds
-            setTimeout(() => {
-                indicator.style.opacity = '0';
-                indicator.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => indicator.remove(), 500);
-            }, 2000);
-        }
     }
     
     // Refresh blanks
     window.refreshBlanks = function() {
         updateBlanks();
-        showNotification('Blanks configuration refreshed!', 'info');
+        showNotification('Configuration refreshed', 'info');
     };
-
-    // Section specific handler
-    function handleSectionSpecificChange(type) {
-        const questionType = document.getElementById('question_type');
-        if (questionType) {
-            handleReadingQuestionTypeChange.call(questionType);
-        }
-    }
-
-    // Listen for editor changes
-    setTimeout(() => {
-        if (typeof tinymce !== 'undefined') {
-            tinymce.on('AddEditor', function(e) {
-                e.editor.on('NodeChange KeyUp', function() {
-                    if (document.getElementById('question_type')?.value === 'fill_blanks') {
-                        updateBlanks();
-                    }
-                });
-            });
-        }
-    }, 1000);
     </script>
     @endpush
 </x-layout>
