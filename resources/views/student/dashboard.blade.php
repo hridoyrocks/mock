@@ -1,4 +1,3 @@
-{{-- resources/views/student/dashboard.blade.php --}}
 <x-layout>
     <x-slot:title>Student Dashboard - IELTS Practice Platform</x-slot>
     

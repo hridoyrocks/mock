@@ -1,24 +1,47 @@
 {{-- resources/views/student/test/listening/onboarding/sound-check.blade.php --}}
-<x-layout>
+<x-test-layout>
     <x-slot:title>Sound Check - IELTS Test</x-slot>
     
     <div class="min-h-screen bg-blue-50">
         <!-- Header with IELTS logos -->
         <div class="bg-white py-2 border-b">
             <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
-                <img src="{{ asset('images/ielts-logo.png') }}" alt="IELTS" class="h-10">
+                <img src="{{ asset('images/bi-logo.webp') }}" alt="IELTS" class="h-10">
                 <div class="flex space-x-6">
-                    <img src="{{ asset('images/british-council.png') }}" alt="British Council" class="h-10">
+                    <img src="{{ asset('images/bc-logo.jpg') }}" alt="British Council" class="h-10">
                     <img src="{{ asset('images/idp.png') }}" alt="IDP" class="h-10">
-                    <img src="{{ asset('images/cambridge.png') }}" alt="Cambridge Assessment English" class="h-10">
+                   
                 </div>
             </div>
         </div>
         
-        <!-- Dark navbar -->
+        <!-- Dark navbar with Volume Control -->
         <div class="bg-gray-800 py-2">
-            <div class="max-w-7xl mx-auto px-4">
-                <!-- Empty space for consistency with the IELTS interface -->
+            <div class="max-w-7xl mx-auto px-4 flex items-center justify-end">
+                <!-- Volume Control - Right side -->
+                <div class="flex items-center space-x-3">
+                    <button id="volume-down" class="text-white hover:text-gray-300 p-1">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    
+                    <div class="relative">
+                        <div class="w-32 bg-gray-600 rounded-full h-2">
+                            <div id="volume-progress" class="bg-white h-2 rounded-full transition-all duration-200" style="width: 50%"></div>
+                        </div>
+                        <input type="range" id="volume-slider" min="0" max="100" value="50" 
+                               class="absolute top-0 left-0 w-full h-2 opacity-0 cursor-pointer">
+                    </div>
+                    
+                    <button id="volume-up" class="text-white hover:text-gray-300 p-1">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    
+                    <span id="volume-value" class="text-white text-sm ml-1">50%</span>
+                </div>
             </div>
         </div>
         
@@ -58,7 +81,41 @@
         document.addEventListener('DOMContentLoaded', function() {
             const playButton = document.getElementById('play-sound-button');
             const continueButton = document.getElementById('continue-button');
-            const audioElement = new Audio('/audio/sample.mp3');
+            const audioElement = new Audio('{{ asset("audio/ielts-sound-check.") }}');
+            
+            // Volume control elements
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeValue = document.getElementById('volume-value');
+            const volumeProgress = document.getElementById('volume-progress');
+            const volumeDown = document.getElementById('volume-down');
+            const volumeUp = document.getElementById('volume-up');
+            
+            // Set initial volume
+            audioElement.volume = 0.5;
+            
+            // Volume slider event
+            volumeSlider.addEventListener('input', function() {
+                const volume = this.value / 100;
+                audioElement.volume = volume;
+                volumeValue.textContent = this.value + '%';
+                volumeProgress.style.width = this.value + '%';
+            });
+            
+            // Volume down button
+            volumeDown.addEventListener('click', function() {
+                const currentVolume = parseInt(volumeSlider.value);
+                const newVolume = Math.max(0, currentVolume - 10);
+                volumeSlider.value = newVolume;
+                volumeSlider.dispatchEvent(new Event('input'));
+            });
+            
+            // Volume up button
+            volumeUp.addEventListener('click', function() {
+                const currentVolume = parseInt(volumeSlider.value);
+                const newVolume = Math.min(100, currentVolume + 10);
+                volumeSlider.value = newVolume;
+                volumeSlider.dispatchEvent(new Event('input'));
+            });
             
             playButton.addEventListener('click', function() {
                 audioElement.play();
@@ -70,4 +127,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>

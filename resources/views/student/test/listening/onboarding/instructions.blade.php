@@ -1,16 +1,15 @@
 {{-- resources/views/student/test/listening/onboarding/instructions.blade.php --}}
-<x-layout>
+<x-test-layout>
     <x-slot:title>Test Instructions - IELTS Test</x-slot>
     
     <div class="min-h-screen bg-blue-50">
         <!-- Header with IELTS logos -->
         <div class="bg-white py-2 border-b">
             <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
-                <img src="{{ asset('images/ielts-logo.png') }}" alt="IELTS" class="h-10">
+                <img src="{{ asset('images/bi-logo.webp') }}" alt="IELTS" class="h-10">
                 <div class="flex space-x-6">
-                    <img src="{{ asset('images/british-council.png') }}" alt="British Council" class="h-10">
+                    <img src="{{ asset('images/bc-logo.jpg') }}" alt="British Council" class="h-10">
                     <img src="{{ asset('images/idp.png') }}" alt="IDP" class="h-10">
-                    <img src="{{ asset('images/cambridge.png') }}" alt="Cambridge Assessment English" class="h-10">
                 </div>
             </div>
         </div>
@@ -28,36 +27,39 @@
                     <h2 class="text-xl font-medium">Test Instructions</h2>
                 </div>
                 
-                <div class="p-8 bg-gray-100">
-                    <h1 class="text-2xl font-bold mb-2">IELTS Listening</h1>
-                    <p class="mb-6">Time: {{ $testSet->section->time_limit }} minutes</p>
-                    
-                    <h2 class="text-xl font-bold mb-4">INSTRUCTIONS TO CANDIDATES</h2>
-                    <ul class="list-disc pl-8 mb-6 space-y-2">
-                        <li>Answer <strong>all</strong> questions.</li>
-                        <li>You can change your answers at any time during the test.</li>
-                    </ul>
-                    
-                    <h2 class="text-xl font-bold mb-4">INFORMATION FOR CANDIDATES</h2>
-                    <ul class="list-disc pl-8 mb-6 space-y-2">
-                        <li>There are {{ $testSet->questions->count() }} questions in this test.</li>
-                        <li>Each question carries one mark.</li>
-                        <li>The test will have four parts.</li>
-                        <li>You will hear each part once.</li>
-                        <li>For each part of the test there will be time for you to look through the questions and time for you to check your answers.</li>
-                    </ul>
-                    
-                    <div class="flex items-center justify-center text-blue-600 mb-8">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        <p>When you are ready to begin, click 'Start test'.</p>
-                    </div>
-                    
-                    <div class="flex justify-center">
-                        <button id="start-test-button" data-testset="{{ $testSet->id }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-md border shadow-sm">
-                            Start test
-                        </button>
+                <!-- Fixed height container with scroll -->
+                <div class="bg-gray-100" style="height: 500px; overflow-y: auto;">
+                    <div class="p-8">
+                        <h1 class="text-2xl font-bold mb-2">IELTS Listening</h1>
+                        <p class="mb-6">Time: {{ $testSet->section->time_limit }} minutes</p>
+                        
+                        <h2 class="text-xl font-bold mb-4">INSTRUCTIONS TO CANDIDATES</h2>
+                        <ul class="list-disc pl-8 mb-6 space-y-2">
+                            <li>Answer <strong>all</strong> questions.</li>
+                            <li>You can change your answers at any time during the test.</li>
+                        </ul>
+                        
+                        <h2 class="text-xl font-bold mb-4">INFORMATION FOR CANDIDATES</h2>
+                        <ul class="list-disc pl-8 mb-6 space-y-2">
+                            <li>There are {{ $testSet->questions->count() }} questions in this test.</li>
+                            <li>Each question carries one mark.</li>
+                            <li>The test will have four parts.</li>
+                            <li>You will hear each part once.</li>
+                            <li>For each part of the test there will be time for you to look through the questions and time for you to check your answers.</li>
+                        </ul>
+                        
+                        <div class="flex items-center justify-center text-blue-600 mb-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            <p>When you are ready to begin, click 'Start test'.</p>
+                        </div>
+                        
+                        <div class="flex justify-center">
+                            <button id="start-test-button" data-testset="{{ $testSet->id }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-md border shadow-sm">
+                                Start test
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -75,4 +77,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>

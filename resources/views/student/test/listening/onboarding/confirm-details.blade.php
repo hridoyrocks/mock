@@ -1,20 +1,17 @@
 {{-- resources/views/student/test/listening/onboarding/confirm-details.blade.php --}}
-<x-layout>
+<x-test-layout>
     <x-slot:title>Confirm Your Details - IELTS Test</x-slot>
     
     <div class="min-h-screen">
-       
-        
         <!-- Main Header with Logos -->
         <div class="bg-white border-b">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between">
                 <div>
-                    <img src="{{ asset('images/ielts-logo.png') }}" alt="IELTS" class="h-10">
+                   <img src="{{ asset('images/bi-logo.webp') }}" alt="Banglay IELTS" class="h-10">
                 </div>
                 <div class="flex space-x-8 items-center">
-                    <img src="{{ asset('images/british-council.png') }}" alt="British Council" class="h-10">
+                    <img src="{{ asset('images/bc-logo.jpg') }}" alt="British Council" class="h-10">
                     <img src="{{ asset('images/idp.png') }}" alt="IDP" class="h-10">
-                    <img src="{{ asset('images/cambridge.png') }}" alt="Cambridge Assessment English" class="h-10">
                 </div>
             </div>
         </div>
@@ -108,4 +105,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>
