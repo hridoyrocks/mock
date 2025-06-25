@@ -1,5 +1,5 @@
 {{-- resources/views/student/test/reading/index.blade.php --}}
-<x-layout>
+<x-student-layout>
     <div class="min-h-screen bg-gray-50">
         <!-- Hero Section -->
         <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800">
@@ -301,4 +301,4 @@
         }
     </script>
     @endpush
-</x-layout>
+</x-student-layout>

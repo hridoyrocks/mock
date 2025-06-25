@@ -1,4 +1,4 @@
-<x-layout>
+<x-student-layout>
     <x-slot:title>My Results - IELTS Mock Test</x-slot>
     
     <x-slot:header>
@@ -72,13 +72,9 @@
                         </div>
                     @endif
                     
-                    <div class="mt-8">
-                        <a href="{{ route('dashboard') }}" class="text-sm text-blue-600 hover:underline">
-                            &larr; Back to Dashboard
-                        </a>
-                    </div>
+                    
                 </div>
             </div>
         </div>
     </div>
-</x-layout>
+</x-student-layout>

@@ -1,5 +1,5 @@
 {{-- resources/views/student/test/writing/index.blade.php --}}
-<x-layout>
+<x-student-layout>
     <div class="min-h-screen bg-gray-50">
         <!-- Hero Section -->
         <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
@@ -324,4 +324,4 @@
         }
     </script>
     @endpush
-</x-layout>
+</x-student-layout>

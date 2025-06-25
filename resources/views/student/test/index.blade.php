@@ -1,5 +1,5 @@
 {{-- resources/views/student/test/index.blade.php --}}
-<x-layout>
+<x-student-layout>
     <div class="min-h-screen bg-white">
         <!-- Hero Section -->
         <div class="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700">
@@ -254,15 +254,8 @@
                 </div>
             </div> -->
 
-            <!-- Back Navigation -->
-            <div class="mt-16 text-center">
-                <a href="{{ route('dashboard') }}" class="inline-flex items-center text-gray-600 hover:text-gray-900 font-medium">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to Dashboard
-                </a>
-            </div>
+         
+            
         </div>
     </div>
-</x-layout>
+</x-student-layout>

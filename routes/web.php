@@ -70,6 +70,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Student\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/progress-data', [App\Http\Controllers\Student\DashboardController::class, 'progressData'])->name('dashboard.progress-data');
         
+
+// Goals
+    Route::post('/goals', [App\Http\Controllers\Student\DashboardController::class, 'storeGoal'])->name('goals.store');
+    
+    // Achievements
+    Route::post('/achievements/mark-seen', [App\Http\Controllers\Student\DashboardController::class, 'markAchievementsSeen'])->name('achievements.mark-seen');
+    Route::get('/achievements/{badge}', [App\Http\Controllers\Student\DashboardController::class, 'getAchievementDetails'])->name('achievements.details');
+    
+    // Leaderboard
+    Route::get('/leaderboard/{period?}', [App\Http\Controllers\Student\DashboardController::class, 'getLeaderboard'])->name('leaderboard');
+    
+// });
+
         // Test routes
         Route::prefix('test')->group(function () {
             Route::get('/', [TestController::class, 'index'])->name('index');
@@ -188,6 +201,12 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/reading/{testSet}/passage', [QuestionController::class, 'createReadingPassage'])->name('reading.passage');
             Route::get('/reading/{testSet}/markers', [QuestionController::class, 'getPassageMarkers'])->name('reading.markers');
             
+
+            Route::post('/admin/upload/image', [ImageUploadController::class, 'upload'])
+             ->middleware(['auth', 'role:admin'])
+            ->name('admin.upload.image');
+
+
             // Additional routes
             Route::post('/{question}/duplicate', [QuestionController::class, 'duplicate'])->name('duplicate');
             Route::get('/bulk-import/{testSet}', [QuestionController::class, 'bulkImportForm'])->name('bulk-import');

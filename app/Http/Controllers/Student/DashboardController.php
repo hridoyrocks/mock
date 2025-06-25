@@ -5,17 +5,32 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\StudentAttempt;
 use App\Models\TestSection;
+use App\Models\UserGoal;
+use App\Models\UserAchievement;
+use App\Models\AchievementBadge;
+use App\Models\LeaderboardEntry;
+use App\Services\AchievementService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    protected $achievementService;
+
+    public function __construct()
+    {
+        $this->achievementService = app(AchievementService::class);
+    }
+
     /**
      * Display the student dashboard.
      */
     public function index(): View
     {
         $user = auth()->user();
+        
+        // Update study streak if user has activity today
+        $this->achievementService->updateStudyStreak($user);
         
         // Get recent attempts for this student
         $recentAttempts = $user->attempts()
@@ -54,45 +69,154 @@ class DashboardController extends Controller
             $query->where('active', 1);
         }])->get();
 
+        // Get user's goal
+        $userGoal = UserGoal::where('user_id', $user->id)
+            ->where('is_active', true)
+            ->first();
+
+        // Get recent achievements
+        $recentAchievements = UserAchievement::where('user_id', $user->id)
+            ->with('badge')
+            ->latest('earned_at')
+            ->take(6)
+            ->get();
+
+        // Get all badges for modal
+        $allBadges = AchievementBadge::where('is_active', true)
+            ->orderBy('category')
+            ->orderBy('sort_order')
+            ->get();
+
+        // Get user's earned badges
+        $userAchievements = $user->achievements;
+
+        // Get progress to next achievements
+        $progressToNext = collect($this->achievementService->getProgressToNextAchievements($user));
+
+        // Get leaderboard data
+        $leaderboard = LeaderboardEntry::where('period', 'weekly')
+            ->where('category', 'overall')
+            ->where('period_start', now()->startOfWeek())
+            ->with('user')
+            ->orderBy('rank')
+            ->take(10)
+            ->get();
+
+        // Check if user is in top 10
+        $userInLeaderboard = $leaderboard->where('user_id', $user->id)->isNotEmpty();
+
         return view('student.dashboard', compact(
             'recentAttempts',
             'stats',
             'sectionPerformance',
-            'testSections'
+            'testSections',
+            'userGoal',
+            'recentAchievements',
+            'allBadges',
+            'userAchievements',
+            'progressToNext',
+            'leaderboard',
+            'userInLeaderboard'
         ));
     }
 
     /**
-     * Get student progress data for charts
+     * Get leaderboard data for AJAX requests
      */
-    public function progressData()
+    public function getLeaderboard(Request $request, $period = 'weekly')
+    {
+        $validPeriods = ['daily', 'weekly', 'monthly', 'all_time'];
+        $period = in_array($period, $validPeriods) ? $period : 'weekly';
+
+        // Update leaderboard data
+        LeaderboardEntry::updateLeaderboard($period, 'overall');
+
+        // Get leaderboard entries
+        $startDate = match($period) {
+            'daily' => now()->startOfDay(),
+            'weekly' => now()->startOfWeek(),
+            'monthly' => now()->startOfMonth(),
+            'all_time' => null,
+        };
+
+        $query = LeaderboardEntry::where('period', $period)
+            ->where('category', 'overall');
+            
+        if ($startDate) {
+            $query->where('period_start', $startDate);
+        }
+
+        $leaderboard = $query->with('user')
+            ->orderBy('rank')
+            ->take(10)
+            ->get();
+
+        $userInLeaderboard = $leaderboard->where('user_id', auth()->id())->isNotEmpty();
+
+        return view('partials.leaderboard-content', compact('leaderboard', 'userInLeaderboard'));
+    }
+
+    /**
+     * Store user's goal
+     */
+    public function storeGoal(Request $request)
+    {
+        $request->validate([
+            'target_band_score' => 'required|numeric|min:1|max:9|regex:/^\d+(\.[05])?$/',
+            'target_date' => 'required|date|after:today',
+            'study_reason' => 'nullable|string',
+        ]);
+
+        $user = auth()->user();
+
+        // Deactivate existing goals
+        UserGoal::where('user_id', $user->id)->update(['is_active' => false]);
+
+        // Create new goal
+        UserGoal::create([
+            'user_id' => $user->id,
+            'target_band_score' => $request->target_band_score,
+            'target_date' => $request->target_date,
+            'study_reason' => $request->study_reason,
+            'is_active' => true,
+        ]);
+
+        return redirect()->route('student.dashboard')
+            ->with('success', 'Your IELTS goal has been set successfully!');
+    }
+
+    /**
+     * Mark achievements as seen
+     */
+    public function markAchievementsSeen(Request $request)
     {
         $user = auth()->user();
         
-        // Monthly progress
-        $monthlyProgress = $user->attempts()
-            ->selectRaw('MONTH(created_at) as month, COUNT(*) as attempts, AVG(band_score) as avg_score')
-            ->whereYear('created_at', date('Y'))
-            ->whereNotNull('band_score')
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get()
-            ->pluck('avg_score', 'month')
-            ->toArray();
+        UserAchievement::where('user_id', $user->id)
+            ->where('is_seen', false)
+            ->update(['is_seen' => true]);
 
-        // Fill missing months with null
-        $progressData = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $progressData[] = $monthlyProgress[$i] ?? null;
-        }
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get achievement details
+     */
+    public function getAchievementDetails($badgeId)
+    {
+        $badge = AchievementBadge::findOrFail($badgeId);
+        $userHasEarned = auth()->user()->achievements()
+            ->where('badge_id', $badgeId)
+            ->exists();
 
         return response()->json([
-            'monthly_progress' => $progressData,
-            'latest_attempts' => $user->attempts()
-                ->with('testSet.section')
-                ->latest()
-                ->take(5)
-                ->get()
+            'badge' => $badge,
+            'earned' => $userHasEarned,
+            'earned_at' => $userHasEarned ? auth()->user()->achievements()
+                ->where('badge_id', $badgeId)
+                ->first()
+                ->earned_at
+                ->format('M d, Y') : null,
         ]);
     }
 }

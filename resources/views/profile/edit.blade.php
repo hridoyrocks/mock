@@ -1,5 +1,5 @@
 {{-- resources/views/profile/edit.blade.php --}}
-<x-layout>
+<x-student-layout>
     <x-slot:title>My Profile</x-slot>
     
     <div class="min-h-screen bg-gray-50 py-8">
@@ -300,4 +300,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-student-layout>

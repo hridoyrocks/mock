@@ -702,7 +702,7 @@
         }
 
         .help-tab.active {
-            color: #1e40af;
+            color:rgb(208, 18, 18);
             border-bottom-color: #1e40af;
             background-color: white;
         }

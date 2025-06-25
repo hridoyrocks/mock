@@ -204,6 +204,22 @@ class User extends Authenticatable
         return $subscription;
     }
 
+
+    // Add to User model
+public function goals()
+{
+    return $this->hasMany(UserGoal::class);
+}
+
+public function achievements()
+{
+    return $this->hasMany(UserAchievement::class);
+}
+
+public function activeGoal()
+{
+    return $this->hasOne(UserGoal::class)->where('is_active', true);
+}
     /**
      * Get subscription badge/label.
      */

@@ -1,4 +1,4 @@
-<x-layout>
+<x-student-layout>
     <x-slot:title>Test Result - IELTS Mock Test</x-slot>
     
     <x-slot:header>
@@ -280,4 +280,4 @@
 }
     </script>
     @endpush
-</x-layout>
+</x-student-layout>
