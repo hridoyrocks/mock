@@ -1,4 +1,6 @@
 /* Style for IELTS Reading Test Interface */
+@import '../js/modules/TextAnnotationSystem/styles.css';
+
 body,
 html {
     margin: 0;
