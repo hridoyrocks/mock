@@ -34,6 +34,16 @@
         .sidebar-scroll::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        
+        /* Logo Animation */
+        .logo-animate {
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
     </style>
     
     @stack('styles')
@@ -57,15 +67,38 @@
         <div :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}"
              class="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
             
-            <!-- Sidebar Header -->
-            <div class="flex items-center justify-between h-20 px-6 bg-gradient-to-r from-indigo-600 to-purple-600">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                        <i class="fas fa-graduation-cap text-indigo-600 text-xl"></i>
-                    </div>
-                    <span class="ml-3 text-xl font-bold text-white">IELTS Practice</span>
+            <!-- Sidebar Header with Logo -->
+            <div class="flex items-center justify-center h-20 bg-gradient-to-r from-indigo-600 to-purple-600 relative overflow-hidden">
+                <!-- Background Pattern -->
+                <div class="absolute inset-0 opacity-10">
+                    <div class="absolute transform rotate-45 -top-10 -right-10 w-40 h-40 bg-white rounded-full"></div>
+                    <div class="absolute transform rotate-45 -bottom-10 -left-10 w-40 h-40 bg-white rounded-full"></div>
                 </div>
-                <button @click="sidebarOpen = false" class="lg:hidden text-white hover:text-gray-200">
+                
+                <!-- Logo -->
+                <div class="relative logo-animate">
+                    <svg width="50" height="50" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Book Pages -->
+                        <path d="M40 60 Q100 40 160 60 L160 140 Q100 120 40 140 Z" fill="#ffffff" opacity="0.9"/>
+                        <path d="M40 60 Q100 80 160 60 L160 140 Q100 160 40 140 Z" fill="#e0e7ff" opacity="0.7"/>
+                        
+                        <!-- Book Spine -->
+                        <rect x="95" y="55" width="10" height="90" fill="#4f46e5" rx="2"/>
+                        
+                        <!-- Achievement Star -->
+                        <g transform="translate(100, 50)">
+                            <path d="M0,-15 L4,-4 L15,-2 L6,6 L9,17 L0,10 L-9,17 L-6,6 L-15,-2 L-4,-4 Z" 
+                                  fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/>
+                        </g>
+                        
+                        <!-- Text "IELTS" -->
+                        <text x="100" y="170" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
+                              text-anchor="middle" fill="#ffffff">IELTS</text>
+                    </svg>
+                </div>
+                
+                <!-- Mobile close button -->
+                <button @click="sidebarOpen = false" class="absolute right-4 lg:hidden text-white hover:text-gray-200">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -73,10 +106,10 @@
             </div>
 
             <!-- User Profile Section -->
-            <div class="px-6 py-4 border-b border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                             <span class="text-white font-semibold text-lg">{{ substr(auth()->user()->name, 0, 1) }}</span>
                         </div>
                     </div>
@@ -93,6 +126,15 @@
                             </span>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Achievement Points Display -->
+                <div class="mt-3 flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Achievement Points</span>
+                    <span class="font-bold text-indigo-600">
+                        <i class="fas fa-star text-yellow-500 mr-1"></i>
+                        {{ auth()->user()->achievement_points ?? 0 }}
+                    </span>
                 </div>
             </div>
 
@@ -248,10 +290,10 @@
             </nav>
 
             <!-- Sidebar Footer -->
-            <div class="px-6 py-4 border-t border-gray-200">
+            <div class="px-6 py-4 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs text-gray-500">Monthly Tests</span>
-                    <span class="text-xs font-semibold text-gray-700">
+                    <span class="text-xs text-gray-600 font-medium">Monthly Tests</span>
+                    <span class="text-xs font-bold text-gray-700">
                         {{ auth()->user()->tests_taken_this_month }} / 
                         @php
                             $limit = auth()->user()->getFeatureLimit('mock_tests_per_month');
@@ -259,16 +301,18 @@
                         {{ $limit === 'unlimited' ? '∞' : $limit }}
                     </span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                     @php
                         $percentage = $limit === 'unlimited' ? 0 : (auth()->user()->tests_taken_this_month / $limit) * 100;
                     @endphp
-                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full" style="width: {{ min($percentage, 100) }}%"></div>
+                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300" 
+                         style="width: {{ min($percentage, 100) }}%"></div>
                 </div>
                 
                 @if(auth()->user()->subscription_status === 'free')
-                    <a href="{{ route('subscription.plans') }}" class="mt-3 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-center py-2 rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 inline-block">
-                        Upgrade to Premium
+                    <a href="{{ route('subscription.plans') }}" 
+                       class="mt-3 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-center py-2.5 rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 inline-block shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        <i class="fas fa-rocket mr-1"></i> Upgrade to Premium
                     </a>
                 @endif
             </div>
@@ -297,12 +341,20 @@
 
                     <!-- Right side items -->
                     <div class="flex items-center space-x-4">
+                        <!-- Study Streak Counter -->
+                        <div class="hidden md:flex items-center bg-orange-50 px-3 py-1.5 rounded-lg">
+                            <i class="fas fa-fire text-orange-500 mr-1"></i>
+                            <span class="text-sm font-medium text-orange-700">{{ auth()->user()->study_streak_days ?? 0 }} days</span>
+                        </div>
+
                         <!-- Notifications -->
                         <button class="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                             </svg>
-                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                            @if(auth()->user()->unreadNotifications->count() > 0)
+                                <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                            @endif
                         </button>
 
                         <!-- Help -->
@@ -316,7 +368,7 @@
                         <div class="relative" @click.outside="profileDropdown = false">
                             <button @click="profileDropdown = !profileDropdown" 
                                     class="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
                                     <span class="text-white font-semibold text-sm">{{ substr(auth()->user()->name, 0, 1) }}</span>
                                 </div>
                                 <span class="hidden md:block text-sm font-medium text-gray-700">{{ auth()->user()->name }}</span>
@@ -333,7 +385,7 @@
                                  x-transition:leave="transition ease-in duration-75"
                                  x-transition:leave-start="transform opacity-100 scale-100"
                                  x-transition:leave-end="transform opacity-0 scale-95"
-                                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
+                                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-100">
                                 <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-user-circle mr-2"></i> Profile
                                 </a>

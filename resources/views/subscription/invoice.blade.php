@@ -1,4 +1,4 @@
-<x-layout>
+<x-student-layout>
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
@@ -9,7 +9,7 @@
                     <p class="text-gray-600">Transaction ID: {{ $transaction->transaction_id }}</p>
                 </div>
                 <div class="text-right">
-                    <img src="/images/logo.png" alt="Logo" class="h-12 mb-2">
+                    <img src="https://banglayielts.com/wp-content/uploads/2023/11/logo-2-2.png" alt="Logo" class="h-12 mb-2">
                     <p class="text-sm text-gray-600">Date: {{ $transaction->created_at->format('d M Y') }}</p>
                 </div>
             </div>
@@ -60,7 +60,7 @@
             {{-- Footer --}}
             <div class="text-center text-gray-600 text-sm">
                 <p>Thank you for your purchase!</p>
-                <p class="mt-2">If you have any questions, please contact support@ieltsapp.com</p>
+                <p class="mt-2">If you have any questions, please contact <b> pay-mock@banglayielts.com </b></p>
             </div>
             
             {{-- Actions --}}
@@ -97,4 +97,4 @@
     }
 </style>
 @endpush
-</x-layout>
+</x-student-layout>

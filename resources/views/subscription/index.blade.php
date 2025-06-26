@@ -1,4 +1,4 @@
-<x-layout>
+<x-student-layout>
     <x-slot:title>My Subscription</x-slot>
     
  
@@ -239,4 +239,4 @@
         </div>
     </div>
 </div>
-</x-layout>
+</x-student-layout>

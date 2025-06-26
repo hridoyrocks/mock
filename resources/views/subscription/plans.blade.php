@@ -1,4 +1,4 @@
-<x-layout>
+<x-student-layout>
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-6xl mx-auto">
         {{-- Header --}}
@@ -129,4 +129,4 @@
         </div>
     </div>
 </div>
-</x-layout>
+</x-student-layout>
