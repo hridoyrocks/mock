@@ -48,6 +48,7 @@
         </div>
     </div>
 
+
     <!-- Main Content -->
     <div class="content-area">
         <!-- Reading Passage(s) Section -->
@@ -473,6 +474,7 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
         totalQuestions: {{ $totalQuestionCount }}
     };
 </script>
+
 
 @vite('resources/js/reading-test.js')
     @endpush

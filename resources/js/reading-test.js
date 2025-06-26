@@ -1,4 +1,4 @@
-// resources/js/reading-test.js
+
 
 // ========== Global Variables ==========
 let currentColorPicker = null;
@@ -79,7 +79,7 @@ const NavigationHandler = {
 
                     // Focus on specific blank if needed
                     if (blankIndex) {
-                        const inputs = questionElement.querySelectorAll('.gap-input, .gap-dropdown');
+                        const inputs = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
                         if (inputs[blankIndex - 1]) {
                             setTimeout(() => inputs[blankIndex - 1].focus(), 300);
                         }
@@ -322,11 +322,19 @@ const AnswerManager = {
             input.addEventListener('change', () => this.trackAnswer(input));
             input.addEventListener('blur', () => this.trackAnswer(input));
 
+            // Auto-width for blanks
+            if (input.classList.contains('simple-blank')) {
+                input.addEventListener('input', function () {
+                    const length = this.value.length;
+                    this.style.width = length > 8 ? (length * 9) + 'px' : '120px';
+                });
+            }
+
             // Tab navigation
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab') {
                     e.preventDefault();
-                    const allInputs = document.querySelectorAll('.gap-input, .gap-dropdown');
+                    const allInputs = document.querySelectorAll('.simple-blank, .simple-dropdown');
                     const currentIndex = Array.from(allInputs).indexOf(input);
                     const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
 
@@ -338,7 +346,7 @@ const AnswerManager = {
         });
 
         // Track regular questions
-        document.querySelectorAll('input[type="radio"], input[type="text"]:not(.gap-input), select:not(.gap-dropdown)').forEach(input => {
+        document.querySelectorAll('input[type="radio"], input[type="text"]:not(.simple-blank), select:not(.simple-dropdown)').forEach(input => {
             input.addEventListener('change', () => this.trackAnswer(input));
         });
     },
@@ -431,10 +439,6 @@ const SubmitHandler = {
                 window.UniversalTimer.stop();
             }
             AnswerManager.saveAllAnswers();
-
-            // Cleanup notepad
-            TestNotepad.cleanup();
-
             submitButton.click();
         });
 
@@ -574,289 +578,7 @@ const SimpleSplitDivider = {
     }
 };
 
-// ========== Test Notepad ==========
-const TestNotepad = {
-    // Configuration
-    config: {
-        attemptId: null,
-        autoSaveInterval: 5000,
-        maxLength: 5000,
-        storageKey: null
-    },
 
-    // State
-    state: {
-        isOpen: false,
-        isMinimized: false,
-        autoSaveTimer: null,
-        lastSavedContent: ''
-    },
-
-    // Initialize
-    init(attemptId) {
-        this.config.attemptId = attemptId;
-        this.config.storageKey = `ielts_notes_${attemptId}`;
-
-        this.bindEvents();
-        this.loadNote();
-        this.startAutoSave();
-
-        if (this.hasNotes()) {
-            document.getElementById('notepad-toggle')?.classList.add('has-notes');
-        }
-    },
-
-    // Bind events
-    bindEvents() {
-        const toggle = document.getElementById('notepad-toggle');
-        const panel = document.getElementById('notepad-panel');
-
-        if (!toggle || !panel) return;
-
-        const closeBtn = panel.querySelector('.notepad-close');
-        const minimizeBtn = panel.querySelector('.notepad-minimize');
-        const clearBtn = document.getElementById('clear-notes');
-        const downloadBtn = document.getElementById('download-notes');
-        const textarea = document.getElementById('notepad-content');
-
-        toggle.addEventListener('click', () => this.togglePanel());
-        closeBtn?.addEventListener('click', () => this.closePanel());
-        minimizeBtn?.addEventListener('click', () => this.toggleMinimize());
-        clearBtn?.addEventListener('click', () => this.clearNotes());
-        downloadBtn?.addEventListener('click', () => this.downloadNotes());
-
-        textarea?.addEventListener('input', () => {
-            this.updateWordCount();
-            this.setSaveStatus('saving');
-        });
-
-        textarea?.addEventListener('blur', () => this.saveNote());
-
-        const header = panel.querySelector('.notepad-header');
-        if (header) {
-            this.makeDraggable(header);
-        }
-    },
-
-    togglePanel() {
-        const panel = document.getElementById('notepad-panel');
-        const toggle = document.getElementById('notepad-toggle');
-
-        this.state.isOpen = !this.state.isOpen;
-
-        if (this.state.isOpen) {
-            panel?.classList.add('open');
-            toggle?.classList.add('active');
-            document.getElementById('notepad-content')?.focus();
-        } else {
-            panel?.classList.remove('open');
-            toggle?.classList.remove('active');
-        }
-    },
-
-    closePanel() {
-        this.state.isOpen = false;
-        document.getElementById('notepad-panel')?.classList.remove('open');
-        document.getElementById('notepad-toggle')?.classList.remove('active');
-    },
-
-    toggleMinimize() {
-        const panel = document.getElementById('notepad-panel');
-        this.state.isMinimized = !this.state.isMinimized;
-
-        if (this.state.isMinimized) {
-            panel?.classList.add('minimized');
-        } else {
-            panel?.classList.remove('minimized');
-        }
-    },
-
-    saveNote() {
-        const textarea = document.getElementById('notepad-content');
-        if (!textarea) return;
-
-        const content = textarea.value;
-
-        if (content === this.state.lastSavedContent) {
-            return;
-        }
-
-        const noteData = {
-            attemptId: this.config.attemptId,
-            content: content,
-            createdAt: this.getNoteData()?.createdAt || new Date().toISOString(),
-            lastUpdated: new Date().toISOString(),
-            wordCount: this.countWords(content)
-        };
-
-        try {
-            localStorage.setItem(this.config.storageKey, JSON.stringify(noteData));
-            this.state.lastSavedContent = content;
-            this.setSaveStatus('saved');
-
-            const toggle = document.getElementById('notepad-toggle');
-            if (content.trim()) {
-                toggle?.classList.add('has-notes');
-            } else {
-                toggle?.classList.remove('has-notes');
-            }
-        } catch (e) {
-            console.error('Failed to save note:', e);
-            this.setSaveStatus('error');
-        }
-    },
-
-    loadNote() {
-        const noteData = this.getNoteData();
-        const textarea = document.getElementById('notepad-content');
-
-        if (noteData && noteData.content && textarea) {
-            textarea.value = noteData.content;
-            this.state.lastSavedContent = noteData.content;
-            this.updateWordCount();
-        }
-    },
-
-    getNoteData() {
-        try {
-            const data = localStorage.getItem(this.config.storageKey);
-            return data ? JSON.parse(data) : null;
-        } catch (e) {
-            return null;
-        }
-    },
-
-    hasNotes() {
-        const noteData = this.getNoteData();
-        return noteData && noteData.content && noteData.content.trim().length > 0;
-    },
-
-    clearNotes() {
-        if (!confirm('Are you sure you want to clear all notes?')) {
-            return;
-        }
-
-        const textarea = document.getElementById('notepad-content');
-        if (textarea) {
-            textarea.value = '';
-        }
-
-        localStorage.removeItem(this.config.storageKey);
-        this.state.lastSavedContent = '';
-        this.updateWordCount();
-        document.getElementById('notepad-toggle')?.classList.remove('has-notes');
-        this.setSaveStatus('saved');
-    },
-
-    downloadNotes() {
-        const textarea = document.getElementById('notepad-content');
-        const content = textarea?.value || '';
-
-        if (!content.trim()) {
-            alert('No notes to download!');
-            return;
-        }
-
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ielts-notes-${this.config.attemptId}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    },
-
-    updateWordCount() {
-        const textarea = document.getElementById('notepad-content');
-        const content = textarea?.value || '';
-        const wordCount = this.countWords(content);
-
-        const countEl = document.querySelector('.word-count');
-        if (countEl) {
-            countEl.textContent = `${wordCount} words`;
-        }
-    },
-
-    countWords(text) {
-        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
-    },
-
-    setSaveStatus(status) {
-        const statusEl = document.getElementById('save-status');
-        if (!statusEl) return;
-
-        statusEl.className = `save-status ${status}`;
-
-        switch (status) {
-            case 'saving':
-                statusEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Saving...';
-                break;
-            case 'saved':
-                statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Saved';
-                break;
-            case 'error':
-                statusEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
-                break;
-        }
-    },
-
-    startAutoSave() {
-        this.state.autoSaveTimer = setInterval(() => {
-            this.saveNote();
-        }, this.config.autoSaveInterval);
-    },
-
-    stopAutoSave() {
-        if (this.state.autoSaveTimer) {
-            clearInterval(this.state.autoSaveTimer);
-            this.state.autoSaveTimer = null;
-        }
-    },
-
-    makeDraggable(element) {
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-
-        element.onmousedown = dragMouseDown;
-
-        function dragMouseDown(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
-        }
-
-        function elementDrag(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-
-            const panel = document.getElementById('notepad-panel');
-            if (panel) {
-                panel.style.top = (panel.offsetTop - pos2) + "px";
-                panel.style.right = 'auto';
-                panel.style.left = (panel.offsetLeft - pos1) + "px";
-                panel.style.transform = 'none';
-            }
-        }
-
-        function closeDragElement() {
-            document.onmouseup = null;
-            document.onmousemove = null;
-        }
-    },
-
-    cleanup() {
-        this.stopAutoSave();
-        localStorage.removeItem(this.config.storageKey);
-    }
-};
 
 // ========== Initialize Everything ==========
 document.addEventListener('DOMContentLoaded', function () {
@@ -870,7 +592,6 @@ document.addEventListener('DOMContentLoaded', function () {
     SubmitHandler.init();
     HelpGuide.init();
     SimpleSplitDivider.init();
-    TestNotepad.init(config.attemptId);
 
     // Initialize first part
     const firstPartBtn = document.querySelector('.part-btn');
