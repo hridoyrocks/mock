@@ -113,6 +113,17 @@ class QuestionController extends Controller
             'marks' => 'nullable|integer|min:0|max:10',
             'instructions' => 'nullable|string',
         ];
+
+        // Purify HTML content
+    if ($request->passage_text) {
+        $config = HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', 'p,br,strong,b,em,i,u,ul,ol,li,blockquote,h1,h2,h3,h4,table,thead,tbody,tr,th,td');
+        $purifier = new HTMLPurifier($config);
+        
+        $request->merge([
+            'passage_text' => $purifier->purify($request->passage_text)
+        ]);
+    }
         
         // Handle content validation based on question type
         if ($request->question_type === 'passage') {

@@ -1,5 +1,5 @@
 {{-- resources/views/student/test/writing/onboarding/instructions.blade.php --}}
-<x-layout>
+<x-test-layout>
     <x-slot:title>Test Instructions - IELTS Writing Test</x-slot>
     
     <div class="min-h-screen bg-blue-50">
@@ -78,4 +78,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>

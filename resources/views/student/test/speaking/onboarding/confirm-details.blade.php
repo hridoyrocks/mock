@@ -1,4 +1,4 @@
-<x-layout>
+<x-test-layout>
     <x-slot:title>Confirm Your Details - IELTS Speaking Test</x-slot>
     
     <div class="min-h-screen">
@@ -105,4 +105,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>

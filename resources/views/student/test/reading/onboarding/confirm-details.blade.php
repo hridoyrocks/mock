@@ -1,5 +1,5 @@
 {{-- resources/views/student/test/reading/onboarding/confirm-details.blade.php --}}
-<x-layout>
+<x-test-layout>
     <x-slot:title>Confirm Your Details - IELTS Reading Test</x-slot>
     
     <div class="min-h-screen">
@@ -106,4 +106,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>
