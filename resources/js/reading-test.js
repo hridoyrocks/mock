@@ -935,7 +935,7 @@ const SimpleAnnotationSystem = {
             span.style.cursor = 'pointer';
             span.textContent = this.currentRange.toString();
             span.dataset.highlight = color.name;
-            span.title = `${color.name} highlight - Click to remove`;
+            span.title = ` Click to remove`;
 
             span.onclick = function (evt) {
                 evt.stopPropagation();
