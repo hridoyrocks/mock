@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Questions Management - Admin</x-slot>
     
     <x-slot:header>
@@ -315,4 +315,4 @@
             </div>
         </div>
     </div>
-</x-layout>
+</x-admin-layout>

@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Test Sets - Admin</x-slot>
     
     <!-- Header -->
@@ -390,4 +390,4 @@
             </div>
         @endif
     </div>
-</x-layout>
+</x-admin-layout>

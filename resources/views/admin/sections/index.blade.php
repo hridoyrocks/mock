@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Test Sections - Admin</x-slot>
     
     <x-slot:header>
@@ -80,4 +80,4 @@
             </div>
         </div>
     </div>
-</x-layout>
+</x-admin-layout>

@@ -1,4 +1,4 @@
-{{-- resources/views/admin/dashboard.blade.php --}}
+
 <x-admin-layout>
     <x-slot:title>Dashboard</x-slot>
     

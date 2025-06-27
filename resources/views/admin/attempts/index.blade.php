@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Student Attempts - Admin</x-slot>
     
     <x-slot:header>
@@ -150,4 +150,4 @@
         </div>
     </div>
 </div>
-</x-layout>
+</x-admin-layout>
