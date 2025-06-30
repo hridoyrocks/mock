@@ -971,5 +971,8 @@
     // Make add option available globally
     window.addOption = addOption;
     </script>
+
+
+
     @endpush
 </x-layout>

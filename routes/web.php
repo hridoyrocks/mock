@@ -197,9 +197,11 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{question}', [QuestionController::class, 'destroy'])->name('destroy');
             
             // Reading Section Specific Routes
-            Route::get('/reading/{testSet}/questions', [QuestionController::class, 'createReadingQuestion'])->name('reading.questions');
-            Route::get('/reading/{testSet}/passage', [QuestionController::class, 'createReadingPassage'])->name('reading.passage');
-            Route::get('/reading/{testSet}/markers', [QuestionController::class, 'getPassageMarkers'])->name('reading.markers');
+             Route::get('/test-sets/{testSet}/passages', [QuestionController::class, 'passageIndex'])->name('test-sets.passages');
+    Route::get('/test-sets/{testSet}/passages/create', [QuestionController::class, 'createPassage'])->name('passages.create');
+    Route::post('/test-sets/{testSet}/passages', [QuestionController::class, 'storePassage'])->name('passages.store');
+    Route::get('/passages/{passage}/add-question', [QuestionController::class, 'createQuestionForPassage'])->name('passages.add-question');
+    Route::post('/passages/{passage}/add-question', [QuestionController::class, 'storeQuestionForPassage'])->name('passages.store-question');
             
 
             Route::post('/admin/upload/image', [ImageUploadController::class, 'upload'])
