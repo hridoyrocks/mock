@@ -1,10 +1,167 @@
-// resources/js/reading-test.js - FIXED VERSION
+// Simplified Reading Test System - Clean & Simple
+// No extra features, just essential functionality
 
 // ========== Global Variables ==========
 let currentColorPicker = null;
 let selectedTextRange = null;
 let scrollTimeout;
 let annotationSystem = null;
+
+// ========== Simple Split Divider System ==========
+const SimpleSplitDivider = {
+    init() {
+        this.container = document.querySelector('.content-area');
+        this.divider = document.getElementById('split-divider');
+        this.passageSection = document.querySelector('.passage-section');
+        this.questionsSection = document.querySelector('.questions-section');
+
+        // Configuration
+        this.minWidth = 300;
+
+        // State
+        this.isResizing = false;
+        this.startX = 0;
+        this.startWidth = 0;
+
+        if (!this.divider || !this.passageSection || window.innerWidth <= 1024) {
+            return;
+        }
+
+        this.setupDivider();
+        this.loadSavedLayout();
+
+        console.log('Simple Split Divider initialized');
+    },
+
+    setupDivider() {
+        // Create divider if it doesn't exist
+        if (!this.divider) {
+            this.divider = document.createElement('div');
+            this.divider.id = 'split-divider';
+            this.divider.className = 'split-divider';
+            this.divider.title = 'Drag to resize sections';
+
+            this.container.insertBefore(this.divider, this.questionsSection);
+        }
+
+        // Mouse events
+        this.divider.addEventListener('mousedown', (e) => this.startResize(e));
+        document.addEventListener('mousemove', (e) => this.resize(e));
+        document.addEventListener('mouseup', () => this.stopResize());
+
+        // Touch events
+        this.divider.addEventListener('touchstart', (e) => this.startResize(e.touches[0]));
+        document.addEventListener('touchmove', (e) => this.resize(e.touches[0]));
+        document.addEventListener('touchend', () => this.stopResize());
+
+        // Double-click to reset
+        this.divider.addEventListener('dblclick', () => this.resetLayout());
+
+        // Prevent selection
+        this.divider.addEventListener('selectstart', (e) => e.preventDefault());
+    },
+
+    startResize(e) {
+        this.isResizing = true;
+        this.startX = e.clientX;
+        this.startWidth = this.passageSection.offsetWidth;
+
+        // Visual feedback
+        document.body.classList.add('dragging');
+
+        // Disable animations during resize
+        this.passageSection.style.transition = 'none';
+        this.questionsSection.style.transition = 'none';
+
+        e.preventDefault();
+    },
+
+    resize(e) {
+        if (!this.isResizing) return;
+
+        const deltaX = e.clientX - this.startX;
+        const newWidth = this.startWidth + deltaX;
+        const containerWidth = this.container.offsetWidth;
+        const percentage = (newWidth / containerWidth) * 100;
+
+        // Apply constraints
+        const minPercent = (this.minWidth / containerWidth) * 100;
+        const maxPercent = 100 - minPercent;
+
+        if (percentage >= minPercent && percentage <= maxPercent) {
+            const roundedPercent = Math.round(percentage);
+            this.passageSection.style.flex = `0 0 ${roundedPercent}%`;
+        }
+    },
+
+    stopResize() {
+        if (!this.isResizing) return;
+
+        this.isResizing = false;
+
+        // Remove visual feedback
+        document.body.classList.remove('dragging');
+
+        // Re-enable animations
+        this.passageSection.style.transition = '';
+        this.questionsSection.style.transition = '';
+
+        // Save layout
+        const currentPercent = this.getCurrentPercentage();
+        this.saveLayout(currentPercent);
+    },
+
+    getCurrentPercentage() {
+        const passageWidth = this.passageSection.offsetWidth;
+        const containerWidth = this.container.offsetWidth;
+        return Math.round((passageWidth / containerWidth) * 100);
+    },
+
+    resetLayout() {
+        this.passageSection.style.flex = '0 0 50%';
+        this.saveLayout(50);
+    },
+
+    saveLayout(percentage) {
+        try {
+            localStorage.setItem('readingLayoutWidth', percentage.toString());
+        } catch (e) {
+            console.warn('Could not save layout preference:', e);
+        }
+    },
+
+    loadSavedLayout() {
+        try {
+            const saved = localStorage.getItem('readingLayoutWidth');
+            if (saved) {
+                const percentage = parseInt(saved);
+                if (percentage >= 25 && percentage <= 75) {
+                    setTimeout(() => {
+                        this.passageSection.style.flex = `0 0 ${percentage}%`;
+                    }, 100);
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load layout preference:', e);
+        }
+    },
+
+    destroy() {
+        // Remove event listeners
+        if (this.divider) {
+            this.divider.removeEventListener('mousedown', this.startResize);
+            this.divider.removeEventListener('touchstart', this.startResize);
+            this.divider.removeEventListener('dblclick', this.resetLayout);
+        }
+
+        document.removeEventListener('mousemove', this.resize);
+        document.removeEventListener('mouseup', this.stopResize);
+        document.removeEventListener('touchmove', this.resize);
+        document.removeEventListener('touchend', this.stopResize);
+
+        console.log('Simple Split Divider destroyed');
+    }
+};
 
 // ========== Navigation Handler ==========
 const NavigationHandler = {
@@ -85,7 +242,7 @@ const NavigationHandler = {
 
                     // Focus on specific blank if needed
                     if (blankIndex) {
-                        const inputs = questionElement.querySelectorAll('.simple-blank, .simple-dropdown');
+                        const inputs = questionElement.querySelectorAll('.gap-input, .gap-dropdown');
                         if (inputs[blankIndex - 1]) {
                             setTimeout(() => inputs[blankIndex - 1].focus(), 300);
                         }
@@ -103,23 +260,27 @@ const NavigationHandler = {
 
                 // Update review checkbox
                 const reviewCheckbox = document.getElementById('review-checkbox');
-                reviewCheckbox.checked = this.classList.contains('flagged');
+                if (reviewCheckbox) {
+                    reviewCheckbox.checked = this.classList.contains('flagged');
+                }
             });
         });
     },
 
     setupReviewCheckbox() {
         const reviewCheckbox = document.getElementById('review-checkbox');
-        reviewCheckbox.addEventListener('change', function () {
-            const currentQuestion = document.querySelector('.number-btn.active');
-            if (currentQuestion) {
-                if (this.checked) {
-                    currentQuestion.classList.add('flagged');
-                } else {
-                    currentQuestion.classList.remove('flagged');
+        if (reviewCheckbox) {
+            reviewCheckbox.addEventListener('change', function () {
+                const currentQuestion = document.querySelector('.number-btn.active');
+                if (currentQuestion) {
+                    if (this.checked) {
+                        currentQuestion.classList.add('flagged');
+                    } else {
+                        currentQuestion.classList.remove('flagged');
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 };
 
@@ -139,10 +300,10 @@ const AnswerManager = {
             input.addEventListener('blur', () => this.trackAnswer(input));
 
             // Auto-width for blanks
-            if (input.classList.contains('simple-blank')) {
+            if (input.classList.contains('gap-input')) {
                 input.addEventListener('input', function () {
                     const length = this.value.length;
-                    this.style.width = length > 8 ? (length * 9) + 'px' : '120px';
+                    this.style.width = length > 8 ? (length * 9) + 'px' : '100px';
                 });
             }
 
@@ -150,7 +311,7 @@ const AnswerManager = {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Tab') {
                     e.preventDefault();
-                    const allInputs = document.querySelectorAll('.simple-blank, .simple-dropdown');
+                    const allInputs = document.querySelectorAll('.gap-input, .gap-dropdown, .text-input, .option-radio');
                     const currentIndex = Array.from(allInputs).indexOf(input);
                     const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
 
@@ -158,11 +319,23 @@ const AnswerManager = {
                         allInputs[nextIndex].focus();
                     }
                 }
+
+                // Enter key to move to next input
+                if (e.key === 'Enter' && input.tagName.toLowerCase() === 'input') {
+                    e.preventDefault();
+                    const allInputs = document.querySelectorAll('.gap-input, .text-input');
+                    const currentIndex = Array.from(allInputs).indexOf(input);
+                    const nextIndex = currentIndex + 1;
+
+                    if (nextIndex < allInputs.length) {
+                        allInputs[nextIndex].focus();
+                    }
+                }
             });
         });
 
         // Track regular questions
-        document.querySelectorAll('input[type="radio"], input[type="text"]:not(.simple-blank), select:not(.simple-dropdown)').forEach(input => {
+        document.querySelectorAll('input[type="radio"], input[type="text"]:not(.gap-input), select:not(.gap-dropdown)').forEach(input => {
             input.addEventListener('change', () => this.trackAnswer(input));
         });
     },
@@ -172,7 +345,7 @@ const AnswerManager = {
         if (questionNumber) {
             const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
             if (navButton) {
-                if (input.value.trim()) {
+                if (input.value && input.value.trim()) {
                     navButton.classList.add('answered');
                 } else {
                     navButton.classList.remove('answered');
@@ -180,6 +353,17 @@ const AnswerManager = {
             }
         }
         this.saveAllAnswers();
+        this.updateAnswerCount();
+    },
+
+    updateAnswerCount() {
+        const answeredCount = document.querySelectorAll('.number-btn.answered').length;
+
+        // Update submit modal count
+        const answeredCountSpan = document.getElementById('answered-count');
+        if (answeredCountSpan) {
+            answeredCountSpan.textContent = answeredCount;
+        }
     },
 
     saveAllAnswers() {
@@ -192,7 +376,11 @@ const AnswerManager = {
             }
         }
 
-        localStorage.setItem(`testAnswers_${this.attemptId}`, JSON.stringify(answers));
+        try {
+            localStorage.setItem(`testAnswers_${this.attemptId}`, JSON.stringify(answers));
+        } catch (e) {
+            console.warn('Could not save answers:', e);
+        }
     },
 
     loadSavedAnswers() {
@@ -234,6 +422,7 @@ const AnswerManager = {
 const SubmitHandler = {
     init() {
         this.setupSubmitModal();
+        this.setupWarnings();
     },
 
     setupSubmitModal() {
@@ -241,30 +430,46 @@ const SubmitHandler = {
         const submitModal = document.getElementById('submit-modal');
         const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
         const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
-        const answeredCountSpan = document.getElementById('answered-count');
         const submitButton = document.getElementById('submit-button');
 
         if (submitTestBtn) {
             submitTestBtn.addEventListener('click', () => {
                 const answeredCount = document.querySelectorAll('.number-btn.answered').length;
-                answeredCountSpan.textContent = answeredCount;
+                const totalCount = document.querySelectorAll('.number-btn').length;
+
+                // Update modal content
+                const answeredCountSpan = document.getElementById('answered-count');
+                if (answeredCountSpan) {
+                    answeredCountSpan.textContent = answeredCount;
+                }
+
                 submitModal.style.display = 'flex';
             });
         }
 
         if (confirmSubmitBtn) {
             confirmSubmitBtn.addEventListener('click', () => {
+                // Stop timer if exists
                 if (window.UniversalTimer) {
                     window.UniversalTimer.stop();
                 }
+
+                // Save final answers
                 AnswerManager.saveAllAnswers();
 
                 // Save annotations before submit
-                if (annotationSystem) {
+                if (annotationSystem && annotationSystem.storage) {
                     annotationSystem.storage.save();
                 }
 
-                submitButton.click();
+                // Show loading state
+                confirmSubmitBtn.textContent = 'Submitting...';
+                confirmSubmitBtn.disabled = true;
+
+                // Submit form
+                setTimeout(() => {
+                    submitButton.click();
+                }, 500);
             });
         }
 
@@ -273,6 +478,26 @@ const SubmitHandler = {
                 submitModal.style.display = 'none';
             });
         }
+
+        // Close modal on background click
+        if (submitModal) {
+            submitModal.addEventListener('click', (e) => {
+                if (e.target === submitModal) {
+                    submitModal.style.display = 'none';
+                }
+            });
+        }
+    },
+
+    setupWarnings() {
+        // Warn before leaving page
+        window.addEventListener('beforeunload', (e) => {
+            const unansweredCount = document.querySelectorAll('.number-btn:not(.answered)').length;
+            if (unansweredCount > 0) {
+                e.preventDefault();
+                e.returnValue = 'You have unanswered questions. Are you sure you want to leave?';
+            }
+        });
     }
 };
 
@@ -302,6 +527,13 @@ const HelpGuide = {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) this.close();
             });
+
+            // ESC key to close
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'flex') {
+                    this.close();
+                }
+            });
         }
     },
 
@@ -309,7 +541,7 @@ const HelpGuide = {
         const modal = document.getElementById('help-modal');
         if (modal) {
             modal.style.display = 'flex';
-            this.loadContent('overview');
+            this.loadContent();
         }
     },
 
@@ -320,96 +552,72 @@ const HelpGuide = {
         }
     },
 
-    loadContent(section) {
+    loadContent() {
         const contentArea = document.getElementById('help-content');
         if (!contentArea) return;
 
         contentArea.innerHTML = `
             <div class="help-section">
                 <h3>IELTS Reading Test Guide</h3>
-                <p>Welcome to the IELTS Computer-Delivered Reading Test.</p>
+                <p>Welcome to the computer-delivered IELTS Reading Test.</p>
+                
+                <h4>📖 Test Structure:</h4>
                 <ul>
                     <li><strong>Duration:</strong> 60 minutes</li>
                     <li><strong>Questions:</strong> 40 questions in total</li>
-                    <li><strong>Sections:</strong> 3 reading passages</li>
+                    <li><strong>Sections:</strong> 3 reading passages (Parts 1, 2, 3)</li>
+                    <li><strong>Difficulty:</strong> Increases from Part 1 to Part 3</li>
                 </ul>
                 
-                <h4>Test Interface</h4>
+                <h4>🖥️ Interface Layout:</h4>
                 <ul>
-                    <li><strong>Left side:</strong> Reading passage</li>
-                    <li><strong>Right side:</strong> Questions</li>
+                    <li><strong>Left Side:</strong> Reading passages</li>
+                    <li><strong>Right Side:</strong> Questions</li>
+                    <li><strong>Resizable:</strong> Drag the center divider to adjust sizes</li>
+                    <li><strong>Reset:</strong> Double-click the divider to reset layout</li>
                 </ul>
                 
-                <h4>New: Text Annotations</h4>
+                <h4>🧭 Navigation:</h4>
                 <ul>
-                    <li><strong>Notes:</strong> Select text and click "Note" to add personal notes</li>
-                    <li><strong>Highlights:</strong> Select text and click "Highlight" to color important parts</li>
-                    <li><strong>View Notes:</strong> Click the "Notes" button to see all your annotations</li>
+                    <li><strong>Part Navigation:</strong> Click Part 1, 2, or 3 buttons</li>
+                    <li><strong>Question Numbers:</strong> Click any number to jump to that question</li>
+                    <li><strong>Review Flag:</strong> Check "Review" to flag questions for later</li>
+                    <li><strong>Progress:</strong> Green numbers show answered questions</li>
+                </ul>
+                
+                <h4>📝 Answer Types:</h4>
+                <ul>
+                    <li><strong>Multiple Choice:</strong> Select A, B, C, or D</li>
+                    <li><strong>True/False/Not Given:</strong> Choose the correct option</li>
+                    <li><strong>Fill in the Blanks:</strong> Type your answer in the input fields</li>
+                    <li><strong>Matching:</strong> Select from dropdown menus</li>
+                    <li><strong>Short Answer:</strong> Type brief answers</li>
+                </ul>
+                
+                <h4>📝 Text Annotations:</h4>
+                <ul>
+                    <li><strong>Notes:</strong> Select text in passages and add personal notes</li>
+                    <li><strong>View Notes:</strong> Click the "Notes" button to see all your notes</li>
+                    <li><strong>Auto-save:</strong> All notes are automatically saved</li>
+                </ul>
+                
+                <h4>💾 Auto-save Features:</h4>
+                <ul>
+                    <li><strong>Answers:</strong> Automatically saved every 30 seconds</li>
+                    <li><strong>Layout:</strong> Your preferred layout is remembered</li>
+                    <li><strong>Recovery:</strong> Answers restored if page is refreshed</li>
+                </ul>
+                
+                <h4>💡 Tips for Success:</h4>
+                <ul>
+                    <li>Read questions before reading the passage</li>
+                    <li>Use the review flag for difficult questions</li>
+                    <li>Manage your time: roughly 20 minutes per passage</li>
+                    <li>Use notes to mark important information</li>
+                    <li>Check all answers before submitting</li>
                 </ul>
             </div>
         `;
-    }
-};
-
-// ========== Simple Split Divider ==========
-const SimpleSplitDivider = {
-    init() {
-        // Check if desktop
-        if (window.innerWidth <= 1024) return;
-
-        const divider = document.getElementById('split-divider');
-        const passageSection = document.querySelector('.passage-section');
-        const container = document.querySelector('.content-area');
-
-        if (!divider || !passageSection) return;
-
-        let isResizing = false;
-
-        // Mouse down - start resize
-        divider.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            document.body.classList.add('dragging');
-            e.preventDefault();
-        });
-
-        // Mouse move - resize panels
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-
-            const containerRect = container.getBoundingClientRect();
-            const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-
-            // Limit between 25% and 75%
-            if (percentage >= 25 && percentage <= 75) {
-                passageSection.style.flex = `0 0 ${percentage}%`;
-            }
-        });
-
-        // Mouse up - stop resize
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.classList.remove('dragging');
-
-                // Save position
-                const currentFlex = passageSection.style.flex;
-                if (currentFlex) {
-                    localStorage.setItem('readingSplitPosition', currentFlex);
-                }
-            }
-        });
-
-        // Load saved position
-        const savedPosition = localStorage.getItem('readingSplitPosition');
-        if (savedPosition) {
-            passageSection.style.flex = savedPosition;
-        }
-
-        // Double click to reset
-        divider.addEventListener('dblclick', () => {
-            passageSection.style.flex = '0 0 50%';
-            localStorage.setItem('readingSplitPosition', '0 0 50%');
-        });
     }
 };
 
@@ -446,60 +654,60 @@ const SimpleAnnotationSystem = {
         modal.innerHTML = `
             <div style="
                 background: white;
-                border-radius: 12px;
+                border-radius: 8px;
                 width: 90%;
-                max-width: 500px;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                max-width: 450px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
             ">
-                <div style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
-                    <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #111827;">Add Note</h3>
-                    <p style="margin: 8px 0 0 0; font-size: 14px; color: #6b7280;" id="selected-text-preview"></p>
+                <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">Add Note</h3>
+                    <p style="margin: 6px 0 0 0; font-size: 13px; color: #6b7280;" id="selected-text-preview"></p>
                 </div>
-                <div style="padding: 20px;">
+                <div style="padding: 16px;">
                     <textarea 
                         id="note-textarea"
                         placeholder="Type your note here..."
                         style="
                             width: 100%;
-                            min-height: 120px;
-                            padding: 12px;
+                            min-height: 100px;
+                            padding: 10px;
                             border: 1px solid #e5e7eb;
-                            border-radius: 8px;
-                            font-size: 15px;
+                            border-radius: 6px;
+                            font-size: 14px;
                             resize: vertical;
                             font-family: inherit;
                             box-sizing: border-box;
                         "
                     ></textarea>
-                    <div style="margin-top: 8px; text-align: right; font-size: 13px; color: #9ca3af;">
+                    <div style="margin-top: 6px; text-align: right; font-size: 12px; color: #9ca3af;">
                         <span id="char-count">0</span>/500
                     </div>
                 </div>
                 <div style="
-                    padding: 16px 20px;
+                    padding: 12px 16px;
                     background: #f9fafb;
                     border-top: 1px solid #e5e7eb;
                     display: flex;
                     justify-content: flex-end;
-                    gap: 12px;
-                    border-radius: 0 0 12px 12px;
+                    gap: 10px;
+                    border-radius: 0 0 8px 8px;
                 ">
                     <button id="close-note-modal-btn" style="
-                        padding: 8px 20px;
+                        padding: 6px 16px;
                         border: 1px solid #e5e7eb;
                         background: white;
-                        border-radius: 6px;
-                        font-size: 14px;
+                        border-radius: 4px;
+                        font-size: 13px;
                         cursor: pointer;
                         transition: all 0.2s;
                     ">Cancel</button>
                     <button id="save-note-btn" style="
-                        padding: 8px 20px;
+                        padding: 6px 16px;
                         background: #3b82f6;
                         color: white;
                         border: none;
-                        border-radius: 6px;
-                        font-size: 14px;
+                        border-radius: 4px;
+                        font-size: 13px;
                         cursor: pointer;
                         transition: all 0.2s;
                     ">Save Note</button>
@@ -529,6 +737,13 @@ const SimpleAnnotationSystem = {
         document.getElementById('save-note-btn').addEventListener('click', () => {
             this.saveNote();
         });
+
+        // Close on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                this.closeNoteModal();
+            }
+        });
     },
 
     createNotesPanel() {
@@ -537,11 +752,11 @@ const SimpleAnnotationSystem = {
         panel.style.cssText = `
             position: fixed;
             top: 0;
-            right: -400px;
-            width: 400px;
+            right: -350px;
+            width: 350px;
             height: 100%;
             background: white;
-            box-shadow: -4px 0 6px rgba(0, 0, 0, 0.1);
+            box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
             transition: right 0.3s ease-out;
             z-index: 99998;
             display: flex;
@@ -550,28 +765,31 @@ const SimpleAnnotationSystem = {
 
         panel.innerHTML = `
             <div style="
-                padding: 20px;
+                padding: 16px;
                 border-bottom: 1px solid #e5e7eb;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                background: #f8f9fa;
             ">
-                <h3 style="margin: 0; font-size: 18px; font-weight: 600; flex: 1;">Your Notes</h3>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 600; flex: 1;">📝 Your Notes</h3>
                 <button id="close-notes-panel-btn" style="
                     background: none;
                     border: none;
-                    font-size: 24px;
+                    font-size: 20px;
                     cursor: pointer;
                     color: #6b7280;
                     padding: 0;
-                    width: 32px;
-                    height: 32px;
-                ">×</button>
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 4px;
+                    transition: all 0.2s;
+                " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='none'">×</button>
             </div>
             <div id="notes-list" style="
                 flex: 1;
                 overflow-y: auto;
-                padding: 16px;
+                padding: 12px;
             "></div>
         `;
 
@@ -586,6 +804,7 @@ const SimpleAnnotationSystem = {
     closeNoteModal() {
         this.noteModal.style.display = 'none';
         document.getElementById('note-textarea').value = '';
+        document.getElementById('char-count').textContent = '0';
     },
 
     saveNote() {
@@ -595,7 +814,7 @@ const SimpleAnnotationSystem = {
 
             // Apply note styling
             const span = document.createElement('span');
-            span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 2px solid #dc2626; cursor: pointer;';
+            span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #dc2626; cursor: pointer; padding: 1px 2px; border-radius: 2px;';
             span.textContent = selectedText;
             span.title = noteText;
             span.dataset.note = noteText;
@@ -621,7 +840,7 @@ const SimpleAnnotationSystem = {
     },
 
     closeNotesPanel() {
-        this.notesPanel.style.right = '-400px';
+        this.notesPanel.style.right = '-350px';
     },
 
     openNotesPanel() {
@@ -640,22 +859,23 @@ const SimpleAnnotationSystem = {
             position: absolute;
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 300px;
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            max-width: 250px;
             z-index: 99999;
+            font-size: 13px;
         `;
 
         tooltip.innerHTML = `
-            <div style="font-size: 14px; color: #374151; margin-bottom: 8px;">${noteText}</div>
-            <div style="font-size: 12px; color: #9ca3af;">Click outside to close</div>
+            <div style="color: #374151; margin-bottom: 6px;">${noteText}</div>
+            <div style="font-size: 11px; color: #9ca3af;">Click outside to close</div>
         `;
 
         document.body.appendChild(tooltip);
 
         const rect = element.getBoundingClientRect();
-        tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        tooltip.style.top = `${rect.bottom + window.scrollY + 4}px`;
         tooltip.style.left = `${rect.left + window.scrollX}px`;
 
         // Remove on click outside
@@ -677,9 +897,10 @@ const SimpleAnnotationSystem = {
 
         if (notes.length === 0) {
             notesList.innerHTML = `
-                <div style="text-align: center; color: #9ca3af; padding: 40px;">
-                    <p>No notes yet!</p>
-                    <p style="font-size: 14px; margin-top: 8px;">Select text and add notes to see them here.</p>
+                <div style="text-align: center; color: #9ca3af; padding: 30px;">
+                    <div style="font-size: 36px; margin-bottom: 12px;">📝</div>
+                    <p style="font-size: 14px; margin-bottom: 6px;">No notes yet!</p>
+                    <p style="font-size: 12px; margin-top: 6px;">Select text and add notes to see them here.</p>
                 </div>
             `;
         } else {
@@ -687,55 +908,59 @@ const SimpleAnnotationSystem = {
                 <div class="note-item-wrapper" style="
                     background: #f9fafb;
                     border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    padding: 16px;
-                    margin-bottom: 12px;
+                    border-radius: 6px;
+                    padding: 12px;
+                    margin-bottom: 10px;
                     position: relative;
-                " data-note-text="${encodeURIComponent(note.text)}" data-note-timestamp="${note.timestamp}">
+                    transition: all 0.2s ease;
+                " data-note-text="${encodeURIComponent(note.text)}" 
+                   data-note-timestamp="${note.timestamp}">
                     <button class="delete-note-btn" style="
                         position: absolute;
-                        top: 12px;
-                        right: 12px;
+                        top: 8px;
+                        right: 8px;
                         background: #fee2e2;
                         border: none;
-                        border-radius: 4px;
-                        padding: 4px 8px;
+                        border-radius: 3px;
+                        padding: 3px 6px;
                         cursor: pointer;
                         color: #dc2626;
-                        font-size: 12px;
+                        font-size: 11px;
                         transition: all 0.2s;
                     " onmouseover="this.style.background='#fca5a5'" onmouseout="this.style.background='#fee2e2'">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle;">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
                         Delete
                     </button>
                     <div style="
-                        font-size: 13px;
+                        font-size: 12px;
                         color: #6b7280;
                         font-style: italic;
-                        margin-bottom: 8px;
-                        padding: 8px;
+                        margin-bottom: 6px;
+                        padding: 6px;
                         background: white;
-                        border-radius: 4px;
-                        margin-right: 60px;
-                    ">"${note.text.substring(0, 100)}${note.text.length > 100 ? '...' : ''}"</div>
-                    <div style="font-size: 14px; color: #111827; line-height: 1.5;">${note.data}</div>
+                        border-radius: 3px;
+                        margin-right: 50px;
+                        border-left: 2px solid #3b82f6;
+                    ">"${note.text.substring(0, 80)}${note.text.length > 80 ? '...' : ''}"</div>
+                    <div style="font-size: 13px; color: #111827; line-height: 1.4; margin-bottom: 6px;">${note.data}</div>
                     <div style="
-                        margin-top: 12px;
-                        font-size: 12px;
+                        margin-top: 8px;
+                        font-size: 11px;
                         color: #9ca3af;
-                    ">${new Date(note.timestamp).toLocaleString()}</div>
+                    ">📅 ${new Date(note.timestamp).toLocaleString()}</div>
                 </div>
             `).join('');
 
             // Add delete event listeners after rendering
             notesList.querySelectorAll('.delete-note-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const wrapper = btn.closest('.note-item-wrapper');
                     const text = decodeURIComponent(wrapper.dataset.noteText);
                     const timestamp = wrapper.dataset.noteTimestamp;
-                    this.deleteNote(text, timestamp);
+
+                    if (confirm('Are you sure you want to delete this note?')) {
+                        this.deleteNote(text, timestamp);
+                    }
                 });
             });
         }
@@ -757,9 +982,14 @@ const SimpleAnnotationSystem = {
 
                 if (selectedText && selectedText.length >= 3) {
                     const range = selection.getRangeAt(0);
-                    const rect = range.getBoundingClientRect();
-                    this.currentRange = range;
-                    this.showMenu(rect, selectedText);
+
+                    // Only show menu if selection is in passage content
+                    const passageContent = e.target.closest('.passage-content');
+                    if (passageContent) {
+                        const rect = range.getBoundingClientRect();
+                        this.currentRange = range;
+                        this.showMenu(rect, selectedText);
+                    }
                 } else {
                     this.hideMenu();
                 }
@@ -785,18 +1015,18 @@ const SimpleAnnotationSystem = {
             left: ${rect.left + (rect.width / 2) - 80}px;
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 4px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 6px;
             display: flex;
-            gap: 4px;
+            gap: 6px;
             z-index: 99999;
         `;
 
         // Note button
         const noteBtn = document.createElement('button');
         noteBtn.innerHTML = `
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
             </svg>
             Note
@@ -804,24 +1034,24 @@ const SimpleAnnotationSystem = {
         noteBtn.style.cssText = `
             padding: 6px 12px;
             border: none;
-            background: #f3f4f6;
-            border-radius: 6px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             display: flex;
             align-items: center;
-            gap: 4px;
             transition: all 0.2s;
         `;
 
-        noteBtn.onmouseover = () => { noteBtn.style.background = '#e5e7eb'; };
-        noteBtn.onmouseout = () => { noteBtn.style.background = '#f3f4f6'; };
+        noteBtn.onmouseover = () => { noteBtn.style.background = '#2563eb'; };
+        noteBtn.onmouseout = () => { noteBtn.style.background = '#3b82f6'; };
 
         noteBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
             document.getElementById('selected-text-preview').textContent =
-                `"${selectedText.substring(0, 50)}${selectedText.length > 50 ? '...' : ''}"`;
+                `"${selectedText.substring(0, 40)}${selectedText.length > 40 ? '...' : ''}"`;
             this.noteModal.style.display = 'flex';
             setTimeout(() => {
                 document.getElementById('note-textarea').focus();
@@ -831,20 +1061,30 @@ const SimpleAnnotationSystem = {
         // Highlight button
         const highlightBtn = document.createElement('button');
         highlightBtn.innerHTML = `
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
             Highlight
         `;
-        highlightBtn.style.cssText = noteBtn.style.cssText;
-        highlightBtn.onmouseover = () => { highlightBtn.style.background = '#e5e7eb'; };
-        highlightBtn.onmouseout = () => { highlightBtn.style.background = '#f3f4f6'; };
+        highlightBtn.style.cssText = `
+            padding: 6px 12px;
+            border: none;
+            background: #f59e0b;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        `;
+
+        highlightBtn.onmouseover = () => { highlightBtn.style.background = '#d97706'; };
+        highlightBtn.onmouseout = () => { highlightBtn.style.background = '#f59e0b'; };
 
         highlightBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-
-            // Show color picker
             this.showColorPicker(rect);
         };
 
@@ -860,12 +1100,10 @@ const SimpleAnnotationSystem = {
         if (existingPicker) existingPicker.remove();
 
         const colors = [
-            { name: 'Yellow', value: '#FFFF00' },
-            { name: 'Pink', value: '#fce7f3' },
-            { name: 'Blue', value: '#dbeafe' },
-            { name: 'Green', value: '#1BFC06' },
-            { name: 'Purple', value: '#e9d5ff' },
-            { name: 'Orange', value: '#fed7aa' }
+            { name: 'Yellow', value: '#fef3c7', bg: '#fbbf24' },
+            { name: 'Green', value: '#d1fae5', bg: '#34d399' },
+            { name: 'Blue', value: '#dbeafe', bg: '#60a5fa' },
+            { name: 'Pink', value: '#fce7f3', bg: '#f472b6' }
         ];
 
         const picker = document.createElement('div');
@@ -873,25 +1111,25 @@ const SimpleAnnotationSystem = {
         picker.style.cssText = `
             position: fixed;
             top: ${rect.top - 50}px;
-            left: ${rect.left + (rect.width / 2) - 120}px;
+            left: ${rect.left + (rect.width / 2) - 100}px;
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 6px;
             display: flex;
-            gap: 4px;
+            gap: 6px;
             z-index: 100001;
         `;
 
         colors.forEach(color => {
             const colorBtn = document.createElement('button');
             colorBtn.style.cssText = `
-                width: 32px;
-                height: 32px;
-                background: ${color.value};
+                width: 28px;
+                height: 28px;
+                background: ${color.bg};
                 border: 2px solid transparent;
-                border-radius: 6px;
+                border-radius: 50%;
                 cursor: pointer;
                 transition: all 0.2s;
             `;
@@ -915,6 +1153,31 @@ const SimpleAnnotationSystem = {
             picker.appendChild(colorBtn);
         });
 
+        // Cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.innerHTML = '×';
+        cancelBtn.style.cssText = `
+            width: 28px;
+            height: 28px;
+            background: #f3f4f6;
+            border: 2px solid transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #6b7280;
+        `;
+        cancelBtn.title = 'Cancel';
+        cancelBtn.onclick = (e) => {
+            e.stopPropagation();
+            picker.remove();
+            this.hideMenu();
+        };
+        picker.appendChild(cancelBtn);
+
         document.body.appendChild(picker);
 
         // Remove picker on outside click
@@ -933,20 +1196,24 @@ const SimpleAnnotationSystem = {
             const span = document.createElement('span');
             span.style.backgroundColor = color.value;
             span.style.cursor = 'pointer';
+            span.style.padding = '1px 2px';
+            span.style.borderRadius = '2px';
             span.textContent = this.currentRange.toString();
             span.dataset.highlight = color.name;
-            span.title = ` Click to remove`;
+            span.title = `${color.name} highlight - Click to remove`;
 
             span.onclick = function (evt) {
                 evt.stopPropagation();
-                const text = this.textContent;
-                this.style.transition = 'background-color 0.3s ease';
-                this.style.backgroundColor = 'transparent';
+                if (confirm('Remove this highlight?')) {
+                    const text = this.textContent;
+                    this.style.transition = 'background-color 0.3s ease';
+                    this.style.backgroundColor = 'transparent';
 
-                setTimeout(() => {
-                    this.replaceWith(document.createTextNode(text));
-                    SimpleAnnotationSystem.removeAnnotation('highlight', text);
-                }, 300);
+                    setTimeout(() => {
+                        this.replaceWith(document.createTextNode(text));
+                        SimpleAnnotationSystem.removeAnnotation('highlight', text);
+                    }, 300);
+                }
             };
 
             try {
@@ -962,28 +1229,13 @@ const SimpleAnnotationSystem = {
         }
     },
 
-    deleteNote(text, timestamp) {
-        if (confirm('Are you sure you want to delete this note?')) {
-            const attemptId = window.testConfig?.attemptId || 'test';
-            const key = `annotations_${attemptId}`;
-            let annotations = JSON.parse(localStorage.getItem(key) || '[]');
+    removeAnnotation(type, text) {
+        const attemptId = window.testConfig?.attemptId || 'test';
+        const key = `annotations_${attemptId}`;
+        let annotations = JSON.parse(localStorage.getItem(key) || '[]');
 
-            // Remove the specific note
-            annotations = annotations.filter(a => !(a.type === 'note' && a.text === text && a.timestamp === timestamp));
-            localStorage.setItem(key, JSON.stringify(annotations));
-
-            // Remove from DOM
-            const noteElements = document.querySelectorAll('span[data-note]');
-            noteElements.forEach(el => {
-                if (el.textContent === text) {
-                    const parent = el.parentNode;
-                    parent.replaceChild(document.createTextNode(text), el);
-                }
-            });
-
-            // Update notes list
-            this.updateNotesList();
-        }
+        annotations = annotations.filter(a => !(a.type === type && a.text === text));
+        localStorage.setItem(key, JSON.stringify(annotations));
     },
 
     hideMenu() {
@@ -1008,13 +1260,26 @@ const SimpleAnnotationSystem = {
         localStorage.setItem(key, JSON.stringify(annotations));
     },
 
-    removeAnnotation(type, text) {
+    deleteNote(text, timestamp) {
         const attemptId = window.testConfig?.attemptId || 'test';
         const key = `annotations_${attemptId}`;
         let annotations = JSON.parse(localStorage.getItem(key) || '[]');
 
-        annotations = annotations.filter(a => !(a.type === type && a.text === text));
+        // Remove the specific note
+        annotations = annotations.filter(a => !(a.type === 'note' && a.text === text && a.timestamp === timestamp));
         localStorage.setItem(key, JSON.stringify(annotations));
+
+        // Remove from DOM
+        const noteElements = document.querySelectorAll('span[data-note]');
+        noteElements.forEach(el => {
+            if (el.textContent === text) {
+                const parent = el.parentNode;
+                parent.replaceChild(document.createTextNode(text), el);
+            }
+        });
+
+        // Update notes list
+        this.updateNotesList();
     },
 
     addNotesButton() {
@@ -1023,34 +1288,110 @@ const SimpleAnnotationSystem = {
             const notesBtn = document.createElement('button');
             notesBtn.id = 'view-notes-btn';
             notesBtn.innerHTML = `
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
                 Notes
+                <span id="notes-count" style="
+                    display: none;
+                    background: #ef4444;
+                    color: white;
+                    font-size: 10px;
+                    padding: 1px 5px;
+                    border-radius: 8px;
+                    margin-left: 4px;
+                    min-width: 16px;
+                    text-align: center;
+                ">0</span>
             `;
             notesBtn.style.cssText = `
-                padding: 8px 16px;
+                padding: 6px 12px;
                 background: white;
                 border: 1px solid #e5e7eb;
-                border-radius: 6px;
+                border-radius: 4px;
                 cursor: pointer;
-                margin-right: 12px;
-                font-size: 14px;
+                margin-right: 10px;
+                font-size: 13px;
                 display: flex;
                 align-items: center;
                 transition: all 0.2s;
             `;
-            notesBtn.onmouseover = () => { notesBtn.style.borderColor = '#3b82f6'; };
-            notesBtn.onmouseout = () => { notesBtn.style.borderColor = '#e5e7eb'; };
+            notesBtn.onmouseover = () => {
+                notesBtn.style.borderColor = '#3b82f6';
+                notesBtn.style.color = '#3b82f6';
+            };
+            notesBtn.onmouseout = () => {
+                notesBtn.style.borderColor = '#e5e7eb';
+                notesBtn.style.color = '';
+            };
             notesBtn.onclick = () => this.openNotesPanel();
 
             const submitBtn = navRight.querySelector('.submit-test-button');
             navRight.insertBefore(notesBtn, submitBtn);
+
+            // Update notes count
+            this.updateNotesCount();
         }
     },
 
+    updateNotesCount() {
+        const attemptId = window.testConfig?.attemptId || 'test';
+        const annotations = JSON.parse(localStorage.getItem(`annotations_${attemptId}`) || '[]');
+        const notesCount = annotations.filter(a => a.type === 'note').length;
+
+        const countElement = document.getElementById('notes-count');
+        if (countElement) {
+            countElement.textContent = notesCount;
+            countElement.style.display = notesCount > 0 ? 'inline-block' : 'none';
+        }
+    },
+
+    restoreAnnotations() {
+        const attemptId = window.testConfig?.attemptId || 'test';
+        const annotations = JSON.parse(localStorage.getItem(`annotations_${attemptId}`) || '[]');
+
+        annotations.forEach(annotation => {
+            if (annotation.type === 'note') {
+                this.findAndStyleText(annotation.text, (span) => {
+                    span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #dc2626; cursor: pointer; padding: 1px 2px; border-radius: 2px;';
+                    span.dataset.note = annotation.data;
+                    span.dataset.noteId = Date.now();
+                    span.onclick = () => this.showNoteTooltip(span, annotation.data);
+                });
+            } else if (annotation.type === 'highlight') {
+                const colors = {
+                    'Yellow': '#fef3c7',
+                    'Green': '#d1fae5',
+                    'Blue': '#dbeafe',
+                    'Pink': '#fce7f3'
+                };
+                this.findAndStyleText(annotation.text, (span) => {
+                    span.style.backgroundColor = colors[annotation.data] || '#fef3c7';
+                    span.style.cursor = 'pointer';
+                    span.style.padding = '1px 2px';
+                    span.style.borderRadius = '2px';
+                    span.title = `${annotation.data} highlight - Click to remove`;
+                    span.onclick = function (evt) {
+                        evt.stopPropagation();
+                        if (confirm('Remove this highlight?')) {
+                            const text = this.textContent;
+                            this.style.transition = 'background-color 0.3s ease';
+                            this.style.backgroundColor = 'transparent';
+                            setTimeout(() => {
+                                this.replaceWith(document.createTextNode(text));
+                                SimpleAnnotationSystem.removeAnnotation('highlight', text);
+                            }, 300);
+                        }
+                    };
+                });
+            }
+        });
+
+        this.updateNotesCount();
+    },
+
     findAndStyleText(searchText, styleCallback) {
-        const passages = document.querySelectorAll('.passage-content, .passage-container');
+        const passages = document.querySelectorAll('.passage-content');
 
         passages.forEach(passage => {
             const walker = document.createTreeWalker(
@@ -1087,65 +1428,51 @@ const SimpleAnnotationSystem = {
                 }
             }
         });
-    },
-
-    restoreAnnotations() {
-        const attemptId = window.testConfig?.attemptId || 'test';
-        const annotations = JSON.parse(localStorage.getItem(`annotations_${attemptId}`) || '[]');
-
-        annotations.forEach(annotation => {
-            if (annotation.type === 'note') {
-                this.findAndStyleText(annotation.text, (span) => {
-                    span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 2px solid #dc2626; cursor: pointer;';
-                    span.dataset.note = annotation.data;
-                    span.dataset.noteId = Date.now();
-                    span.onclick = () => this.showNoteTooltip(span, annotation.data);
-                });
-            } else if (annotation.type === 'highlight') {
-                const colors = {
-                    'Yellow': '#fef3c7',
-                    'Pink': '#fce7f3',
-                    'Blue': '#dbeafe',
-                    'Green': '#d1fae5',
-                    'Purple': '#e9d5ff',
-                    'Orange': '#fed7aa'
-                };
-                this.findAndStyleText(annotation.text, (span) => {
-                    span.style.backgroundColor = colors[annotation.data] || '#fef3c7';
-                    span.style.cursor = 'pointer';
-                    span.title = 'Click to remove highlight';
-                    span.onclick = function (evt) {
-                        evt.stopPropagation();
-                        const text = this.textContent;
-                        this.style.transition = 'background-color 0.3s ease';
-                        this.style.backgroundColor = 'transparent';
-                        setTimeout(() => {
-                            this.replaceWith(document.createTextNode(text));
-                            SimpleAnnotationSystem.removeAnnotation('highlight', text);
-                        }, 300);
-                    };
-                });
-            }
-        });
     }
 };
 
 // ========== Initialize Everything ==========
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Initializing Reading Test System...');
+    console.log('🚀 Initializing Simplified Reading Test System...');
 
-    // Initialize all modules
-    NavigationHandler.init();
-    AnswerManager.init(window.testConfig?.attemptId || 'test');
-    SubmitHandler.init();
-    HelpGuide.init();
-    SimpleSplitDivider.init();
-    SimpleAnnotationSystem.init();
+    try {
+        // Initialize all modules
+        NavigationHandler.init();
+        AnswerManager.init(window.testConfig?.attemptId || 'test');
+        SubmitHandler.init();
+        HelpGuide.init();
+        SimpleSplitDivider.init();
+        SimpleAnnotationSystem.init();
 
-    // Restore annotations after a delay
-    setTimeout(() => {
-        SimpleAnnotationSystem.restoreAnnotations();
-    }, 1000);
+        // Make split divider globally available
+        window.SimpleSplitDivider = SimpleSplitDivider;
 
-    console.log('Reading Test System Ready!');
+        // Restore annotations after a delay to ensure DOM is ready
+        setTimeout(() => {
+            SimpleAnnotationSystem.restoreAnnotations();
+        }, 1000);
+
+        console.log('✅ Simplified Reading Test System Ready!');
+
+    } catch (error) {
+        console.error('❌ Error initializing Reading Test System:', error);
+    }
 });
+
+// ========== Handle Window Events ==========
+window.addEventListener('resize', () => {
+    if (window.innerWidth <= 1024) {
+        if (window.SimpleSplitDivider) {
+            SimpleSplitDivider.destroy();
+        }
+    } else if (window.SimpleSplitDivider && !document.getElementById('split-divider')) {
+        SimpleSplitDivider.init();
+    }
+});
+
+// ========== Export for external use ==========
+window.NavigationHandler = NavigationHandler;
+window.AnswerManager = AnswerManager;
+window.SubmitHandler = SubmitHandler;
+window.HelpGuide = HelpGuide;
+window.SimpleAnnotationSystem = SimpleAnnotationSystem;
