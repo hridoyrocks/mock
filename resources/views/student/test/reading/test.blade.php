@@ -356,9 +356,9 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
     <div class="bottom-nav">
         <div class="nav-left">
             <div class="review-section">
-                <input type="checkbox" id="review-checkbox" class="review-check">
-                <label for="review-checkbox" class="review-label">Review</label>
-            </div>
+    <input type="checkbox" id="review-checkbox" class="review-check">
+    <label for="review-checkbox" class="review-label">Flag</label>
+</div>
             
             <div class="nav-section-container">
                 <span class="section-label">Reading</span>

@@ -210,12 +210,27 @@ const NavigationHandler = {
                     }
                 }
 
+                // Update question numbers display based on part
+                NavigationHandler.updateQuestionNumbersDisplay(partNumber);
+
                 // Find first question of this part
-                const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]`);
+                const firstQuestionOfPart = document.querySelector(`.number-btn[data-part="${partNumber}"]:not(.hidden-part)`);
                 if (firstQuestionOfPart) {
                     firstQuestionOfPart.click();
                 }
             });
+        });
+    },
+
+    updateQuestionNumbersDisplay(activePart) {
+        // Hide all question numbers first
+        const allNumberButtons = document.querySelectorAll('.number-btn');
+        allNumberButtons.forEach(btn => {
+            if (btn.dataset.part === activePart) {
+                btn.classList.remove('hidden-part');
+            } else {
+                btn.classList.add('hidden-part');
+            }
         });
     },
 
@@ -967,7 +982,7 @@ const SimpleAnnotationSystem = {
     },
 
     setupAnnotationHandlers() {
-        // Text selection handler
+        // Text selection handler - Now works on both passage and questions
         document.addEventListener('mouseup', (e) => {
             // Skip if clicking on annotation menu or modal
             if (e.target.closest('#annotation-menu') ||
@@ -983,9 +998,11 @@ const SimpleAnnotationSystem = {
                 if (selectedText && selectedText.length >= 3) {
                     const range = selection.getRangeAt(0);
 
-                    // Only show menu if selection is in passage content
+                    // Allow annotation in both passage content AND questions section
                     const passageContent = e.target.closest('.passage-content');
-                    if (passageContent) {
+                    const questionsSection = e.target.closest('.questions-section');
+
+                    if (passageContent || questionsSection) {
                         const rect = range.getBoundingClientRect();
                         this.currentRange = range;
                         this.showMenu(rect, selectedText);
@@ -1058,7 +1075,7 @@ const SimpleAnnotationSystem = {
             }, 100);
         };
 
-        // Highlight button
+        // Highlight button - SIMPLIFIED (no color picker)
         const highlightBtn = document.createElement('button');
         highlightBtn.innerHTML = `
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
@@ -1085,110 +1102,14 @@ const SimpleAnnotationSystem = {
         highlightBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.showColorPicker(rect);
+            // DIRECT YELLOW HIGHLIGHT - NO COLOR PICKER
+            this.applyHighlight({ name: 'Yellow', value: '#fef3c7' });
         };
 
         menu.appendChild(noteBtn);
         menu.appendChild(highlightBtn);
         document.body.appendChild(menu);
         this.currentMenu = menu;
-    },
-
-    showColorPicker(rect) {
-        // Remove existing color picker
-        const existingPicker = document.getElementById('color-picker');
-        if (existingPicker) existingPicker.remove();
-
-        const colors = [
-            { name: 'Yellow', value: '#fef3c7', bg: '#fbbf24' },
-            { name: 'Green', value: '#d1fae5', bg: '#34d399' },
-            { name: 'Blue', value: '#dbeafe', bg: '#60a5fa' },
-            { name: 'Pink', value: '#fce7f3', bg: '#f472b6' }
-        ];
-
-        const picker = document.createElement('div');
-        picker.id = 'color-picker';
-        picker.style.cssText = `
-            position: fixed;
-            top: ${rect.top - 50}px;
-            left: ${rect.left + (rect.width / 2) - 100}px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            padding: 6px;
-            display: flex;
-            gap: 6px;
-            z-index: 100001;
-        `;
-
-        colors.forEach(color => {
-            const colorBtn = document.createElement('button');
-            colorBtn.style.cssText = `
-                width: 28px;
-                height: 28px;
-                background: ${color.bg};
-                border: 2px solid transparent;
-                border-radius: 50%;
-                cursor: pointer;
-                transition: all 0.2s;
-            `;
-            colorBtn.title = color.name;
-
-            colorBtn.onmouseover = () => {
-                colorBtn.style.transform = 'scale(1.1)';
-                colorBtn.style.borderColor = '#374151';
-            };
-            colorBtn.onmouseout = () => {
-                colorBtn.style.transform = 'scale(1)';
-                colorBtn.style.borderColor = 'transparent';
-            };
-
-            colorBtn.onclick = (e) => {
-                e.stopPropagation();
-                this.applyHighlight(color);
-                picker.remove();
-            };
-
-            picker.appendChild(colorBtn);
-        });
-
-        // Cancel button
-        const cancelBtn = document.createElement('button');
-        cancelBtn.innerHTML = '×';
-        cancelBtn.style.cssText = `
-            width: 28px;
-            height: 28px;
-            background: #f3f4f6;
-            border: 2px solid transparent;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #6b7280;
-        `;
-        cancelBtn.title = 'Cancel';
-        cancelBtn.onclick = (e) => {
-            e.stopPropagation();
-            picker.remove();
-            this.hideMenu();
-        };
-        picker.appendChild(cancelBtn);
-
-        document.body.appendChild(picker);
-
-        // Remove picker on outside click
-        setTimeout(() => {
-            document.addEventListener('click', function removePicker(e) {
-                if (!picker.contains(e.target)) {
-                    picker.remove();
-                    document.removeEventListener('click', removePicker);
-                }
-            });
-        }, 100);
     },
 
     applyHighlight(color) {
@@ -1391,11 +1312,12 @@ const SimpleAnnotationSystem = {
     },
 
     findAndStyleText(searchText, styleCallback) {
-        const passages = document.querySelectorAll('.passage-content');
+        // Search in both passages AND questions
+        const containers = document.querySelectorAll('.passage-content, .questions-section');
 
-        passages.forEach(passage => {
+        containers.forEach(container => {
             const walker = document.createTreeWalker(
-                passage,
+                container,
                 NodeFilter.SHOW_TEXT,
                 null,
                 false
@@ -1451,6 +1373,12 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => {
             SimpleAnnotationSystem.restoreAnnotations();
         }, 1000);
+
+        // Initialize part-based navigation display
+        const firstActivePart = document.querySelector('.part-btn.active');
+        if (firstActivePart) {
+            NavigationHandler.updateQuestionNumbersDisplay(firstActivePart.dataset.part);
+        }
 
         console.log('✅ Simplified Reading Test System Ready!');
 
