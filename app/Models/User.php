@@ -28,6 +28,18 @@ class User extends Authenticatable
         'tests_taken_this_month',
         'ai_evaluations_used',
         'last_subscription_check',
+        'phone_number',
+    'phone_verified_at',
+    'google_id',
+    'facebook_id',
+    'avatar_url',
+    'login_method',
+    'country_code',
+    'country_name',
+    'city',
+    'timezone',
+    'currency',
+    'is_social_signup',
     ];
 
     protected $casts = [
@@ -38,7 +50,47 @@ class User extends Authenticatable
         'last_subscription_check' => 'datetime',
         'tests_taken_this_month' => 'integer',
         'ai_evaluations_used' => 'integer',
+        'phone_verified_at' => 'datetime',
+    'is_social_signup' => 'boolean',
     ];
+
+
+public function devices()
+{
+    return $this->hasMany(UserDevice::class);
+}
+
+public function otpVerifications()
+{
+    return $this->hasMany(OtpVerification::class, 'identifier', 'email');
+}
+
+public function hasVerifiedPhone(): bool
+{
+    return !is_null($this->phone_verified_at);
+}
+
+public function markPhoneAsVerified(): void
+{
+    $this->update(['phone_verified_at' => now()]);
+}
+
+public function getCountryFlagAttribute(): string
+{
+    return $this->country_code 
+        ? "https://flagcdn.com/w40/" . strtolower($this->country_code) . ".png"
+        : '';
+}
+
+public function trustedDevices()
+{
+    return $this->devices()->where('is_trusted', true);
+}
+
+public function hasTrustedDevice(string $fingerprint): bool
+{
+    return $this->trustedDevices()->where('device_fingerprint', $fingerprint)->exists();
+}
 
      public function attempts(): HasMany
     {
