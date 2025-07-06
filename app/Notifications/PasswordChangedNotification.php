@@ -12,7 +12,7 @@ class PasswordChangedNotification extends Notification
 
     protected $details;
 
-    public function __construct($details)
+    public function __construct(array $details)
     {
         $this->details = $details;
     }
@@ -25,17 +25,16 @@ class PasswordChangedNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Your Password Has Been Changed')
+            ->subject('Password Changed Successfully')
             ->greeting('Hello ' . $notifiable->name . '!')
             ->line('Your password was successfully changed.')
             ->line('**Details:**')
             ->line('Time: ' . $this->details['time']->format('M d, Y H:i'))
-            ->line('Location: ' . $this->details['location'])
             ->line('IP Address: ' . $this->details['ip'])
-            ->line('Device: ' . substr($this->details['browser'], 0, 50) . '...')
-            ->line('If you did not make this change, please contact us immediately.')
-            ->action('Secure Your Account', route('profile.edit'))
-            ->line('For security reasons, all your devices have been logged out.')
-            ->salutation('Stay safe, IELTS Mock Test Team');
+            ->line('Location: ' . $this->details['location'])
+            ->line('Browser: ' . substr($this->details['browser'], 0, 50) . '...')
+            ->line('If you didn\'t make this change, please contact support immediately.')
+            ->action('Contact Support', url('/support'))
+            ->salutation('Best regards, IELTS Mock Test Team');
     }
 }

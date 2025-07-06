@@ -57,7 +57,7 @@ class UserDevice extends Model
         $agent = new Agent();
         $agent->setUserAgent($request->userAgent());
 
-        $fingerprint = self::generateFingerprint($request);
+        $fingerprint = self::generateFingerprint($request, $userId);
 
         return self::updateOrCreate(
             [
@@ -65,11 +65,11 @@ class UserDevice extends Model
                 'device_fingerprint' => $fingerprint
             ],
             [
-                'device_name' => $agent->device(),
-                'browser' => $agent->browser(),
-                'browser_version' => $agent->version($agent->browser()),
-                'platform' => $agent->platform(),
-                'platform_version' => $agent->version($agent->platform()),
+                'device_name' => $agent->device() ?: 'Unknown Device',
+                'browser' => $agent->browser() ?: 'Unknown Browser',
+                'browser_version' => $agent->version($agent->browser()) ?: 'Unknown',
+                'platform' => $agent->platform() ?: 'Unknown Platform',
+                'platform_version' => $agent->version($agent->platform()) ?: 'Unknown',
                 'device_type' => $agent->isDesktop() ? 'desktop' : ($agent->isTablet() ? 'tablet' : 'mobile'),
                 'ip_address' => $request->ip(),
                 'country_code' => $locationData['countryCode'] ?? null,

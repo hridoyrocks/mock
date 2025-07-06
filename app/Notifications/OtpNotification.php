@@ -31,7 +31,8 @@ class OtpNotification extends Notification
             ->line('Your verification code is:')
             ->line('# ' . $this->otp->otp_code)
             ->line('This code will expire in 5 minutes.')
-            ->line('If you did not request this code, please ignore this email.')
+            ->line('If you didn\'t request this code, please ignore this email.')
+            ->action('Open IELTS Mock Test', url('/'))
             ->salutation('Best regards, IELTS Mock Test Team');
     }
 }
