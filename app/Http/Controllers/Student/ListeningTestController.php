@@ -111,7 +111,13 @@ class ListeningTestController extends Controller
         ]);
         
         DB::transaction(function () use ($request, $attempt) {
-            // Save answers
+            // Get total questions count (excluding passages if any)
+            $totalQuestions = $attempt->testSet->questions()
+                ->where('question_type', '!=', 'passage')
+                ->count();
+            
+            // Save answers and count how many were answered
+            $answeredCount = 0;
             foreach ($request->answers as $questionId => $optionId) {
                 if ($optionId) {
                     StudentAnswer::updateOrCreate(
@@ -123,6 +129,7 @@ class ListeningTestController extends Controller
                             'selected_option_id' => $optionId,
                         ]
                     );
+                    $answeredCount++;
                 }
             }
             
@@ -132,13 +139,13 @@ class ListeningTestController extends Controller
                 'status' => 'completed',
             ]);
             
-            // INCREMENT TEST COUNT - NEW ADDITION
+            // INCREMENT TEST COUNT
             auth()->user()->incrementTestCount();
             
-            // Calculate band score
+            // Calculate score with new logic
             $correctAnswers = 0;
-            $totalQuestions = $attempt->testSet->questions->count();
             
+            // Load answers with their selected options
             $attempt->load('answers.selectedOption');
             
             foreach ($attempt->answers as $answer) {
@@ -147,8 +154,28 @@ class ListeningTestController extends Controller
                 }
             }
             
-            $bandScore = \App\Helpers\ScoreCalculator::calculateListeningBandScore($correctAnswers, $totalQuestions);
-            $attempt->update(['band_score' => $bandScore]);
+            // Use the new partial test score calculation
+            $scoreData = \App\Helpers\ScoreCalculator::calculatePartialTestScore(
+                $correctAnswers, 
+                $answeredCount, 
+                $totalQuestions,
+                'listening'
+            );
+            
+            // Store band score and additional data
+            $attempt->update([
+                'band_score' => $scoreData['band_score'],
+                'completion_rate' => $scoreData['completion_percentage'],
+                'confidence_level' => $scoreData['confidence'],
+                'is_complete_attempt' => $scoreData['is_reliable'],
+                // Add the missing fields
+                'total_questions' => $totalQuestions,
+                'answered_questions' => $answeredCount,
+                'correct_answers' => $correctAnswers
+            ]);
+            
+            // Store score data in session for display
+            session()->flash('score_details', $scoreData);
         });
         
         return redirect()->route('student.results.show', $attempt)

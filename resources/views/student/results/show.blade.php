@@ -16,6 +16,31 @@
                         <p class="text-gray-500">{{ ucfirst($attempt->testSet->section->name) }} Section</p>
                     </div>
                     
+                    {{-- Score Details from Session --}}
+                    @if(session('score_details'))
+                        @php $scoreDetails = session('score_details'); @endphp
+                        
+                        {{-- Completion Warning if not fully attempted --}}
+                        @if(!$scoreDetails['is_reliable'])
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-yellow-800">Partial Test Completion</h3>
+                                        <div class="mt-2 text-sm text-yellow-700">
+                                            <p>You answered only <strong>{{ $scoreDetails['answered'] }}/{{ $scoreDetails['total'] }}</strong> questions ({{ $scoreDetails['completion_percentage'] }}%)</p>
+                                            <p class="mt-1">{{ $scoreDetails['message'] }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+                    
                     <div class="bg-gray-50 p-4 rounded-lg mb-6">
                         <div class="grid md:grid-cols-4 gap-4">
                             <div>
@@ -36,21 +61,56 @@
                             </div>
                             
                             <div>
-                                <p class="text-sm text-gray-500">Status</p>
-                                <p class="font-medium capitalize">{{ $attempt->status }}</p>
+                                <p class="text-sm text-gray-500">Completion</p>
+                                <div class="flex items-center">
+                                    <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $attempt->completion_rate }}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">{{ $attempt->completion_rate }}%</span>
+                                </div>
                             </div>
                             
                             <div>
                                 <p class="text-sm text-gray-500">Band Score</p>
                                 @if($attempt->band_score)
-                                    <div class="bg-blue-100 text-blue-800 text-lg font-semibold inline-block px-3 py-1 rounded">
-                                        {{ $attempt->band_score }}
+                                    @php
+                                        $bandColorClass = \App\Helpers\ScoreCalculator::getBandColorClass($attempt->band_score);
+                                        $bandDescription = \App\Helpers\ScoreCalculator::getBandDescription($attempt->band_score);
+                                    @endphp
+                                    <div class="flex items-center">
+                                        <div class="{{ $bandColorClass }} text-lg font-semibold inline-block px-3 py-1 rounded">
+                                            {{ $attempt->band_score }}
+                                            @if(!$attempt->is_complete_attempt)
+                                                <span class="text-xs">*</span>
+                                            @endif
+                                        </div>
+                                        @if(!$attempt->is_complete_attempt)
+                                            <span class="ml-2 text-xs text-gray-500">Projected</span>
+                                        @endif
                                     </div>
+                                    <p class="text-xs text-gray-600 mt-1">{{ $bandDescription }}</p>
                                 @else
                                     <p class="text-yellow-600">Pending evaluation</p>
                                 @endif
                             </div>
                         </div>
+                        
+                        {{-- Confidence Level Display --}}
+                        @if($attempt->confidence_level && $attempt->band_score)
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">Score Confidence:</span>
+                                    <span class="text-sm font-medium px-3 py-1 rounded-full
+                                        @if($attempt->confidence_level == 'Very High') bg-green-100 text-green-800
+                                        @elseif($attempt->confidence_level == 'High') bg-blue-100 text-blue-800
+                                        @elseif($attempt->confidence_level == 'Medium') bg-yellow-100 text-yellow-800
+                                        @else bg-red-100 text-red-800
+                                        @endif">
+                                        {{ $attempt->confidence_level }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- AI Evaluation Button for Writing/Speaking --}}
@@ -92,38 +152,80 @@
                         </div>
                     @endif
                     
-                    @if(in_array($attempt->testSet->section->name, ['listening', 'reading']) && isset($correctAnswers))
+                    @if(in_array($attempt->testSet->section->name, ['listening', 'reading']))
                         <div class="mb-6">
                             <h3 class="text-lg font-medium mb-3">Score Breakdown</h3>
                             
                             <div class="bg-white border border-gray-200 rounded-lg p-4">
-                                <div class="grid md:grid-cols-3 gap-4">
+                                <div class="grid md:grid-cols-4 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Questions Attempted</p>
+                                        <p class="font-medium">{{ $attempt->answered_questions ?? count($attempt->answers) }} / {{ $totalQuestions ?? $attempt->testSet->questions()->where('question_type', '!=', 'passage')->count() }}</p>
+                                    </div>
+                                    
                                     <div>
                                         <p class="text-sm text-gray-500">Correct Answers</p>
-                                        <p class="font-medium">{{ $correctAnswers }} / {{ $totalQuestions }}</p>
+                                        <p class="font-medium">{{ $correctAnswers ?? $attempt->correct_answers }}</p>
                                     </div>
                                     
                                     <div>
                                         <p class="text-sm text-gray-500">Accuracy</p>
-                                        <p class="font-medium">{{ number_format($accuracy, 1) }}%</p>
+                                        <p class="font-medium">
+                                            @if($attempt->answered_questions > 0)
+                                                {{ number_format(($attempt->correct_answers / $attempt->answered_questions) * 100, 1) }}%
+                                            @else
+                                                0%
+                                            @endif
+                                        </p>
                                     </div>
                                     
                                     <div>
-                                        <p class="text-sm text-gray-500">Estimated Band Score</p>
+                                        <p class="text-sm text-gray-500">Band Score</p>
                                         @php
-                                            if ($attempt->testSet->section->name === 'listening') {
-                                                $estimatedScore = App\Helpers\ScoreCalculator::calculateListeningBandScore($correctAnswers, $totalQuestions);
-                                            } else {
-                                                $estimatedScore = App\Helpers\ScoreCalculator::calculateReadingBandScore($correctAnswers, $totalQuestions);
-                                            }
+                                            $bandColorClass = \App\Helpers\ScoreCalculator::getBandColorClass($attempt->band_score);
                                         @endphp
-                                        <div class="bg-blue-100 text-blue-800 text-lg font-semibold inline-block px-3 py-1 rounded">
-                                            {{ $estimatedScore }}
+                                        <div class="{{ $bandColorClass }} text-lg font-semibold inline-block px-3 py-1 rounded">
+                                            {{ $attempt->band_score }}
+                                            @if(!$attempt->is_complete_attempt)
+                                                <span class="text-xs">*</span>
+                                            @endif
                                         </div>
+                                    </div>
+                                </div>
+                                
+                                {{-- Band Score Scale Visual --}}
+                                <div class="mt-6">
+                                    <p class="text-sm text-gray-600 mb-2">Band Score Scale:</p>
+                                    <div class="flex items-center space-x-1">
+                                        @foreach([1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0] as $band)
+                                            <div class="flex-1 text-center">
+                                                <div class="h-8 rounded-sm flex items-center justify-center text-xs font-medium
+                                                    @if($attempt->band_score == $band)
+                                                        {{ \App\Helpers\ScoreCalculator::getBandColorClass($band) }} ring-2 ring-offset-2 ring-blue-500
+                                                    @else
+                                                        bg-gray-100 text-gray-400
+                                                    @endif">
+                                                    {{ $band }}
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        
+                        {{-- Recommendations for incomplete tests --}}
+                        @if(!$attempt->is_complete_attempt)
+                            <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 class="font-semibold text-blue-900 mb-2">💡 Tips for Better Results</h4>
+                                <ul class="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                    <li>Try to answer all questions for the most accurate band score</li>
+                                    <li>Practice time management to complete the test within the time limit</li>
+                                    <li>Even if unsure, attempt all questions - there's no negative marking</li>
+                                    <li>Your projected score shows potential - complete more questions to confirm it!</li>
+                                </ul>
+                            </div>
+                        @endif
                         
                         <div class="mb-6">
                             <h3 class="text-lg font-medium mb-3">Question Analysis</h3>
@@ -139,29 +241,47 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($attempt->answers->sortBy('question.order_number') as $answer)
-                                            <tr class="bg-white border-b">
+                                        @php
+                                            $allQuestions = $attempt->testSet->questions()
+                                                ->where('question_type', '!=', 'passage')
+                                                ->orderBy('order_number')
+                                                ->get();
+                                            $answeredQuestions = $attempt->answers->pluck('question_id')->toArray();
+                                        @endphp
+                                        
+                                        @foreach($allQuestions as $question)
+                                            @php
+                                                $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                                $isAnswered = in_array($question->id, $answeredQuestions);
+                                            @endphp
+                                            <tr class="bg-white border-b {{ !$isAnswered ? 'bg-gray-50' : '' }}">
                                                 <td class="px-6 py-4">
-                                                    <span class="font-medium">{{ $answer->question->order_number }}.</span> 
-                                                    {!! Str::limit(strip_tags($answer->question->content), 80) !!}
+                                                    <span class="font-medium">{{ $question->order_number }}.</span> 
+                                                    {!! Str::limit(strip_tags($question->content), 80) !!}
                                                 </td>
                                                 <td class="px-6 py-4">
-                                                    @if($answer->selectedOption)
-                                                        {{ $answer->selectedOption->content }}
-                                                    @elseif($answer->answer)
-                                                        {{ $answer->answer }}
+                                                    @if($isAnswered && $answer)
+                                                        @if($answer->selectedOption)
+                                                            {{ $answer->selectedOption->content }}
+                                                        @elseif($answer->answer)
+                                                            {{ $answer->answer }}
+                                                        @else
+                                                            <span class="text-gray-400">No answer</span>
+                                                        @endif
                                                     @else
-                                                        <span class="text-gray-400">No answer</span>
+                                                        <span class="text-orange-500 font-medium">Not attempted</span>
                                                     @endif
                                                 </td>
                                                 <td class="px-6 py-4">
-                                                    {{ $answer->question->correctOption()->content ?? 'N/A' }}
+                                                    {{ $question->correctOption()->content ?? 'N/A' }}
                                                 </td>
                                                 <td class="px-6 py-4">
-                                                    @if($answer->selectedOption && $answer->selectedOption->is_correct)
-                                                        <span class="text-green-500">Correct</span>
+                                                    @if(!$isAnswered)
+                                                        <span class="text-orange-500">Skipped</span>
+                                                    @elseif($answer && $answer->selectedOption && $answer->selectedOption->is_correct)
+                                                        <span class="text-green-500">✓ Correct</span>
                                                     @else
-                                                        <span class="text-red-500">Incorrect</span>
+                                                        <span class="text-red-500">✗ Incorrect</span>
                                                     @endif
                                                 </td>
                                             </tr>
@@ -171,6 +291,7 @@
                             </div>
                         </div>
                     @elseif(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
+                        {{-- Writing/Speaking submission display (unchanged) --}}
                         <div class="mb-6">
                             <h3 class="text-lg font-medium mb-3">Your Submission</h3>
                             
@@ -235,49 +356,49 @@
     @push('scripts')
     <script>
     function startAIEvaluation(attemptId, type) {
-    // Show loading modal
-    document.getElementById('aiEvalModal').classList.remove('hidden');
-    
-    // Disable button
-    const button = document.getElementById('ai-eval-btn');
-    button.disabled = true;
-    
-    // Route ঠিক করুন - type অনুযায়ী সঠিক endpoint
-    const endpoint = type === 'writing' ? '/ai/evaluate/writing' : '/ai/evaluate/speaking';
-    
-    // Make API call
-    fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-            attempt_id: attemptId
+        // Show loading modal
+        document.getElementById('aiEvalModal').classList.remove('hidden');
+        
+        // Disable button
+        const button = document.getElementById('ai-eval-btn');
+        button.disabled = true;
+        
+        // Route fix
+        const endpoint = type === 'writing' ? '/ai/evaluate/writing' : '/ai/evaluate/speaking';
+        
+        // Make API call
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                attempt_id: attemptId
+            })
         })
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => Promise.reject(err));
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            window.location.reload();
-        } else {
-            alert(data.error || 'Failed to start evaluation');
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to start evaluation');
+                document.getElementById('aiEvalModal').classList.add('hidden');
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(error.error || 'An error occurred. Please try again.');
             document.getElementById('aiEvalModal').classList.add('hidden');
             button.disabled = false;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(error.error || 'An error occurred. Please try again.');
-        document.getElementById('aiEvalModal').classList.add('hidden');
-        button.disabled = false;
-    });
-}
+        });
+    }
     </script>
     @endpush
 </x-student-layout>

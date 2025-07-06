@@ -15,13 +15,25 @@ class StudentAttempt extends Model
         'end_time', 
         'status', 
         'band_score', 
-        'feedback'
+        'feedback',
+        // নতুন fields
+        'completion_rate',
+        'confidence_level',
+        'is_complete_attempt',
+        'total_questions',
+        'answered_questions',
+        'correct_answers'
     ];
     
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
-        'band_score' => 'decimal:1',
+        'band_score' => 'float',  // decimal:1 এর বদলে float
+        'completion_rate' => 'float',  // decimal:2 এর বদলে float
+        'is_complete_attempt' => 'boolean',
+        'total_questions' => 'integer',
+        'answered_questions' => 'integer',
+        'correct_answers' => 'integer',
     ];
     
     public function user(): BelongsTo
