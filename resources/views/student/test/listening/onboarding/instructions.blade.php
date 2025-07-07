@@ -14,10 +14,16 @@
             </div>
         </div>
         
-        <!-- Dark navbar -->
+        <!-- Dark navbar with User Info -->
         <div class="bg-gray-800 py-2">
-            <div class="max-w-7xl mx-auto px-4">
-                <!-- Empty space for consistency with the IELTS interface -->
+            <div class="max-w-7xl mx-auto px-4 flex items-center">
+                <!-- User Info -->
+                <div class="text-white flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>{{ auth()->user()->name }} - BI {{ str_pad(auth()->id(), 6, '0', STR_PAD_LEFT) }}</span>
+                </div>
             </div>
         </div>
         
@@ -27,8 +33,8 @@
                     <h2 class="text-xl font-medium">Test Instructions</h2>
                 </div>
                 
-                <!-- Fixed height container with scroll -->
-                <div class="bg-gray-100" style="height: 500px; overflow-y: auto;">
+                <!-- No scroll container -->
+                <div class="bg-gray-100">
                     <div class="p-8">
                         <h1 class="text-2xl font-bold mb-2">IELTS Listening</h1>
                         <p class="mb-6">Time: {{ $testSet->section->time_limit }} minutes</p>

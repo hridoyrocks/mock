@@ -2,7 +2,7 @@
 <x-test-layout>
     <x-slot:title>Confirm Your Details - IELTS Test</x-slot>
     
-    <div class="min-h-screen">
+    <div class="min-h-screen overflow-hidden fixed inset-0">
         <!-- Main Header with Logos -->
         <div class="bg-white border-b">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between">
@@ -24,7 +24,7 @@
         </div>
         
         <!-- Main Content - Light Blue Background -->
-        <div class="bg-blue-50 min-h-screen py-8">
+        <div class="bg-blue-50 min-h-screen pt-20">
             <div class="max-w-3xl mx-auto px-4">
                 <!-- Confirm Details Box -->
                 <div class="bg-white shadow-md rounded-md overflow-hidden">
@@ -58,7 +58,7 @@
                                 </div>
                                 
                                 <div class="text-gray-800">
-                                    <p>Date of birth:</p>
+                                    <p>Date of Test:</p>
                                 </div>
                                 <div class="text-gray-800 font-medium">
                                     <p>{{ now()->format('d-m-Y') }}</p>
@@ -94,6 +94,16 @@
         </div>
     </div>
     
+    <style>
+        /* Disable scrolling */
+        body {
+            overflow: hidden !important;
+            position: fixed !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+    
     @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -102,6 +112,12 @@
             confirmButton.addEventListener('click', function() {
                 window.location.href = "{{ route('student.listening.onboarding.sound-check', $testSet) }}";
             });
+            
+            // Ensure body doesn't scroll
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.height = '100%';
         });
     </script>
     @endpush
