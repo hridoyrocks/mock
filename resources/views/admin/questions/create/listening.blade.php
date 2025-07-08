@@ -97,7 +97,110 @@
                         </div>
                     </div>
                     
-                    @include('admin.questions.partials.options-manager')
+                    {{-- Regular Options Manager (hidden for special types) --}}
+                    <div id="options-card" class="bg-white rounded-lg shadow-sm hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">Answer Options</h3>
+                            <button type="button" onclick="showBulkOptions()" class="text-sm text-blue-600 hover:text-blue-700">
+                                Add Bulk Options
+                            </button>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <!-- Options will be dynamically added here -->
+                            </div>
+                            
+                            <button type="button" id="add-option-btn" 
+                                    class="mt-4 w-full md:w-auto px-4 py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-md hover:border-gray-400 hover:text-gray-600 transition-all">
+                                + Add Option
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {{-- Type-specific panels --}}
+                    <div id="type-specific-panels">
+                        {{-- Matching Questions Panel --}}
+                        <div id="matching-panel" class="type-specific-panel bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
+                            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-yellow-50">
+                                <h3 class="text-base sm:text-lg font-medium text-gray-900">
+                                    Matching Pairs Setup
+                                </h3>
+                            </div>
+                            
+                            <div class="p-4 sm:p-6">
+                                <p class="text-sm text-gray-600 mb-4">
+                                    Create matching pairs. Students will need to match items from the left with options on the right.
+                                </p>
+                                
+                                <div id="matching-pairs-container">
+                                    {{-- Pairs will be added here dynamically --}}
+                                </div>
+                                
+                                <button type="button" onclick="QuestionTypeHandlers.addMatchingPair()" 
+                                        class="mt-3 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-sm">
+                                    + Add Matching Pair
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {{-- Form Completion Panel --}}
+                        <div id="form-completion-panel" class="type-specific-panel bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
+                            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-green-50">
+                                <h3 class="text-base sm:text-lg font-medium text-gray-900">
+                                    Form Structure Setup
+                                </h3>
+                            </div>
+                            
+                            <div class="p-4 sm:p-6">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Form Title</label>
+                                    <input type="text" name="form_structure[title]" 
+                                           placeholder="e.g., Student Registration Form"
+                                           class="w-full px-3 py-2 border rounded-md text-sm">
+                                </div>
+                                
+                                <p class="text-sm text-gray-600 mb-4">
+                                    Add form fields that students need to complete:
+                                </p>
+                                
+                                <div id="form-fields-container">
+                                    {{-- Fields will be added here dynamically --}}
+                                </div>
+                                
+                                <button type="button" onclick="QuestionTypeHandlers.addFormField()" 
+                                        class="mt-3 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                                    + Add Form Field
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {{-- Diagram Labeling Panel --}}
+                        <div id="diagram-panel" class="type-specific-panel bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
+                            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-blue-50">
+                                <h3 class="text-base sm:text-lg font-medium text-gray-900">
+                                    Plan/Map/Diagram Setup
+                                </h3>
+                            </div>
+                            
+                            <div class="p-4 sm:p-6">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Upload Diagram Image</label>
+                                    <input type="file" id="diagram-image" name="diagram_image" 
+                                           accept="image/*"
+                                           class="w-full px-3 py-2 border rounded-md text-sm">
+                                </div>
+                                
+                                <div id="diagram-preview" class="mb-4 relative">
+                                    {{-- Image preview and hotspot markers --}}
+                                </div>
+                                
+                                <div id="hotspots-container">
+                                    {{-- Hotspot fields will be added here --}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- Audio Upload (Required for Listening) -->
                     <div class="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -228,6 +331,28 @@
                 box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
             }
         }
+        
+        /* Hotspot marker styles */
+        .hotspot-marker {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Type specific panel styles */
+        .type-specific-panel {
+            transition: all 0.3s ease;
+        }
     </style>
     @endpush
     
@@ -235,5 +360,173 @@
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script src="{{ asset('js/admin/question-common.js') }}"></script>
     <script src="{{ asset('js/admin/question-listening.js') }}"></script>
+    <script src="{{ asset('js/admin/question-types.js') }}"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize TinyMCE
+        tinymce.init({
+            selector: '.tinymce',
+            plugins: 'lists link table code',
+            toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link | code',
+            height: 350,
+            menubar: false,
+            branding: false
+        });
+        
+        // Question type change handler
+        const questionTypeSelect = document.getElementById('question_type');
+        questionTypeSelect.addEventListener('change', function() {
+            QuestionTypeHandlers.init(this.value);
+            
+            // Show/hide regular options card
+            const optionsCard = document.getElementById('options-card');
+            const specialTypes = ['matching', 'form_completion', 'plan_map_diagram'];
+            
+            if (specialTypes.includes(this.value)) {
+                optionsCard.classList.add('hidden');
+            } else if (this.value && !['short_answer', 'sentence_completion', 'note_completion', 'form_completion'].includes(this.value)) {
+                optionsCard.classList.remove('hidden');
+            } else {
+                optionsCard.classList.add('hidden');
+            }
+        });
+        
+        // Initialize on load if type is already selected
+        if (questionTypeSelect.value) {
+            questionTypeSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // File upload handling
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('media');
+        const mediaPreview = document.getElementById('media-preview');
+        
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+        
+        function handleFileSelect(file) {
+            mediaPreview.innerHTML = `
+                <div class="flex items-center p-3 bg-purple-50 rounded-lg">
+                    <svg class="w-8 h-8 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">${file.name}</p>
+                        <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                </div>
+            `;
+            mediaPreview.classList.remove('hidden');
+        }
+        
+        // Options handling
+        const addOptionBtn = document.getElementById('add-option-btn');
+        const optionsContainer = document.getElementById('options-container');
+        let optionCount = 0;
+        
+        if (addOptionBtn) {
+            addOptionBtn.addEventListener('click', function() {
+                addOption();
+            });
+        }
+        
+        function addOption() {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-item flex items-center gap-3';
+            optionDiv.innerHTML = `
+                <input type="radio" name="correct_option" value="${optionCount}" 
+                       class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                <input type="text" name="options[${optionCount}][content]" 
+                       placeholder="Option ${String.fromCharCode(65 + optionCount)}"
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                       required>
+                <button type="button" onclick="removeOption(this)" 
+                        class="text-red-500 hover:text-red-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            optionsContainer.appendChild(optionDiv);
+            optionCount++;
+        }
+        
+        window.removeOption = function(button) {
+            button.closest('.option-item').remove();
+            reindexOptions();
+        }
+        
+        function reindexOptions() {
+            const options = optionsContainer.querySelectorAll('.option-item');
+            optionCount = 0;
+            options.forEach((option, index) => {
+                const radio = option.querySelector('input[type="radio"]');
+                const textInput = option.querySelector('input[type="text"]');
+                
+                radio.value = index;
+                textInput.name = `options[${index}][content]`;
+                textInput.placeholder = `Option ${String.fromCharCode(65 + index)}`;
+                optionCount++;
+            });
+        }
+    });
+    
+    // Preview function
+    function previewQuestion() {
+        // Implementation for preview
+        alert('Preview functionality to be implemented');
+    }
+    
+    // Template function
+    function showTemplates() {
+        // Implementation for templates
+        alert('Template functionality to be implemented');
+    }
+    
+    // Insert blank function
+    function insertBlank() {
+        // Get TinyMCE instance
+        const editor = tinymce.get('content');
+        if (editor) {
+            // Insert blank at cursor position
+            editor.insertContent('[____' + (Date.now() % 1000) + '____]');
+        }
+    }
+    
+    // Bulk options function
+    function showBulkOptions() {
+        // Implementation for bulk options
+        const modal = document.getElementById('bulk-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+    </script>
     @endpush
 </x-layout>

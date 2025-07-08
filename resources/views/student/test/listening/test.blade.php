@@ -220,6 +220,200 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
+        /* ========== SPECIAL QUESTION TYPES STYLES ========== */
+        /* Matching Questions */
+        .matching-container {
+            user-select: none;
+            margin-left: 40px;
+            margin-top: 20px;
+        }
+        
+        .matching-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        
+        .matching-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+        }
+        
+        .matching-option {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border: 2px solid #3b82f6;
+            border-radius: 6px;
+            cursor: move;
+            transition: all 0.2s;
+        }
+        
+        .matching-option:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .matching-option.dragging {
+            opacity: 0.5;
+        }
+        
+        .matching-option.drag-over {
+            background: #dbeafe !important;
+            transform: scale(1.05);
+        }
+        
+        /* Form Completion */
+        .form-completion-container {
+            margin-left: 40px;
+            margin-top: 20px;
+        }
+        
+        .form-wrapper {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+        }
+        
+        .form-title {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1f2937;
+        }
+        
+        .form-field-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .form-label {
+            min-width: 120px;
+            padding-right: 15px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .form-question-number {
+            position: absolute;
+            left: -30px;
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 13px;
+        }
+        
+        .form-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Diagram Labeling */
+        .diagram-container {
+            margin-left: 40px;
+            margin-top: 20px;
+        }
+        
+        .diagram-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .diagram-image {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        
+        .diagram-hotspot {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: help;
+            transition: transform 0.2s;
+        }
+        
+        .diagram-hotspot:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        
+        .hotspot-marker {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .diagram-answers {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        .diagram-answer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+        }
+        
+        .diagram-label {
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .diagram-number {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 13px;
+            margin-right: 5px;
+        }
+        
+        .diagram-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
         /* ========== BOTTOM NAVIGATION ========== */
         .bottom-nav {
             position: fixed;
@@ -570,6 +764,24 @@
             .submit-test-button {
                 width: 100%;
             }
+            
+            /* Special types mobile */
+            .matching-grid {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            
+            .matching-lines {
+                display: none;
+            }
+            
+            .form-completion-container table {
+                font-size: 13px;
+            }
+            
+            .diagram-container img {
+                max-width: 100% !important;
+            }
         }
         
         /* ========== ANIMATIONS ========== */
@@ -636,6 +848,20 @@
                 $allQuestions = $testSet->questions->sortBy('order_number');
                 $groupedQuestions = $allQuestions->groupBy('part_number');
                 $currentQuestionNumber = 1;
+                
+                // Pre-calculate total questions including sub-questions
+                $totalQuestionCount = 0;
+                foreach ($allQuestions as $q) {
+                    if ($q->question_type === 'matching' && $q->matching_pairs) {
+                        $totalQuestionCount += count($q->matching_pairs);
+                    } elseif ($q->question_type === 'form_completion' && $q->form_structure) {
+                        $totalQuestionCount += count($q->form_structure['fields'] ?? []);
+                    } elseif ($q->question_type === 'plan_map_diagram' && $q->diagram_hotspots) {
+                        $totalQuestionCount += count($q->diagram_hotspots);
+                    } else {
+                        $totalQuestionCount++;
+                    }
+                }
             @endphp
             
             @foreach ($groupedQuestions as $partNumber => $partQuestions)
@@ -666,64 +892,190 @@
                         
                         @foreach ($questions as $question)
                             @php
-                                $displayNumber = $currentQuestionNumber++;
+                                $displayNumber = $currentQuestionNumber;
                             @endphp
                             
-                            <div class="question-item" id="question-{{ $question->id }}">
-                                <div class="question-content">
-                                    <span class="question-number">{{ $displayNumber }}</span>
-                                    <div class="question-text">{!! $question->content !!}</div>
+                            @if($question->question_type === 'matching' && $question->matching_pairs)
+                                {{-- MATCHING QUESTION --}}
+                                <div class="question-item" id="question-{{ $question->id }}">
+                                    <div class="question-content">
+                                        <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + count($question->matching_pairs) - 1 }}</span>
+                                        <div class="question-text">{!! $question->content !!}</div>
+                                    </div>
+                                    
+                                    <div class="matching-container">
+                                        <div class="matching-grid">
+                                            <!-- Left side - Questions -->
+                                            <div class="matching-left">
+                                                @foreach($question->matching_pairs as $index => $pair)
+                                                    <div class="matching-item">
+                                                        <strong>{{ $displayNumber + $index }}.</strong> {{ $pair['left'] }}
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                            
+                                            <!-- Center - Lines (for desktop) -->
+                                            <div class="matching-lines" style="width: 60px; position: relative;">
+                                                <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                                                    <!-- Lines will be drawn here by JavaScript -->
+                                                </svg>
+                                            </div>
+                                            
+                                            <!-- Right side - Options -->
+                                            <div class="matching-right">
+                                                @php
+                                                    $options = collect($question->matching_pairs)->pluck('right')->shuffle();
+                                                @endphp
+                                                @foreach($options as $index => $option)
+                                                    <div class="matching-option" data-option="{{ $option }}">
+                                                        <strong>{{ chr(65 + $index) }}.</strong> {{ $option }}
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Hidden inputs for answers -->
+                                        @foreach($question->matching_pairs as $index => $pair)
+                                            <input type="hidden" 
+                                                   name="answers[{{ $question->id }}_{{ $index }}]" 
+                                                   class="matching-answer"
+                                                   data-question-number="{{ $displayNumber + $index }}"
+                                                   data-pair-index="{{ $index }}">
+                                        @endforeach
+                                    </div>
                                 </div>
+                                @php $currentQuestionNumber += count($question->matching_pairs); @endphp
                                 
-                                @switch($question->question_type)
-                                    @case('multiple_choice')
-                                        <div class="options-list">
-                                            @foreach ($question->options as $optionIndex => $option)
-                                                <label class="option-item">
-                                                    <input type="radio" 
-                                                           name="answers[{{ $question->id }}]" 
-                                                           value="{{ $option->id }}" 
-                                                           class="option-radio"
-                                                           data-question-number="{{ $displayNumber }}">
-                                                    <span class="option-label">
-                                                        <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
-                                                    </span>
-                                                </label>
+                            @elseif($question->question_type === 'form_completion' && $question->form_structure)
+                                {{-- FORM COMPLETION QUESTION --}}
+                                <div class="question-item" id="question-{{ $question->id }}">
+                                    <div class="question-content">
+                                        <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + count($question->form_structure['fields']) - 1 }}</span>
+                                        <div class="question-text">{!! $question->content !!}</div>
+                                    </div>
+                                    
+                                    <div class="form-completion-container">
+                                        <div class="form-wrapper">
+                                            <h4 class="form-title">{{ $question->form_structure['title'] ?? 'Form' }}</h4>
+                                            
+                                            @foreach($question->form_structure['fields'] as $index => $field)
+                                                <div class="form-field-row">
+                                                    <span class="form-question-number">{{ $displayNumber + $index }}</span>
+                                                    <label class="form-label">{{ $field['label'] }}:</label>
+                                                    <input type="text" 
+                                                           name="answers[{{ $question->id }}_{{ $index }}]"
+                                                           class="form-input"
+                                                           placeholder="Type answer here"
+                                                           maxlength="30"
+                                                           data-question-number="{{ $displayNumber + $index }}">
+                                                </div>
                                             @endforeach
                                         </div>
-                                        @break
+                                    </div>
+                                </div>
+                                @php $currentQuestionNumber += count($question->form_structure['fields']); @endphp
+                                
+                            @elseif($question->question_type === 'plan_map_diagram' && $question->diagram_hotspots)
+                                {{-- DIAGRAM LABELING QUESTION --}}
+                                <div class="question-item" id="question-{{ $question->id }}">
+                                    <div class="question-content">
+                                        <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + count($question->diagram_hotspots) - 1 }}</span>
+                                        <div class="question-text">{!! $question->content !!}</div>
+                                    </div>
                                     
-                                    @case('form_completion')
-                                    @case('note_completion')
-                                    @case('sentence_completion')
-                                    @case('short_answer')
-                                        <div class="answer-input">
-                                            <input type="text" 
-                                                   name="answers[{{ $question->id }}]" 
-                                                   class="text-input" 
-                                                   placeholder="Type your answer"
-                                                   maxlength="50"
-                                                   data-question-number="{{ $displayNumber }}">
+                                    <div class="diagram-container">
+                                        <div class="diagram-wrapper">
+                                            <img src="{{ asset('storage/' . $question->media_path) }}" 
+                                                 class="diagram-image"
+                                                 alt="Diagram">
+                                            
+                                            <!-- Add hotspot markers -->
+                                            @foreach($question->diagram_hotspots as $hotspot)
+                                                <div class="diagram-hotspot" 
+                                                     style="left: {{ $hotspot['x'] }}%; top: {{ $hotspot['y'] }}%;">
+                                                    <div class="hotspot-marker">{{ $hotspot['label'] }}</div>
+                                                </div>
+                                            @endforeach
                                         </div>
-                                        @break
+                                        
+                                        <!-- Answer inputs -->
+                                        <div class="diagram-answers">
+                                            @foreach($question->diagram_hotspots as $index => $hotspot)
+                                                <div class="diagram-answer-item">
+                                                    <span class="diagram-label">{{ $hotspot['label'] }}</span>
+                                                    <span class="diagram-number">{{ $displayNumber + $index }}.</span>
+                                                    <input type="text" 
+                                                           name="answers[{{ $question->id }}_{{ $index }}]"
+                                                           class="diagram-input"
+                                                           placeholder="Type answer"
+                                                           maxlength="30"
+                                                           data-question-number="{{ $displayNumber + $index }}">
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                                @php $currentQuestionNumber += count($question->diagram_hotspots); @endphp
+                                
+                            @else
+                                {{-- REGULAR QUESTIONS --}}
+                                <div class="question-item" id="question-{{ $question->id }}">
+                                    <div class="question-content">
+                                        <span class="question-number">{{ $displayNumber }}</span>
+                                        <div class="question-text">{!! $question->content !!}</div>
+                                    </div>
                                     
-                                    @case('matching')
-                                    @case('plan_map_diagram')
-                                        <div class="answer-input">
-                                            <select name="answers[{{ $question->id }}]" 
-                                                    class="select-input" 
-                                                    data-question-number="{{ $displayNumber }}">
-                                                <option value="">Select your answer</option>
+                                    @switch($question->question_type)
+                                        @case('multiple_choice')
+                                            <div class="options-list">
                                                 @foreach ($question->options as $optionIndex => $option)
-                                                    <option value="{{ $option->id }}">
-                                                        {{ chr(65 + $optionIndex) }}. {{ $option->content }}
-                                                    </option>
+                                                    <label class="option-item">
+                                                        <input type="radio" 
+                                                               name="answers[{{ $question->id }}]" 
+                                                               value="{{ $option->id }}" 
+                                                               class="option-radio"
+                                                               data-question-number="{{ $displayNumber }}">
+                                                        <span class="option-label">
+                                                            <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                        </span>
+                                                    </label>
                                                 @endforeach
-                                            </select>
-                                        </div>
-                                        @break
-                                @endswitch
-                            </div>
+                                            </div>
+                                            @break
+                                        
+                                        @case('form_completion')
+                                        @case('note_completion')
+                                        @case('sentence_completion')
+                                        @case('short_answer')
+                                            <div class="answer-input">
+                                                <input type="text" 
+                                                       name="answers[{{ $question->id }}]" 
+                                                       class="text-input" 
+                                                       placeholder="Type your answer"
+                                                       maxlength="50"
+                                                       data-question-number="{{ $displayNumber }}">
+                                            </div>
+                                            @break
+                                        
+                                        @case('matching')
+                                        @case('plan_map_diagram')
+                                            <div class="answer-input">
+                                                <select name="answers[{{ $question->id }}]" 
+                                                        class="select-input" 
+                                                        data-question-number="{{ $displayNumber }}">
+                                                    <option value="">Select your answer</option>
+                                                    @foreach ($question->options as $optionIndex => $option)
+                                                        <option value="{{ $option->id }}">
+                                                            {{ chr(65 + $optionIndex) }}. {{ $option->content }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            @break
+                                    @endswitch
+                                </div>
+                                @php $currentQuestionNumber++; @endphp
+                            @endif
                         @endforeach
                     @endforeach
                 </div>
@@ -755,14 +1107,53 @@
                 
                 {{-- Question Numbers --}}
                 <div class="nav-numbers">
-                    @php $questionNum = 1; @endphp
+                    @php 
+                        $navQuestionNum = 1;
+                        $questionIdMap = [];
+                    @endphp
                     @foreach($allQuestions as $question)
-                        <div class="number-btn {{ $loop->first ? 'active' : '' }}" 
-                             data-question="{{ $question->id }}"
-                             data-display-number="{{ $questionNum }}"
-                             data-part="{{ $question->part_number }}">
-                            {{ $questionNum++ }}
-                        </div>
+                        @if($question->question_type === 'matching' && $question->matching_pairs)
+                            @foreach($question->matching_pairs as $index => $pair)
+                                @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
+                                <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
+                                     data-question="{{ $question->id }}"
+                                     data-sub-index="{{ $index }}"
+                                     data-display-number="{{ $navQuestionNum }}"
+                                     data-part="{{ $question->part_number }}">
+                                    {{ $navQuestionNum++ }}
+                                </div>
+                            @endforeach
+                        @elseif($question->question_type === 'form_completion' && $question->form_structure)
+                            @foreach($question->form_structure['fields'] as $index => $field)
+                                @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
+                                <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
+                                     data-question="{{ $question->id }}"
+                                     data-sub-index="{{ $index }}"
+                                     data-display-number="{{ $navQuestionNum }}"
+                                     data-part="{{ $question->part_number }}">
+                                    {{ $navQuestionNum++ }}
+                                </div>
+                            @endforeach
+                        @elseif($question->question_type === 'plan_map_diagram' && $question->diagram_hotspots)
+                            @foreach($question->diagram_hotspots as $index => $hotspot)
+                                @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
+                                <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
+                                     data-question="{{ $question->id }}"
+                                     data-sub-index="{{ $index }}"
+                                     data-display-number="{{ $navQuestionNum }}"
+                                     data-part="{{ $question->part_number }}">
+                                    {{ $navQuestionNum++ }}
+                                </div>
+                            @endforeach
+                        @else
+                            @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
+                            <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
+                                 data-question="{{ $question->id }}"
+                                 data-display-number="{{ $navQuestionNum }}"
+                                 data-part="{{ $question->part_number }}">
+                                {{ $navQuestionNum++ }}
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             </div>
@@ -797,7 +1188,7 @@
             <div class="modal-message">
                 Are you sure you want to submit your test? You cannot change your answers after submission.
                 <br><br>
-                <strong>Answered Questions: <span id="answered-count">0</span> / {{ $allQuestions->count() }}</strong>
+                <strong>Answered Questions: <span id="answered-count">0</span> / {{ $totalQuestionCount }}</strong>
             </div>
             <div class="modal-buttons">
                 <button class="modal-button" id="confirm-submit-btn">Yes, Submit</button>
@@ -823,7 +1214,7 @@
         const testConfig = {
             attemptId: {{ $attempt->id }},
             testSetId: {{ $testSet->id }},
-            totalQuestions: {{ $allQuestions->count() }}
+            totalQuestions: {{ $totalQuestionCount }}
         };
         
         // Elements
@@ -920,6 +1311,7 @@
                 this.classList.add('active');
                 
                 const questionId = this.dataset.question;
+                const subIndex = this.dataset.subIndex;
                 const questionElement = document.getElementById(`question-${questionId}`);
                 
                 if (questionElement) {
@@ -936,6 +1328,14 @@
                         behavior: 'smooth',
                         block: 'center'
                     });
+                    
+                    // Focus on specific sub-question input if applicable
+                    if (subIndex !== undefined) {
+                        const input = questionElement.querySelector(`input[name="answers[${questionId}_${subIndex}]"]`);
+                        if (input) {
+                            setTimeout(() => input.focus(), 300);
+                        }
+                    }
                 }
                 
                 // Update review checkbox
@@ -1222,513 +1622,512 @@
                     z-index: 99998;
                     display: flex;
                     flex-direction: column;
-                `;
-                
-                panel.innerHTML = `
-                    <div style="
-                        padding: 16px;
-                        border-bottom: 1px solid #e5e7eb;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        background: #f8f9fa;
-                    ">
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 600; flex: 1;">📝 Your Notes</h3>
-                        <button id="close-notes-panel-btn" style="
-                            background: none;
-                            border: none;
-                            font-size: 20px;
-                            cursor: pointer;
-                            color: #6b7280;
-                            padding: 0;
-                            width: 28px;
-                            height: 28px;
-                            border-radius: 4px;
-                            transition: all 0.2s;
-                        " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='none'">×</button>
-                    </div>
-                    <div id="notes-list" style="
-                        flex: 1;
-                        overflow-y: auto;
-                        padding: 12px;
-                    "></div>
-                `;
-                
-                document.body.appendChild(panel);
-                this.notesPanel = panel;
-                
-                document.getElementById('close-notes-panel-btn').addEventListener('click', () => {
-                    this.closeNotesPanel();
-                });
-            },
-            
-            setupAnnotationHandlers() {
-                document.addEventListener('mouseup', (e) => {
-                    if (e.target.closest('#annotation-menu') || 
-                        e.target.closest('#note-modal') || 
-                        e.target.closest('#notes-panel')) {
-                        return;
-                    }
-                    
-                    setTimeout(() => {
-                        const selection = window.getSelection();
-                        const selectedText = selection.toString().trim();
-                        
-                        if (selectedText && selectedText.length >= 3) {
-                            const range = selection.getRangeAt(0);
-                            const rect = range.getBoundingClientRect();
-                            this.currentRange = range;
-                            this.showMenu(rect, selectedText);
-                        } else {
-                            this.hideMenu();
-                        }
-                    }, 10);
-                });
-                
-                // Hide menu on scroll
-                document.addEventListener('scroll', () => {
-                    this.hideMenu();
-                }, true);
-            },
-            
-            showMenu(rect, selectedText) {
-                this.hideMenu();
-                
-                const menu = document.createElement('div');
-                menu.id = 'annotation-menu';
-                menu.style.cssText = `
-                    position: fixed;
-                    top: ${rect.top - 50}px;
-                    left: ${rect.left + (rect.width / 2) - 80}px;
-                    background: white;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                    padding: 6px;
-                    display: flex;
-                    gap: 6px;
-                    z-index: 99999;
-                `;
-                
-                // Create buttons with proper event handlers
-                const noteBtn = document.createElement('button');
-                noteBtn.style.cssText = `
-                    padding: 6px 12px;
-                    border: none;
-                    background: #3b82f6;
-                    color: white;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    transition: all 0.2s;
-                `;
-                noteBtn.innerHTML = `
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                    Note
-                `;
-                noteBtn.addEventListener('click', () => this.showNoteModal());
-                
-                const highlightBtn = document.createElement('button');
-                highlightBtn.style.cssText = `
-                    padding: 6px 12px;
-                    border: none;
-                    background: #fbbf24;
-                    color: white;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    transition: all 0.2s;
-                `;
-                highlightBtn.innerHTML = `
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    Highlight
-                `;
-                highlightBtn.addEventListener('click', () => this.highlightText());
-                
-                menu.appendChild(noteBtn);
-                menu.appendChild(highlightBtn);
-                document.body.appendChild(menu);
-                this.currentMenu = menu;
-            },
-            
-            hideMenu() {
-                if (this.currentMenu) {
-                    this.currentMenu.remove();
-                    this.currentMenu = null;
-                }
-            },
-            
-            showNoteModal() {
-                const selectedText = this.currentRange.toString();
-                document.getElementById('selected-text-preview').textContent = 
-                    `"${selectedText.substring(0, 40)}${selectedText.length > 40 ? '...' : ''}"`;
-                this.noteModal.style.display = 'flex';
-                setTimeout(() => {
-                    document.getElementById('note-textarea').focus();
-                }, 100);
-                this.hideMenu();
-            },
-            
-            closeNoteModal() {
-                this.noteModal.style.display = 'none';
-                document.getElementById('note-textarea').value = '';
-                document.getElementById('char-count').textContent = '0';
-            },
-            
-            saveNote() {
-                const noteText = document.getElementById('note-textarea').value.trim();
-                if (noteText && this.currentRange) {
-                    const selectedText = this.currentRange.toString();
-                    
-                    // Apply note styling
-                    const span = document.createElement('span');
-                    span.className = 'note-text';
-                    span.textContent = selectedText;
-                    span.title = noteText;
-                    span.dataset.note = noteText;
-                    span.dataset.noteId = Date.now();
-                    
-                    // Add click handler
-                    span.onclick = () => this.showNoteTooltip(span, noteText);
-                    
-                    try {
-                        this.currentRange.deleteContents();
-                        this.currentRange.insertNode(span);
-                    } catch (error) {
-                        console.error('Error applying note:', error);
-                    }
-                    
-                    // Save to localStorage
-                    this.saveAnnotation('note', selectedText, noteText);
-                    
-                    this.closeNoteModal();
-                    window.getSelection().removeAllRanges();
-                }
-            },
-            
-            highlightText() {
-                if (this.currentRange) {
-                    const selectedText = this.currentRange.toString();
-                    
-                    // Apply highlight styling
-                    const span = document.createElement('span');
-                    span.className = 'highlighted-text';
-                    span.textContent = selectedText;
-                    span.title = 'Click to remove highlight';
-                    
-                    // Add click handler for removal
-                    span.onclick = (e) => {
-                        e.stopPropagation();
-                        if (confirm('Remove this highlight?')) {
-                            const text = span.textContent;
-                            span.style.transition = 'background-color 0.3s ease';
-                            span.style.backgroundColor = 'transparent';
-                            
-                            setTimeout(() => {
-                                span.replaceWith(document.createTextNode(text));
-                                this.removeAnnotation('highlight', selectedText);
-                            }, 300);
-                        }
-                    };
-                    
-                    try {
-                        this.currentRange.deleteContents();
-                        this.currentRange.insertNode(span);
-                    } catch (error) {
-                        console.error('Error applying highlight:', error);
-                    }
-                    
-                    // Save to localStorage
-                    this.saveAnnotation('highlight', selectedText, 'yellow');
-                    
-                    window.getSelection().removeAllRanges();
-                    this.hideMenu();
-                }
-            },
-            
-            removeAnnotation(type, text) {
-                let annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
-                annotations = annotations.filter(a => !(a.type === type && a.text === text));
-                localStorage.setItem(`annotations_${testConfig.attemptId}`, JSON.stringify(annotations));
-                
-                if (type === 'note') {
-                    this.updateNotesCount();
-                }
-            },
-            
-            showNoteTooltip(element, noteText) {
-                // Remove existing tooltip
-                const existingTooltip = document.getElementById('note-tooltip');
-                if (existingTooltip) existingTooltip.remove();
-                
-                const tooltip = document.createElement('div');
-                tooltip.id = 'note-tooltip';
-                tooltip.style.cssText = `
-                    position: absolute;
-                    background: white;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
-                    padding: 10px;
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-                    max-width: 250px;
-                    z-index: 99999;
-                    font-size: 13px;
-                `;
-                
-                tooltip.innerHTML = `
-                    <div style="color: #374151; margin-bottom: 6px;">${noteText}</div>
-                    <div style="font-size: 11px; color: #9ca3af;">Click outside to close</div>
-                `;
-                
-                document.body.appendChild(tooltip);
-                
-                const rect = element.getBoundingClientRect();
-                tooltip.style.top = `${rect.bottom + window.scrollY + 4}px`;
-                tooltip.style.left = `${rect.left + window.scrollX}px`;
-                
-                // Remove on click outside
-                setTimeout(() => {
-                    document.addEventListener('click', function removeTooltip(e) {
-                        if (!tooltip.contains(e.target) && e.target !== element) {
-                            tooltip.remove();
-                            document.removeEventListener('click', removeTooltip);
-                        }
-                    });
-                }, 100);
-            },
-            
-            saveAnnotation(type, text, data) {
-                const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
-                annotations.push({
-                    type: type,
-                    text: text,
-                    data: data,
-                    timestamp: new Date().toISOString()
-                });
-                localStorage.setItem(`annotations_${testConfig.attemptId}`, JSON.stringify(annotations));
-                this.updateNotesCount();
-            },
-            
-            restoreAnnotations() {
-                const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
-                
-                annotations.forEach(annotation => {
-                    this.findAndStyleText(annotation.text, (span) => {
-                        if (annotation.type === 'note') {
-                            span.className = 'note-text';
-                            span.dataset.note = annotation.data;
-                            span.dataset.noteId = Date.now();
-                            span.title = 'Click to view note';
-                            span.onclick = () => this.showNoteTooltip(span, annotation.data);
-                        } else if (annotation.type === 'highlight') {
-                            span.className = 'highlighted-text';
-                            span.title = 'Click to remove highlight';
-                            span.onclick = (e) => {
-                                e.stopPropagation();
-                                if (confirm('Remove this highlight?')) {
-                                    const text = span.textContent;
-                                    span.style.transition = 'background-color 0.3s ease';
-                                    span.style.backgroundColor = 'transparent';
-                                    
-                                    setTimeout(() => {
-                                        span.replaceWith(document.createTextNode(text));
-                                        this.removeAnnotation('highlight', annotation.text);
-                                    }, 300);
-                                }
-                            };
-                        }
-                    });
-                });
-                
-                this.updateNotesCount();
-            },
-            
-            findAndStyleText(searchText, styleCallback) {
-                const container = document.querySelector('.content-area');
-                const walker = document.createTreeWalker(
-                    container,
-                    NodeFilter.SHOW_TEXT,
-                    null,
-                    false
-                );
-                
-                let node;
-                while (node = walker.nextNode()) {
-                    const text = node.textContent;
-                    const index = text.indexOf(searchText);
-                    
-                    if (index !== -1 && !node.parentElement.classList.contains('note-text') && 
-                        !node.parentElement.classList.contains('highlighted-text')) {
-                        const span = document.createElement('span');
-                        const parent = node.parentNode;
-                        
-                        // Split the text node
-                        const before = document.createTextNode(text.substring(0, index));
-                        const after = document.createTextNode(text.substring(index + searchText.length));
-                        
-                        // Apply styling
-                        span.textContent = searchText;
-                        styleCallback(span);
-                        
-                        // Replace in DOM
-                        parent.insertBefore(before, node);
-                        parent.insertBefore(span, node);
-                        parent.insertBefore(after, node);
-                        parent.removeChild(node);
-                        
-                        break;
-                    }
-                }
-            },
-            
-            updateNotesCount() {
-                const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
-                const notesCount = annotations.filter(a => a.type === 'note').length;
-                const countElement = document.getElementById('notes-count');
-                
-                if (countElement) {
-                    if (notesCount > 0) {
-                        countElement.textContent = notesCount;
-                        countElement.style.display = 'inline-flex';
-                    } else {
-                        countElement.style.display = 'none';
-                    }
-                }
-            },
-            
-            openNotesPanel() {
-                this.updateNotesList();
-                this.notesPanel.style.right = '0';
-            },
-            
-            closeNotesPanel() {
-                this.notesPanel.style.right = '-350px';
-            },
-            
-            updateNotesList() {
-                const notesList = document.getElementById('notes-list');
-                const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
-                const notes = annotations.filter(a => a.type === 'note');
-                
-                if (notes.length === 0) {
-                    notesList.innerHTML = `
-                        <div style="text-align: center; color: #9ca3af; padding: 30px;">
-                            <div style="font-size: 36px; margin-bottom: 12px;">📝</div>
-                            <p style="font-size: 14px; margin-bottom: 6px;">No notes yet!</p>
-                            <p style="font-size: 12px; margin-top: 6px;">Select text and add notes to see them here.</p>
-                        </div>
                     `;
-                } else {
-                    notesList.innerHTML = notes.map((note, index) => `
-                        <div style="
-                            background: #f9fafb;
-                            border: 1px solid #e5e7eb;
-                            border-radius: 6px;
-                            padding: 12px;
-                            margin-bottom: 10px;
-                            position: relative;
-                            transition: all 0.2s ease;
-                        " data-note-index="${index}">
-                            <button class="delete-note-btn" data-note-text="${encodeURIComponent(note.text)}" data-note-timestamp="${note.timestamp}" style="
-                                position: absolute;
-                                top: 8px;
-                                right: 8px;
-                                background: #fee2e2;
-                                border: none;
-                                border-radius: 3px;
-                                padding: 3px 6px;
-                                cursor: pointer;
-                                color: #dc2626;
-                                font-size: 11px;
-                                transition: all 0.2s;
-                            ">Delete</button>
-                            <div style="
-                                font-size: 12px;
-                                color: #6b7280;
-                                font-style: italic;
-                                margin-bottom: 6px;
-                                padding: 6px;
-                                background: white;
-                                border-radius: 3px;
-                                margin-right: 50px;
-                                border-left: 2px solid #3b82f6;
-                            ">"${note.text.substring(0, 80)}${note.text.length > 80 ? '...' : ''}"</div>
-                            <div style="font-size: 13px; color: #111827; line-height: 1.4; margin-bottom: 6px;">${note.data}</div>
-                            <div style="
-                                margin-top: 8px;
-                                font-size: 11px;
-                                color: #9ca3af;
-                            ">📅 ${new Date(note.timestamp).toLocaleString()}</div>
-                        </div>
-                    `).join('');
-                    
-                    // Add event listeners to delete buttons
-                    notesList.querySelectorAll('.delete-note-btn').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const text = decodeURIComponent(btn.dataset.noteText);
-                            const timestamp = btn.dataset.noteTimestamp;
-                            this.deleteNote(text, timestamp);
-                        });
-                    });
-                }
-            },
+                    panel.innerHTML = `
+                <div style="
+                    padding: 16px;
+                    border-bottom: 1px solid #e5e7eb;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: #f8f9fa;
+                ">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 600; flex: 1;">📝 Your Notes</h3>
+                    <button id="close-notes-panel-btn" style="
+                        background: none;
+                        border: none;
+                        font-size: 20px;
+                        cursor: pointer;
+                        color: #6b7280;
+                        padding: 0;
+                        width: 28px;
+                        height: 28px;
+                        border-radius: 4px;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='none'">×</button>
+                </div>
+                <div id="notes-list" style="
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 12px;
+                "></div>
+            `;
             
-            deleteNote(text, timestamp) {
-                if (confirm('Are you sure you want to delete this note?')) {
-                    let annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
-                    annotations = annotations.filter(a => !(a.type === 'note' && a.text === text && a.timestamp === timestamp));
-                    localStorage.setItem(`annotations_${testConfig.attemptId}`, JSON.stringify(annotations));
+            document.body.appendChild(panel);
+            this.notesPanel = panel;
+            
+            document.getElementById('close-notes-panel-btn').addEventListener('click', () => {
+                this.closeNotesPanel();
+            });
+        },
+        
+        setupAnnotationHandlers() {
+            document.addEventListener('mouseup', (e) => {
+                if (e.target.closest('#annotation-menu') || 
+                    e.target.closest('#note-modal') || 
+                    e.target.closest('#notes-panel')) {
+                    return;
+                }
+                
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    const selectedText = selection.toString().trim();
                     
-                    // Remove from DOM
-                    const noteElements = document.querySelectorAll('.note-text');
-                    noteElements.forEach(el => {
-                        if (el.textContent === text) {
-                            const parent = el.parentNode;
-                            parent.replaceChild(document.createTextNode(text), el);
-                        }
-                    });
+                    if (selectedText && selectedText.length >= 3) {
+                        const range = selection.getRangeAt(0);
+                        const rect = range.getBoundingClientRect();
+                        this.currentRange = range;
+                        this.showMenu(rect, selectedText);
+                    } else {
+                        this.hideMenu();
+                    }
+                }, 10);
+            });
+            
+            // Hide menu on scroll
+            document.addEventListener('scroll', () => {
+                this.hideMenu();
+            }, true);
+        },
+        
+        showMenu(rect, selectedText) {
+            this.hideMenu();
+            
+            const menu = document.createElement('div');
+            menu.id = 'annotation-menu';
+            menu.style.cssText = `
+                position: fixed;
+                top: ${rect.top - 50}px;
+                left: ${rect.left + (rect.width / 2) - 80}px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                padding: 6px;
+                display: flex;
+                gap: 6px;
+                z-index: 99999;
+            `;
+            
+            // Create buttons with proper event handlers
+            const noteBtn = document.createElement('button');
+            noteBtn.style.cssText = `
+                padding: 6px 12px;
+                border: none;
+                background: #3b82f6;
+                color: white;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                transition: all 0.2s;
+            `;
+            noteBtn.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Note
+            `;
+            noteBtn.addEventListener('click', () => this.showNoteModal());
+            
+            const highlightBtn = document.createElement('button');
+            highlightBtn.style.cssText = `
+                padding: 6px 12px;
+                border: none;
+                background: #fbbf24;
+                color: white;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                transition: all 0.2s;
+            `;
+            highlightBtn.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                Highlight
+            `;
+            highlightBtn.addEventListener('click', () => this.highlightText());
+            
+            menu.appendChild(noteBtn);
+            menu.appendChild(highlightBtn);
+            document.body.appendChild(menu);
+            this.currentMenu = menu;
+        },
+        
+        hideMenu() {
+            if (this.currentMenu) {
+                this.currentMenu.remove();
+                this.currentMenu = null;
+            }
+        },
+        
+        showNoteModal() {
+            const selectedText = this.currentRange.toString();
+            document.getElementById('selected-text-preview').textContent = 
+                `"${selectedText.substring(0, 40)}${selectedText.length > 40 ? '...' : ''}"`;
+            this.noteModal.style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('note-textarea').focus();
+            }, 100);
+            this.hideMenu();
+        },
+        
+        closeNoteModal() {
+            this.noteModal.style.display = 'none';
+            document.getElementById('note-textarea').value = '';
+            document.getElementById('char-count').textContent = '0';
+        },
+        
+        saveNote() {
+            const noteText = document.getElementById('note-textarea').value.trim();
+            if (noteText && this.currentRange) {
+                const selectedText = this.currentRange.toString();
+                
+                // Apply note styling
+                const span = document.createElement('span');
+                span.className = 'note-text';
+                span.textContent = selectedText;
+                span.title = noteText;
+                span.dataset.note = noteText;
+                span.dataset.noteId = Date.now();
+                
+                // Add click handler
+                span.onclick = () => this.showNoteTooltip(span, noteText);
+                
+                try {
+                    this.currentRange.deleteContents();
+                    this.currentRange.insertNode(span);
+                } catch (error) {
+                    console.error('Error applying note:', error);
+                }
+                
+                // Save to localStorage
+                this.saveAnnotation('note', selectedText, noteText);
+                
+                this.closeNoteModal();
+                window.getSelection().removeAllRanges();
+            }
+        },
+        
+        highlightText() {
+            if (this.currentRange) {
+                const selectedText = this.currentRange.toString();
+                
+                // Apply highlight styling
+                const span = document.createElement('span');
+                span.className = 'highlighted-text';
+                span.textContent = selectedText;
+                span.title = 'Click to remove highlight';
+                
+                // Add click handler for removal
+                span.onclick = (e) => {
+                    e.stopPropagation();
+                    if (confirm('Remove this highlight?')) {
+                        const text = span.textContent;
+                        span.style.transition = 'background-color 0.3s ease';
+                        span.style.backgroundColor = 'transparent';
+                        
+                        setTimeout(() => {
+                            span.replaceWith(document.createTextNode(text));
+                            this.removeAnnotation('highlight', selectedText);
+                        }, 300);
+                    }
+                };
+                
+                try {
+                    this.currentRange.deleteContents();
+                    this.currentRange.insertNode(span);
+                } catch (error) {
+                    console.error('Error applying highlight:', error);
+                }
+                
+                // Save to localStorage
+                this.saveAnnotation('highlight', selectedText, 'yellow');
+                
+                window.getSelection().removeAllRanges();
+                this.hideMenu();
+            }
+        },
+        
+        removeAnnotation(type, text) {
+            let annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
+            annotations = annotations.filter(a => !(a.type === type && a.text === text));
+            localStorage.setItem(`annotations_${testConfig.attemptId}`, JSON.stringify(annotations));
+            
+            if (type === 'note') {
+                this.updateNotesCount();
+            }
+        },
+        
+        showNoteTooltip(element, noteText) {
+            // Remove existing tooltip
+            const existingTooltip = document.getElementById('note-tooltip');
+            if (existingTooltip) existingTooltip.remove();
+            
+            const tooltip = document.createElement('div');
+            tooltip.id = 'note-tooltip';
+            tooltip.style.cssText = `
+                position: absolute;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                padding: 10px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                max-width: 250px;
+                z-index: 99999;
+                font-size: 13px;
+            `;
+            
+            tooltip.innerHTML = `
+                <div style="color: #374151; margin-bottom: 6px;">${noteText}</div>
+                <div style="font-size: 11px; color: #9ca3af;">Click outside to close</div>
+            `;
+            
+            document.body.appendChild(tooltip);
+            
+            const rect = element.getBoundingClientRect();
+            tooltip.style.top = `${rect.bottom + window.scrollY + 4}px`;
+            tooltip.style.left = `${rect.left + window.scrollX}px`;
+            
+            // Remove on click outside
+            setTimeout(() => {
+                document.addEventListener('click', function removeTooltip(e) {
+                    if (!tooltip.contains(e.target) && e.target !== element) {
+                        tooltip.remove();
+                        document.removeEventListener('click', removeTooltip);
+                    }
+                });
+            }, 100);
+        },
+        
+        saveAnnotation(type, text, data) {
+            const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
+            annotations.push({
+                type: type,
+                text: text,
+                data: data,
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem(`annotations_${testConfig.attemptId}`, JSON.stringify(annotations));
+            this.updateNotesCount();
+        },
+        
+        restoreAnnotations() {
+            const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
+            
+            annotations.forEach(annotation => {
+                this.findAndStyleText(annotation.text, (span) => {
+                    if (annotation.type === 'note') {
+                        span.className = 'note-text';
+                        span.dataset.note = annotation.data;
+                        span.dataset.noteId = Date.now();
+                        span.title = 'Click to view note';
+                        span.onclick = () => this.showNoteTooltip(span, annotation.data);
+                    } else if (annotation.type === 'highlight') {
+                        span.className = 'highlighted-text';
+                        span.title = 'Click to remove highlight';
+                        span.onclick = (e) => {
+                            e.stopPropagation();
+                            if (confirm('Remove this highlight?')) {
+                                const text = span.textContent;
+                                span.style.transition = 'background-color 0.3s ease';
+                                span.style.backgroundColor = 'transparent';
+                                
+                                setTimeout(() => {
+                                    span.replaceWith(document.createTextNode(text));
+                                    this.removeAnnotation('highlight', annotation.text);
+                                }, 300);
+                            }
+                        };
+                    }
+                });
+            });
+            
+            this.updateNotesCount();
+        },
+        
+        findAndStyleText(searchText, styleCallback) {
+            const container = document.querySelector('.content-area');
+            const walker = document.createTreeWalker(
+                container,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let node;
+            while (node = walker.nextNode()) {
+                const text = node.textContent;
+                const index = text.indexOf(searchText);
+                
+                if (index !== -1 && !node.parentElement.classList.contains('note-text') && 
+                    !node.parentElement.classList.contains('highlighted-text')) {
+                    const span = document.createElement('span');
+                    const parent = node.parentNode;
                     
-                    this.updateNotesList();
-                    this.updateNotesCount();
+                    // Split the text node
+                    const before = document.createTextNode(text.substring(0, index));
+                    const after = document.createTextNode(text.substring(index + searchText.length));
+                    
+                    // Apply styling
+                    span.textContent = searchText;
+                    styleCallback(span);
+                    
+                    // Replace in DOM
+                    parent.insertBefore(before, node);
+                    parent.insertBefore(span, node);
+                    parent.insertBefore(after, node);
+                    parent.removeChild(node);
+                    
+                    break;
                 }
             }
-        };
+        },
         
-        // Update notes button handler
-        notesBtn.addEventListener('click', function() {
-            AnnotationSystem.openNotesPanel();
-        });
+        updateNotesCount() {
+            const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
+            const notesCount = annotations.filter(a => a.type === 'note').length;
+            const countElement = document.getElementById('notes-count');
+            
+            if (countElement) {
+                if (notesCount > 0) {
+                    countElement.textContent = notesCount;
+                    countElement.style.display = 'inline-flex';
+                } else {
+                    countElement.style.display = 'none';
+                }
+            }
+        },
         
-        // ========== Initialize ==========
+        openNotesPanel() {
+            this.updateNotesList();
+            this.notesPanel.style.right = '0';
+        },
         
-        // Play first part audio
-        playPartAudio('1');
+        closeNotesPanel() {
+            this.notesPanel.style.right = '-350px';
+        },
         
-        // Update initial visibility
-        updateNumberButtonsVisibility('1');
+        updateNotesList() {
+            const notesList = document.getElementById('notes-list');
+            const annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
+            const notes = annotations.filter(a => a.type === 'note');
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = `
+                    <div style="text-align: center; color: #9ca3af; padding: 30px;">
+                        <div style="font-size: 36px; margin-bottom: 12px;">📝</div>
+                        <p style="font-size: 14px; margin-bottom: 6px;">No notes yet!</p>
+                        <p style="font-size: 12px; margin-top: 6px;">Select text and add notes to see them here.</p>
+                    </div>
+                `;
+            } else {
+                notesList.innerHTML = notes.map((note, index) => `
+                    <div style="
+                        background: #f9fafb;
+                        border: 1px solid #e5e7eb;
+                        border-radius: 6px;
+                        padding: 12px;
+                        margin-bottom: 10px;
+                        position: relative;
+                        transition: all 0.2s ease;
+                    " data-note-index="${index}">
+                        <button class="delete-note-btn" data-note-text="${encodeURIComponent(note.text)}" data-note-timestamp="${note.timestamp}" style="
+                            position: absolute;
+                            top: 8px;
+                            right: 8px;
+                            background: #fee2e2;
+                            border: none;
+                            border-radius: 3px;
+                            padding: 3px 6px;
+                            cursor: pointer;
+                            color: #dc2626;
+                            font-size: 11px;
+                            transition: all 0.2s;
+                        ">Delete</button>
+                        <div style="
+                            font-size: 12px;
+                            color: #6b7280;
+                            font-style: italic;
+                            margin-bottom: 6px;
+                            padding: 6px;
+                            background: white;
+                            border-radius: 3px;
+                            margin-right: 50px;
+                            border-left: 2px solid #3b82f6;
+                        ">"${note.text.substring(0, 80)}${note.text.length > 80 ? '...' : ''}"</div>
+                        <div style="font-size: 13px; color: #111827; line-height: 1.4; margin-bottom: 6px;">${note.data}</div>
+                        <div style="
+                            margin-top: 8px;
+                            font-size: 11px;
+                            color: #9ca3af;
+                        ">📅 ${new Date(note.timestamp).toLocaleString()}</div>
+                    </div>
+                `).join('');
+                
+                // Add event listeners to delete buttons
+                notesList.querySelectorAll('.delete-note-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const text = decodeURIComponent(btn.dataset.noteText);
+                        const timestamp = btn.dataset.noteTimestamp;
+                        this.deleteNote(text, timestamp);
+                    });
+                });
+            }
+        },
         
-        // Load saved answers
-        loadSavedAnswers();
-        
-        // Initialize annotation system
-        AnnotationSystem.init();
-        
-        // Periodically save answers
-        setInterval(saveAllAnswers, 30000);
-        
-        // Update answer count
-        updateAnswerCount();
+        deleteNote(text, timestamp) {
+            if (confirm('Are you sure you want to delete this note?')) {
+                let annotations = JSON.parse(localStorage.getItem(`annotations_${testConfig.attemptId}`) || '[]');
+                annotations = annotations.filter(a => !(a.type === 'note' && a.text === text && a.timestamp === timestamp));
+                localStorage.setItem(`annotations_${testConfig.attemptId}`, JSON.stringify(annotations));
+                
+                // Remove from DOM
+                const noteElements = document.querySelectorAll('.note-text');
+                noteElements.forEach(el => {
+                    if (el.textContent === text) {
+                        const parent = el.parentNode;
+                        parent.replaceChild(document.createTextNode(text), el);
+                    }
+                });
+                
+                this.updateNotesList();
+                this.updateNotesCount();
+            }
+        }
+    };
+    
+    // Update notes button handler
+    notesBtn.addEventListener('click', function() {
+        AnnotationSystem.openNotesPanel();
     });
-    </script>
-    @endpush
+    
+    // ========== Initialize ==========
+    
+    // Play first part audio
+    playPartAudio('1');
+    
+    // Update initial visibility
+    updateNumberButtonsVisibility('1');
+    
+    // Load saved answers
+    loadSavedAnswers();
+    
+    // Initialize annotation system
+    AnnotationSystem.init();
+    
+    // Periodically save answers
+    setInterval(saveAllAnswers, 30000);
+    
+    // Update answer count
+    updateAnswerCount();
+});
+</script>
+@endpush
 </x-test-layout>

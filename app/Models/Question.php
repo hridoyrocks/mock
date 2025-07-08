@@ -9,37 +9,38 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Question extends Model
 {
     protected $fillable = [
-        'test_set_id', 
-        'question_type', 
-        'content', 
-        'media_path', 
-        'order_number',
-        'part_number',
-        'question_group',
-        'passage_text',
-        'audio_transcript',
-        'word_limit',
-        'time_limit',
-        'instructions',
-        'marks',
-        'is_example',
-        'passage_id',
-        'section_specific_data',
-        'blank_count',
-        'is_sub_question', 
-        'parent_question_id',
-        'sub_question_index',
-        // নতুন fields
-        'explanation',
-        'passage_reference',
-        'common_mistakes',
-        'tips',
-        'difficulty_level',
-        'related_topics',
-        // Marker system fields
-        'marker_id',
-        'processed_explanation',
-    ];
+    'test_set_id', 
+    'question_type', 
+    'content', 
+    'media_path', 
+    'order_number',
+    'part_number',
+    'question_group',
+    'passage_text',
+    'audio_transcript',
+    'word_limit',
+    'time_limit',
+    'instructions',
+    'marks',
+    'is_example',
+    'passage_id',
+    'section_specific_data',
+    'blank_count',
+    'is_sub_question', 
+    'parent_question_id',
+    'sub_question_index',
+    'matching_pairs',      // Add this
+    'form_structure',      // Add this
+    'diagram_hotspots',    // Add this
+    'marker_id',
+    'processed_explanation',
+    'explanation',
+    'passage_reference',
+    'common_mistakes',
+    'tips',
+    'difficulty_level',
+    'related_topics',
+];
 
     protected $casts = [
         'word_limit' => 'integer',
@@ -52,6 +53,10 @@ class Question extends Model
         'is_sub_question' => 'boolean',
         'sub_question_index' => 'integer',
         'related_topics' => 'array',
+        'matching_pairs' => 'array',
+        'form_structure' => 'array',
+        'diagram_hotspots' => 'array',
+        'template_type' => 'string',
     ];
     
     /**
@@ -493,6 +498,53 @@ public function checkDropdownAnswer($dropdownNumber, $selectedIndex): bool
     }
 
 
+    /**
+ * Check if question has special layout
+ */
+public function hasSpecialLayout(): bool
+{
+    return in_array($this->question_type, [
+        'matching',
+        'form_completion',
+        'plan_map_diagram'
+    ]);
+}
 
+/**
+ * Get matching pairs for display
+ */
+public function getMatchingPairs(): array
+{
+    if ($this->question_type !== 'matching' || !$this->matching_pairs) {
+        return [];
+    }
     
+    return $this->matching_pairs;
+}
+
+/**
+ * Get form structure
+ */
+public function getFormStructure(): array
+{
+    if ($this->question_type !== 'form_completion' || !$this->form_structure) {
+        return [];
+    }
+    
+    return $this->form_structure;
+}
+
+/**
+ * Get diagram hotspots
+ */
+public function getDiagramHotspots(): array
+{
+    if ($this->question_type !== 'plan_map_diagram' || !$this->diagram_hotspots) {
+        return [];
+    }
+    
+    return $this->diagram_hotspots;
+}
+
+   
 }
