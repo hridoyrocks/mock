@@ -2,6 +2,8 @@
 const QuestionTypeHandlers = {
     // Initialize based on question type
     init(questionType) {
+        console.log('Initializing handler for:', questionType);
+
         // Hide all special panels first
         document.querySelectorAll('.type-specific-panel').forEach(panel => {
             panel.style.display = 'none';
@@ -23,18 +25,29 @@ const QuestionTypeHandlers = {
 
     // Matching Questions Handler
     initMatching() {
+        console.log('Initializing matching question');
         const panel = document.getElementById('matching-panel');
-        if (panel) panel.style.display = 'block';
+        if (panel) {
+            panel.style.display = 'block';
+        }
 
         // Create default pairs if empty
         const container = document.getElementById('matching-pairs-container');
         if (container && container.children.length === 0) {
-            this.addMatchingPair();
+            // Add 3 default pairs
+            for (let i = 0; i < 3; i++) {
+                this.addMatchingPair();
+            }
         }
     },
 
     addMatchingPair() {
         const container = document.getElementById('matching-pairs-container');
+        if (!container) {
+            console.error('Matching pairs container not found');
+            return;
+        }
+
         const index = container.children.length;
 
         const pairDiv = document.createElement('div');
@@ -66,6 +79,7 @@ const QuestionTypeHandlers = {
         `;
 
         container.appendChild(pairDiv);
+        console.log('Added matching pair', index + 1);
     },
 
     removeMatchingPair(button) {
@@ -85,18 +99,29 @@ const QuestionTypeHandlers = {
 
     // Form Completion Handler
     initFormCompletion() {
+        console.log('Initializing form completion question');
         const panel = document.getElementById('form-completion-panel');
-        if (panel) panel.style.display = 'block';
+        if (panel) {
+            panel.style.display = 'block';
+        }
 
         // Initialize form builder
         const container = document.getElementById('form-fields-container');
         if (container && container.children.length === 0) {
-            this.addFormField();
+            // Add 3 default fields
+            for (let i = 0; i < 3; i++) {
+                this.addFormField();
+            }
         }
     },
 
     addFormField() {
         const container = document.getElementById('form-fields-container');
+        if (!container) {
+            console.error('Form fields container not found');
+            return;
+        }
+
         const index = container.children.length;
 
         const fieldDiv = document.createElement('div');
@@ -123,6 +148,7 @@ const QuestionTypeHandlers = {
         `;
 
         container.appendChild(fieldDiv);
+        console.log('Added form field', index + 1);
     },
 
     removeFormField(button) {
@@ -147,8 +173,11 @@ const QuestionTypeHandlers = {
 
     // Diagram Labeling Handler
     initDiagramLabeling() {
+        console.log('Initializing diagram labeling question');
         const panel = document.getElementById('diagram-panel');
-        if (panel) panel.style.display = 'block';
+        if (panel) {
+            panel.style.display = 'block';
+        }
 
         // Initialize diagram uploader
         this.setupDiagramUploader();
@@ -158,17 +187,26 @@ const QuestionTypeHandlers = {
         const input = document.getElementById('diagram-image');
         const preview = document.getElementById('diagram-preview');
 
-        if (!input || !preview) return;
+        if (!input || !preview) {
+            console.error('Diagram input or preview not found');
+            return;
+        }
 
-        input.addEventListener('change', (e) => {
+        // Remove old event listeners
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+
+        newInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file && file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     preview.innerHTML = `
-                        <img src="${e.target.result}" id="diagram-img" class="max-w-full" style="cursor: crosshair;">
-                        <div class="mt-3 text-sm text-gray-600">
-                            Click on the image to add hotspots
+                        <div style="position: relative;">
+                            <img src="${e.target.result}" id="diagram-img" class="max-w-full" style="cursor: crosshair;">
+                            <div class="mt-3 text-sm text-gray-600">
+                                Click on the image to add hotspots
+                            </div>
                         </div>
                     `;
                     this.setupHotspotCreator();
@@ -180,11 +218,15 @@ const QuestionTypeHandlers = {
 
     setupHotspotCreator() {
         const img = document.getElementById('diagram-img');
-        if (!img) return;
+        if (!img) {
+            console.error('Diagram image not found');
+            return;
+        }
 
-        // Make sure preview container is relatively positioned
-        const preview = document.getElementById('diagram-preview');
-        preview.style.position = 'relative';
+        // Wait for image to load
+        img.onload = () => {
+            console.log('Image loaded, ready for hotspots');
+        };
 
         img.addEventListener('click', (e) => {
             e.preventDefault();
@@ -192,6 +234,7 @@ const QuestionTypeHandlers = {
             const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
             const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
 
+            console.log('Click position:', x, y);
             this.addHotspot(x, y);
         });
     },
@@ -199,6 +242,12 @@ const QuestionTypeHandlers = {
     addHotspot(x, y) {
         const container = document.getElementById('hotspots-container');
         const preview = document.getElementById('diagram-preview');
+
+        if (!container || !preview) {
+            console.error('Hotspots container or preview not found');
+            return;
+        }
+
         const index = container.children.length;
         const label = String.fromCharCode(65 + index);
 
@@ -221,11 +270,17 @@ const QuestionTypeHandlers = {
             transform: translate(-50%, -50%);
             cursor: pointer;
             z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         `;
         marker.textContent = label;
         marker.dataset.label = label;
 
-        preview.appendChild(marker);
+        // Make sure preview container is relatively positioned
+        const imgContainer = preview.querySelector('div');
+        if (imgContainer) {
+            imgContainer.style.position = 'relative';
+            imgContainer.appendChild(marker);
+        }
 
         // Add form field
         const fieldDiv = document.createElement('div');
@@ -254,6 +309,7 @@ const QuestionTypeHandlers = {
         `;
 
         container.appendChild(fieldDiv);
+        console.log('Added hotspot', label, 'at', x, y);
     },
 
     removeHotspot(button, label) {
@@ -305,28 +361,32 @@ const QuestionTypeHandlers = {
 
             // Add marker back
             const preview = document.getElementById('diagram-preview');
-            const marker = document.createElement('div');
-            marker.className = 'hotspot-marker';
-            marker.style.cssText = `
-                position: absolute;
-                left: ${data.x}%;
-                top: ${data.y}%;
-                width: 30px;
-                height: 30px;
-                background: #3b82f6;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-                transform: translate(-50%, -50%);
-                cursor: pointer;
-                z-index: 10;
-            `;
-            marker.textContent = label;
-            marker.dataset.label = label;
-            preview.appendChild(marker);
+            const imgContainer = preview.querySelector('div');
+            if (imgContainer) {
+                const marker = document.createElement('div');
+                marker.className = 'hotspot-marker';
+                marker.style.cssText = `
+                    position: absolute;
+                    left: ${data.x}%;
+                    top: ${data.y}%;
+                    width: 30px;
+                    height: 30px;
+                    background: #3b82f6;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    transform: translate(-50%, -50%);
+                    cursor: pointer;
+                    z-index: 10;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                `;
+                marker.textContent = label;
+                marker.dataset.label = label;
+                imgContainer.appendChild(marker);
+            }
 
             // Add field back
             const fieldDiv = document.createElement('div');

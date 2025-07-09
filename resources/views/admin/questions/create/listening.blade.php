@@ -145,35 +145,37 @@
                         </div>
                         
                         {{-- Form Completion Panel --}}
-                        <div id="form-completion-panel" class="type-specific-panel bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
-                            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-green-50">
-                                <h3 class="text-base sm:text-lg font-medium text-gray-900">
-                                    Form Structure Setup
-                                </h3>
-                            </div>
-                            
-                            <div class="p-4 sm:p-6">
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Form Title</label>
-                                    <input type="text" name="form_structure[title]" 
-                                           placeholder="e.g., Student Registration Form"
-                                           class="w-full px-3 py-2 border rounded-md text-sm">
-                                </div>
-                                
-                                <p class="text-sm text-gray-600 mb-4">
-                                    Add form fields that students need to complete:
-                                </p>
-                                
-                                <div id="form-fields-container">
-                                    {{-- Fields will be added here dynamically --}}
-                                </div>
-                                
-                                <button type="button" onclick="QuestionTypeHandlers.addFormField()" 
-                                        class="mt-3 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-                                    + Add Form Field
-                                </button>
-                            </div>
-                        </div>
+<div id="form-completion-panel" class="type-specific-panel bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
+    <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-green-50">
+        <h3 class="text-base sm:text-lg font-medium text-gray-900">
+            Form Structure Setup
+        </h3>
+    </div>
+    
+    <div class="p-4 sm:p-6">
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Form Title</label>
+            <input type="text" 
+                   name="form_structure[title]" 
+                   id="form_structure_title"
+                   placeholder="e.g., Student Registration Form"
+                   class="w-full px-3 py-2 border rounded-md text-sm">
+        </div>
+        
+        <p class="text-sm text-gray-600 mb-4">
+            Add form fields that students need to complete:
+        </p>
+        
+        <div id="form-fields-container">
+            {{-- Fields will be added here dynamically --}}
+        </div>
+        
+        <button type="button" onclick="QuestionTypeHandlers.addFormField()" 
+                class="mt-3 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+            + Add Form Field
+        </button>
+    </div>
+</div>
                         
                         {{-- Diagram Labeling Panel --}}
                         <div id="diagram-panel" class="type-specific-panel bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
@@ -369,336 +371,574 @@
     @endpush
     
     @push('scripts')
-    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
-    <script src="{{ asset('js/admin/question-common.js') }}"></script>
-    <script src="{{ asset('js/admin/question-listening.js') }}"></script>
-    <script src="{{ asset('js/admin/question-types.js') }}"></script>
+<script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
+<script src="{{ asset('js/admin/question-common.js') }}"></script>
+<script src="{{ asset('js/admin/question-listening.js') }}"></script>
+<script src="{{ asset('js/admin/question-types.js') }}"></script>
+
+<script>
+// Function to clear all options
+function clearAllOptions() {
+    const optionsContainer = document.getElementById('options-container');
+    if (optionsContainer) {
+        optionsContainer.innerHTML = '';
+    }
     
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize TinyMCE
-        tinymce.init({
-            selector: '.tinymce',
-            plugins: 'lists link table code',
-            toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link | code',
-            height: 350,
-            menubar: false,
-            branding: false
-        });
-        
-        // Question type change handler
-        const questionTypeSelect = document.getElementById('question_type');
-        questionTypeSelect.addEventListener('change', function() {
-            QuestionTypeHandlers.init(this.value);
-            
-            // Show/hide regular options card
-            const optionsCard = document.getElementById('options-card');
-            const specialTypes = ['matching', 'form_completion', 'plan_map_diagram'];
-            
-            if (specialTypes.includes(this.value)) {
-                optionsCard.classList.add('hidden');
-            } else if (this.value && !['short_answer', 'sentence_completion', 'note_completion', 'form_completion'].includes(this.value)) {
-                optionsCard.classList.remove('hidden');
-            } else {
-                optionsCard.classList.add('hidden');
-            }
-        });
-        
-        // Initialize on load if type is already selected
-        if (questionTypeSelect.value) {
-            questionTypeSelect.dispatchEvent(new Event('change'));
-        }
-        
-        // ========== PART AUDIO CHECK FUNCTIONALITY ==========
-        function checkPartAudio(partNumber) {
-            fetch(`/admin/test-sets/{{ $testSet->id }}/check-part-audio/${partNumber}`)
-                .then(response => response.json())
-                .then(data => {
-                    const statusDiv = document.getElementById('part-audio-status');
-                    const uploadSection = document.getElementById('audio-upload-section');
-                    const mediaInput = document.getElementById('media');
-                    const useCustomAudio = document.getElementById('use_custom_audio');
-                    
-                    if (data.hasAudio) {
-                        // Part audio exists
-                        statusDiv.innerHTML = `
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-green-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 0016 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-green-800 font-medium">
-                                            Part ${partNumber} audio is available!
-                                        </p>
-                                        <p class="text-xs text-green-700 mt-1">
-                                            This question will automatically use the Part ${partNumber} audio unless you upload a custom audio file.
-                                        </p>
-                                        <label class="inline-flex items-center mt-2">
-                                            <input type="checkbox" id="custom-audio-checkbox" class="form-checkbox text-purple-600" onchange="toggleCustomAudioUpload()">
-                                            <span class="ml-2 text-sm text-gray-700">Upload custom audio for this question only</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        // Make upload optional by default
-                        uploadSection.style.opacity = '0.5';
-                        uploadSection.style.pointerEvents = 'none';
-                        mediaInput.removeAttribute('required');
-                        useCustomAudio.value = '0';
-                        
-                    } else {
-                        // No part audio
-                        statusDiv.innerHTML = `
-                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-yellow-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-yellow-800 font-medium">
-                                            No audio uploaded for Part ${partNumber}
-                                        </p>
-                                        <p class="text-xs text-yellow-700 mt-1">
-                                            You must upload audio for this question, or upload Part ${partNumber} audio first for all questions to share.
-                                        </p>
-                                        <a href="{{ route('admin.test-sets.part-audios', $testSet) }}" 
-                                           target="_blank"
-                                           class="inline-flex items-center mt-2 text-xs text-yellow-600 hover:text-yellow-700 font-medium">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                            </svg>
-                                            Upload Part ${partNumber} Audio (opens in new tab)
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        // Make upload required
-                        uploadSection.style.opacity = '1';
-                        uploadSection.style.pointerEvents = 'auto';
-                        mediaInput.setAttribute('required', 'required');
-                        useCustomAudio.value = '1';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking part audio:', error);
-                    // Show error message
-                    const statusDiv = document.getElementById('part-audio-status');
-                    statusDiv.innerHTML = `
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                            <p class="text-sm text-red-800">Error checking part audio status. Please refresh the page.</p>
-                        </div>
-                    `;
-                });
-        }
-        
-        // Toggle custom audio upload
-        window.toggleCustomAudioUpload = function() {
-            const checkbox = document.getElementById('custom-audio-checkbox');
-            const uploadSection = document.getElementById('audio-upload-section');
-            const mediaInput = document.getElementById('media');
-            const useCustomAudio = document.getElementById('use_custom_audio');
-            
-            if (checkbox && checkbox.checked) {
-                uploadSection.style.opacity = '1';
-                uploadSection.style.pointerEvents = 'auto';
-                mediaInput.setAttribute('required', 'required');
-                useCustomAudio.value = '1';
-            } else {
-                uploadSection.style.opacity = '0.5';
-                uploadSection.style.pointerEvents = 'none';
-                mediaInput.removeAttribute('required');
-                useCustomAudio.value = '0';
-                // Clear any selected file
-                mediaInput.value = '';
-                document.getElementById('media-preview').classList.add('hidden');
-            }
-        }
-        
-        // Check initial part audio status
-        const partSelect = document.querySelector('[name="part_number"]');
-        if (partSelect) {
-            const initialPart = partSelect.value || 1;
-            checkPartAudio(initialPart);
-            
-            // Listen for part number changes
-            partSelect.addEventListener('change', function() {
-                checkPartAudio(this.value);
-                // Reset custom audio checkbox when part changes
-                const customCheckbox = document.getElementById('custom-audio-checkbox');
-                if (customCheckbox) {
-                    customCheckbox.checked = false;
-                }
-            });
-        }
-        
-        // ========== END PART AUDIO CHECK ==========
-        
-        // File upload handling
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('media');
-        const mediaPreview = document.getElementById('media-preview');
-        
-        if (dropZone && fileInput) {
-            dropZone.addEventListener('click', () => {
-                // Only allow click if not disabled
-                if (dropZone.parentElement.parentElement.style.pointerEvents !== 'none') {
-                    fileInput.click();
-                }
-            });
-            
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                if (dropZone.parentElement.parentElement.style.pointerEvents !== 'none') {
-                    dropZone.classList.add('drag-over');
-                }
-            });
-            
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('drag-over');
-            });
-            
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-over');
-                
-                if (dropZone.parentElement.parentElement.style.pointerEvents !== 'none') {
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        fileInput.files = files;
-                        handleFileSelect(files[0]);
-                    }
-                }
-            });
-            
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    handleFileSelect(e.target.files[0]);
-                }
-            });
-        }
-        
-        function handleFileSelect(file) {
-            const mediaPreview = document.getElementById('media-preview');
-            if (mediaPreview) {
-                mediaPreview.innerHTML = `
-                    <div class="flex items-center p-3 bg-purple-50 rounded-lg">
-                        <svg class="w-8 h-8 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
-                        </svg>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">${file.name}</p>
-                            <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        </div>
-                        <button type="button" onclick="clearAudioUpload()" class="ml-3 text-red-500 hover:text-red-700">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                `;
-                mediaPreview.classList.remove('hidden');
-            }
-        }
-        
-        // Clear audio upload
-        window.clearAudioUpload = function() {
-            const fileInput = document.getElementById('media');
-            const mediaPreview = document.getElementById('media-preview');
-            
-            if (fileInput) fileInput.value = '';
-            if (mediaPreview) {
-                mediaPreview.innerHTML = '';
-                mediaPreview.classList.add('hidden');
-            }
-        }
-        
-        // Options handling
-        const addOptionBtn = document.getElementById('add-option-btn');
-        const optionsContainer = document.getElementById('options-container');
-        let optionCount = 0;
-        
-        if (addOptionBtn) {
-            addOptionBtn.addEventListener('click', function() {
-                addOption();
-            });
-        }
-        
-        function addOption() {
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'option-item flex items-center gap-3';
-            optionDiv.innerHTML = `
-                <input type="radio" name="correct_option" value="${optionCount}" 
-                       class="w-4 h-4 text-blue-600 focus:ring-blue-500">
-                <input type="text" name="options[${optionCount}][content]" 
-                       placeholder="Option ${String.fromCharCode(65 + optionCount)}"
-                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-                       required>
-                <button type="button" onclick="removeOption(this)" 
-                        class="text-red-500 hover:text-red-700 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            `;
-            optionsContainer.appendChild(optionDiv);
-            optionCount++;
-        }
-        
-        window.removeOption = function(button) {
-            button.closest('.option-item').remove();
-            reindexOptions();
-        }
-        
-        function reindexOptions() {
-            const options = optionsContainer.querySelectorAll('.option-item');
-            optionCount = 0;
-            options.forEach((option, index) => {
-                const radio = option.querySelector('input[type="radio"]');
-                const textInput = option.querySelector('input[type="text"]');
-                
-                radio.value = index;
-                textInput.name = `options[${index}][content]`;
-                textInput.placeholder = `Option ${String.fromCharCode(65 + index)}`;
-                optionCount++;
-            });
+    // Remove all option inputs from DOM
+    document.querySelectorAll('input[name^="options["]').forEach(input => {
+        if (input.parentElement) {
+            input.parentElement.remove();
         }
     });
     
-    // Preview function
-    function previewQuestion() {
-        // Implementation for preview
-        alert('Preview functionality to be implemented');
+    document.querySelectorAll('input[name="correct_option"]').forEach(input => {
+        if (input.parentElement) {
+            input.parentElement.remove();
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize TinyMCE
+    tinymce.init({
+        selector: '.tinymce',
+        plugins: 'lists link table code',
+        toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link | code',
+        height: 350,
+        menubar: false,
+        branding: false
+    });
+    
+    // Question type change handler
+    const questionTypeSelect = document.getElementById('question_type');
+    questionTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        console.log('Question type changed to:', selectedType);
+        
+        // Clear all options first
+        clearAllOptions();
+        
+        // Initialize type-specific handlers
+        QuestionTypeHandlers.init(selectedType);
+        
+        // Define question type categories
+        const specialTypes = ['matching', 'form_completion', 'plan_map_diagram'];
+        const textOnlyTypes = ['short_answer', 'sentence_completion', 'note_completion'];
+        const optionBasedTypes = ['multiple_choice', 'true_false', 'yes_no'];
+        
+        // Get options card
+        const optionsCard = document.getElementById('options-card');
+        
+        // Handle based on type
+        if (specialTypes.includes(selectedType)) {
+            // Special types - hide options completely
+            console.log('Special type - hiding options card');
+            optionsCard.classList.add('hidden');
+            optionsCard.style.display = 'none'; // Force hide
+            
+        } else if (textOnlyTypes.includes(selectedType)) {
+            // Text types - hide options
+            console.log('Text type - hiding options card');
+            optionsCard.classList.add('hidden');
+            optionsCard.style.display = 'none';
+            
+        } else if (optionBasedTypes.includes(selectedType)) {
+            // Option types - show options
+            console.log('Option type - showing options card');
+            optionsCard.classList.remove('hidden');
+            optionsCard.style.display = 'block';
+            
+            // Setup default options after a small delay
+            setTimeout(() => {
+                if (window.setupDefaultOptions) {
+                    window.setupDefaultOptions(selectedType);
+                }
+            }, 100);
+            
+        } else {
+            // No type selected
+            optionsCard.classList.add('hidden');
+            optionsCard.style.display = 'none';
+        }
+    });
+    
+    // Initialize on load if type is already selected
+    if (questionTypeSelect.value) {
+        questionTypeSelect.dispatchEvent(new Event('change'));
     }
     
-    // Template function
-    function showTemplates() {
-        // Implementation for templates
-        alert('Template functionality to be implemented');
+    // ========== ENHANCED FORM SUBMISSION HANDLER ==========
+    const questionForm = document.getElementById('questionForm');
+    if (questionForm) {
+        questionForm.addEventListener('submit', function(e) {
+            console.log('=== FORM SUBMISSION STARTED ===');
+            
+            // Save TinyMCE content
+            if (typeof tinymce !== 'undefined') {
+                tinymce.triggerSave();
+            }
+            
+            // Get question type
+            const questionType = document.getElementById('question_type').value;
+            console.log('Question Type:', questionType);
+            
+            // Safety check for special types
+            const specialTypes = ['matching', 'form_completion', 'plan_map_diagram'];
+            
+            if (specialTypes.includes(questionType)) {
+                console.log('Special type detected - disabling option fields');
+                
+                // Disable all option-related fields
+                document.querySelectorAll('input[name^="options["]').forEach(input => {
+                    input.disabled = true;
+                    input.removeAttribute('required');
+                    console.log('Disabled:', input.name);
+                });
+                
+                document.querySelectorAll('input[name="correct_option"]').forEach(input => {
+                    input.disabled = true;
+                    input.removeAttribute('required');
+                });
+            }
+            
+            // Handle special types data collection
+            if (questionType === 'matching') {
+                console.log('Processing matching question...');
+                
+                // Collect matching pairs
+                const pairs = [];
+                document.querySelectorAll('.matching-pair').forEach((pair, index) => {
+                    const leftInput = pair.querySelector('input[name*="[left]"]');
+                    const rightInput = pair.querySelector('input[name*="[right]"]');
+                    
+                    if (leftInput && rightInput) {
+                        const left = leftInput.value.trim();
+                        const right = rightInput.value.trim();
+                        
+                        if (left && right) {
+                            pairs.push({ left: left, right: right });
+                            console.log(`Pair ${index + 1}:`, left, '->', right);
+                        }
+                    }
+                });
+                
+                if (pairs.length > 0) {
+                    // Create hidden input for JSON data
+                    let hiddenInput = document.getElementById('matching_pairs_json');
+                    if (!hiddenInput) {
+                        hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.id = 'matching_pairs_json';
+                        hiddenInput.name = 'matching_pairs_json';
+                        questionForm.appendChild(hiddenInput);
+                    }
+                    hiddenInput.value = JSON.stringify(pairs);
+                    console.log('Matching pairs JSON:', hiddenInput.value);
+                }
+            }
+            
+            else if (questionType === 'form_completion') {
+                console.log('Processing form completion question...');
+                
+                // Get form title
+                const titleInput = document.querySelector('input[name="form_structure[title]"]');
+                const formData = {
+                    title: titleInput ? titleInput.value.trim() : 'Form',
+                    fields: []
+                };
+                
+                // Collect form fields
+                document.querySelectorAll('.form-field').forEach((field, index) => {
+                    const labelInput = field.querySelector('input[name*="[label]"]');
+                    const answerInput = field.querySelector('input[name*="[answer]"]');
+                    
+                    if (labelInput && answerInput) {
+                        const label = labelInput.value.trim();
+                        const answer = answerInput.value.trim();
+                        
+                        if (label && answer) {
+                            formData.fields.push({
+                                label: label,
+                                blank_id: index + 1,
+                                answer: answer
+                            });
+                            console.log(`Field ${index + 1}:`, label, '->', answer);
+                        }
+                    }
+                });
+                
+                if (formData.fields.length > 0) {
+                    // Create hidden input
+                    let hiddenInput = document.getElementById('form_structure_json');
+                    if (!hiddenInput) {
+                        hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.id = 'form_structure_json';
+                        hiddenInput.name = 'form_structure_json';
+                        questionForm.appendChild(hiddenInput);
+                    }
+                    hiddenInput.value = JSON.stringify(formData);
+                    console.log('Form structure JSON:', hiddenInput.value);
+                }
+            }
+            
+            else if (questionType === 'plan_map_diagram') {
+                console.log('Processing diagram question...');
+                
+                // Collect hotspots
+                const hotspots = [];
+                document.querySelectorAll('.hotspot-field').forEach((field, index) => {
+                    const xInput = field.querySelector('input[name*="[x]"]');
+                    const yInput = field.querySelector('input[name*="[y]"]');
+                    const labelInput = field.querySelector('input[name*="[label]"]');
+                    const answerInput = field.querySelector('input[name*="[answer]"]');
+                    
+                    if (xInput && yInput && labelInput && answerInput) {
+                        const answer = answerInput.value.trim();
+                        
+                        if (answer) {
+                            hotspots.push({
+                                id: index + 1,
+                                x: parseInt(xInput.value),
+                                y: parseInt(yInput.value),
+                                label: labelInput.value,
+                                answer: answer
+                            });
+                            console.log(`Hotspot ${index + 1}:`, labelInput.value, '->', answer);
+                        }
+                    }
+                });
+                
+                if (hotspots.length > 0) {
+                    // Create hidden input
+                    let hiddenInput = document.getElementById('diagram_hotspots_json');
+                    if (!hiddenInput) {
+                        hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.id = 'diagram_hotspots_json';
+                        hiddenInput.name = 'diagram_hotspots_json';
+                        questionForm.appendChild(hiddenInput);
+                    }
+                    hiddenInput.value = JSON.stringify(hotspots);
+                    console.log('Diagram hotspots JSON:', hiddenInput.value);
+                }
+            }
+            
+            console.log('=== FORM SUBMISSION COMPLETED ===');
+            // Form will submit normally
+        });
     }
     
-    // Insert blank function
-    function insertBlank() {
-        // Get TinyMCE instance
-        const editor = tinymce.get('content');
-        if (editor) {
-            // Insert blank at cursor position
-            editor.insertContent('[____' + (Date.now() % 1000) + '____]');
+    // ========== PART AUDIO CHECK FUNCTIONALITY ==========
+    function checkPartAudio(partNumber) {
+        fetch(`/admin/test-sets/{{ $testSet->id }}/check-part-audio/${partNumber}`)
+            .then(response => response.json())
+            .then(data => {
+                const statusDiv = document.getElementById('part-audio-status');
+                const uploadSection = document.getElementById('audio-upload-section');
+                const mediaInput = document.getElementById('media');
+                const useCustomAudio = document.getElementById('use_custom_audio');
+                
+                if (data.hasAudio) {
+                    // Part audio exists
+                    statusDiv.innerHTML = `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <svg class="h-5 w-5 text-green-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 0016 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div class="flex-1">
+                                    <p class="text-sm text-green-800 font-medium">
+                                        Part ${partNumber} audio is available!
+                                    </p>
+                                    <p class="text-xs text-green-700 mt-1">
+                                        This question will automatically use the Part ${partNumber} audio unless you upload a custom audio file.
+                                    </p>
+                                    <label class="inline-flex items-center mt-2">
+                                        <input type="checkbox" id="custom-audio-checkbox" class="form-checkbox text-purple-600" onchange="toggleCustomAudioUpload()">
+                                        <span class="ml-2 text-sm text-gray-700">Upload custom audio for this question only</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Make upload optional by default
+                    uploadSection.style.opacity = '0.5';
+                    uploadSection.style.pointerEvents = 'none';
+                    mediaInput.removeAttribute('required');
+                    useCustomAudio.value = '0';
+                    
+                } else {
+                    // No part audio
+                    statusDiv.innerHTML = `
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <svg class="h-5 w-5 text-yellow-400 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div class="flex-1">
+                                    <p class="text-sm text-yellow-800 font-medium">
+                                        No audio uploaded for Part ${partNumber}
+                                    </p>
+                                    <p class="text-xs text-yellow-700 mt-1">
+                                        You must upload audio for this question, or upload Part ${partNumber} audio first for all questions to share.
+                                    </p>
+                                    <a href="{{ route('admin.test-sets.part-audios', $testSet) }}" 
+                                       target="_blank"
+                                       class="inline-flex items-center mt-2 text-xs text-yellow-600 hover:text-yellow-700 font-medium">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                        Upload Part ${partNumber} Audio (opens in new tab)
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Make upload required
+                    uploadSection.style.opacity = '1';
+                    uploadSection.style.pointerEvents = 'auto';
+                    mediaInput.setAttribute('required', 'required');
+                    useCustomAudio.value = '1';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking part audio:', error);
+            });
+    }
+    
+    // Toggle custom audio upload
+    window.toggleCustomAudioUpload = function() {
+        const checkbox = document.getElementById('custom-audio-checkbox');
+        const uploadSection = document.getElementById('audio-upload-section');
+        const mediaInput = document.getElementById('media');
+        const useCustomAudio = document.getElementById('use_custom_audio');
+        
+        if (checkbox && checkbox.checked) {
+            uploadSection.style.opacity = '1';
+            uploadSection.style.pointerEvents = 'auto';
+            mediaInput.setAttribute('required', 'required');
+            useCustomAudio.value = '1';
+        } else {
+            uploadSection.style.opacity = '0.5';
+            uploadSection.style.pointerEvents = 'none';
+            mediaInput.removeAttribute('required');
+            useCustomAudio.value = '0';
+            // Clear any selected file
+            mediaInput.value = '';
+            document.getElementById('media-preview').classList.add('hidden');
         }
     }
     
-    // Bulk options function
-    function showBulkOptions() {
-        // Implementation for bulk options
-        const modal = document.getElementById('bulk-modal');
-        if (modal) {
-            modal.classList.remove('hidden');
+    // Check initial part audio status
+    const partSelect = document.querySelector('[name="part_number"]');
+    if (partSelect) {
+        const initialPart = partSelect.value || 1;
+        checkPartAudio(initialPart);
+        
+        // Listen for part number changes
+        partSelect.addEventListener('change', function() {
+            checkPartAudio(this.value);
+            // Reset custom audio checkbox when part changes
+            const customCheckbox = document.getElementById('custom-audio-checkbox');
+            if (customCheckbox) {
+                customCheckbox.checked = false;
+            }
+        });
+    }
+    
+    // File upload handling
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('media');
+    const mediaPreview = document.getElementById('media-preview');
+    
+    if (dropZone && fileInput) {
+        dropZone.addEventListener('click', () => {
+            if (dropZone.parentElement.parentElement.style.pointerEvents !== 'none') {
+                fileInput.click();
+            }
+        });
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (dropZone.parentElement.parentElement.style.pointerEvents !== 'none') {
+                dropZone.classList.add('drag-over');
+            }
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            if (dropZone.parentElement.parentElement.style.pointerEvents !== 'none') {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect(files[0]);
+                }
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+    }
+    
+    function handleFileSelect(file) {
+        const mediaPreview = document.getElementById('media-preview');
+        if (mediaPreview) {
+            mediaPreview.innerHTML = `
+                <div class="flex items-center p-3 bg-purple-50 rounded-lg">
+                    <svg class="w-8 h-8 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">${file.name}</p>
+                        <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <button type="button" onclick="clearAudioUpload()" class="ml-3 text-red-500 hover:text-red-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            mediaPreview.classList.remove('hidden');
         }
     }
-    </script>
+    
+    // Clear audio upload
+    window.clearAudioUpload = function() {
+        const fileInput = document.getElementById('media');
+        const mediaPreview = document.getElementById('media-preview');
+        
+        if (fileInput) fileInput.value = '';
+        if (mediaPreview) {
+            mediaPreview.innerHTML = '';
+            mediaPreview.classList.add('hidden');
+        }
+    }
+    
+    // Options handling
+    const addOptionBtn = document.getElementById('add-option-btn');
+    const optionsContainer = document.getElementById('options-container');
+    let optionCount = 0;
+    
+    if (addOptionBtn) {
+        addOptionBtn.addEventListener('click', function() {
+            addOption();
+        });
+    }
+    
+    function addOption() {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'option-item flex items-center gap-3';
+        optionDiv.innerHTML = `
+            <input type="radio" name="correct_option" value="${optionCount}" 
+                   class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+            <input type="text" name="options[${optionCount}][content]" 
+                   placeholder="Option ${String.fromCharCode(65 + optionCount)}"
+                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                   required>
+            <button type="button" onclick="removeOption(this)" 
+                    class="text-red-500 hover:text-red-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+        optionsContainer.appendChild(optionDiv);
+        optionCount++;
+    }
+    
+    window.removeOption = function(button) {
+        button.closest('.option-item').remove();
+        reindexOptions();
+    }
+    
+    function reindexOptions() {
+        const options = optionsContainer.querySelectorAll('.option-item');
+        optionCount = 0;
+        options.forEach((option, index) => {
+            const radio = option.querySelector('input[type="radio"]');
+            const textInput = option.querySelector('input[type="text"]');
+            
+            radio.value = index;
+            textInput.name = `options[${index}][content]`;
+            textInput.placeholder = `Option ${String.fromCharCode(65 + index)}`;
+            optionCount++;
+        });
+    }
+    
+    // Setup default options function
+    window.setupDefaultOptions = function(type) {
+        const optionsContainer = document.getElementById('options-container');
+        if (!optionsContainer) return;
+        
+        optionsContainer.innerHTML = '';
+        optionCount = 0;
+        
+        if (type === 'true_false') {
+            addOption();
+            optionsContainer.querySelector('input[type="text"]').value = 'TRUE';
+            addOption();
+            optionsContainer.querySelector('input[type="text"]:last-of-type').value = 'FALSE';
+            addOption();
+            optionsContainer.querySelector('input[type="text"]:last-of-type').value = 'NOT GIVEN';
+        } else if (type === 'yes_no') {
+            addOption();
+            optionsContainer.querySelector('input[type="text"]').value = 'YES';
+            addOption();
+            optionsContainer.querySelector('input[type="text"]:last-of-type').value = 'NO';
+            addOption();
+            optionsContainer.querySelector('input[type="text"]:last-of-type').value = 'NOT GIVEN';
+        } else {
+            // Default 4 empty options
+            for (let i = 0; i < 4; i++) {
+                addOption();
+            }
+        }
+    }
+});
+
+// Preview function
+function previewQuestion() {
+    // Implementation for preview
+    alert('Preview functionality to be implemented');
+}
+
+// Template function
+function showTemplates() {
+    // Implementation for templates
+    alert('Template functionality to be implemented');
+}
+
+// Insert blank function
+function insertBlank() {
+    // Get TinyMCE instance
+    const editor = tinymce.get('content');
+    if (editor) {
+        // Insert blank at cursor position
+        editor.insertContent('[____' + (Date.now() % 1000) + '____]');
+    }
+}
+
+// Bulk options function
+function showBulkOptions() {
+    // Implementation for bulk options
+    const modal = document.getElementById('bulk-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+</script>
 @endpush
 </x-layout>

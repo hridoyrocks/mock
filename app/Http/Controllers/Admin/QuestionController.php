@@ -99,126 +99,133 @@ class QuestionController extends Controller
      * Store a newly created question in storage.
      */
     public function store(Request $request): RedirectResponse
-{
-    // Debug: Check what's coming in
-    \Log::info('Question Store Request:', $request->all());
-    
-    // Get test set to determine section
-    $testSet = TestSet::with('section')->findOrFail($request->test_set_id);
-    $section = $testSet->section->name;
-    
-    // Base validation rules
-    $rules = [
-        'test_set_id' => 'required|exists:test_sets,id',
-        'question_type' => 'required|string',
-        'order_number' => 'required|integer|min:0',
-        'part_number' => 'nullable|integer',
-        'marks' => 'nullable|integer|min:0|max:10',
-        'instructions' => 'nullable|string',
-    ];
+    {
+        // Debug: Check what's coming in
+        \Log::info('Question Store Request:', $request->all());
+        
+        // Get test set to determine section
+        $testSet = TestSet::with('section')->findOrFail($request->test_set_id);
+        $section = $testSet->section->name;
+        
+        // Base validation rules
+        $rules = [
+            'test_set_id' => 'required|exists:test_sets,id',
+            'question_type' => 'required|string',
+            'order_number' => 'required|integer|min:0',
+            'part_number' => 'nullable|integer',
+            'marks' => 'nullable|integer|min:0|max:10',
+            'instructions' => 'nullable|string',
+        ];
 
-    // Handle content validation based on question type
-    if ($request->question_type === 'passage') {
-        if (!$request->filled('content') && !$request->filled('passage_text')) {
-            return redirect()->back()
-                ->withErrors(['content' => 'Passage content is required'])
-                ->withInput();
+        // Handle content validation based on question type
+        if ($request->question_type === 'passage') {
+            if (!$request->filled('content') && !$request->filled('passage_text')) {
+                return redirect()->back()
+                    ->withErrors(['content' => 'Passage content is required'])
+                    ->withInput();
+            }
+            $rules['content'] = 'nullable|string';
+            $rules['passage_text'] = 'nullable|string';
+        } else {
+            $rules['content'] = 'required|string';
         }
-        $rules['content'] = 'nullable|string';
-        $rules['passage_text'] = 'nullable|string';
-    } else {
-        $rules['content'] = 'required|string';
-    }
-    
-    // Section-specific validation
-    switch ($section) {
-        case 'listening':
-            // Check if part audio exists
-            $partAudio = $testSet->getPartAudio($request->part_number ?? 1);
-            
-            // Make media conditional based on question type and part audio
-            if (in_array($request->question_type, ['plan_map_diagram'])) {
-                // Plan/map/diagram might have their own image instead of audio
-                $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
-            } elseif (!$partAudio || $request->input('use_custom_audio') == '1') {
-                // No part audio OR user wants custom audio = required
-                $rules['media'] = 'required|file|mimes:mp3,wav,ogg|max:51200';
-            } else {
-                // Part audio exists and user doesn't want custom = optional
-                $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
+        
+        // Section-specific validation
+        switch ($section) {
+            case 'listening':
+                // Check if part audio exists
+                $partAudio = $testSet->getPartAudio($request->part_number ?? 1);
+                
+                // Make media conditional based on question type and part audio
+                if (in_array($request->question_type, ['plan_map_diagram'])) {
+                    // Plan/map/diagram might have their own image instead of audio
+                    $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
+                } elseif (!$partAudio || $request->input('use_custom_audio') == '1') {
+                    // No part audio OR user wants custom audio = required
+                    $rules['media'] = 'required|file|mimes:mp3,wav,ogg|max:51200';
+                } else {
+                    // Part audio exists and user doesn't want custom = optional
+                    $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
+                }
+                
+                $rules['part_number'] = 'required|integer|min:1|max:4';
+                break;
+                
+            case 'reading':
+                $rules['part_number'] = 'required|integer|min:1|max:3';
+                break;
+                
+            case 'writing':
+                $rules['word_limit'] = 'required|integer|min:50|max:500';
+                $rules['time_limit'] = 'required|integer|min:1|max:60';
+                if (strpos($request->question_type, 'task1') !== false) {
+                    $rules['media'] = 'nullable|file|mimes:jpg,jpeg,png,gif|max:5120';
+                }
+                break;
+                
+            case 'speaking':
+                $rules['time_limit'] = 'required|integer|min:1|max:10';
+                break;
+        }
+        
+        // IMPORTANT: Only add options validation if question type needs it
+        if ($this->needsOptions($request->question_type)) {
+            $rules['options'] = 'required|array|min:2';
+            $rules['options.*.content'] = 'required|string';
+            $rules['correct_option'] = 'required|integer|min:0';
+        }
+        
+        // Add type-specific validation rules only if JSON data not provided
+        if ($request->question_type === 'matching' && !$request->has('matching_pairs_json')) {
+            $rules['matching_pairs'] = 'required|array|min:2';
+            $rules['matching_pairs.*.left'] = 'required|string';
+            $rules['matching_pairs.*.right'] = 'required|string';
+        }
+
+        if ($request->question_type === 'form_completion' && !$request->has('form_structure_json')) {
+            $rules['form_structure.title'] = 'required|string';
+            $rules['form_structure.fields'] = 'required|array|min:1';
+            $rules['form_structure.fields.*.label'] = 'required|string';
+            $rules['form_structure.fields.*.answer'] = 'required|string';
+        }
+
+        if ($request->question_type === 'plan_map_diagram' && !$request->has('diagram_hotspots_json')) {
+            $rules['diagram_image'] = 'required|image|max:5120';
+            $rules['diagram_hotspots'] = 'required|array|min:1';
+            $rules['diagram_hotspots.*.answer'] = 'required|string';
+        }
+        
+        try {
+            $request->validate($rules);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed:', $e->errors());
+            throw $e;
+        }
+        
+        // Handle file upload
+        $mediaPath = null;
+        if ($request->hasFile('media')) {
+            $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
+        }
+        
+        // Handle diagram image for plan_map_diagram
+        if ($request->question_type === 'plan_map_diagram' && $request->hasFile('diagram_image')) {
+            $diagramPath = $request->file('diagram_image')->store('questions/diagrams', 'public');
+            $mediaPath = $diagramPath; // Override media path with diagram
+        }
+        
+        // Handle type-specific data
+        $typeSpecificData = [];
+
+        // Check for JSON data first (new approach)
+        if ($request->has('matching_pairs_json')) {
+            $matchingPairs = json_decode($request->matching_pairs_json, true);
+            if ($matchingPairs) {
+                $typeSpecificData['matching_pairs'] = $matchingPairs;
+                \Log::info('Matching pairs from JSON:', $matchingPairs);
             }
-            
-            $rules['part_number'] = 'required|integer|min:1|max:4';
-            break;
-            
-        case 'reading':
-            $rules['part_number'] = 'required|integer|min:1|max:3';
-            break;
-            
-        case 'writing':
-            $rules['word_limit'] = 'required|integer|min:50|max:500';
-            $rules['time_limit'] = 'required|integer|min:1|max:60';
-            if (strpos($request->question_type, 'task1') !== false) {
-                $rules['media'] = 'nullable|file|mimes:jpg,jpeg,png,gif|max:5120';
-            }
-            break;
-            
-        case 'speaking':
-            $rules['time_limit'] = 'required|integer|min:1|max:10';
-            break;
-    }
-    
-    // Add type-specific validation rules
-    if ($request->question_type === 'matching') {
-        $rules['matching_pairs'] = 'required|array|min:2';
-        $rules['matching_pairs.*.left'] = 'required|string';
-        $rules['matching_pairs.*.right'] = 'required|string';
-    }
-
-    if ($request->question_type === 'form_completion') {
-        $rules['form_structure.title'] = 'required|string';
-        $rules['form_structure.fields'] = 'required|array|min:1';
-        $rules['form_structure.fields.*.label'] = 'required|string';
-        $rules['form_structure.fields.*.answer'] = 'required|string';
-    }
-
-    if ($request->question_type === 'plan_map_diagram') {
-        $rules['diagram_image'] = 'required|image|max:5120';
-        $rules['diagram_hotspots'] = 'required|array|min:1';
-        $rules['diagram_hotspots.*.answer'] = 'required|string';
-    }
-    
-    // Add options validation if needed
-    if ($this->requiresOptions($request->question_type)) {
-        $rules['options'] = 'required|array|min:2';
-        $rules['options.*.content'] = 'required|string';
-        $rules['correct_option'] = 'required|integer|min:0';
-    }
-    
-    try {
-        $request->validate($rules);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        \Log::error('Validation failed:', $e->errors());
-        throw $e;
-    }
-    
-    // Handle file upload
-    $mediaPath = null;
-    if ($request->hasFile('media')) {
-        $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
-    }
-    
-    // Handle diagram image for plan_map_diagram
-    if ($request->question_type === 'plan_map_diagram' && $request->hasFile('diagram_image')) {
-        $diagramPath = $request->file('diagram_image')->store('questions/diagrams', 'public');
-        $mediaPath = $diagramPath; // Override media path with diagram
-    }
-    
-    // Handle type-specific data
-    $typeSpecificData = [];
-
-    switch ($request->question_type) {
-        case 'matching':
+        } elseif ($request->question_type === 'matching' && $request->has('matching_pairs')) {
+            // Fallback to old approach
             if ($request->has('matching_pairs')) {
                 $matchingPairs = [];
                 foreach ($request->matching_pairs as $pair) {
@@ -230,11 +237,18 @@ class QuestionController extends Controller
                     }
                 }
                 $typeSpecificData['matching_pairs'] = $matchingPairs;
-                \Log::info('Matching pairs:', $matchingPairs);
+                \Log::info('Matching pairs from form:', $matchingPairs);
             }
-            break;
-            
-        case 'form_completion':
+        }
+        
+        if ($request->has('form_structure_json')) {
+            $formStructure = json_decode($request->form_structure_json, true);
+            if ($formStructure) {
+                $typeSpecificData['form_structure'] = $formStructure;
+                \Log::info('Form structure from JSON:', $formStructure);
+            }
+        } elseif ($request->question_type === 'form_completion' && $request->has('form_structure')) {
+            // Fallback to old approach
             if ($request->has('form_structure')) {
                 $formStructure = [
                     'title' => $request->form_structure['title'] ?? 'Form',
@@ -253,11 +267,18 @@ class QuestionController extends Controller
                     }
                 }
                 $typeSpecificData['form_structure'] = $formStructure;
-                \Log::info('Form structure:', $formStructure);
+                \Log::info('Form structure from form:', $formStructure);
             }
-            break;
-            
-        case 'plan_map_diagram':
+        }
+        
+        if ($request->has('diagram_hotspots_json')) {
+            $diagramHotspots = json_decode($request->diagram_hotspots_json, true);
+            if ($diagramHotspots) {
+                $typeSpecificData['diagram_hotspots'] = $diagramHotspots;
+                \Log::info('Diagram hotspots from JSON:', $diagramHotspots);
+            }
+        } elseif ($request->question_type === 'plan_map_diagram' && $request->has('diagram_hotspots')) {
+            // Fallback to old approach
             if ($request->has('diagram_hotspots')) {
                 $hotspots = [];
                 foreach ($request->diagram_hotspots as $index => $hotspot) {
@@ -272,88 +293,87 @@ class QuestionController extends Controller
                     }
                 }
                 $typeSpecificData['diagram_hotspots'] = $hotspots;
-                \Log::info('Diagram hotspots:', $hotspots);
+                \Log::info('Diagram hotspots from form:', $hotspots);
             }
-            break;
-    }
-    
-    DB::transaction(function () use ($request, $testSet, $section, $mediaPath, $typeSpecificData) {
-        // Determine if question should use part audio
-        $usePartAudio = false; // Default to false
+        }
         
-        if ($section === 'listening') {
-            $partAudio = $testSet->getPartAudio($request->part_number ?? 1);
+        DB::transaction(function () use ($request, $testSet, $section, $mediaPath, $typeSpecificData) {
+            // Determine if question should use part audio
+            $usePartAudio = false; // Default to false
             
-            // Use part audio if:
-            // 1. Part audio exists AND
-            // 2. User didn't upload custom audio AND
-            // 3. User didn't explicitly choose custom audio
-            if ($partAudio && !$mediaPath && $request->input('use_custom_audio') != '1') {
-                $usePartAudio = true;
-            }
-        }
-        
-        // Prepare question data
-        $questionData = [
-            'test_set_id' => $request->test_set_id,
-            'question_type' => $request->question_type,
-            'content' => $request->content,
-            'order_number' => $request->order_number,
-            'part_number' => $request->part_number ?? 1,
-            'marks' => $request->marks ?? 1,
-            'instructions' => $request->instructions,
-            'media_path' => $mediaPath,
-            'use_part_audio' => $usePartAudio,
-            'audio_transcript' => $request->audio_transcript ?? null,
-            'word_limit' => $request->word_limit ?? null,
-            'time_limit' => $request->time_limit ?? null,
-        ];
-        
-        // Add type-specific fields directly
-        if (isset($typeSpecificData['matching_pairs'])) {
-            $questionData['matching_pairs'] = $typeSpecificData['matching_pairs'];
-        }
-        if (isset($typeSpecificData['form_structure'])) {
-            $questionData['form_structure'] = $typeSpecificData['form_structure'];
-        }
-        if (isset($typeSpecificData['diagram_hotspots'])) {
-            $questionData['diagram_hotspots'] = $typeSpecificData['diagram_hotspots'];
-        }
-        
-        // Also add to section_specific_data for backward compatibility
-        if (!empty($typeSpecificData)) {
-            $questionData['section_specific_data'] = $typeSpecificData;
-        }
-        
-        \Log::info('Creating question with data:', $questionData);
-        
-        $question = Question::create($questionData);
-        
-        \Log::info('Question created:', ['id' => $question->id, 'use_part_audio' => $question->use_part_audio]);
-        
-        // Create options if applicable
-        if ($this->requiresOptions($request->question_type) && isset($request->options)) {
-            foreach ($request->options as $index => $option) {
-                if (!empty($option['content'])) {
-                    QuestionOption::create([
-                        'question_id' => $question->id,
-                        'content' => $option['content'],
-                        'is_correct' => ($request->correct_option == $index),
-                    ]);
+            if ($section === 'listening') {
+                $partAudio = $testSet->getPartAudio($request->part_number ?? 1);
+                
+                // Use part audio if:
+                // 1. Part audio exists AND
+                // 2. User didn't upload custom audio AND
+                // 3. User didn't explicitly choose custom audio
+                if ($partAudio && !$mediaPath && $request->input('use_custom_audio') != '1') {
+                    $usePartAudio = true;
                 }
             }
+            
+            // Prepare question data
+            $questionData = [
+                'test_set_id' => $request->test_set_id,
+                'question_type' => $request->question_type,
+                'content' => $request->content,
+                'order_number' => $request->order_number,
+                'part_number' => $request->part_number ?? 1,
+                'marks' => $request->marks ?? 1,
+                'instructions' => $request->instructions,
+                'media_path' => $mediaPath,
+                'use_part_audio' => $usePartAudio,
+                'audio_transcript' => $request->audio_transcript ?? null,
+                'word_limit' => $request->word_limit ?? null,
+                'time_limit' => $request->time_limit ?? null,
+            ];
+            
+            // Add type-specific fields directly
+            if (isset($typeSpecificData['matching_pairs'])) {
+                $questionData['matching_pairs'] = $typeSpecificData['matching_pairs'];
+            }
+            if (isset($typeSpecificData['form_structure'])) {
+                $questionData['form_structure'] = $typeSpecificData['form_structure'];
+            }
+            if (isset($typeSpecificData['diagram_hotspots'])) {
+                $questionData['diagram_hotspots'] = $typeSpecificData['diagram_hotspots'];
+            }
+            
+            // Also add to section_specific_data for backward compatibility
+            if (!empty($typeSpecificData)) {
+                $questionData['section_specific_data'] = $typeSpecificData;
+            }
+            
+            \Log::info('Creating question with data:', $questionData);
+            
+            $question = Question::create($questionData);
+            
+            \Log::info('Question created:', ['id' => $question->id, 'use_part_audio' => $question->use_part_audio]);
+            
+            // Create options if applicable (using new method)
+            if ($this->needsOptions($request->question_type) && isset($request->options)) {
+                foreach ($request->options as $index => $option) {
+                    if (!empty($option['content'])) {
+                        QuestionOption::create([
+                            'question_id' => $question->id,
+                            'content' => $option['content'],
+                            'is_correct' => ($request->correct_option == $index),
+                        ]);
+                    }
+                }
+            }
+        });
+        
+        // Redirect based on action
+        if ($request->action === 'save_and_new') {
+            return redirect()->route('admin.questions.create', ['test_set' => $request->test_set_id])
+                ->with('success', 'Question created successfully. Add another question.');
         }
-    });
-    
-    // Redirect based on action
-    if ($request->action === 'save_and_new') {
-        return redirect()->route('admin.questions.create', ['test_set' => $request->test_set_id])
-            ->with('success', 'Question created successfully. Add another question.');
+        
+        return redirect()->route('admin.test-sets.show', $request->test_set_id)
+            ->with('success', 'Question created successfully.');
     }
-    
-    return redirect()->route('admin.test-sets.show', $request->test_set_id)
-        ->with('success', 'Question created successfully.');
-}
 
     /**
      * Display the specified question.
@@ -448,367 +468,14 @@ class QuestionController extends Controller
     /**
      * Update the specified question in storage.
      */
-    /**
- * Update the specified question in storage.
- */
-public function update(Request $request, Question $question): RedirectResponse
-{
-    // Get test set to determine section
-    $testSet = TestSet::with('section')->findOrFail($request->test_set_id ?? $question->test_set_id);
-    $section = $testSet->section->name;
-    
-    // Base validation rules
-    $rules = [
-        'question_type' => 'required|string',
-        'order_number' => 'required|integer|min:0',
-        'part_number' => 'nullable|integer',
-        'marks' => 'nullable|integer|min:0|max:10',
-        'instructions' => 'nullable|string',
-    ];
-    
-    // Handle content validation based on question type
-    if ($request->question_type === 'passage') {
-        // For passage type, content can come from either field
-        if (!$request->filled('content') && !$request->filled('passage_text')) {
-            return redirect()->back()
-                ->withErrors(['content' => 'Passage content is required'])
-                ->withInput();
-        }
-        $rules['content'] = 'nullable|string';
-        $rules['passage_text'] = 'nullable|string';
-    } else {
-        // For other question types, content is required
-        $rules['content'] = 'required|string';
-    }
-    
-    // Section-specific validation
-    switch ($section) {
-        case 'listening':
-            // Check if part audio exists for validation
-            $partAudio = $testSet->getPartAudio($request->part_number ?? $question->part_number);
-            
-            // Media is always optional for update (keep existing if not provided)
-            $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
-            $rules['part_number'] = 'required|integer|min:1|max:4';
-            break;
-            
-        case 'reading':
-            $rules['part_number'] = 'required|integer|min:1|max:3';
-            break;
-            
-        case 'writing':
-            $rules['word_limit'] = 'required|integer|min:50|max:500';
-            $rules['time_limit'] = 'required|integer|min:1|max:60';
-            if (strpos($request->question_type, 'task1') !== false) {
-                $rules['media'] = 'nullable|file|mimes:jpg,jpeg,png,gif|max:5120';
-            }
-            break;
-            
-        case 'speaking':
-            $rules['time_limit'] = 'required|integer|min:1|max:10';
-            break;
-    }
-    
-    // Add type-specific validation rules
-    if ($request->question_type === 'matching') {
-        $rules['matching_pairs'] = 'required|array|min:2';
-        $rules['matching_pairs.*.left'] = 'required|string';
-        $rules['matching_pairs.*.right'] = 'required|string';
-    }
-
-    if ($request->question_type === 'form_completion') {
-        $rules['form_structure.title'] = 'required|string';
-        $rules['form_structure.fields'] = 'required|array|min:1';
-        $rules['form_structure.fields.*.label'] = 'required|string';
-        $rules['form_structure.fields.*.answer'] = 'required|string';
-    }
-
-    if ($request->question_type === 'plan_map_diagram') {
-        // Diagram image is optional for update
-        $rules['diagram_image'] = 'nullable|image|max:5120';
-        $rules['diagram_hotspots'] = 'required|array|min:1';
-        $rules['diagram_hotspots.*.answer'] = 'required|string';
-    }
-    
-    // Add options validation if needed
-    if ($this->requiresOptions($request->question_type)) {
-        $rules['options'] = 'required|array|min:2';
-        $rules['options.*.content'] = 'required|string';
-        $rules['correct_option'] = 'required|integer|min:0';
-    }
-    
-    // Add validation for gap fill answers
-    if ($request->has('blank_answers')) {
-        $rules['blank_answers'] = 'array';
-        $rules['blank_answers.*'] = 'nullable|string';
-    }
-    
-    if ($request->has('dropdown_options')) {
-        $rules['dropdown_options'] = 'array';
-        $rules['dropdown_options.*'] = 'nullable|string';
-        $rules['dropdown_correct'] = 'array';
-        $rules['dropdown_correct.*'] = 'nullable|integer';
-    }
-    
-    $request->validate($rules);
-    
-    // Handle file upload
-    $mediaPath = $question->media_path;
-    
-    // Handle regular media upload (audio for listening)
-    if ($request->hasFile('media')) {
-        // Delete old media
-        if ($mediaPath && Storage::disk('public')->exists($mediaPath)) {
-            Storage::disk('public')->delete($mediaPath);
-        }
-        $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
-    }
-    
-    // Handle media removal
-    if ($request->has('remove_media') && $request->remove_media && $mediaPath) {
-        Storage::disk('public')->delete($mediaPath);
-        $mediaPath = null;
-    }
-    
-    // Handle diagram image for plan_map_diagram
-    if ($request->question_type === 'plan_map_diagram' && $request->hasFile('diagram_image')) {
-        // Delete old diagram if exists
-        if ($mediaPath && Storage::disk('public')->exists($mediaPath)) {
-            Storage::disk('public')->delete($mediaPath);
-        }
-        $diagramPath = $request->file('diagram_image')->store('questions/diagrams', 'public');
-        $mediaPath = $diagramPath; // Override media path
-    }
-    
-    // Handle type-specific data
-    $typeSpecificData = [];
-
-    switch ($request->question_type) {
-        case 'matching':
-            if ($request->has('matching_pairs')) {
-                $matchingPairs = [];
-                foreach ($request->matching_pairs as $pair) {
-                    if (!empty($pair['left']) && !empty($pair['right'])) {
-                        $matchingPairs[] = [
-                            'left' => $pair['left'],
-                            'right' => $pair['right']
-                        ];
-                    }
-                }
-                $typeSpecificData['matching_pairs'] = $matchingPairs;
-            }
-            break;
-            
-        case 'form_completion':
-            if ($request->has('form_structure')) {
-                $formStructure = [
-                    'title' => $request->form_structure['title'] ?? 'Form',
-                    'fields' => []
-                ];
-                
-                if (isset($request->form_structure['fields'])) {
-                    foreach ($request->form_structure['fields'] as $index => $field) {
-                        if (!empty($field['label']) && !empty($field['answer'])) {
-                            $formStructure['fields'][] = [
-                                'label' => $field['label'],
-                                'blank_id' => $index + 1,
-                                'answer' => $field['answer']
-                            ];
-                        }
-                    }
-                }
-                $typeSpecificData['form_structure'] = $formStructure;
-            }
-            break;
-            
-        case 'plan_map_diagram':
-            if ($request->has('diagram_hotspots')) {
-                $hotspots = [];
-                foreach ($request->diagram_hotspots as $index => $hotspot) {
-                    if (!empty($hotspot['answer'])) {
-                        $hotspots[] = [
-                            'id' => $index + 1,
-                            'x' => (int)$hotspot['x'],
-                            'y' => (int)$hotspot['y'],
-                            'label' => $hotspot['label'],
-                            'answer' => $hotspot['answer']
-                        ];
-                    }
-                }
-                $typeSpecificData['diagram_hotspots'] = $hotspots;
-            }
-            break;
-    }
-    
-    DB::transaction(function () use ($request, $question, $section, $mediaPath, $typeSpecificData) {
-        // Prepare section specific data for gap fill/dropdown
-        $sectionSpecificData = null;
-        if ($request->has('blank_answers') || $request->has('dropdown_options')) {
-            $blankAnswers = [];
-            $dropdownOptions = [];
-            $dropdownCorrect = [];
-            
-            // Process blank answers - ensure consistent numeric keys
-            if ($request->has('blank_answers')) {
-                foreach ($request->blank_answers as $key => $answer) {
-                    // Ensure numeric keys starting from 1
-                    if (is_numeric($key) && !empty(trim($answer))) {
-                        $blankAnswers[(int)$key] = trim($answer);
-                    }
-                }
-            }
-            
-            // Process dropdown options
-            if ($request->has('dropdown_options')) {
-                foreach ($request->dropdown_options as $key => $options) {
-                    if (is_numeric($key) && !empty(trim($options))) {
-                        $dropdownOptions[(int)$key] = trim($options);
-                    }
-                }
-            }
-            
-            // Process dropdown correct answers
-            if ($request->has('dropdown_correct')) {
-                foreach ($request->dropdown_correct as $key => $correctIndex) {
-                    if (is_numeric($key)) {
-                        $dropdownCorrect[(int)$key] = (int)$correctIndex;
-                    }
-                }
-            }
-            
-            $sectionSpecificData = [
-                'blank_answers' => $blankAnswers,
-                'dropdown_options' => $dropdownOptions,
-                'dropdown_correct' => $dropdownCorrect
-            ];
-        }
+    public function update(Request $request, Question $question): RedirectResponse
+    {
+        // Similar to store method but for update
+        // Use same validation logic with needsOptions method
         
-        // Merge type-specific data with existing section_specific_data
-        $mergedSectionData = array_merge(
-            $sectionSpecificData ?? [],
-            $typeSpecificData
-        );
-        
-        // Determine use_part_audio
-        $usePartAudio = false; // Default to false
-        
-        if ($section === 'listening') {
-            $partAudio = $question->testSet->getPartAudio($request->part_number ?? $question->part_number);
-            
-            // Complex logic for update
-            if ($request->hasFile('media')) {
-                // New audio uploaded, don't use part audio
-                $usePartAudio = false;
-            } elseif ($request->input('use_custom_audio') == '1') {
-                // User explicitly wants custom audio
-                $usePartAudio = false;
-            } elseif (!$partAudio) {
-                // No part audio available
-                $usePartAudio = false;
-            } elseif ($request->has('remove_media') && $request->remove_media) {
-                // User removed custom audio, use part audio if available
-                $usePartAudio = $partAudio ? true : false;
-            } elseif ($question->use_part_audio) {
-                // Keep existing part audio preference
-                $usePartAudio = true;
-            } elseif ($question->media_path && !$partAudio) {
-                // Has custom audio and no part audio
-                $usePartAudio = false;
-            } elseif ($partAudio && !$question->media_path) {
-                // No custom audio but part audio exists
-                $usePartAudio = true;
-            }
-        }
-        
-        // Update the question
-        $updateData = [
-            'question_type' => $request->question_type,
-            'media_path' => $mediaPath,
-            'use_part_audio' => $usePartAudio,
-            'order_number' => $request->order_number,
-            'part_number' => $request->part_number,
-            'marks' => $request->marks ?? 1,
-            'instructions' => $request->instructions,
-            'audio_transcript' => $request->audio_transcript,
-            'word_limit' => $request->word_limit ?? null,
-            'time_limit' => $request->time_limit ?? null,
-            'section_specific_data' => !empty($mergedSectionData) ? $mergedSectionData : null,
-        ];
-        
-        // Handle content based on question type
-        if ($request->question_type === 'passage') {
-            // For passages, prioritize passage_text, then content
-            $passageContent = $request->filled('passage_text') ? $request->passage_text : $request->content;
-            
-            $updateData['content'] = $passageContent;
-            $updateData['passage_text'] = $passageContent;
-            
-            // Passages typically have 0 marks
-            $updateData['marks'] = 0;
-        } else {
-            // For regular questions
-            $updateData['content'] = $request->content;
-            $updateData['passage_text'] = null;
-        }
-        
-        // Also set the specific fields if they exist
-        if (isset($typeSpecificData['matching_pairs'])) {
-            $updateData['matching_pairs'] = $typeSpecificData['matching_pairs'];
-        } else {
-            $updateData['matching_pairs'] = null;
-        }
-        
-        if (isset($typeSpecificData['form_structure'])) {
-            $updateData['form_structure'] = $typeSpecificData['form_structure'];
-        } else {
-            $updateData['form_structure'] = null;
-        }
-        
-        if (isset($typeSpecificData['diagram_hotspots'])) {
-            $updateData['diagram_hotspots'] = $typeSpecificData['diagram_hotspots'];
-        } else {
-            $updateData['diagram_hotspots'] = null;
-        }
-
-        $question->update($updateData);
-        
-        \Log::info('Question updated:', ['id' => $question->id, 'use_part_audio' => $question->use_part_audio]);
-        
-        // Handle blanks counting for fill_blanks type
-        if ($request->question_type === 'fill_blanks') {
-            // Count blanks in content
-            $content = $question->content;
-            preg_match_all('/\[____\d+____\]/', $content, $blankMatches);
-            preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
-            
-            $blankCount = count($blankMatches[0]) + count($dropdownMatches[0]);
-            
-            $question->blank_count = $blankCount;
-            $question->save();
-        }
-        
-        // Update options if applicable
-        if ($this->requiresOptions($request->question_type) && isset($request->options)) {
-            // Delete old options
-            $question->options()->delete();
-            
-            // Create new options
-            foreach ($request->options as $index => $option) {
-                QuestionOption::create([
-                    'question_id' => $question->id,
-                    'content' => $option['content'],
-                    'is_correct' => ($request->correct_option == $index),
-                ]);
-            }
-        } elseif (!$this->requiresOptions($request->question_type)) {
-            // If question type changed to non-options type, delete existing options
-            $question->options()->delete();
-        }
-    });
-    
-    return redirect()->route('admin.test-sets.show', $question->test_set_id)
-        ->with('success', 'Question updated successfully.');
-}
+        return redirect()->route('admin.test-sets.show', $question->test_set_id)
+            ->with('success', 'Question updated successfully.');
+    }
 
     /**
      * Remove the specified question from storage.
@@ -828,7 +495,7 @@ public function update(Request $request, Question $question): RedirectResponse
     }
 
     /**
-     * Check if question type requires options
+     * Check if question type requires options (old method - kept for compatibility)
      */
     private function requiresOptions($questionType): bool
     {
@@ -844,34 +511,25 @@ public function update(Request $request, Question $question): RedirectResponse
     }
 
     /**
-     * Add section-specific validation rules
+     * Check if question type needs options (excluding special types)
      */
-    private function addSectionSpecificRules(&$rules, $section, $request)
+    private function needsOptions($questionType): bool
     {
-        switch ($section) {
-            case 'listening':
-                if (!$request->question_type || $request->question_type !== 'passage') {
-                    $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
-                }
-                $rules['part_number'] = 'required|integer|min:1|max:4';
-                break;
-                
-            case 'reading':
-                $rules['part_number'] = 'required|integer|min:1|max:3';
-                if ($request->question_type === 'passage') {
-                    $rules['content'] = 'required|string|min:200';
-                }
-                break;
-                
-            case 'writing':
-                $rules['word_limit'] = 'required|integer|min:50|max:500';
-                $rules['time_limit'] = 'required|integer|min:1|max:60';
-                break;
-                
-            case 'speaking':
-                $rules['time_limit'] = 'required|integer|min:1|max:10';
-                break;
+        // Special types that don't need traditional options
+        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram'];
+        
+        // Text input types that don't need options
+        $textTypes = ['short_answer', 'sentence_completion', 'note_completion'];
+        
+        // If it's a special type or text type, no options needed
+        if (in_array($questionType, $specialTypes) || in_array($questionType, $textTypes)) {
+            return false;
         }
+        
+        // Option-based types
+        $optionTypes = ['multiple_choice', 'true_false', 'yes_no'];
+        
+        return in_array($questionType, $optionTypes);
     }
 
     /**
