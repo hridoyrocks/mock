@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TestPartAudio extends Model
 {
+
+    protected $table = 'test_part_audios';
+
     protected $fillable = [
         'test_set_id',
         'part_number',
