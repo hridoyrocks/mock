@@ -1198,14 +1198,42 @@
     </div>
 
     <!-- Hidden Audio Elements -->
-    @foreach($groupedQuestions as $partNumber => $partQuestions)
-        @if($partQuestions->first() && $partQuestions->first()->media_path)
-            <audio id="test-audio-{{ $partNumber }}" preload="auto" style="display:none;">
-                <source src="{{ asset('storage/' . $partQuestions->first()->media_path) }}" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
-        @endif
-    @endforeach
+@foreach($groupedQuestions->keys() as $partNumber)
+    @php
+        // First try to get part audio
+        $partAudio = $testSet->getPartAudio($partNumber);
+        $audioPath = null;
+        
+        if ($partAudio) {
+            $audioPath = $partAudio->audio_path;
+        } else {
+            // Fallback: Find first question with audio in this part
+            $firstQuestionWithAudio = $testSet->questions()
+                ->where('part_number', $partNumber)
+                ->where('use_part_audio', false)
+                ->whereNotNull('media_path')
+                ->first();
+                
+            if ($firstQuestionWithAudio) {
+                $audioPath = $firstQuestionWithAudio->media_path;
+            }
+        }
+    @endphp
+    
+    @if($audioPath)
+        <audio id="test-audio-{{ $partNumber }}" preload="auto" style="display:none;">
+            <source src="{{ asset('storage/' . $audioPath) }}" type="audio/mpeg">
+            <source src="{{ asset('storage/' . $audioPath) }}" type="audio/ogg">
+            <source src="{{ asset('storage/' . $audioPath) }}" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
+    @else
+        <!-- No audio for this part -->
+        <div id="no-audio-{{ $partNumber }}" style="display:none;" 
+             data-message="No audio available for Part {{ $partNumber }}">
+        </div>
+    @endif
+@endforeach
     
     @push('scripts')
     <script>

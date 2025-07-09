@@ -1,5 +1,3 @@
-
-
 <x-layout>
     <x-slot:title>{{ $testSet->title }} - Test Set Details</x-slot>
     
@@ -12,16 +10,33 @@
                         <h1 class="text-2xl font-semibold">{{ $testSet->title }}</h1>
                         <p class="text-indigo-100 text-sm mt-1">
                             @switch($testSet->section->name)
-                                @case('listening')  Listening Section @break
-                                @case('reading')  Reading Section @break
-                                @case('writing')  Writing Section @break
-                                @case('speaking')  Speaking Section @break
+                                @case('listening') 🎧 Listening Section @break
+                                @case('reading') 📖 Reading Section @break
+                                @case('writing') ✍️ Writing Section @break
+                                @case('speaking') 🎤 Speaking Section @break
                                 @default {{ ucfirst($testSet->section->name) }} Section
                             @endswitch
                         </p>
                     </div>
                     <div class="flex space-x-3">
-                        @if($testSet->section->name === 'reading')
+                        {{-- LISTENING SECTION SPECIFIC BUTTONS --}}
+                        @if($testSet->section->name === 'listening')
+                            <a href="{{ route('admin.test-sets.part-audios', $testSet) }}" 
+                               class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                                </svg>
+                                Manage Part Audios
+                            </a>
+                            
+                            <a href="{{ route('admin.questions.create', ['test_set' => $testSet->id]) }}" 
+                               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Add Question
+                            </a>
+                        @elseif($testSet->section->name === 'reading')
                             @php
                                 $hasPassage = $testSet->questions()->where('question_type', 'passage')->exists();
                             @endphp
@@ -33,7 +48,7 @@
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                     </svg>
-                                     Add Reading Passage
+                                    📄 Add Reading Passage
                                 </a>
                             @else
                                 <!-- Step 2: Add Questions -->
@@ -42,7 +57,7 @@
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
-                                     Add Questions
+                                    ❓ Add Questions
                                 </a>
                                 
                                 <!-- Edit Passage Button -->
@@ -53,7 +68,7 @@
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                     </svg>
-                                     Edit Passage
+                                    ✏️ Edit Passage
                                 </a>
                                 @endif
                             @endif
@@ -110,6 +125,52 @@
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
                         </svg>
                         {{ session('error') }}
+                    </div>
+                </div>
+            @endif
+            
+            {{-- PART AUDIO STATUS CARD FOR LISTENING --}}
+            @if($testSet->section->name === 'listening')
+                <div class="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-purple-900 mb-3">🎧 Part Audio Status</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        @for($i = 1; $i <= 4; $i++)
+                            <div class="text-center bg-white rounded-lg p-3 border border-purple-100">
+                                <div class="text-sm font-medium text-purple-600 mb-1">Part {{ $i }}</div>
+                                @if($testSet->hasPartAudio($i))
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 0016 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Uploaded
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Not uploaded
+                                    </span>
+                                @endif
+                                
+                                {{-- Questions count for this part --}}
+                                @php
+                                    $partQuestionCount = $testSet->questions()->where('part_number', $i)->count();
+                                @endphp
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {{ $partQuestionCount }} {{ Str::plural('question', $partQuestionCount) }}
+                                </div>
+                            </div>
+                        @endfor
+                    </div>
+                    <div class="mt-3 flex justify-end">
+                        <a href="{{ route('admin.test-sets.part-audios', $testSet) }}" 
+                           class="text-sm text-purple-600 hover:text-purple-700 font-medium inline-flex items-center">
+                            Manage Part Audios
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
                     </div>
                 </div>
             @endif
@@ -233,7 +294,7 @@
                                 <div class="px-6 py-4 border-b border-gray-200">
                                     <div class="flex items-center justify-between">
                                         <h3 class="text-lg font-medium text-gray-900">
-                                            📝 Questions ({{ $questions->count() }})
+                                            ❓ Questions ({{ $questions->count() }})
                                         </h3>
                                         @if($passage)
                                         <a href="{{ route('admin.questions.create', ['test_set' => $testSet->id]) }}" 
@@ -401,6 +462,16 @@
                                                 <div class="text-xs text-gray-500">
                                                     {{ ucfirst(str_replace('_', ' ', $question->question_type)) }}
                                                     @if($question->options->count() > 0) • {{ $question->options->count() }} options @endif
+                                                    {{-- Show audio status for listening questions --}}
+                                                    @if($testSet->section->name === 'listening')
+                                                        @if($question->use_part_audio)
+                                                            • <span class="text-purple-600">🎧 Part {{ $question->part_number }} Audio</span>
+                                                        @elseif($question->media_path)
+                                                            • <span class="text-blue-600">🎵 Custom Audio</span>
+                                                        @else
+                                                            • <span class="text-red-600">⚠️ No Audio</span>
+                                                        @endif
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>

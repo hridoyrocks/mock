@@ -225,7 +225,26 @@ Route::middleware(['auth'])->group(function () {
         
         // Test sets management
         Route::resource('test-sets', TestSetController::class);
-        
+
+
+        // Add these NEW routes for Part Audio Management
+    Route::prefix('test-sets/{testSet}')->name('test-sets.')->group(function () {
+        // Part Audio Management Routes
+        Route::get('/part-audios', [App\Http\Controllers\Admin\TestPartAudioController::class, 'index'])
+            ->name('part-audios');
+        Route::post('/part-audios', [App\Http\Controllers\Admin\TestPartAudioController::class, 'upload'])
+            ->name('part-audios.upload');
+        Route::delete('/part-audios/{partNumber}', [App\Http\Controllers\Admin\TestPartAudioController::class, 'destroy'])
+            ->name('part-audios.destroy');
+           // Add this helper route for checking part audio existence
+        Route::get('/check-part-audio/{partNumber}', function($testSetId, $partNumber) {
+            $testSet = \App\Models\TestSet::findOrFail($testSetId);
+            return response()->json([
+                'hasAudio' => $testSet->hasPartAudio($partNumber)
+            ]);
+        })->name('check-part-audio');
+    });
+
         // Questions management
         Route::prefix('questions')->name('questions.')->group(function () {
             Route::get('/', [QuestionController::class, 'index'])->name('index');

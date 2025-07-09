@@ -546,5 +546,31 @@ public function getDiagramHotspots(): array
     return $this->diagram_hotspots;
 }
 
-   
+/**
+ * Get the audio path for this question
+ */
+public function getAudioPathAttribute(): ?string
+{
+    // If question uses its own audio
+    if (!$this->use_part_audio && $this->media_path) {
+        return $this->media_path;
+    }
+    
+    // If question uses part audio
+    if ($this->use_part_audio && $this->testSet) {
+        $partAudio = $this->testSet->getPartAudio($this->part_number);
+        return $partAudio ? $partAudio->audio_path : null;
+    }
+    
+    return null;
+}
+
+/**
+ * Check if question has audio available
+ */
+public function hasAudio(): bool
+{
+    return !empty($this->audio_path);
+}
+ 
 }

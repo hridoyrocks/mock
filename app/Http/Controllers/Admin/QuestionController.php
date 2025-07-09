@@ -133,11 +133,38 @@ class QuestionController extends Controller
     // Section-specific validation
     switch ($section) {
         case 'listening':
-            // Make media conditional based on question type
-            if (!in_array($request->question_type, ['plan_map_diagram'])) {
+            // Check if part audio exists
+            $partAudio = $testSet->getPartAudio($request->part_number ?? 1);
+            
+            // Make media conditional based on question type and part audio
+            if (in_array($request->question_type, ['plan_map_diagram'])) {
+                // Plan/map/diagram might have their own image instead of audio
+                $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
+            } elseif (!$partAudio || $request->input('use_custom_audio') == '1') {
+                // No part audio OR user wants custom audio = required
                 $rules['media'] = 'required|file|mimes:mp3,wav,ogg|max:51200';
+            } else {
+                // Part audio exists and user doesn't want custom = optional
+                $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
             }
+            
             $rules['part_number'] = 'required|integer|min:1|max:4';
+            break;
+            
+        case 'reading':
+            $rules['part_number'] = 'required|integer|min:1|max:3';
+            break;
+            
+        case 'writing':
+            $rules['word_limit'] = 'required|integer|min:50|max:500';
+            $rules['time_limit'] = 'required|integer|min:1|max:60';
+            if (strpos($request->question_type, 'task1') !== false) {
+                $rules['media'] = 'nullable|file|mimes:jpg,jpeg,png,gif|max:5120';
+            }
+            break;
+            
+        case 'speaking':
+            $rules['time_limit'] = 'required|integer|min:1|max:10';
             break;
     }
     
@@ -179,6 +206,12 @@ class QuestionController extends Controller
     $mediaPath = null;
     if ($request->hasFile('media')) {
         $mediaPath = $request->file('media')->store('questions/' . $section, 'public');
+    }
+    
+    // Handle diagram image for plan_map_diagram
+    if ($request->question_type === 'plan_map_diagram' && $request->hasFile('diagram_image')) {
+        $diagramPath = $request->file('diagram_image')->store('questions/diagrams', 'public');
+        $mediaPath = $diagramPath; // Override media path with diagram
     }
     
     // Handle type-specific data
@@ -225,13 +258,6 @@ class QuestionController extends Controller
             break;
             
         case 'plan_map_diagram':
-            // Handle diagram image upload
-            if ($request->hasFile('diagram_image')) {
-                $diagramPath = $request->file('diagram_image')->store('questions/diagrams', 'public');
-                $mediaPath = $diagramPath; // Override media path
-                \Log::info('Diagram uploaded:', $diagramPath);
-            }
-            
             if ($request->has('diagram_hotspots')) {
                 $hotspots = [];
                 foreach ($request->diagram_hotspots as $index => $hotspot) {
@@ -251,7 +277,22 @@ class QuestionController extends Controller
             break;
     }
     
-    DB::transaction(function () use ($request, $testSet, $mediaPath, $typeSpecificData) {
+    DB::transaction(function () use ($request, $testSet, $section, $mediaPath, $typeSpecificData) {
+        // Determine if question should use part audio
+        $usePartAudio = false; // Default to false
+        
+        if ($section === 'listening') {
+            $partAudio = $testSet->getPartAudio($request->part_number ?? 1);
+            
+            // Use part audio if:
+            // 1. Part audio exists AND
+            // 2. User didn't upload custom audio AND
+            // 3. User didn't explicitly choose custom audio
+            if ($partAudio && !$mediaPath && $request->input('use_custom_audio') != '1') {
+                $usePartAudio = true;
+            }
+        }
+        
         // Prepare question data
         $questionData = [
             'test_set_id' => $request->test_set_id,
@@ -262,7 +303,10 @@ class QuestionController extends Controller
             'marks' => $request->marks ?? 1,
             'instructions' => $request->instructions,
             'media_path' => $mediaPath,
+            'use_part_audio' => $usePartAudio,
             'audio_transcript' => $request->audio_transcript ?? null,
+            'word_limit' => $request->word_limit ?? null,
+            'time_limit' => $request->time_limit ?? null,
         ];
         
         // Add type-specific fields directly
@@ -285,7 +329,7 @@ class QuestionController extends Controller
         
         $question = Question::create($questionData);
         
-        \Log::info('Question created:', ['id' => $question->id]);
+        \Log::info('Question created:', ['id' => $question->id, 'use_part_audio' => $question->use_part_audio]);
         
         // Create options if applicable
         if ($this->requiresOptions($request->question_type) && isset($request->options)) {
@@ -440,7 +484,10 @@ public function update(Request $request, Question $question): RedirectResponse
     // Section-specific validation
     switch ($section) {
         case 'listening':
-            // Media is optional for update (keep existing if not provided)
+            // Check if part audio exists for validation
+            $partAudio = $testSet->getPartAudio($request->part_number ?? $question->part_number);
+            
+            // Media is always optional for update (keep existing if not provided)
             $rules['media'] = 'nullable|file|mimes:mp3,wav,ogg|max:51200';
             $rules['part_number'] = 'required|integer|min:1|max:4';
             break;
@@ -523,6 +570,16 @@ public function update(Request $request, Question $question): RedirectResponse
         $mediaPath = null;
     }
     
+    // Handle diagram image for plan_map_diagram
+    if ($request->question_type === 'plan_map_diagram' && $request->hasFile('diagram_image')) {
+        // Delete old diagram if exists
+        if ($mediaPath && Storage::disk('public')->exists($mediaPath)) {
+            Storage::disk('public')->delete($mediaPath);
+        }
+        $diagramPath = $request->file('diagram_image')->store('questions/diagrams', 'public');
+        $mediaPath = $diagramPath; // Override media path
+    }
+    
     // Handle type-specific data
     $typeSpecificData = [];
 
@@ -565,16 +622,6 @@ public function update(Request $request, Question $question): RedirectResponse
             break;
             
         case 'plan_map_diagram':
-            // Handle diagram image upload
-            if ($request->hasFile('diagram_image')) {
-                // Delete old diagram if exists
-                if ($mediaPath && Storage::disk('public')->exists($mediaPath)) {
-                    Storage::disk('public')->delete($mediaPath);
-                }
-                $diagramPath = $request->file('diagram_image')->store('questions/diagrams', 'public');
-                $mediaPath = $diagramPath; // Override media path
-            }
-            
             if ($request->has('diagram_hotspots')) {
                 $hotspots = [];
                 foreach ($request->diagram_hotspots as $index => $hotspot) {
@@ -593,7 +640,7 @@ public function update(Request $request, Question $question): RedirectResponse
             break;
     }
     
-    DB::transaction(function () use ($request, $question, $mediaPath, $typeSpecificData) {
+    DB::transaction(function () use ($request, $question, $section, $mediaPath, $typeSpecificData) {
         // Prepare section specific data for gap fill/dropdown
         $sectionSpecificData = null;
         if ($request->has('blank_answers') || $request->has('dropdown_options')) {
@@ -642,10 +689,42 @@ public function update(Request $request, Question $question): RedirectResponse
             $typeSpecificData
         );
         
+        // Determine use_part_audio
+        $usePartAudio = false; // Default to false
+        
+        if ($section === 'listening') {
+            $partAudio = $question->testSet->getPartAudio($request->part_number ?? $question->part_number);
+            
+            // Complex logic for update
+            if ($request->hasFile('media')) {
+                // New audio uploaded, don't use part audio
+                $usePartAudio = false;
+            } elseif ($request->input('use_custom_audio') == '1') {
+                // User explicitly wants custom audio
+                $usePartAudio = false;
+            } elseif (!$partAudio) {
+                // No part audio available
+                $usePartAudio = false;
+            } elseif ($request->has('remove_media') && $request->remove_media) {
+                // User removed custom audio, use part audio if available
+                $usePartAudio = $partAudio ? true : false;
+            } elseif ($question->use_part_audio) {
+                // Keep existing part audio preference
+                $usePartAudio = true;
+            } elseif ($question->media_path && !$partAudio) {
+                // Has custom audio and no part audio
+                $usePartAudio = false;
+            } elseif ($partAudio && !$question->media_path) {
+                // No custom audio but part audio exists
+                $usePartAudio = true;
+            }
+        }
+        
         // Update the question
         $updateData = [
             'question_type' => $request->question_type,
             'media_path' => $mediaPath,
+            'use_part_audio' => $usePartAudio,
             'order_number' => $request->order_number,
             'part_number' => $request->part_number,
             'marks' => $request->marks ?? 1,
@@ -692,6 +771,8 @@ public function update(Request $request, Question $question): RedirectResponse
         }
 
         $question->update($updateData);
+        
+        \Log::info('Question updated:', ['id' => $question->id, 'use_part_audio' => $question->use_part_audio]);
         
         // Handle blanks counting for fill_blanks type
         if ($request->question_type === 'fill_blanks') {

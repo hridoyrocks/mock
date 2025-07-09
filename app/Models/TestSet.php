@@ -28,4 +28,19 @@ class TestSet extends Model
     {
         return $this->hasMany(StudentAttempt::class);
     }
+
+    public function partAudios()
+{
+    return $this->hasMany(TestPartAudio::class)->orderBy('part_number');
+}
+
+public function getPartAudio($partNumber)
+{
+    return $this->partAudios()->where('part_number', $partNumber)->first();
+}
+
+public function hasPartAudio($partNumber): bool
+{
+    return $this->partAudios()->where('part_number', $partNumber)->exists();
+}
 }
