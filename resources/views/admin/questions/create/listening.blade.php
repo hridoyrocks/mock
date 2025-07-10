@@ -586,43 +586,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Processing diagram question...');
                 
                 // Collect hotspots
-                const hotspots = [];
-                document.querySelectorAll('.hotspot-field').forEach((field, index) => {
-                    const xInput = field.querySelector('input[name*="[x]"]');
-                    const yInput = field.querySelector('input[name*="[y]"]');
-                    const labelInput = field.querySelector('input[name*="[label]"]');
-                    const answerInput = field.querySelector('input[name*="[answer]"]');
-                    
-                    if (xInput && yInput && labelInput && answerInput) {
-                        const answer = answerInput.value.trim();
-                        
-                        if (answer) {
-                            hotspots.push({
-                                id: index + 1,
-                                x: parseInt(xInput.value),
-                                y: parseInt(yInput.value),
-                                label: labelInput.value,
-                                answer: answer
-                            });
-                            console.log(`Hotspot ${index + 1}:`, labelInput.value, '->', answer);
-                        }
-                    }
+               const hotspots = [];
+    document.querySelectorAll('.hotspot-field').forEach((field, index) => {
+        const xInput = field.querySelector('input[name*="[x]"]');
+        const yInput = field.querySelector('input[name*="[y]"]');
+        const labelInput = field.querySelector('input[name*="[label]"]');
+        const answerInput = field.querySelector('input[name*="[answer]"]');
+        
+        if (xInput && yInput && labelInput && answerInput) {
+            const answer = answerInput.value.trim();
+            
+            if (answer) {
+                hotspots.push({
+                    id: index + 1,
+                    x: parseInt(xInput.value),
+                    y: parseInt(yInput.value),
+                    label: labelInput.value,
+                    answer: answer
                 });
-                
-                if (hotspots.length > 0) {
-                    // Create hidden input
-                    let hiddenInput = document.getElementById('diagram_hotspots_json');
-                    if (!hiddenInput) {
-                        hiddenInput = document.createElement('input');
-                        hiddenInput.type = 'hidden';
-                        hiddenInput.id = 'diagram_hotspots_json';
-                        hiddenInput.name = 'diagram_hotspots_json';
-                        questionForm.appendChild(hiddenInput);
-                    }
-                    hiddenInput.value = JSON.stringify(hotspots);
-                    console.log('Diagram hotspots JSON:', hiddenInput.value);
-                }
+                console.log(`Hotspot ${index + 1}:`, labelInput.value, '->', answer);
             }
+        }
+    });
+    
+    if (hotspots.length > 0) {
+        // Check if hidden input already exists
+        let hiddenInput = document.getElementById('diagram_hotspots_json');
+        if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.id = 'diagram_hotspots_json';
+            hiddenInput.name = 'diagram_hotspots_json';
+            questionForm.appendChild(hiddenInput);
+        }
+        hiddenInput.value = JSON.stringify(hotspots);
+        console.log('Diagram hotspots JSON:', hiddenInput.value);
+    }
+}
             
             console.log('=== FORM SUBMISSION COMPLETED ===');
             // Form will submit normally
