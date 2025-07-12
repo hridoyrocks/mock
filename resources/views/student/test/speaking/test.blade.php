@@ -13,8 +13,10 @@
         body, html {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f4f6;
+            height: 100vh;
+            overflow: hidden;
         }
         
         .ielts-header {
@@ -24,6 +26,7 @@
             padding: 12px 20px;
             background-color: white;
             border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
         .ielts-header-left {
@@ -35,164 +38,169 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 20px;
-            background-color: #212529;
+            padding: 10px 20px;
+            background-color: #1a1a1a;
             color: white;
         }
         
         .user-info {
             display: flex;
             align-items: center;
+            font-size: 14px;
         }
         
         .user-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         
         .content-area {
-            padding: 20px;
-            padding-bottom: 100px;
-            max-width: 1000px;
-            margin: 0 auto;
+            height: calc(100vh - 108px); /* Subtract header heights */
+            overflow-y: auto;
+            padding: 20px 20px;
+            background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
         }
         
-        /* Progress Bar Styles */
-        .progress-container {
-            background: white;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .progress-bar {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        
-        .progress-segment {
-            flex: 1;
-            height: 6px;
-            background: #e5e7eb;
-            border-radius: 3px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .progress-segment.active {
-            background: #3b82f6;
-        }
-        
-        .progress-segment.completed {
+        /* Submit Button in User Bar */
+        .submit-btn-top {
             background: #10b981;
-        }
-        
-        .progress-labels {
-            display: flex;
-            justify-content: space-between;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
             font-size: 14px;
-            color: #6b7280;
-        }
-        
-        .progress-label.active {
-            color: #3b82f6;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
-        .progress-label.completed {
-            color: #10b981;
+        .submit-btn-top:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
         
-        /* Progressive Question Card Styles */
+        .submit-btn-top svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* Question Card Container */
         .question-card-container {
             max-width: 800px;
             margin: 0 auto;
         }
         
+        /* Enhanced Question Card */
         .question-card {
             background: white;
             border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
-            padding: 32px;
-            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            padding: 30px;
+            margin-bottom: 20px;
             position: relative;
-            transition: all 0.3s ease;
-            min-height: 450px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 420px;
             display: none;
+            border: 2px solid transparent;
         }
         
         .question-card.active {
             display: block;
-            animation: slideIn 0.5s ease-out;
+            animation: slideInUp 0.6s ease-out;
         }
         
         .question-card.reading-phase {
-            border: 2px solid #3B82F6;
-            background: #EBF5FF;
+            border-color: #3B82F6;
+            background: linear-gradient(to bottom right, #ffffff, #EBF8FF);
         }
         
         .question-card.recording-phase {
-            border: 2px solid #EF4444;
-            background: #FEF2F2;
+            border-color: #EF4444;
+            background: linear-gradient(to bottom right, #ffffff, #FEF2F2);
         }
         
         .question-card.completed {
-            border: 2px solid #10B981;
-            background: #F0FDF4;
+            border-color: #10B981;
+            background: linear-gradient(to bottom right, #ffffff, #F0FDF4);
         }
         
-        @keyframes slideIn {
+        @keyframes slideInUp {
             from {
                 opacity: 0;
-                transform: translateX(30px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
-                transform: translateX(0);
+                transform: translateY(0);
             }
         }
         
+        /* Card Header */
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(0,0,0,0.05);
         }
         
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .question-counter {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+            background: #f3f4f6;
+            padding: 5px 14px;
+            border-radius: 20px;
+        }
+        
+        /* Phase Indicator */
         .card-phase-indicator {
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            gap: 10px;
             font-weight: 600;
             font-size: 16px;
             margin-bottom: 24px;
+            padding: 12px;
+            background: rgba(0,0,0,0.03);
+            border-radius: 10px;
         }
         
         .phase-icon {
             font-size: 24px;
         }
         
+        /* Question Display */
         .question-display {
             text-align: center;
-            margin: 40px 0;
+            margin: 30px 0;
         }
         
         .question-text {
-            font-size: 24px;
+            font-size: 22px;
             line-height: 1.5;
-            color: #1F2937;
-            margin-bottom: 32px;
+            color: #111827;
+            margin-bottom: 30px;
             font-weight: 500;
+            letter-spacing: -0.02em;
         }
         
-        /* Timer Displays */
+        /* Enhanced Timer */
         .read-timer {
-            margin: 32px auto;
+            margin: 30px auto;
             text-align: center;
         }
         
@@ -201,6 +209,7 @@
             height: 120px;
             margin: 0 auto 16px;
             position: relative;
+            filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.15));
         }
         
         .timer-circle svg {
@@ -210,13 +219,13 @@
         .timer-circle-bg {
             fill: none;
             stroke: #E5E7EB;
-            stroke-width: 8;
+            stroke-width: 6;
         }
         
         .timer-circle-progress {
             fill: none;
             stroke: #3B82F6;
-            stroke-width: 8;
+            stroke-width: 6;
             stroke-linecap: round;
             transition: stroke-dashoffset 0.5s ease;
         }
@@ -227,20 +236,27 @@
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 32px;
-            font-weight: bold;
+            font-weight: 700;
             color: #3B82F6;
         }
         
         .timer-label {
             font-size: 14px;
             color: #6B7280;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .timer-info {
+            font-size: 13px;
+            color: #9CA3AF;
+            margin-top: 10px;
         }
         
         /* Recording Controls */
         .recording-controls {
             text-align: center;
-            margin-top: 32px;
+            margin-top: 30px;
         }
         
         .recording-indicator {
@@ -249,6 +265,9 @@
             justify-content: center;
             gap: 16px;
             margin-bottom: 24px;
+            padding: 16px;
+            background: rgba(239, 68, 68, 0.05);
+            border-radius: 10px;
         }
         
         .recording-dot {
@@ -257,11 +276,12 @@
             background: #EF4444;
             border-radius: 50%;
             animation: pulse 1.5s infinite;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
         }
         
         @keyframes pulse {
             0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.2); }
+            50% { opacity: 0.8; transform: scale(1.1); }
             100% { opacity: 1; transform: scale(1); }
         }
         
@@ -276,82 +296,65 @@
         
         .volume-level {
             height: 100%;
-            background: #10B981;
+            background: linear-gradient(to right, #10B981, #34D399);
             transition: width 0.1s ease;
             border-radius: 4px;
         }
         
         .recording-time {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             color: #374151;
             margin-top: 16px;
+            font-feature-settings: 'tnum';
         }
         
-        /* Action Buttons */
+        /* Action Button */
         .action-button {
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 14px 32px;
+            border-radius: 10px;
             font-weight: 600;
             font-size: 16px;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
-            min-width: 160px;
+            transition: all 0.3s ease;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
         .action-button.primary {
-            background: #3B82F6;
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
             color: white;
         }
         
-        .action-button.primary:hover {
-            background: #2563EB;
-            transform: translateY(-1px);
+        .action-button.primary:hover:not(.disabled) {
+            background: linear-gradient(135deg, #2563EB, #1D4ED8);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
         }
         
         .action-button.disabled {
             background: #9CA3AF;
             cursor: not-allowed;
-        }
-        
-        /* Tips Section */
-        .tips-section {
-            background: #F9FAFB;
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 24px;
-        }
-        
-        .tips-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            color: #6B7280;
-            margin-bottom: 8px;
-        }
-        
-        .tips-content {
-            font-size: 14px;
-            color: #6B7280;
-            line-height: 1.5;
+            opacity: 0.6;
         }
         
         /* Part 2 Cue Card */
         .cue-card {
-            background: #FFFBEB;
+            background: linear-gradient(135deg, #FEF3C7, #FFFBEB);
             border: 2px solid #F59E0B;
             border-radius: 12px;
-            padding: 24px;
+            padding: 20px;
             margin: 24px 0;
             text-align: left;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
         }
         
         .cue-card-title {
-            font-weight: 600;
+            font-weight: 700;
             color: #92400E;
             margin-bottom: 16px;
+            font-size: 15px;
         }
         
         .cue-card-points {
@@ -364,6 +367,8 @@
             padding-left: 24px;
             position: relative;
             color: #78350F;
+            font-size: 14px;
+            line-height: 1.5;
         }
         
         .cue-card-points li:before {
@@ -372,6 +377,7 @@
             left: 8px;
             color: #F59E0B;
             font-weight: bold;
+            font-size: 18px;
         }
         
         /* Progress Dots */
@@ -379,7 +385,7 @@
             display: flex;
             justify-content: center;
             gap: 8px;
-            margin-top: 24px;
+            margin-top: 30px;
         }
         
         .progress-dot {
@@ -392,64 +398,24 @@
         
         .progress-dot.completed {
             background: #10B981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
         
         .progress-dot.active {
             background: #3B82F6;
             transform: scale(1.2);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
-        /* Existing styles continue... */
-        .info-section {
-            background-color: #dbeafe;
-            border-left: 4px solid #3b82f6;
-            padding: 16px;
-            margin-bottom: 30px;
-            border-radius: 0 6px 6px 0;
-        }
-        
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: white;
-            border-top: 1px solid #e5e7eb;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-        }
-        
-        .nav-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .submit-btn {
-            transition: all 0.3s ease;
-        }
-        
-        .submit-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
+        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.75);
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
             z-index: 1000;
             display: flex;
             align-items: center;
@@ -458,52 +424,63 @@
         
         .modal-content {
             background-color: white;
-            padding: 24px;
-            border-radius: 8px;
-            max-width: 400px;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 450px;
             text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
         
         .modal-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 16px;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #059669;
         }
         
         .modal-message {
             font-size: 16px;
-            margin-bottom: 24px;
-            line-height: 1.5;
+            margin-bottom: 28px;
+            line-height: 1.6;
+            color: #4b5563;
         }
         
         .modal-button {
-            background-color: #3b82f6;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
+            padding: 12px 28px;
+            border-radius: 8px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            margin: 0 5px;
+            margin: 0 6px;
+            transition: all 0.2s ease;
         }
         
         .modal-button:hover {
-            background-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
         
         .modal-button.secondary {
-            background-color: #6b7280;
+            background: #6b7280;
         }
         
         .modal-button.secondary:hover {
-            background-color: #4b5563;
+            background: #4b5563;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
         }
         
+        /* Responsive Design */
         @media (max-width: 768px) {
             .content-area {
-                padding: 10px;
-                padding-bottom: 100px;
+                padding: 15px 12px;
+            }
+            
+            .question-card {
+                padding: 24px 18px;
+                min-height: 400px;
             }
             
             .question-text {
@@ -518,6 +495,73 @@
             .timer-text {
                 font-size: 28px;
             }
+            
+            .user-bar {
+                padding: 10px 15px;
+            }
+            
+            .user-controls {
+                gap: 8px;
+            }
+            
+            .submit-btn-top {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .submit-btn-top span {
+                display: none; /* Hide text on mobile, show only icon */
+            }
+        }
+        
+        /* Tips Section (Optional) */
+        .tips-section {
+            background: linear-gradient(135deg, #F9FAFB, #F3F4F6);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 24px;
+            border: 1px solid #E5E7EB;
+        }
+        
+        .tips-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #6B7280;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .tips-content {
+            font-size: 13px;
+            color: #6B7280;
+            line-height: 1.5;
+        }
+        
+        /* Audio Player for Review */
+        .audio-player {
+            margin-top: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Scrollbar Styling */
+        .content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .content-area::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+        
+        .content-area::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        
+        .content-area::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
         }
     </style>
 
@@ -534,7 +578,7 @@
         </div>
     </div>
 
-    <!-- User Info Bar WITH Integrated Timer -->
+    <!-- User Info Bar with Submit Button -->
     <div class="user-bar">
         <div class="user-info">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -554,39 +598,19 @@
                 :warning-time="300"
                 :danger-time="120"
             />
+            
+            {{-- Submit Button in Top Bar --}}
+            <button type="button" id="submit-test-btn" class="submit-btn-top">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Submit Test</span>
+            </button>
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <div class="content-area">
-        <div class="info-section">
-            <div class="flex items-start">
-                <svg class="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                </svg>
-                <div>
-                    <p class="text-blue-800 font-medium mb-1">IELTS Speaking Test Instructions</p>
-                    <p class="text-blue-700 text-sm">
-                        This test follows the progressive card system. Read each question carefully during the reading time, then record your answer when prompted.
-                    </p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Progress Bar -->
-        <div class="progress-container">
-            <div class="progress-bar">
-                <div class="progress-segment completed" id="progress-part-1"></div>
-                <div class="progress-segment" id="progress-part-2"></div>
-                <div class="progress-segment" id="progress-part-3"></div>
-            </div>
-            <div class="progress-labels">
-                <span class="progress-label completed" id="label-part-1">Part 1</span>
-                <span class="progress-label" id="label-part-2">Part 2</span>
-                <span class="progress-label" id="label-part-3">Part 3</span>
-            </div>
-        </div>
-        
         <form id="speaking-form" action="{{ route('student.speaking.submit', $attempt) }}" method="POST">
             @csrf
             
@@ -597,15 +621,15 @@
                          id="card-{{ $question->id }}"
                          data-question-id="{{ $question->id }}"
                          data-question-index="{{ $index }}"
-                         data-part="{{ $loop->iteration }}">
+                         data-part="{{ $question->part_number }}">
                         
                         <!-- Card Header -->
                         <div class="card-header">
                             <h3 class="card-title">
-                                Part {{ $loop->iteration }}
-                                @if($loop->iteration == 1)
+                                Part {{ $question->part_number }}
+                                @if($question->part_number == 1)
                                     - Introduction & Interview
-                                @elseif($loop->iteration == 2)
+                                @elseif($question->part_number == 2)
                                     - Individual Long Turn
                                 @else
                                     - Two-way Discussion
@@ -629,7 +653,7 @@
                             </div>
 
                             <!-- Part 2 Cue Card Points -->
-                            @if($loop->iteration == 2 && $question->form_structure)
+                            @if($question->part_number == 2 && $question->form_structure)
                                 <div class="cue-card">
                                     <div class="cue-card-title">You should say:</div>
                                     <ul class="cue-card-points">
@@ -644,7 +668,7 @@
                         <!-- Read Timer -->
                         <div class="read-timer" id="read-timer-{{ $question->id }}">
                             <div class="timer-label">
-                                @if($loop->iteration == 2)
+                                @if($question->part_number == 2)
                                     Preparation time
                                 @else
                                     Reading time
@@ -663,7 +687,7 @@
                                 </div>
                             </div>
                             <div class="timer-info">
-                                @if($loop->iteration == 2)
+                                @if($question->part_number == 2)
                                     You can start speaking when ready
                                 @else
                                     Recording will start automatically
@@ -723,22 +747,10 @@
         </form>
     </div>
 
-    <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <div class="nav-left">
-            <span id="current-part-display" style="font-weight: 600;">Part 1</span>
-        </div>
-        <div class="nav-right">
-            <button type="button" id="submit-test-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md mr-3 text-sm font-medium submit-btn">
-                Submit Test
-            </button>
-        </div>
-    </div>
-
     <!-- Submit Modal -->
     <div id="submit-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <div class="modal-title" style="color: #059669;">Submit Test?</div>
+            <div class="modal-title">Submit Test?</div>
             <div class="modal-message">
                 Are you sure you want to submit your speaking test? You cannot change your recordings after submission.
                 <br><br>
@@ -801,46 +813,8 @@
         const question = questions[index];
         const questionId = question.id;
         
-        // Update progress
-        updateProgress(index);
-        
         // Start reading phase
         startReadingPhase(questionId);
-    }
-
-    // Update progress indicators
-    function updateProgress(index) {
-        const question = questions[index];
-        const partNumber = Math.ceil((index + 1) / Math.ceil(questions.length / 3));
-        
-        // Update progress bar
-        document.querySelectorAll('.progress-segment').forEach((segment, i) => {
-            if (i < partNumber - 1) {
-                segment.classList.add('completed');
-                segment.classList.remove('active');
-            } else if (i === partNumber - 1) {
-                segment.classList.add('active');
-                segment.classList.remove('completed');
-            } else {
-                segment.classList.remove('active', 'completed');
-            }
-        });
-        
-        // Update labels
-        document.querySelectorAll('.progress-label').forEach((label, i) => {
-            if (i < partNumber - 1) {
-                label.classList.add('completed');
-                label.classList.remove('active');
-            } else if (i === partNumber - 1) {
-                label.classList.add('active');
-                label.classList.remove('completed');
-            } else {
-                label.classList.remove('active', 'completed');
-            }
-        });
-        
-        // Update current part display
-        document.getElementById('current-part-display').textContent = `Part ${partNumber}`;
     }
 
     // Start reading phase with timer
@@ -884,7 +858,7 @@
     function showStartRecordingButton(questionId) {
         const readTimer = document.getElementById(`read-timer-${questionId}`);
         readTimer.innerHTML += `
-            <div style="margin-top: 20px;">
+            <div style="margin-top: 24px;">
                 <button type="button" class="action-button primary" onclick="startRecordingPhase(${questionId})">
                     Start Speaking
                 </button>
