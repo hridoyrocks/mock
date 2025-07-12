@@ -165,6 +165,15 @@ class QuestionController extends Controller
                 
             case 'speaking':
                 $rules['time_limit'] = 'required|integer|min:1|max:10';
+                
+                // Add progressive card validation rules
+                $rules['read_time'] = 'nullable|integer|min:3|max:60';
+                $rules['min_response_time'] = 'nullable|integer|min:10|max:120';
+                $rules['max_response_time'] = 'nullable|integer|min:30|max:300';
+                $rules['auto_progress'] = 'nullable|boolean';
+                $rules['card_theme'] = 'nullable|string|in:blue,purple,green,red';
+                $rules['speaking_tips'] = 'nullable|string|max:500';
+                $rules['cue_card_points_text'] = 'nullable|string';
                 break;
         }
         
@@ -329,11 +338,36 @@ class QuestionController extends Controller
                 'time_limit' => $request->time_limit ?? null,
             ];
             
+            // Add progressive card fields for speaking section
+            if ($section === 'speaking') {
+                $questionData['read_time'] = $request->read_time ?? $this->getDefaultReadTime($request->question_type);
+                $questionData['min_response_time'] = $request->min_response_time ?? $this->getDefaultMinResponse($request->question_type);
+                $questionData['max_response_time'] = $request->max_response_time ?? $this->getDefaultMaxResponse($request->question_type);
+                $questionData['auto_progress'] = $request->has('auto_progress') ? (bool)$request->auto_progress : true;
+                $questionData['card_theme'] = $request->card_theme ?? 'blue';
+                $questionData['speaking_tips'] = $request->speaking_tips;
+                
+                // Handle cue card points for Part 2
+                if ($request->question_type === 'part2_cue_card' && $request->has('form_structure_json')) {
+                    $questionData['form_structure'] = json_decode($request->form_structure_json, true);
+                } elseif ($request->question_type === 'part2_cue_card' && $request->has('cue_card_points_text')) {
+                    // Convert text to structure
+                    $points = array_filter(array_map('trim', explode("\n", $request->cue_card_points_text)));
+                    if (!empty($points)) {
+                        $questionData['form_structure'] = [
+                            'fields' => array_map(function($point) {
+                                return ['label' => $point];
+                            }, $points)
+                        ];
+                    }
+                }
+            }
+            
             // Add type-specific fields directly
             if (isset($typeSpecificData['matching_pairs'])) {
                 $questionData['matching_pairs'] = $typeSpecificData['matching_pairs'];
             }
-            if (isset($typeSpecificData['form_structure'])) {
+            if (isset($typeSpecificData['form_structure']) && !isset($questionData['form_structure'])) {
                 $questionData['form_structure'] = $typeSpecificData['form_structure'];
             }
             if (isset($typeSpecificData['diagram_hotspots'])) {
@@ -470,9 +504,62 @@ class QuestionController extends Controller
      */
     public function update(Request $request, Question $question): RedirectResponse
     {
-        // Similar to store method but for update
-        // Use same validation logic with needsOptions method
+        // Get test set to determine section
+        $testSet = TestSet::with('section')->findOrFail($question->test_set_id);
+        $section = $testSet->section->name;
         
+        // Base validation rules
+        $rules = [
+            'question_type' => 'required|string',
+            'content' => 'required|string',
+            'order_number' => 'required|integer|min:0',
+            'part_number' => 'nullable|integer',
+            'marks' => 'nullable|integer|min:0|max:10',
+            'instructions' => 'nullable|string',
+        ];
+
+        // Section-specific validation
+        if ($section === 'speaking') {
+            $rules['time_limit'] = 'required|integer|min:1|max:10';
+            $rules['read_time'] = 'nullable|integer|min:3|max:60';
+            $rules['min_response_time'] = 'nullable|integer|min:10|max:120';
+            $rules['max_response_time'] = 'nullable|integer|min:30|max:300';
+            $rules['auto_progress'] = 'nullable|boolean';
+            $rules['card_theme'] = 'nullable|string|in:blue,purple,green,red';
+            $rules['speaking_tips'] = 'nullable|string|max:500';
+        }
+
+        $request->validate($rules);
+
+        // Update data array
+        $updateData = [
+            'question_type' => $request->question_type,
+            'content' => $request->content,
+            'order_number' => $request->order_number,
+            'part_number' => $request->part_number ?? 1,
+            'marks' => $request->marks ?? 1,
+            'instructions' => $request->instructions,
+            'word_limit' => $request->word_limit ?? null,
+            'time_limit' => $request->time_limit ?? null,
+        ];
+
+        // Add progressive card fields for speaking
+        if ($section === 'speaking') {
+            $updateData['read_time'] = $request->read_time ?? $this->getDefaultReadTime($request->question_type);
+            $updateData['min_response_time'] = $request->min_response_time ?? $this->getDefaultMinResponse($request->question_type);
+            $updateData['max_response_time'] = $request->max_response_time ?? $this->getDefaultMaxResponse($request->question_type);
+            $updateData['auto_progress'] = $request->has('auto_progress') ? (bool)$request->auto_progress : true;
+            $updateData['card_theme'] = $request->card_theme ?? 'blue';
+            $updateData['speaking_tips'] = $request->speaking_tips;
+            
+            // Handle cue card structure
+            if ($request->question_type === 'part2_cue_card' && $request->has('form_structure_json')) {
+                $updateData['form_structure'] = json_decode($request->form_structure_json, true);
+            }
+        }
+
+        $question->update($updateData);
+
         return redirect()->route('admin.test-sets.show', $question->test_set_id)
             ->with('success', 'Question updated successfully.');
     }
@@ -560,5 +647,44 @@ class QuestionController extends Controller
         }
         
         return $lastQuestion->order_number + 1;
+    }
+    
+    /**
+     * Get default read time based on question type
+     */
+    private function getDefaultReadTime($questionType): int
+    {
+        return match($questionType) {
+            'part1_personal' => 5,
+            'part2_cue_card' => 60, // This is preparation time
+            'part3_discussion' => 8,
+            default => 5
+        };
+    }
+
+    /**
+     * Get default minimum response time based on question type
+     */
+    private function getDefaultMinResponse($questionType): int
+    {
+        return match($questionType) {
+            'part1_personal' => 15,
+            'part2_cue_card' => 60,
+            'part3_discussion' => 30,
+            default => 15
+        };
+    }
+
+    /**
+     * Get default maximum response time based on question type
+     */
+    private function getDefaultMaxResponse($questionType): int
+    {
+        return match($questionType) {
+            'part1_personal' => 45,
+            'part2_cue_card' => 120,
+            'part3_discussion' => 90,
+            default => 45
+        };
     }
 }

@@ -444,14 +444,20 @@
         <!-- Main Content Area -->
         <div class="content-wrapper">
             @php
-                $taskOneQuestion = $testSet->questions()->where('order_number', 1)->first();
-                $taskTwoQuestion = $testSet->questions()->where('order_number', 2)->first();
+                // Get all questions and sort by order_number
+                $questions = $testSet->questions()->orderBy('order_number')->get();
                 
-                if (!$taskOneQuestion || !$taskTwoQuestion) {
-                    echo '<div class="alert alert-danger p-4 m-4">Writing test questions not properly configured. Please contact admin.</div>';
+                // If we have less than 2 questions, show error
+                if ($questions->count() < 2) {
+                    echo '<div style="padding: 20px; color: red;">This writing test needs at least 2 questions. Currently has: ' . $questions->count() . '</div>';
                     return;
                 }
                 
+                // Take first 2 questions as Task 1 and Task 2
+                $taskOneQuestion = $questions->first();
+                $taskTwoQuestion = $questions->skip(1)->first();
+                
+                // Get existing answers
                 $taskOneAnswer = $attempt->answers->where('question_id', $taskOneQuestion->id)->first();
                 $taskTwoAnswer = $attempt->answers->where('question_id', $taskTwoQuestion->id)->first();
             @endphp
@@ -462,7 +468,7 @@
                 <div class="question-content" id="task-1-content" style="display: block;">
                     <div class="task-info">
                         <h3>Writing Task 1</h3>
-                        <p>Suggested time: 20 minutes | Minimum 150 words</p>
+                        <p>Suggested time: {{ $taskOneQuestion->time_limit ?? 20 }} minutes | Minimum {{ $taskOneQuestion->word_limit ?? 150 }} words</p>
                     </div>
                     
                     <div class="question-prompt">
@@ -472,18 +478,27 @@
                         </div>
                         
                         @if($taskOneQuestion->media_path)
-                            <img src="{{ asset('storage/' . $taskOneQuestion->media_path) }}" 
+                            <img src="{{ Storage::url($taskOneQuestion->media_path) }}" 
                                  alt="Task 1 Visual" 
                                  class="task-image">
                         @endif
                     </div>
+                    
+                    @if($taskOneQuestion->instructions)
+                    <div class="question-prompt">
+                        <h4>Instructions</h4>
+                        <div class="prompt-text">
+                            {!! nl2br(e($taskOneQuestion->instructions)) !!}
+                        </div>
+                    </div>
+                    @endif
                 </div>
                 
                 <!-- Task 2 Content -->
                 <div class="question-content" id="task-2-content" style="display: none;">
                     <div class="task-info">
                         <h3>Writing Task 2</h3>
-                        <p>Suggested time: 40 minutes | Minimum 250 words</p>
+                        <p>Suggested time: {{ $taskTwoQuestion->time_limit ?? 40 }} minutes | Minimum {{ $taskTwoQuestion->word_limit ?? 250 }} words</p>
                     </div>
                     
                     <div class="question-prompt">
@@ -492,6 +507,15 @@
                             {!! nl2br(e($taskTwoQuestion->content)) !!}
                         </div>
                     </div>
+                    
+                    @if($taskTwoQuestion->instructions)
+                    <div class="question-prompt">
+                        <h4>Instructions</h4>
+                        <div class="prompt-text">
+                            {!! nl2br(e($taskTwoQuestion->instructions)) !!}
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
 
@@ -506,7 +530,7 @@
                                 Word count: <span class="word-count-number" id="current-word-count">0</span>
                             </div>
                             <div class="word-requirement" id="word-requirement">
-                                Minimum: 150 words
+                                Minimum: {{ $taskOneQuestion->word_limit ?? 150 }} words
                             </div>
                         </div>
                         <div class="autosave-status" id="autosave-status">
@@ -586,6 +610,10 @@
     let currentTask = 1;
     const wordCounts = {1: 0, 2: 0};
     let autosaveTimers = {1: null, 2: null};
+    const wordLimits = {
+        1: {{ $taskOneQuestion->word_limit ?? 150 }},
+        2: {{ $taskTwoQuestion->word_limit ?? 250 }}
+    };
     
     document.addEventListener('DOMContentLoaded', function() {
         const editor1 = document.getElementById('editor-task-1');
@@ -653,7 +681,7 @@
         // Update word count display
         document.getElementById('current-word-count').textContent = wordCounts[taskNumber];
         document.getElementById('word-requirement').textContent = 
-            taskNumber === 1 ? 'Minimum: 150 words' : 'Minimum: 250 words';
+            'Minimum: ' + wordLimits[taskNumber] + ' words';
     }
     
     function updateWordCount(taskNumber, text) {
@@ -665,7 +693,7 @@
             document.getElementById('current-word-count').textContent = count;
             
             // Update color based on requirement
-            const requirement = taskNumber === 1 ? 150 : 250;
+            const requirement = wordLimits[taskNumber];
             const countElement = document.getElementById('current-word-count');
             if (count >= requirement) {
                 countElement.style.color = '#10b981';

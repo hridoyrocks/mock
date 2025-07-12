@@ -57,4 +57,52 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
+
+    public function removeDevice(Request $request, $deviceId)
+{
+    $device = $request->user()->devices()->findOrFail($deviceId);
+    
+    // Don't allow removing current device
+    if ($device->device_fingerprint === $request->header('User-Agent')) {
+        return response()->json(['error' => 'Cannot remove current device'], 400);
+    }
+    
+    $device->delete();
+    
+    return response()->json(['success' => true]);
+}
+
+/**
+ * Logout from all devices except current
+ */
+public function logoutAllDevices(Request $request)
+{
+    $currentFingerprint = UserDevice::generateFingerprint($request);
+    
+    $request->user()->devices()
+        ->where('device_fingerprint', '!=', $currentFingerprint)
+        ->delete();
+    
+    return response()->json(['success' => true]);
+}
+
+/**
+ * Update notification preferences
+ */
+public function updateNotifications(Request $request)
+{
+    $preferences = [
+        'test_reminders' => $request->boolean('test_reminders'),
+        'score_updates' => $request->boolean('score_updates'),
+        'achievement_alerts' => $request->boolean('achievement_alerts'),
+        'marketing_emails' => $request->boolean('marketing_emails'),
+    ];
+    
+    $request->user()->update([
+        'notification_preferences' => $preferences
+    ]);
+    
+    return redirect()->route('profile.edit')
+        ->with('success', 'Notification preferences updated!');
+}
 }

@@ -116,7 +116,7 @@
                     {{-- AI Evaluation Button for Writing/Speaking --}}
                     @if(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
                         <div class="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
-                            <h3 class="text-lg font-semibold mb-4 text-gray-800">AI Evaluation</h3>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">Get Instant Evaluation</h3>
                             
                             @if(auth()->user()->hasFeature('ai_' . $attempt->testSet->section->name . '_evaluation'))
                                 @if(!$attempt->ai_evaluated_at)
@@ -124,24 +124,24 @@
                                             id="ai-eval-btn"
                                             class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
                                         <i class="fas fa-robot mr-2"></i>
-                                        Get AI Evaluation
+                                        Get Instant Evaluation
                                     </button>
                                 @else
                                     <div class="space-y-4">
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-sm text-gray-600 mb-2">AI Evaluation Completed</p>
+                                            <p class="text-sm text-gray-600 mb-2">Evaluation Completed</p>
                                             <p class="text-2xl font-bold text-purple-600">Band Score: {{ $attempt->ai_band_score ?? 'N/A' }}</p>
                                         </div>
                                         <a href="{{ route('ai.evaluation.get', $attempt->id) }}" 
                                            class="inline-block bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-teal-700 transition-all">
                                             <i class="fas fa-chart-line mr-2"></i>
-                                            View Detailed AI Evaluation
+                                            View Detailed Evaluation
                                         </a>
                                     </div>
                                 @endif
                             @else
                                 <div class="bg-white/70 p-4 rounded-lg">
-                                    <p class="text-gray-700 mb-3">Upgrade to Premium to unlock AI evaluation for instant feedback and band score prediction.</p>
+                                    <p class="text-gray-700 mb-3">Upgrade to Premium to unlock to get Instant evaluation for instant feedback and band score prediction.</p>
                                     <a href="{{ route('subscription.plans') }}" 
                                        class="inline-block bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all">
                                         <i class="fas fa-crown mr-2"></i>

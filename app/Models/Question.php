@@ -40,6 +40,12 @@ class Question extends Model
     'tips',
     'difficulty_level',
     'related_topics',
+    'read_time',
+    'min_response_time',
+    'max_response_time',
+    'auto_progress',
+    'card_theme',
+    'speaking_tips',
 ];
 
     protected $casts = [
@@ -57,7 +63,35 @@ class Question extends Model
         'form_structure' => 'array',
         'diagram_hotspots' => 'array',
         'template_type' => 'string',
+        'read_time' => 'integer',
+    'min_response_time' => 'integer',
+    'max_response_time' => 'integer',
+    'auto_progress' => 'boolean',
     ];
+
+    // Add these helper methods:
+public function getCardThemeColors()
+{
+    $themes = [
+        'blue' => ['bg' => '#EBF5FF', 'border' => '#3B82F6', 'text' => '#1E40AF'],
+        'purple' => ['bg' => '#F3E8FF', 'border' => '#9333EA', 'text' => '#6B21A8'],
+        'green' => ['bg' => '#F0FDF4', 'border' => '#10B981', 'text' => '#166534'],
+        'red' => ['bg' => '#FEF2F2', 'border' => '#EF4444', 'text' => '#991B1B'],
+    ];
+    
+    return $themes[$this->card_theme] ?? $themes['blue'];
+}
+
+public function getProgressiveSettings()
+{
+    return [
+        'read_time' => $this->read_time ?? 5,
+        'min_response' => $this->min_response_time ?? 15,
+        'max_response' => $this->max_response_time ?? 45,
+        'auto_progress' => $this->auto_progress ?? true,
+        'theme' => $this->getCardThemeColors()
+    ];
+}
     
     /**
      * Process explanation to make {{Q1}} markers clickable

@@ -1238,823 +1238,420 @@
     @push('scripts')
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-    // Configuration
-    const testConfig = {
-        attemptId: {{ $attempt->id }},
-        testSetId: {{ $testSet->id }},
-        totalQuestions: {{ $totalQuestionCount }}
-    };
-    
-    // Elements
-    const form = document.getElementById('listening-form');
-    const submitButton = document.getElementById('submit-button');
-    const submitTestBtn = document.getElementById('submit-test-btn');
-    const submitModal = document.getElementById('submit-modal');
-    const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-    const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
-    const answeredCountSpan = document.getElementById('answered-count');
-    const reviewCheckbox = document.getElementById('review-checkbox');
-    const notesBtn = document.getElementById('notes-btn');
-    const notesCount = document.getElementById('notes-count');
-    const volumeSlider = document.getElementById('volume-slider');
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
-    
-    // Part Navigation
-    const partButtons = document.querySelectorAll('.part-btn');
-    const partSections = document.querySelectorAll('.part-section');
-    const numberButtons = document.querySelectorAll('.number-btn');
-    
-    // Current Audio
-    let currentAudio = null;
-    let audioPlaybackPosition = {};
-    
-    // ========== Fullscreen Functionality ==========
-    fullscreenBtn.addEventListener('click', function() {
-        if (!document.fullscreenElement) {
-            // Enter fullscreen
-            document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error attempting to enable fullscreen: ${err.message}`);
-            });
-            // Update button text and icon
-            this.innerHTML = `
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V5m0 0h4m-4 0l5 5m-5 10v-4m0 4h4m-4 0l5-5m5-5v4m0-4h-4m4 0l-5 5m-5 5h4m0 0v4m0-4l-5-5"/>
-                </svg>
-                Exit Fullscreen
-            `;
-        } else {
-            // Exit fullscreen
-            document.exitFullscreen();
-            // Update button text and icon
-            this.innerHTML = `
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-                </svg>
-                Fullscreen
-            `;
-        }
-    });
-    
-    // Update button when fullscreen changes (e.g., user presses ESC)
-    document.addEventListener('fullscreenchange', function() {
-        if (!document.fullscreenElement) {
-            fullscreenBtn.innerHTML = `
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-                </svg>
-                Fullscreen
-            `;
-        }
-    });
-    
-    // ========== Part Navigation ==========
-    partButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const targetPart = this.dataset.part;
-            switchToPart(targetPart);
-        });
-    });
-    
-    function switchToPart(targetPart) {
-        // Save current audio position
-        if (currentAudio) {
-            const currentPart = document.querySelector('.part-btn.active').dataset.part;
-            audioPlaybackPosition[currentPart] = currentAudio.currentTime;
-            currentAudio.pause();
-        }
+        // Configuration
+        const testConfig = {
+            attemptId: {{ $attempt->id }},
+            testSetId: {{ $testSet->id }},
+            totalQuestions: {{ $totalQuestionCount }}
+        };
         
-        // Update active button
-        partButtons.forEach(btn => btn.classList.remove('active'));
-        const targetButton = document.querySelector(`.part-btn[data-part="${targetPart}"]`);
-        if (targetButton) {
-            targetButton.classList.add('active');
-        }
+        // Elements
+        const form = document.getElementById('listening-form');
+        const submitButton = document.getElementById('submit-button');
+        const submitTestBtn = document.getElementById('submit-test-btn');
+        const submitModal = document.getElementById('submit-modal');
+        const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+        const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
+        const answeredCountSpan = document.getElementById('answered-count');
+        const reviewCheckbox = document.getElementById('review-checkbox');
+        const notesBtn = document.getElementById('notes-btn');
+        const notesCount = document.getElementById('notes-count');
+        const volumeSlider = document.getElementById('volume-slider');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
         
-        // Show target part
-        partSections.forEach(section => {
-            section.classList.remove('active');
-            if (section.dataset.part === targetPart) {
-                section.classList.add('active');
-            }
-        });
+        // Part Navigation
+        const partButtons = document.querySelectorAll('.part-btn');
+        const partSections = document.querySelectorAll('.part-section');
+        const numberButtons = document.querySelectorAll('.number-btn');
         
-        // Update number buttons visibility
-        updateNumberButtonsVisibility(targetPart);
+        // Current Audio
+        let currentAudio = null;
         
-        // Play audio for this part
-        playPartAudio(targetPart);
-    }
-    
-    // ========== Question Navigation ==========
-    numberButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            navigateToQuestion(this);
-        });
-    });
-    
-    function navigateToQuestion(button) {
-        // Update active button
-        numberButtons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        
-        const questionId = button.dataset.question;
-        const subIndex = button.dataset.subIndex;
-        const questionElement = document.getElementById(`question-${questionId}`);
-        
-        if (questionElement) {
-            // Switch to correct part if needed
-            const partNumber = button.dataset.part;
-            const currentActivePart = document.querySelector('.part-btn.active');
-            if (currentActivePart && currentActivePart.dataset.part !== partNumber) {
-                switchToPart(partNumber);
-            }
-            
-            // Scroll to question
-            questionElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-            
-            // Focus on specific sub-question input if applicable
-            if (subIndex !== undefined) {
-                const input = questionElement.querySelector(`input[name="answers[${questionId}_${subIndex}]"]`);
-                if (input) {
-                    setTimeout(() => input.focus(), 300);
-                }
-            }
-        }
-        
-        // Update review checkbox
-        reviewCheckbox.checked = button.classList.contains('flagged');
-    }
-    
-    // ========== Review/Flag Functionality ==========
-    reviewCheckbox.addEventListener('change', function() {
-        const currentQuestion = document.querySelector('.number-btn.active');
-        if (currentQuestion) {
-            if (this.checked) {
-                currentQuestion.classList.add('flagged');
+        // ========== Fullscreen Functionality ==========
+        fullscreenBtn.addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+                // Update button text and icon
+                this.innerHTML = `
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V5m0 0h4m-4 0l5 5m-5 10v-4m0 4h4m-4 0l5-5m5-5v4m0-4h-4m4 0l-5 5m-5 5h4m0 0v4m0-4l-5-5"/>
+                    </svg>
+                    Exit Fullscreen
+                `;
             } else {
-                currentQuestion.classList.remove('flagged');
+                // Exit fullscreen
+                document.exitFullscreen();
+                // Update button text and icon
+                this.innerHTML = `
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                    Fullscreen
+                `;
             }
-            saveFlaggedQuestions();
-        }
-    });
-    
-    function saveFlaggedQuestions() {
-        const flagged = [];
-        document.querySelectorAll('.number-btn.flagged').forEach(btn => {
-            flagged.push(btn.dataset.displayNumber);
-        });
-        localStorage.setItem(`flaggedQuestions_${testConfig.attemptId}`, JSON.stringify(flagged));
-    }
-    
-    function loadFlaggedQuestions() {
-        try {
-            const flagged = JSON.parse(localStorage.getItem(`flaggedQuestions_${testConfig.attemptId}`) || '[]');
-            flagged.forEach(num => {
-                const btn = document.querySelector(`.number-btn[data-display-number="${num}"]`);
-                if (btn) btn.classList.add('flagged');
-            });
-        } catch (e) {
-            console.error('Error loading flagged questions:', e);
-        }
-    }
-    
-    // ========== Answer Tracking ==========
-    document.querySelectorAll('input[type="radio"], input[type="text"], select').forEach(input => {
-        input.addEventListener('change', function() {
-            handleAnswerChange(this);
         });
         
-        // Also track input for text fields
-        if (input.type === 'text') {
-            input.addEventListener('input', debounce(function() {
-                handleAnswerChange(this);
-            }, 500));
-        }
-    });
-    
-    function handleAnswerChange(input) {
-        const questionNumber = input.dataset.questionNumber;
-        if (questionNumber) {
-            const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-            if (navButton) {
-                if (input.value && input.value.trim()) {
-                    navButton.classList.add('answered');
-                } else {
-                    navButton.classList.remove('answered');
-                }
+        // Update button when fullscreen changes (e.g., user presses ESC)
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement) {
+                fullscreenBtn.innerHTML = `
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                    Fullscreen
+                `;
             }
-        }
-        saveAllAnswers();
-        updateAnswerCount();
-    }
-    
-    // ========== Audio Controls ==========
-    function playPartAudio(partNumber) {
-        // Stop current audio
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.removeEventListener('ended', handleAudioEnded);
-        }
+        });
         
-        // Check if audio exists for this part
-        const audioElement = document.getElementById(`test-audio-${partNumber}`);
-        const noAudioElement = document.getElementById(`no-audio-${partNumber}`);
-        
-        if (audioElement) {
-            currentAudio = audioElement;
-            
-            // Set volume
-            if (volumeSlider) {
-                currentAudio.volume = volumeSlider.value / 100;
-            }
-            
-            // Restore playback position if exists
-            if (audioPlaybackPosition[partNumber]) {
-                currentAudio.currentTime = audioPlaybackPosition[partNumber];
-            }
-            
-            // Add ended event listener
-            currentAudio.addEventListener('ended', handleAudioEnded);
-            
-            // Play audio
-            currentAudio.play().catch(e => {
-                console.log('Audio autoplay blocked:', e);
-                showAudioPlayButton();
-            });
-            
-            // Show audio controls
-            showAudioControls(true);
-        } else if (noAudioElement) {
-            // No audio available for this part
-            console.warn(noAudioElement.dataset.message);
-            showAudioControls(false);
-            showNoAudioMessage(partNumber);
-        }
-    }
-    
-    function handleAudioEnded() {
-        // Audio finished playing
-        const currentPart = parseInt(document.querySelector('.part-btn.active').dataset.part);
-        
-        // Check if there's a next part
-        if (currentPart < 4) {
-            const nextPart = currentPart + 1;
-            const nextPartBtn = document.querySelector(`.part-btn[data-part="${nextPart}"]`);
-            
-            if (nextPartBtn) {
-                // Auto-advance to next part after a short delay
-                setTimeout(() => {
-                    if (confirm(`Part ${currentPart} audio completed. Move to Part ${nextPart}?`)) {
-                        switchToPart(nextPart.toString());
+        // ========== Part Navigation ==========
+        partButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetPart = this.dataset.part;
+                
+                // Update active button
+                partButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show target part
+                partSections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.dataset.part === targetPart) {
+                        section.classList.add('active');
                     }
-                }, 1000);
-            }
-        }
-    }
-    
-    function showAudioControls(hasAudio) {
-        // You can add audio control buttons here if needed
-        // For example: play/pause, replay, etc.
-    }
-    
-    function showNoAudioMessage(partNumber) {
-        // Show a message that no audio is available
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'audio-message';
-        messageDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #fee2e2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-        `;
-        messageDiv.textContent = `No audio available for Part ${partNumber}`;
-        
-        document.body.appendChild(messageDiv);
-        
-        setTimeout(() => {
-            messageDiv.remove();
-        }, 5000);
-    }
-    
-    function showAudioPlayButton() {
-        const playBtn = document.createElement('button');
-        playBtn.className = 'audio-play-btn';
-        playBtn.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        `;
-        playBtn.innerHTML = `
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20" style="display: inline-block; margin-right: 8px;">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-            </svg>
-            Click to Play Audio
-        `;
-        
-        playBtn.addEventListener('click', function() {
-            if (currentAudio) {
-                currentAudio.play();
-                playBtn.remove();
-            }
-        });
-        
-        document.body.appendChild(playBtn);
-    }
-    
-    // Volume control
-    if (volumeSlider) {
-        volumeSlider.addEventListener('input', function() {
-            if (currentAudio) {
-                currentAudio.volume = this.value / 100;
-            }
-            // Save volume preference
-            localStorage.setItem('audioVolume', this.value);
-        });
-        
-        // Load saved volume
-        const savedVolume = localStorage.getItem('audioVolume');
-        if (savedVolume) {
-            volumeSlider.value = savedVolume;
-        }
-    }
-    
-    // ========== Keyboard Navigation ==========
-    document.addEventListener('keydown', function(e) {
-        // Ctrl/Cmd + Arrow keys for navigation
-        if (e.ctrlKey || e.metaKey) {
-            switch(e.key) {
-                case 'ArrowRight':
-                    e.preventDefault();
-                    navigateToNextQuestion();
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    navigateToPreviousQuestion();
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    navigateToPreviousPart();
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    navigateToNextPart();
-                    break;
-            }
-        }
-        
-        // Number keys for quick navigation (1-9)
-        if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key >= '1' && e.key <= '9') {
-            const input = document.activeElement;
-            if (input.tagName !== 'INPUT' && input.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                const targetQuestion = parseInt(e.key);
-                const currentPart = document.querySelector('.part-btn.active').dataset.part;
-                const baseNumber = (parseInt(currentPart) - 1) * 10;
-                const questionNumber = baseNumber + targetQuestion;
+                });
                 
-                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                if (navButton && !navButton.classList.contains('hidden-part')) {
-                    navigateToQuestion(navButton);
-                }
-            }
-        }
-    });
-    
-    function navigateToNextQuestion() {
-        const current = document.querySelector('.number-btn.active');
-        const allVisible = Array.from(numberButtons).filter(btn => !btn.classList.contains('hidden-part'));
-        const currentIndex = allVisible.indexOf(current);
-        
-        if (currentIndex < allVisible.length - 1) {
-            navigateToQuestion(allVisible[currentIndex + 1]);
-        }
-    }
-    
-    function navigateToPreviousQuestion() {
-        const current = document.querySelector('.number-btn.active');
-        const allVisible = Array.from(numberButtons).filter(btn => !btn.classList.contains('hidden-part'));
-        const currentIndex = allVisible.indexOf(current);
-        
-        if (currentIndex > 0) {
-            navigateToQuestion(allVisible[currentIndex - 1]);
-        }
-    }
-    
-    function navigateToNextPart() {
-        const currentPart = parseInt(document.querySelector('.part-btn.active').dataset.part);
-        if (currentPart < 4) {
-            switchToPart((currentPart + 1).toString());
-        }
-    }
-    
-    function navigateToPreviousPart() {
-        const currentPart = parseInt(document.querySelector('.part-btn.active').dataset.part);
-        if (currentPart > 1) {
-            switchToPart((currentPart - 1).toString());
-        }
-    }
-    
-    // ========== Submit Functionality ==========
-    submitTestBtn.addEventListener('click', function() {
-        updateAnswerCount();
-        const unanswered = testConfig.totalQuestions - document.querySelectorAll('.number-btn.answered').length;
-        
-        if (unanswered > 0) {
-            document.querySelector('#submit-modal .modal-message').innerHTML = `
-                <div style="color: #dc2626; font-weight: 600; margin-bottom: 10px;">
-                    ⚠️ You have ${unanswered} unanswered questions!
-                </div>
-                Are you sure you want to submit your test? You cannot change your answers after submission.
-                <br><br>
-                <strong>Answered Questions: <span id="answered-count">${document.querySelectorAll('.number-btn.answered').length}</span> / ${testConfig.totalQuestions}</strong>
-            `;
-        }
-        
-        submitModal.style.display = 'flex';
-    });
-    
-    confirmSubmitBtn.addEventListener('click', function() {
-        // Stop timer if exists
-        if (window.UniversalTimer) {
-            window.UniversalTimer.stop();
-        }
-        
-        // Stop audio
-        if (currentAudio) {
-            currentAudio.pause();
-        }
-        
-        // Save final state
-        saveAllAnswers();
-        
-        // Clear local storage for this test
-        clearTestData();
-        
-        // Submit form
-        submitButton.click();
-    });
-    
-    cancelSubmitBtn.addEventListener('click', function() {
-        submitModal.style.display = 'none';
-    });
-    
-    // Close modal on ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && submitModal.style.display === 'flex') {
-            submitModal.style.display = 'none';
-        }
-    });
-    
-    // ========== Helper Functions ==========
-    function updateNumberButtonsVisibility(activePart) {
-        numberButtons.forEach(btn => {
-            if (btn.dataset.part === activePart) {
-                btn.classList.remove('hidden-part');
-            } else {
-                btn.classList.add('hidden-part');
-            }
-        });
-    }
-    
-    function updateAnswerCount() {
-        const answeredCount = document.querySelectorAll('.number-btn.answered').length;
-        answeredCountSpan.textContent = answeredCount;
-        
-        // Update progress
-        const progressPercent = (answeredCount / testConfig.totalQuestions) * 100;
-        updateProgressBar(progressPercent);
-    }
-    
-    function updateProgressBar(percent) {
-        // You can add a progress bar to the UI if needed
-        const progressBar = document.getElementById('test-progress');
-        if (progressBar) {
-            progressBar.style.width = percent + '%';
-        }
-    }
-    
-    function saveAllAnswers() {
-        const formData = new FormData(form);
-        const answers = {};
-        
-        for (let [key, value] of formData.entries()) {
-            if (key.startsWith('answers[') && value) {
-                answers[key] = value;
-            }
-        }
-        
-        try {
-            localStorage.setItem(`testAnswers_${testConfig.attemptId}`, JSON.stringify(answers));
-            localStorage.setItem(`testAnswers_${testConfig.attemptId}_timestamp`, new Date().toISOString());
-        } catch (e) {
-            console.warn('Could not save answers:', e);
-        }
-    }
-    
-    function loadSavedAnswers() {
-        try {
-            const savedAnswers = localStorage.getItem(`testAnswers_${testConfig.attemptId}`);
-            
-            if (savedAnswers) {
-                const answers = JSON.parse(savedAnswers);
+                // Update number buttons visibility
+                updateNumberButtonsVisibility(targetPart);
                 
-                Object.keys(answers).forEach(key => {
-                    const value = answers[key];
-                    const input = document.querySelector(`[name="${key}"]`);
+                // Play audio for this part
+                playPartAudio(targetPart);
+            });
+        });
+        
+        // ========== Question Navigation ==========
+        numberButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Update active button
+                numberButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const questionId = this.dataset.question;
+                const subIndex = this.dataset.subIndex;
+                const questionElement = document.getElementById(`question-${questionId}`);
+                
+                if (questionElement) {
+                    // Switch to correct part if needed
+                    const partNumber = this.dataset.part;
+                    const currentActivePart = document.querySelector('.part-btn.active');
+                    if (currentActivePart && currentActivePart.dataset.part !== partNumber) {
+                        const partBtn = document.querySelector(`.part-btn[data-part="${partNumber}"]`);
+                        if (partBtn) partBtn.click();
+                    }
                     
-                    if (input) {
-                        if (input.type === 'radio') {
-                            const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
-                            if (radio) {
-                                radio.checked = true;
-                                radio.dispatchEvent(new Event('change'));
-                            }
-                        } else {
-                            input.value = value;
-                            input.dispatchEvent(new Event('change'));
+                    // Scroll to question
+                    questionElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                    
+                    // Focus on specific sub-question input if applicable
+                    if (subIndex !== undefined) {
+                        const input = questionElement.querySelector(`input[name="answers[${questionId}_${subIndex}]"]`);
+                        if (input) {
+                            setTimeout(() => input.focus(), 300);
                         }
                     }
-                });
-                
-                // Show restore message
-                const timestamp = localStorage.getItem(`testAnswers_${testConfig.attemptId}_timestamp`);
-                if (timestamp) {
-                    const date = new Date(timestamp);
-                    showNotification(`Answers restored from ${date.toLocaleTimeString()}`, 'info');
                 }
-            }
-        } catch (e) {
-            console.error('Error restoring saved answers:', e);
-        }
-    }
-    
-    function clearTestData() {
-        try {
-            localStorage.removeItem(`testAnswers_${testConfig.attemptId}`);
-            localStorage.removeItem(`testAnswers_${testConfig.attemptId}_timestamp`);
-            localStorage.removeItem(`flaggedQuestions_${testConfig.attemptId}`);
-            localStorage.removeItem(`annotations_${testConfig.attemptId}`);
-        } catch (e) {
-            console.error('Error clearing test data:', e);
-        }
-    }
-    
-    function showNotification(message, type = 'success') {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            z-index: 10000;
-            animation: slideIn 0.3s ease-out;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        `;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease-out';
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
-    }
-    
-    // ========== Debounce Helper ==========
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-    
-    // ========== Matching Questions Drag & Drop ==========
-    function initializeMatchingQuestions() {
-        const matchingContainers = document.querySelectorAll('.matching-container');
-        
-        matchingContainers.forEach(container => {
-            const options = container.querySelectorAll('.matching-option');
-            const items = container.querySelectorAll('.matching-item');
-            
-            // Make options draggable
-            options.forEach(option => {
-                option.draggable = true;
                 
-                option.addEventListener('dragstart', function(e) {
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', this.dataset.option);
-                    this.classList.add('dragging');
-                });
-                
-                option.addEventListener('dragend', function() {
-                    this.classList.remove('dragging');
-                });
-            });
-            
-            // Make items droppable
-            items.forEach((item, index) => {
-                item.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    this.classList.add('drag-over');
-                });
-                
-                item.addEventListener('dragleave', function() {
-                    this.classList.remove('drag-over');
-                });
-                
-                item.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    this.classList.remove('drag-over');
-                    
-                    const optionText = e.dataTransfer.getData('text/plain');
-                    const questionDiv = this.closest('.question-item');
-                    const questionId = questionDiv.id.replace('question-', '');
-                    const pairIndex = Array.from(items).indexOf(this);
-                    
-                    // Update hidden input
-                    const input = container.querySelector(`input[data-pair-index="${pairIndex}"]`);
-                    if (input) {
-                        input.value = optionText;
-                        input.dispatchEvent(new Event('change'));
-                        
-                        // Show matched status
-                        this.style.backgroundColor = '#dbeafe';
-                        showNotification(`Matched: ${optionText}`, 'info');
-                    }
-                });
+                // Update review checkbox
+                reviewCheckbox.checked = this.classList.contains('flagged');
             });
         });
-    }
-    
-    // ========== Notes & Highlight System ==========
-    const AnnotationSystem = {
-        init() {
-            this.currentMenu = null;
-            this.currentRange = null;
-            this.noteModal = null;
-            this.notesPanel = null;
-            
-            this.createNoteModal();
-            this.createNotesPanel();
-            this.setupAnnotationHandlers();
-            this.restoreAnnotations();
-            this.updateNotesCount();
-        },
         
-        createNoteModal() {
-            const modal = document.createElement('div');
-            modal.id = 'note-modal';
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
-                display: none;
-                align-items: center;
-                justify-content: center;
-                z-index: 100000;
-            `;
+        // ========== Review/Flag Functionality ==========
+        reviewCheckbox.addEventListener('change', function() {
+            const currentQuestion = document.querySelector('.number-btn.active');
+            if (currentQuestion) {
+                if (this.checked) {
+                    currentQuestion.classList.add('flagged');
+                } else {
+                    currentQuestion.classList.remove('flagged');
+                }
+            }
+        });
+        
+        // ========== Answer Tracking ==========
+        document.querySelectorAll('input[type="radio"], input[type="text"], select').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionNumber = this.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton) {
+                        if (this.value && this.value.trim()) {
+                            navButton.classList.add('answered');
+                        } else {
+                            navButton.classList.remove('answered');
+                        }
+                    }
+                }
+                saveAllAnswers();
+                updateAnswerCount();
+            });
+        });
+        
+        // ========== Audio Controls ==========
+        function playPartAudio(partNumber) {
+            // Stop current audio
+            if (currentAudio) {
+                currentAudio.pause();
+            }
             
-            modal.innerHTML = `
-                <div style="
-                    background: white;
-                    border-radius: 8px;
-                    width: 90%;
-                    max-width: 450px;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-                ">
-                    <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
-                        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">Add Note</h3>
-                        <p style="margin: 6px 0 0 0; font-size: 13px; color: #6b7280;" id="selected-text-preview"></p>
-                    </div>
-                    <div style="padding: 16px;">
-                        <textarea 
-                            id="note-textarea"
-                            placeholder="Type your note here..."
-                            style="
-                                width: 100%;
-                                min-height: 100px;
-                                padding: 10px;
-                                border: 1px solid #e5e7eb;
-                                border-radius: 6px;
-                                font-size: 14px;
-                                resize: vertical;
-                                font-family: inherit;
-                                box-sizing: border-box;
-                            "
-                        ></textarea>
-                        <div style="margin-top: 6px; text-align: right; font-size: 12px; color: #9ca3af;">
-                            <span id="char-count">0</span>/500
-                        </div>
-                    </div>
-                    <div style="
-                        padding: 12px 16px;
-                        background: #f9fafb;
-                        border-top: 1px solid #e5e7eb;
-                        display: flex;
-                        justify-content: flex-end;
-                        gap: 10px;
-                        border-radius: 0 0 8px 8px;
-                    ">
-                        <button id="close-note-modal-btn" style="
-                            padding: 6px 16px;
-                            border: 1px solid #e5e7eb;
-                            background: white;
-                            border-radius: 4px;
-                            font-size: 13px;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        ">Cancel</button>
-                        <button id="save-note-btn" style="
-                            padding: 6px 16px;
-                            background: #3b82f6;
-                            color: white;
-                            border: none;
-                            border-radius: 4px;
-                            font-size: 13px;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                        ">Save Note</button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            this.noteModal = modal;
-            
-            // Setup event listeners
-            const textarea = modal.querySelector('#note-textarea');
-            const charCount = modal.querySelector('#char-count');
-            textarea.addEventListener('input', () => {
-                const count = textarea.value.length;
-                charCount.textContent = count;
-                if (count > 500) {
-                    textarea.value = textarea.value.substring(0, 500);
-                    charCount.textContent = 500;
+            // Get audio for this part
+            const audio = document.getElementById(`test-audio-${partNumber}`);
+            if (audio) {
+                currentAudio = audio;
+                
+                // Set volume
+                if (volumeSlider) {
+                    audio.volume = volumeSlider.value / 100;
+                }
+                
+                // Play audio
+                audio.play().catch(e => {
+                    console.log('Audio autoplay blocked:', e);
+                });
+            }
+        }
+        
+        // Volume control
+        if (volumeSlider) {
+            volumeSlider.addEventListener('input', function() {
+                if (currentAudio) {
+                    currentAudio.volume = this.value / 100;
                 }
             });
-            
-            document.getElementById('close-note-modal-btn').addEventListener('click', () => {
-                this.closeNoteModal();
-            });
-            
-            document.getElementById('save-note-btn').addEventListener('click', () => {
-                this.saveNote();
-            });
-        },
+        }
         
-        createNotesPanel() {
-            const panel = document.createElement('div');
-            panel.id = 'notes-panel';
-            panel.style.cssText = `
-                position: fixed;
-                top: 0;
-                right: -350px;
-                width: 350px;
-                height: 100%;
-                background: white;
-                box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
-                transition: right 0.3s ease-out;
-                z-index: 99998;
-                display: flex;
-                flex-direction: column;
-            `;
+        // ========== Submit Functionality ==========
+        submitTestBtn.addEventListener('click', function() {
+            updateAnswerCount();
+            submitModal.style.display = 'flex';
+        });
+        
+        confirmSubmitBtn.addEventListener('click', function() {
+            if (window.UniversalTimer) {
+                window.UniversalTimer.stop();
+            }
+            saveAllAnswers();
+            submitButton.click();
+        });
+        
+        cancelSubmitBtn.addEventListener('click', function() {
+            submitModal.style.display = 'none';
+        });
+        
+        // ========== Helper Functions ==========
+        function updateNumberButtonsVisibility(activePart) {
+            numberButtons.forEach(btn => {
+                if (btn.dataset.part === activePart) {
+                    btn.classList.remove('hidden-part');
+                } else {
+                    btn.classList.add('hidden-part');
+                }
+            });
+        }
+        
+        function updateAnswerCount() {
+            const answeredCount = document.querySelectorAll('.number-btn.answered').length;
+            answeredCountSpan.textContent = answeredCount;
+        }
+        
+        function saveAllAnswers() {
+            const formData = new FormData(form);
+            const answers = {};
             
-            panel.innerHTML = `
+            for (let [key, value] of formData.entries()) {
+                if (key.startsWith('answers[') && value) {
+                    answers[key] = value;
+                }
+            }
+            
+            try {
+                localStorage.setItem(`testAnswers_${testConfig.attemptId}`, JSON.stringify(answers));
+            } catch (e) {
+                console.warn('Could not save answers:', e);
+            }
+        }
+        
+        function loadSavedAnswers() {
+            try {
+                const savedAnswers = localStorage.getItem(`testAnswers_${testConfig.attemptId}`);
+                
+                if (savedAnswers) {
+                    const answers = JSON.parse(savedAnswers);
+                    
+                    Object.keys(answers).forEach(key => {
+                        const value = answers[key];
+                        const input = document.querySelector(`[name="${key}"]`);
+                        
+                        if (input) {
+                            if (input.type === 'radio') {
+                                const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
+                                if (radio) {
+                                    radio.checked = true;
+                                    radio.dispatchEvent(new Event('change'));
+                                }
+                            } else {
+                                input.value = value;
+                                input.dispatchEvent(new Event('change'));
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Error restoring saved answers:', e);
+            }
+        }
+        
+        // ========== Notes & Highlight System (Complete) ==========
+        const AnnotationSystem = {
+            init() {
+                this.currentMenu = null;
+                this.currentRange = null;
+                this.noteModal = null;
+                this.notesPanel = null;
+                
+                this.createNoteModal();
+                this.createNotesPanel();
+                this.setupAnnotationHandlers();
+                this.restoreAnnotations();
+                this.updateNotesCount();
+            },
+            
+            createNoteModal() {
+                const modal = document.createElement('div');
+                modal.id = 'note-modal';
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 100000;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        border-radius: 8px;
+                        width: 90%;
+                        max-width: 450px;
+                        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                    ">
+                        <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #111827;">Add Note</h3>
+                            <p style="margin: 6px 0 0 0; font-size: 13px; color: #6b7280;" id="selected-text-preview"></p>
+                        </div>
+                        <div style="padding: 16px;">
+                            <textarea 
+                                id="note-textarea"
+                                placeholder="Type your note here..."
+                                style="
+                                    width: 100%;
+                                    min-height: 100px;
+                                    padding: 10px;
+                                    border: 1px solid #e5e7eb;
+                                    border-radius: 6px;
+                                    font-size: 14px;
+                                    resize: vertical;
+                                    font-family: inherit;
+                                    box-sizing: border-box;
+                                "
+                            ></textarea>
+                            <div style="margin-top: 6px; text-align: right; font-size: 12px; color: #9ca3af;">
+                                <span id="char-count">0</span>/500
+                            </div>
+                        </div>
+                        <div style="
+                            padding: 12px 16px;
+                            background: #f9fafb;
+                            border-top: 1px solid #e5e7eb;
+                            display: flex;
+                            justify-content: flex-end;
+                            gap: 10px;
+                            border-radius: 0 0 8px 8px;
+                        ">
+                            <button id="close-note-modal-btn" style="
+                                padding: 6px 16px;
+                                border: 1px solid #e5e7eb;
+                                background: white;
+                                border-radius: 4px;
+                                font-size: 13px;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            ">Cancel</button>
+                            <button id="save-note-btn" style="
+                                padding: 6px 16px;
+                                background: #3b82f6;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                font-size: 13px;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            ">Save Note</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                this.noteModal = modal;
+                
+                // Setup event listeners
+                const textarea = modal.querySelector('#note-textarea');
+                const charCount = modal.querySelector('#char-count');
+                textarea.addEventListener('input', () => {
+                    const count = textarea.value.length;
+                    charCount.textContent = count;
+                    if (count > 500) {
+                        textarea.value = textarea.value.substring(0, 500);
+                        charCount.textContent = 500;
+                    }
+                });
+                
+                document.getElementById('close-note-modal-btn').addEventListener('click', () => {
+                    this.closeNoteModal();
+                });
+                
+                document.getElementById('save-note-btn').addEventListener('click', () => {
+                    this.saveNote();
+                });
+            },
+            
+            createNotesPanel() {
+                const panel = document.createElement('div');
+                panel.id = 'notes-panel';
+                panel.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    right: -350px;
+                    width: 350px;
+                    height: 100%;
+                    background: white;
+                    box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+                    transition: right 0.3s ease-out;
+                    z-index: 99998;
+                    display: flex;
+                    flex-direction: column;
+                    `;
+                    panel.innerHTML = `
                 <div style="
                     padding: 16px;
                     border-bottom: 1px solid #e5e7eb;
@@ -2541,52 +2138,23 @@
     
     // ========== Initialize ==========
     
-    // Initialize all systems
-    initializeMatchingQuestions();
-    AnnotationSystem.init();
-    
-    // Load saved data
-    loadSavedAnswers();
-    loadFlaggedQuestions();
-    
     // Play first part audio
     playPartAudio('1');
     
     // Update initial visibility
     updateNumberButtonsVisibility('1');
     
-    // Update answer count
-    updateAnswerCount();
+    // Load saved answers
+    loadSavedAnswers();
+    
+    // Initialize annotation system
+    AnnotationSystem.init();
     
     // Periodically save answers
     setInterval(saveAllAnswers, 30000);
     
-    // Add CSS animations
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                transform: translateX(100px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100px);
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
+    // Update answer count
+    updateAnswerCount();
 });
 </script>
 @endpush

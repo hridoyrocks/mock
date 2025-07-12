@@ -58,141 +58,354 @@
             margin: 0 auto;
         }
         
+        /* Progress Bar Styles */
+        .progress-container {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .progress-segment {
+            flex: 1;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-segment.active {
+            background: #3b82f6;
+        }
+        
+        .progress-segment.completed {
+            background: #10b981;
+        }
+        
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .progress-label.active {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .progress-label.completed {
+            color: #10b981;
+        }
+        
+        /* Progressive Question Card Styles */
+        .question-card-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .question-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            padding: 32px;
+            margin-bottom: 24px;
+            position: relative;
+            transition: all 0.3s ease;
+            min-height: 450px;
+            display: none;
+        }
+        
+        .question-card.active {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        .question-card.reading-phase {
+            border: 2px solid #3B82F6;
+            background: #EBF5FF;
+        }
+        
+        .question-card.recording-phase {
+            border: 2px solid #EF4444;
+            background: #FEF2F2;
+        }
+        
+        .question-card.completed {
+            border: 2px solid #10B981;
+            background: #F0FDF4;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+        }
+        
+        .card-phase-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .phase-icon {
+            font-size: 24px;
+        }
+        
+        .question-display {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .question-text {
+            font-size: 24px;
+            line-height: 1.5;
+            color: #1F2937;
+            margin-bottom: 32px;
+            font-weight: 500;
+        }
+        
+        /* Timer Displays */
+        .read-timer {
+            margin: 32px auto;
+            text-align: center;
+        }
+        
+        .timer-circle {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 16px;
+            position: relative;
+        }
+        
+        .timer-circle svg {
+            transform: rotate(-90deg);
+        }
+        
+        .timer-circle-bg {
+            fill: none;
+            stroke: #E5E7EB;
+            stroke-width: 8;
+        }
+        
+        .timer-circle-progress {
+            fill: none;
+            stroke: #3B82F6;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            font-weight: bold;
+            color: #3B82F6;
+        }
+        
+        .timer-label {
+            font-size: 14px;
+            color: #6B7280;
+            margin-bottom: 8px;
+        }
+        
+        /* Recording Controls */
+        .recording-controls {
+            text-align: center;
+            margin-top: 32px;
+        }
+        
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .recording-dot {
+            width: 12px;
+            height: 12px;
+            background: #EF4444;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .volume-meter {
+            width: 200px;
+            height: 8px;
+            background: #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .volume-level {
+            height: 100%;
+            background: #10B981;
+            transition: width 0.1s ease;
+            border-radius: 4px;
+        }
+        
+        .recording-time {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            margin-top: 16px;
+        }
+        
+        /* Action Buttons */
+        .action-button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 160px;
+        }
+        
+        .action-button.primary {
+            background: #3B82F6;
+            color: white;
+        }
+        
+        .action-button.primary:hover {
+            background: #2563EB;
+            transform: translateY(-1px);
+        }
+        
+        .action-button.disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+        
+        /* Tips Section */
+        .tips-section {
+            background: #F9FAFB;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 24px;
+        }
+        
+        .tips-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #6B7280;
+            margin-bottom: 8px;
+        }
+        
+        .tips-content {
+            font-size: 14px;
+            color: #6B7280;
+            line-height: 1.5;
+        }
+        
+        /* Part 2 Cue Card */
+        .cue-card {
+            background: #FFFBEB;
+            border: 2px solid #F59E0B;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: left;
+        }
+        
+        .cue-card-title {
+            font-weight: 600;
+            color: #92400E;
+            margin-bottom: 16px;
+        }
+        
+        .cue-card-points {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .cue-card-points li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #78350F;
+        }
+        
+        .cue-card-points li:before {
+            content: "•";
+            position: absolute;
+            left: 8px;
+            color: #F59E0B;
+            font-weight: bold;
+        }
+        
+        /* Progress Dots */
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #E5E7EB;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-dot.completed {
+            background: #10B981;
+        }
+        
+        .progress-dot.active {
+            background: #3B82F6;
+            transform: scale(1.2);
+        }
+        
+        /* Existing styles continue... */
         .info-section {
             background-color: #dbeafe;
             border-left: 4px solid #3b82f6;
             padding: 16px;
             margin-bottom: 30px;
             border-radius: 0 6px 6px 0;
-        }
-        
-        .part-section {
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .part-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #f3f4f6;
-            padding-bottom: 10px;
-        }
-        
-        .part-prompt {
-            background-color: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            padding: 16px;
-            margin-bottom: 20px;
-        }
-        
-        .recording-section {
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 16px;
-            background-color: #fefefe;
-        }
-        
-        .recording-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            align-items: center;
-        }
-        
-        .record-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background-color: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .record-btn:hover {
-            background-color: #b91c1c;
-        }
-        
-        .record-btn.recording {
-            background-color: #ef4444;
-            animation: pulse 1.5s infinite;
-        }
-        
-        .stop-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background-color: #6b7280;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .stop-btn:hover {
-            background-color: #4b5563;
-        }
-        
-        .recording-status {
-            font-size: 14px;
-            color: #6b7280;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .audio-player {
-            width: 100%;
-            margin-top: 15px;
-        }
-        
-        .existing-recording {
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 6px;
-            padding: 12px;
-            margin-top: 15px;
-        }
-        
-        .file-upload-section {
-            border-top: 1px solid #e5e7eb;
-            padding-top: 15px;
-            margin-top: 15px;
-        }
-        
-        .file-upload-input {
-            margin-top: 8px;
-            margin-bottom: 8px;
-        }
-        
-        .upload-btn {
-            padding: 6px 12px;
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .upload-btn:hover {
-            background-color: #2563eb;
         }
         
         .bottom-nav {
@@ -213,32 +426,6 @@
             display: flex;
             align-items: center;
             gap: 20px;
-        }
-        
-        .part-nav {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .part-btn {
-            padding: 8px 16px;
-            border: 1px solid #d1d5db;
-            background-color: #f9fafb;
-            color: #374151;
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        
-        .part-btn.active {
-            background-color: #3b82f6;
-            border-color: #3b82f6;
-            color: white;
-        }
-        
-        .part-btn:hover:not(.active) {
-            background-color: #f3f4f6;
         }
         
         .nav-right {
@@ -313,25 +500,23 @@
             background-color: #4b5563;
         }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
         @media (max-width: 768px) {
             .content-area {
                 padding: 10px;
                 padding-bottom: 100px;
             }
             
-            .part-nav {
-                display: none;
+            .question-text {
+                font-size: 20px;
             }
             
-            .recording-controls {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
+            .timer-circle {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .timer-text {
+                font-size: 28px;
             }
         }
     </style>
@@ -382,92 +567,157 @@
                 <div>
                     <p class="text-blue-800 font-medium mb-1">IELTS Speaking Test Instructions</p>
                     <p class="text-blue-700 text-sm">
-                        This is a simulated IELTS Speaking test. Each part has different time allocations. 
-                        Use the record button to capture your responses. Ensure your microphone is working properly before starting.
+                        This test follows the progressive card system. Read each question carefully during the reading time, then record your answer when prompted.
                     </p>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-segment completed" id="progress-part-1"></div>
+                <div class="progress-segment" id="progress-part-2"></div>
+                <div class="progress-segment" id="progress-part-3"></div>
+            </div>
+            <div class="progress-labels">
+                <span class="progress-label completed" id="label-part-1">Part 1</span>
+                <span class="progress-label" id="label-part-2">Part 2</span>
+                <span class="progress-label" id="label-part-3">Part 3</span>
             </div>
         </div>
         
         <form id="speaking-form" action="{{ route('student.speaking.submit', $attempt) }}" method="POST">
             @csrf
             
-            @foreach ($testSet->questions->sortBy('order_number') as $question)
-                <div class="part-section" id="part-{{ $loop->iteration }}">
-                    <div class="part-header">
-                        <div>
-                            <h2 class="text-xl font-semibold">Part {{ $loop->iteration }}</h2>
-                            <p class="text-sm text-gray-600 mt-1">
-                                @if ($loop->iteration == 1)
-                                    Suggested time: 1-2 minutes
-                                @elseif ($loop->iteration == 2)
-                                    Suggested time: 3-4 minutes (including preparation)
+            <div class="question-card-container">
+                @foreach ($testSet->questions->sortBy('order_number') as $index => $question)
+                    <!-- Progressive Question Card -->
+                    <div class="question-card reading-phase {{ $index === 0 ? 'active' : '' }}" 
+                         id="card-{{ $question->id }}"
+                         data-question-id="{{ $question->id }}"
+                         data-question-index="{{ $index }}"
+                         data-part="{{ $loop->iteration }}">
+                        
+                        <!-- Card Header -->
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                Part {{ $loop->iteration }}
+                                @if($loop->iteration == 1)
+                                    - Introduction & Interview
+                                @elseif($loop->iteration == 2)
+                                    - Individual Long Turn
                                 @else
-                                    Suggested time: 4-5 minutes
+                                    - Two-way Discussion
                                 @endif
-                            </p>
+                            </h3>
+                            <span class="question-counter">
+                                Question {{ $index + 1 }} of {{ $testSet->questions->count() }}
+                            </span>
                         </div>
-                    </div>
-                    
-                    <div class="part-prompt">
-                        <div class="prose prose-sm max-w-none">
-                            {!! nl2br(e($question->content)) !!}
+
+                        <!-- Phase Indicator -->
+                        <div class="card-phase-indicator" id="phase-indicator-{{ $question->id }}">
+                            <span class="phase-icon">📖</span>
+                            <span class="phase-text">Read the question carefully</span>
                         </div>
-                        
-                        @if ($question->media_path)
+
+                        <!-- Question Display -->
+                        <div class="question-display">
+                            <div class="question-text">
+                                {!! nl2br(e($question->content)) !!}
+                            </div>
+
+                            <!-- Part 2 Cue Card Points -->
+                            @if($loop->iteration == 2 && $question->form_structure)
+                                <div class="cue-card">
+                                    <div class="cue-card-title">You should say:</div>
+                                    <ul class="cue-card-points">
+                                        @foreach($question->form_structure['fields'] ?? [] as $point)
+                                            <li>{{ $point['label'] }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Read Timer -->
+                        <div class="read-timer" id="read-timer-{{ $question->id }}">
+                            <div class="timer-label">
+                                @if($loop->iteration == 2)
+                                    Preparation time
+                                @else
+                                    Reading time
+                                @endif
+                            </div>
+                            <div class="timer-circle">
+                                <svg width="120" height="120">
+                                    <circle cx="60" cy="60" r="54" class="timer-circle-bg"></circle>
+                                    <circle cx="60" cy="60" r="54" class="timer-circle-progress"
+                                            id="timer-progress-{{ $question->id }}"
+                                            stroke-dasharray="339.292"
+                                            stroke-dashoffset="0"></circle>
+                                </svg>
+                                <div class="timer-text" id="timer-text-{{ $question->id }}">
+                                    {{ $question->read_time ?? 5 }}
+                                </div>
+                            </div>
+                            <div class="timer-info">
+                                @if($loop->iteration == 2)
+                                    You can start speaking when ready
+                                @else
+                                    Recording will start automatically
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Recording Controls (hidden initially) -->
+                        <div class="recording-controls" id="recording-controls-{{ $question->id }}" style="display: none;">
+                            <div class="recording-indicator">
+                                <div class="recording-dot"></div>
+                                <span>Recording in progress</span>
+                                <div class="volume-meter">
+                                    <div class="volume-level" id="volume-level-{{ $question->id }}"></div>
+                                </div>
+                            </div>
+                            <div class="recording-time" id="recording-time-{{ $question->id }}">00:00</div>
+                            
                             <div class="mt-4">
-                                <img src="{{ asset('storage/' . $question->media_path) }}" alt="Question Image" class="max-w-full h-auto border rounded">
+                                <button type="button" 
+                                        class="action-button primary disabled" 
+                                        id="stop-btn-{{ $question->id }}"
+                                        onclick="stopAndNext({{ $question->id }})"
+                                        disabled>
+                                    Stop & Next Question
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Audio Player (for reviewing) -->
+                        <audio id="audio-player-{{ $question->id }}" controls class="audio-player hidden" style="width: 100%; margin-top: 20px;"></audio>
+
+                        <!-- Tips Section -->
+                        @if($question->speaking_tips)
+                            <div class="tips-section">
+                                <div class="tips-header">
+                                    <span>💡</span>
+                                    <span>Tips</span>
+                                </div>
+                                <div class="tips-content">
+                                    {{ $question->speaking_tips }}
+                                </div>
                             </div>
                         @endif
-                    </div>
-                    
-                    <div class="recording-section">
-                        <h3 class="text-sm font-medium text-gray-700 mb-3">Your Response</h3>
-                        
-                        <div class="recording-controls">
-                            <button type="button" id="record-button-{{ $question->id }}" class="record-btn">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                </svg>
-                                Start Recording
-                            </button>
-                            
-                            <button type="button" id="stop-button-{{ $question->id }}" class="stop-btn hidden">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-                                </svg>
-                                Stop Recording
-                            </button>
-                            
-                            <span class="recording-status" id="recording-status-{{ $question->id }}"></span>
-                        </div>
-                        
-                        <audio id="audio-player-{{ $question->id }}" controls class="audio-player hidden"></audio>
-                        
-                        @php
-                            $answer = $attempt->answers->where('question_id', $question->id)->first();
-                            $recordingExists = $answer && $answer->speakingRecording;
-                        @endphp
-                        
-                        @if ($recordingExists)
-                            <div class="existing-recording">
-                                <p class="text-sm text-green-700 font-medium mb-2">✓ Existing recording:</p>
-                                <audio src="{{ asset('storage/' . $answer->speakingRecording->file_path) }}" controls class="w-full"></audio>
-                            </div>
-                        @endif
-                        
-                        <div class="file-upload-section">
-                            <p class="text-xs text-gray-600 mb-2">Alternatively, you can upload an audio file:</p>
-                            <input type="file" id="file-upload-{{ $question->id }}" accept="audio/*" class="file-upload-input text-sm">
-                            <br>
-                            <button type="button" id="upload-button-{{ $question->id }}" class="upload-btn">
-                                Upload File
-                            </button>
+
+                        <!-- Progress Dots -->
+                        <div class="progress-dots">
+                            @foreach($testSet->questions as $q)
+                                <div class="progress-dot {{ $loop->index < $index ? 'completed' : ($loop->index == $index ? 'active' : '') }}"></div>
+                            @endforeach
                         </div>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
+            </div>
             
             <button type="submit" id="submit-button" class="hidden">Submit</button>
         </form>
@@ -476,13 +726,7 @@
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
         <div class="nav-left">
-            <div class="part-nav">
-                @foreach ($testSet->questions as $question)
-                    <button type="button" class="part-btn {{ $loop->first ? 'active' : '' }}" data-part="{{ $loop->iteration }}">
-                        Part {{ $loop->iteration }}
-                    </button>
-                @endforeach
-            </div>
+            <span id="current-part-display" style="font-weight: 600;">Part 1</span>
         </div>
         <div class="nav-right">
             <button type="button" id="submit-test-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md mr-3 text-sm font-medium submit-btn">
@@ -498,7 +742,7 @@
             <div class="modal-message">
                 Are you sure you want to submit your speaking test? You cannot change your recordings after submission.
                 <br><br>
-                <strong>Recorded Parts: <span id="recorded-count">0</span> / {{ $testSet->questions->count() }}</strong>
+                <strong>Recorded: <span id="recorded-count">0</span> / {{ $testSet->questions->count() }}</strong>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button class="modal-button" id="confirm-submit-btn">Yes, Submit</button>
@@ -509,152 +753,28 @@
     
     @push('scripts')
     <script>
+    // Progressive Card System
+    let currentQuestionIndex = 0;
+    const questions = @json($testSet->questions->values());
+    let mediaRecorders = {};
+    let audioChunks = {};
+    let timers = {};
+    let recordingStartTimes = {};
+    let recordingsCompleted = 0;
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Elements
-        const partButtons = document.querySelectorAll('.part-btn');
+        // Initialize first question
+        initializeQuestion(0);
+        
+        // Submit functionality
         const submitTestBtn = document.getElementById('submit-test-btn');
         const submitModal = document.getElementById('submit-modal');
         const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
         const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
         const submitButton = document.getElementById('submit-button');
         
-        // Part navigation
-        partButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                partButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                const partNumber = this.dataset.part;
-                const partElement = document.getElementById(`part-${partNumber}`);
-                
-                if (partElement) {
-                    partElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-        
-        // Initialize recording functionality for each question
-        @foreach ($testSet->questions as $question)
-            initializeRecording({{ $question->id }});
-            initializeFileUpload({{ $question->id }});
-        @endforeach
-        
-        // Recording initialization function
-        function initializeRecording(questionId) {
-            const recordButton = document.getElementById(`record-button-${questionId}`);
-            const stopButton = document.getElementById(`stop-button-${questionId}`);
-            const audioPlayer = document.getElementById(`audio-player-${questionId}`);
-            const status = document.getElementById(`recording-status-${questionId}`);
-            
-            let mediaRecorder;
-            let chunks = [];
-            
-            recordButton.addEventListener('click', async function() {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    
-                    mediaRecorder.ondataavailable = function(e) {
-                        chunks.push(e.data);
-                    };
-                    
-                    mediaRecorder.onstop = function() {
-                        const blob = new Blob(chunks, { type: 'audio/webm' });
-                        chunks = [];
-                        
-                        const audioURL = URL.createObjectURL(blob);
-                        audioPlayer.src = audioURL;
-                        audioPlayer.classList.remove('hidden');
-                        
-                        // Upload the recording
-                        uploadRecording(questionId, blob, status);
-                    };
-                    
-                    mediaRecorder.start();
-                    
-                    // Update UI
-                    recordButton.classList.add('recording', 'hidden');
-                    stopButton.classList.remove('hidden');
-                    status.innerHTML = '<span style="color: #ef4444;">● Recording...</span>';
-                    
-                } catch (error) {
-                    console.error('Error accessing microphone:', error);
-                    status.innerHTML = '<span style="color: #ef4444;">Could not access microphone. Please check permissions.</span>';
-                }
-            });
-            
-            stopButton.addEventListener('click', function() {
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                    
-                    // Stop all tracks
-                    const tracks = mediaRecorder.stream.getTracks();
-                    tracks.forEach(track => track.stop());
-                    
-                    // Update UI
-                    recordButton.classList.remove('recording', 'hidden');
-                    stopButton.classList.add('hidden');
-                    status.innerHTML = '<span style="color: #10b981;">Processing...</span>';
-                }
-            });
-        }
-        
-        // File upload initialization function
-        function initializeFileUpload(questionId) {
-            const fileUpload = document.getElementById(`file-upload-${questionId}`);
-            const uploadButton = document.getElementById(`upload-button-${questionId}`);
-            const status = document.getElementById(`recording-status-${questionId}`);
-            
-            uploadButton.addEventListener('click', function() {
-                if (fileUpload.files.length === 0) {
-                    status.innerHTML = '<span style="color: #ef4444;">Please select a file first.</span>';
-                    return;
-                }
-                
-                const file = fileUpload.files[0];
-                uploadRecording(questionId, file, status);
-            });
-        }
-        
-        // Upload recording function
-        function uploadRecording(questionId, blob, statusElement) {
-            const formData = new FormData();
-            formData.append('recording', blob, 'recording.webm');
-            
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            
-            statusElement.innerHTML = '<span style="color: #f59e0b;">Uploading...</span>';
-            
-            fetch(`{{ route('student.speaking.record', [$attempt->id, '__QUESTION_ID__']) }}`.replace('__QUESTION_ID__', questionId), {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    statusElement.innerHTML = '<span style="color: #10b981;">✓ Recording saved</span>';
-                    setTimeout(() => {
-                        statusElement.innerHTML = '';
-                    }, 3000);
-                } else {
-                    statusElement.innerHTML = '<span style="color: #ef4444;">Error saving recording</span>';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                statusElement.innerHTML = '<span style="color: #ef4444;">Error saving recording</span>';
-            });
-        }
-        
-        // Submit functionality
         submitTestBtn.addEventListener('click', function() {
-            // Count recorded parts
-            const existingRecordings = document.querySelectorAll('.existing-recording').length;
-            document.getElementById('recorded-count').textContent = existingRecordings;
-            
+            document.getElementById('recorded-count').textContent = recordingsCompleted;
             submitModal.style.display = 'flex';
         });
         
@@ -668,26 +788,314 @@
         cancelSubmitBtn.addEventListener('click', function() {
             submitModal.style.display = 'none';
         });
+    });
+
+    // Initialize a question
+    function initializeQuestion(index) {
+        if (index >= questions.length) {
+            // All questions completed
+            showCompletionScreen();
+            return;
+        }
+
+        const question = questions[index];
+        const questionId = question.id;
         
-        // Scroll spy for part navigation
-        window.addEventListener('scroll', function() {
-            const parts = document.querySelectorAll('.part-section');
-            let activePart = 1;
-            
-            parts.forEach((part, index) => {
-                const rect = part.getBoundingClientRect();
-                if (rect.top <= 150 && rect.bottom > 150) {
-                    activePart = index + 1;
-                }
-            });
-            
-            partButtons.forEach(btn => btn.classList.remove('active'));
-            const activeButton = document.querySelector(`[data-part="${activePart}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active');
+        // Update progress
+        updateProgress(index);
+        
+        // Start reading phase
+        startReadingPhase(questionId);
+    }
+
+    // Update progress indicators
+    function updateProgress(index) {
+        const question = questions[index];
+        const partNumber = Math.ceil((index + 1) / Math.ceil(questions.length / 3));
+        
+        // Update progress bar
+        document.querySelectorAll('.progress-segment').forEach((segment, i) => {
+            if (i < partNumber - 1) {
+                segment.classList.add('completed');
+                segment.classList.remove('active');
+            } else if (i === partNumber - 1) {
+                segment.classList.add('active');
+                segment.classList.remove('completed');
+            } else {
+                segment.classList.remove('active', 'completed');
             }
         });
-    });
+        
+        // Update labels
+        document.querySelectorAll('.progress-label').forEach((label, i) => {
+            if (i < partNumber - 1) {
+                label.classList.add('completed');
+                label.classList.remove('active');
+            } else if (i === partNumber - 1) {
+                label.classList.add('active');
+                label.classList.remove('completed');
+            } else {
+                label.classList.remove('active', 'completed');
+            }
+        });
+        
+        // Update current part display
+        document.getElementById('current-part-display').textContent = `Part ${partNumber}`;
+    }
+
+    // Start reading phase with timer
+    function startReadingPhase(questionId) {
+        const card = document.getElementById(`card-${questionId}`);
+        const readTime = questions[currentQuestionIndex].read_time || 5;
+        let timeLeft = readTime;
+        
+        // Update UI
+        card.className = 'question-card reading-phase active';
+        document.getElementById(`phase-indicator-${questionId}`).innerHTML = `
+            <span class="phase-icon">📖</span>
+            <span class="phase-text">Read the question carefully</span>
+        `;
+        
+        // Show read timer
+        document.getElementById(`read-timer-${questionId}`).style.display = 'block';
+        document.getElementById(`recording-controls-${questionId}`).style.display = 'none';
+        
+        // Start countdown
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay(questionId, timeLeft, readTime);
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                // Auto progress unless it's Part 2 with preparation time
+                if (questions[currentQuestionIndex].auto_progress !== false) {
+                    startRecordingPhase(questionId);
+                } else {
+                    // For Part 2, show start button
+                    showStartRecordingButton(questionId);
+                }
+            }
+        }, 1000);
+        
+        timers[`read-${questionId}`] = timerInterval;
+    }
+
+    // Show start recording button for Part 2
+    function showStartRecordingButton(questionId) {
+        const readTimer = document.getElementById(`read-timer-${questionId}`);
+        readTimer.innerHTML += `
+            <div style="margin-top: 20px;">
+                <button type="button" class="action-button primary" onclick="startRecordingPhase(${questionId})">
+                    Start Speaking
+                </button>
+            </div>
+        `;
+    }
+
+    // Update circular timer display
+    function updateTimerDisplay(questionId, current, total) {
+        const progress = current / total;
+        const circumference = 2 * Math.PI * 54;
+        const offset = circumference * (1 - progress);
+        
+        document.getElementById(`timer-progress-${questionId}`).style.strokeDashoffset = offset;
+        document.getElementById(`timer-text-${questionId}`).textContent = current;
+    }
+
+    // Start recording phase
+    async function startRecordingPhase(questionId) {
+        const card = document.getElementById(`card-${questionId}`);
+        
+        // Update UI
+        card.className = 'question-card recording-phase active';
+        document.getElementById(`phase-indicator-${questionId}`).innerHTML = `
+            <span class="phase-icon">🔴</span>
+            <span class="phase-text">Recording - Please speak now</span>
+        `;
+        
+        // Hide read timer, show recording controls
+        document.getElementById(`read-timer-${questionId}`).style.display = 'none';
+        document.getElementById(`recording-controls-${questionId}`).style.display = 'block';
+        
+        // Start recording
+        try {
+            await startRecording(questionId);
+        } catch (error) {
+            console.error('Failed to start recording:', error);
+            alert('Could not access microphone. Please check permissions.');
+        }
+    }
+
+    // Start audio recording
+    async function startRecording(questionId) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorders[questionId] = mediaRecorder;
+        audioChunks[questionId] = [];
+        
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks[questionId].push(event.data);
+        };
+        
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks[questionId], { type: 'audio/webm' });
+            await uploadRecording(questionId, audioBlob);
+            
+            // Show audio player for review
+            const audioPlayer = document.getElementById(`audio-player-${questionId}`);
+            audioPlayer.src = URL.createObjectURL(audioBlob);
+            audioPlayer.classList.remove('hidden');
+            
+            // Stop all tracks
+            stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorder.start();
+        recordingStartTimes[questionId] = Date.now();
+        
+        // Start recording timer
+        updateRecordingTime(questionId);
+        
+        // Start volume meter
+        startVolumeMeter(stream, questionId);
+        
+        // Auto-stop after max time
+        const maxTime = questions[currentQuestionIndex].max_response_time || 45;
+        timers[`record-${questionId}`] = setTimeout(() => {
+            stopAndNext(questionId);
+        }, maxTime * 1000);
+    }
+
+    // Update recording time display
+    function updateRecordingTime(questionId) {
+        const updateTime = () => {
+            if (!recordingStartTimes[questionId]) return;
+            
+            const elapsed = Math.floor((Date.now() - recordingStartTimes[questionId]) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById(`recording-time-${questionId}`).textContent = display;
+            
+            // Check minimum time
+            const minTime = questions[currentQuestionIndex].min_response_time || 15;
+            const stopBtn = document.getElementById(`stop-btn-${questionId}`);
+            if (elapsed >= minTime) {
+                stopBtn.classList.remove('disabled');
+                stopBtn.disabled = false;
+            }
+        };
+        
+        updateTime();
+        timers[`time-${questionId}`] = setInterval(updateTime, 1000);
+    }
+
+    // Volume meter visualization
+    function startVolumeMeter(stream, questionId) {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(stream);
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        analyser.smoothingTimeConstant = 0.8;
+        analyser.fftSize = 1024;
+        
+        microphone.connect(analyser);
+        
+        const updateVolume = () => {
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+            const percentage = Math.min(100, (average / 128) * 100);
+            
+            const volumeLevel = document.getElementById(`volume-level-${questionId}`);
+            if (volumeLevel) {
+                volumeLevel.style.width = percentage + '%';
+            }
+        };
+        
+        timers[`volume-${questionId}`] = setInterval(updateVolume, 100);
+    }
+
+    // Stop recording and move to next question
+    window.stopAndNext = async function(questionId) {
+        // Stop recording
+        if (mediaRecorders[questionId] && mediaRecorders[questionId].state === 'recording') {
+            mediaRecorders[questionId].stop();
+        }
+        
+        // Clear timers
+        Object.keys(timers).forEach(key => {
+            if (key.includes(questionId)) {
+                clearInterval(timers[key]);
+                clearTimeout(timers[key]);
+            }
+        });
+        
+        // Update card to completed
+        const card = document.getElementById(`card-${questionId}`);
+        card.className = 'question-card completed active';
+        document.getElementById(`phase-indicator-${questionId}`).innerHTML = `
+            <span class="phase-icon">✓</span>
+            <span class="phase-text">Answer recorded</span>
+        `;
+        
+        recordingsCompleted++;
+        
+        // Wait a moment then transition
+        setTimeout(() => {
+            transitionToNext();
+        }, 1500);
+    }
+
+    // Transition to next question
+    function transitionToNext() {
+        const currentCard = document.getElementById(`card-${questions[currentQuestionIndex].id}`);
+        currentCard.classList.remove('active');
+        
+        currentQuestionIndex++;
+        
+        if (currentQuestionIndex < questions.length) {
+            const nextCard = document.getElementById(`card-${questions[currentQuestionIndex].id}`);
+            nextCard.classList.add('active');
+            initializeQuestion(currentQuestionIndex);
+        } else {
+            showCompletionScreen();
+        }
+    }
+
+    // Upload recording to server
+    async function uploadRecording(questionId, audioBlob) {
+        const formData = new FormData();
+        formData.append('recording', audioBlob, 'recording.webm');
+        
+        try {
+            const response = await fetch(`{{ url('student/test/speaking/record') }}/${{{ $attempt->id }}}/${questionId}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (!data.success) {
+                console.error('Failed to save recording');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+        }
+    }
+
+    // Show completion screen
+    function showCompletionScreen() {
+        document.getElementById('recorded-count').textContent = recordingsCompleted;
+        document.getElementById('submit-modal').style.display = 'flex';
+    }
     </script>
     @endpush
 </x-test-layout>

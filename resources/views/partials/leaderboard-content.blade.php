@@ -1,46 +1,59 @@
-@if($leaderboard->isNotEmpty())
-    <div class="space-y-3">
-        @foreach($leaderboard as $entry)
-            <div class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors
-                {{ $entry->user_id === auth()->id() ? 'bg-indigo-50 border border-indigo-200' : '' }}">
-                <div class="w-8 text-center">
-                    @if($entry->rank <= 3)
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center
-                            @if($entry->rank === 1) bg-yellow-400
-                            @elseif($entry->rank === 2) bg-gray-300
-                            @else bg-orange-400
-                            @endif">
-                            <span class="text-xs font-bold text-white">{{ $entry->rank }}</span>
-                        </div>
-                    @else
-                        <span class="text-sm font-medium text-gray-600">{{ $entry->rank }}</span>
-                    @endif
+{{-- resources/views/partials/leaderboard-content.blade.php --}}
+<div class="space-y-3">
+    @if($userInLeaderboard)
+        <!-- User's Position -->
+        <div class="p-3 gradient-bg text-white rounded-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="font-bold">#{{ $leaderboard->where('user_id', auth()->id())->first()->rank }}</span>
+                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm font-bold">
+                        {{ substr(auth()->user()->name, 0, 1) }}
+                    </div>
+                    <span class="font-medium">You</span>
                 </div>
-                <div class="flex-1">
-                    <p class="font-medium text-gray-900 {{ $entry->user_id === auth()->id() ? 'text-indigo-700' : '' }}">
-                        {{ $entry->user->name }}
-                        @if($entry->user_id === auth()->id())
-                            <span class="text-xs text-indigo-600">(You)</span>
-                        @endif
-                    </p>
-                    <p class="text-xs text-gray-500">{{ $entry->tests_taken }} tests • {{ $entry->total_points }} pts</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-lg font-bold text-gray-900">{{ number_format($entry->average_score, 1) }}</p>
-                    <p class="text-xs text-gray-500">Avg Band</p>
-                </div>
+                <span class="font-bold">{{ auth()->user()->achievement_points }} pts</span>
             </div>
-        @endforeach
-    </div>
-
-    @if(!$userInLeaderboard)
-        <div class="mt-4 p-3 bg-gray-50 rounded-lg text-center">
-            <p class="text-sm text-gray-600">Complete more tests to appear on the leaderboard!</p>
         </div>
     @endif
-@else
-    <div class="text-center py-8">
-        <i class="fas fa-trophy text-4xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500">No leaderboard data yet</p>
+    
+    <!-- Top Users -->
+    <div class="space-y-2">
+        @foreach($leaderboard->take(10) as $entry)
+            @if($entry->user_id !== auth()->id())
+                <div class="flex items-center justify-between p-2 {{ $loop->iteration <= 3 ? 'bg-gray-50 rounded-lg' : '' }}">
+                    <div class="flex items-center space-x-3">
+                        <span class="font-bold {{ $loop->iteration <= 3 ? 'text-lg' : '' }}">
+                            @switch($loop->iteration)
+                                @case(1)
+                                    <span class="text-yellow-500">🏆</span>
+                                    @break
+                                @case(2)
+                                    <span class="text-gray-400">🥈</span>
+                                    @break
+                                @case(3)
+                                    <span class="text-orange-600">🥉</span>
+                                    @break
+                                @default
+                                    #{{ $entry->rank }}
+                            @endswitch
+                        </span>
+                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-semibold">
+                            {{ substr($entry->user->name, 0, 1) }}
+                        </div>
+                        <span class="text-sm font-medium">{{ Str::limit($entry->user->name, 15) }}</span>
+                    </div>
+                    <span class="text-sm font-bold">{{ $entry->total_points }} pts</span>
+                </div>
+            @endif
+        @endforeach
     </div>
-@endif
+    
+    @if(!$userInLeaderboard)
+        <div class="mt-3 p-3 bg-gray-50 rounded-lg text-center">
+            <p class="text-xs text-gray-600">
+                <i class="fas fa-info-circle mr-1"></i>
+                You're not in the top 10 yet. Keep practicing!
+            </p>
+        </div>
+    @endif
+</div>

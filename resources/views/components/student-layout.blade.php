@@ -69,32 +69,13 @@
             
             <!-- Sidebar Header with Logo -->
             <div class="flex items-center justify-center h-20 bg-gradient-to-r from-indigo-600 to-purple-600 relative overflow-hidden">
-                <!-- Background Pattern -->
-                <div class="absolute inset-0 opacity-10">
-                    <div class="absolute transform rotate-45 -top-10 -right-10 w-40 h-40 bg-white rounded-full"></div>
-                    <div class="absolute transform rotate-45 -bottom-10 -left-10 w-40 h-40 bg-white rounded-full"></div>
-                </div>
+             
                 
                 <!-- Logo -->
-                <div class="relative logo-animate">
-                    <svg width="50" height="50" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Book Pages -->
-                        <path d="M40 60 Q100 40 160 60 L160 140 Q100 120 40 140 Z" fill="#ffffff" opacity="0.9"/>
-                        <path d="M40 60 Q100 80 160 60 L160 140 Q100 160 40 140 Z" fill="#e0e7ff" opacity="0.7"/>
-                        
-                        <!-- Book Spine -->
-                        <rect x="95" y="55" width="10" height="90" fill="#4f46e5" rx="2"/>
-                        
-                        <!-- Achievement Star -->
-                        <g transform="translate(100, 50)">
-                            <path d="M0,-15 L4,-4 L15,-2 L6,6 L9,17 L0,10 L-9,17 L-6,6 L-15,-2 L-4,-4 Z" 
-                                  fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/>
-                        </g>
-                        
-                        <!-- Text "IELTS" -->
-                        <text x="100" y="170" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
-                              text-anchor="middle" fill="#ffffff">IELTS</text>
-                    </svg>
+                <div>
+                    <a href="{{ route('student.dashboard') }}">
+                        <img src="{{ asset('https://www.nasa.gov/wp-content/uploads/2018/07/s75-31690.jpeg') }}" alt="Banglay IELTS Logo" class="h-10 w-auto">
+                    </a>
                 </div>
                 
                 <!-- Mobile close button -->

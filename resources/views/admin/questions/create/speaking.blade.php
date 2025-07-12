@@ -38,108 +38,89 @@
                             <h3 class="text-base sm:text-lg font-medium text-gray-900">Speaking Question</h3>
                         </div>
                         
-                        <div class="p-4 sm:p-6">
-                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-                                <div class="space-y-4 sm:space-y-6">
-                                    <!-- Question Type -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Question Type <span class="text-red-500">*</span>
-                                        </label>
-                                        <select id="question_type" name="question_type" 
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm" required>
-                                            <option value="">Select type...</option>
-                                            <option value="part1_personal">Part 1: Personal Questions</option>
-                                            <option value="part2_cue_card">Part 2: Cue Card</option>
-                                            <option value="part3_discussion">Part 3: Discussion</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <!-- Response Time -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Response Time (minutes) <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="number" name="time_limit" value="{{ old('time_limit', 2) }}" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm" 
-                                               min="1" max="10" required>
-                                        <p class="text-xs text-gray-500 mt-1">Part 1: 1-2 min, Part 2: 2 min, Part 3: 4-5 min</p>
-                                    </div>
-                                    
-                                    <!-- Question Number -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Question Number <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="number" name="order_number" value="{{ old('order_number', $nextQuestionNumber ?? 1) }}" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm" 
-                                               min="1" required>
-                                    </div>
-                                    
-                                    <!-- Part Number (Hidden) -->
-                                    <input type="hidden" name="part_number" id="part_number" value="{{ old('part_number', 1) }}">
-                                    
-                                    <!-- Marks (Hidden) -->
-                                    <input type="hidden" name="marks" value="{{ old('marks', 1) }}">
+                        <div class="p-4 sm:p-6 space-y-6">
+                            <!-- Question Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Question Type <span class="text-red-500">*</span>
+                                </label>
+                                <select id="question_type" name="question_type" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm" required>
+                                    <option value="">Select type...</option>
+                                    <option value="part1_personal">Part 1: Personal Questions</option>
+                                    <option value="part2_cue_card">Part 2: Cue Card</option>
+                                    <option value="part3_discussion">Part 3: Discussion</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Question Content -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Question / Topic <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="content" name="content" rows="4" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+                                          placeholder="Enter the speaking question or topic..."
+                                          required>{{ old('content') }}</textarea>
+                            </div>
+                            
+                            <!-- Cue Card Points (Part 2 only) -->
+                            <div id="cue-card-section" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Cue Card Points <span class="text-sm font-normal text-gray-500">(One per line)</span>
+                                </label>
+                                <textarea id="cue-card-points" name="cue_card_points_text" rows="5" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+                                          placeholder="Where you went&#10;When you went there&#10;Who you went with&#10;What you did there&#10;And explain why it was memorable">{{ old('cue_card_points_text') }}</textarea>
+                                <input type="hidden" id="form_structure_json" name="form_structure_json">
+                            </div>
+                            
+                            <!-- Basic Settings Row -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Question Number -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Question Number <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" name="order_number" value="{{ old('order_number', $nextQuestionNumber ?? 1) }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm" 
+                                           min="1" required>
                                 </div>
                                 
-                                <div class="space-y-4 sm:space-y-6">
-                                    <!-- Question Content -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Question / Topic <span class="text-red-500">*</span>
-                                        </label>
-                                        <textarea id="content" name="content" rows="6" 
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                                                  placeholder="Enter the speaking question or topic..."
-                                                  required>{{ old('content') }}</textarea>
-                                    </div>
-                                    
-                                    <!-- Follow-up Questions (Part 3) -->
-                                    <div id="followup-questions" class="hidden">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Follow-up Questions
-                                        </label>
-                                        <textarea name="instructions" rows="4" 
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                                                  placeholder="Enter follow-up questions separated by new lines...">{{ old('instructions') }}</textarea>
-                                    </div>
+                                <!-- Speaking Tips (Optional) -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        Quick Tip <span class="text-sm font-normal text-gray-500">(Optional)</span>
+                                    </label>
+                                    <input type="text" name="speaking_tips" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
+                                           placeholder="e.g., Give specific examples"
+                                           value="{{ old('speaking_tips') }}">
                                 </div>
                             </div>
                             
-                            <!-- Cue Card Format (Part 2) -->
-                            <div id="cue-card-format" class="hidden mt-6">
-                                <div class="bg-orange-50 border border-orange-200 rounded-md p-4">
-                                    <h4 class="text-sm font-medium text-orange-800 mb-2">Cue Card Format:</h4>
-                                    <div class="text-sm text-orange-700">
-                                        <p>Describe [topic]</p>
-                                        <p class="mt-2">You should say:</p>
-                                        <ul class="list-disc list-inside ml-2 mt-1">
-                                            <li>Point 1</li>
-                                            <li>Point 2</li>
-                                            <li>Point 3</li>
-                                        </ul>
-                                        <p class="mt-2">And explain [explanation requirement]</p>
-                                    </div>
-                                    <p class="text-xs text-orange-600 mt-3">
-                                        Format your question following this structure for better clarity.
-                                    </p>
-                                </div>
-                            </div>
+                            <!-- Hidden Fields with Auto Values -->
+                            <input type="hidden" name="part_number" id="part_number" value="{{ old('part_number', 1) }}">
+                            <input type="hidden" name="time_limit" id="time_limit" value="{{ old('time_limit', 2) }}">
+                            <input type="hidden" name="marks" value="1">
+                            
+                            <!-- Progressive Card Settings (Hidden with defaults) -->
+                            <input type="hidden" name="read_time" id="read_time" value="{{ old('read_time', 5) }}">
+                            <input type="hidden" name="min_response_time" id="min_response_time" value="{{ old('min_response_time', 15) }}">
+                            <input type="hidden" name="max_response_time" id="max_response_time" value="{{ old('max_response_time', 45) }}">
+                            <input type="hidden" name="auto_progress" id="auto_progress" value="{{ old('auto_progress', 1) }}">
+                            <input type="hidden" name="card_theme" id="card_theme" value="{{ old('card_theme', 'blue') }}">
                         </div>
                     </div>
                     
-                    <!-- Action Buttons - Sticky on Mobile -->
-                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky bottom-0 z-10 border-t sm:border-t-0 sm:relative">
+                    <!-- Action Buttons -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
                         <div class="flex flex-col sm:flex-row gap-3">
                             <button type="submit" name="action" value="save" class="flex-1 py-2.5 sm:py-3 bg-orange-600 text-white font-medium rounded-md hover:bg-orange-700 transition-colors text-sm sm:text-base">
                                 Save Question
                             </button>
                             <button type="submit" name="action" value="save_and_new" class="flex-1 py-2.5 sm:py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors text-sm sm:text-base">
                                 Save & Add Another
-                            </button>
-                            <button type="button" onclick="previewQuestion()" class="flex-1 py-2.5 sm:py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors text-sm sm:text-base">
-                                Preview
                             </button>
                         </div>
                     </div>
@@ -150,49 +131,92 @@
 
     @include('admin.questions.partials.modals')
     
-    @push('styles')
-    <style>
-        /* Professional styles */
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #EA580C;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 1000;
-            max-width: 90%;
-        }
-        
-        .notification.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        
-        .notification.success {
-            background: #059669;
-        }
-        
-        .notification.error {
-            background: #DC2626;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-            .sticky {
-                box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-            }
-        }
-    </style>
-    @endpush
-    
     @push('scripts')
     <script src="{{ asset('js/admin/question-common.js') }}"></script>
     <script src="{{ asset('js/admin/question-speaking.js') }}"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionType = document.getElementById('question_type');
+        const cueCardSection = document.getElementById('cue-card-section');
+        
+        // Auto settings based on question type
+        const typeSettings = {
+            'part1_personal': {
+                part: 1,
+                time_limit: 1,
+                read_time: 5,
+                min_response: 15,
+                max_response: 45,
+                auto_progress: 1,
+                theme: 'blue'
+            },
+            'part2_cue_card': {
+                part: 2,
+                time_limit: 2,
+                read_time: 60,
+                min_response: 60,
+                max_response: 120,
+                auto_progress: 0,
+                theme: 'purple'
+            },
+            'part3_discussion': {
+                part: 3,
+                time_limit: 5,
+                read_time: 8,
+                min_response: 30,
+                max_response: 90,
+                auto_progress: 1,
+                theme: 'green'
+            }
+        };
+
+        // Update settings when question type changes
+        questionType.addEventListener('change', function() {
+            const selectedType = this.value;
+            
+            // Show/hide cue card section
+            if (selectedType === 'part2_cue_card') {
+                cueCardSection.classList.remove('hidden');
+            } else {
+                cueCardSection.classList.add('hidden');
+            }
+            
+            // Auto-fill hidden fields
+            if (typeSettings[selectedType]) {
+                const settings = typeSettings[selectedType];
+                document.getElementById('part_number').value = settings.part;
+                document.getElementById('time_limit').value = settings.time_limit;
+                document.getElementById('read_time').value = settings.read_time;
+                document.getElementById('min_response_time').value = settings.min_response;
+                document.getElementById('max_response_time').value = settings.max_response;
+                document.getElementById('auto_progress').value = settings.auto_progress;
+                document.getElementById('card_theme').value = settings.theme;
+            }
+        });
+
+        // Convert cue card points to JSON
+        function updateCueCardStructure() {
+            const pointsText = document.getElementById('cue-card-points').value;
+            if (pointsText) {
+                const points = pointsText.split('\n').filter(p => p.trim());
+                const formStructure = {
+                    fields: points.map(point => ({ label: point.trim() }))
+                };
+                document.getElementById('form_structure_json').value = JSON.stringify(formStructure);
+            }
+        }
+
+        // Update structure on input
+        document.getElementById('cue-card-points').addEventListener('input', updateCueCardStructure);
+        
+        // Ensure structure is updated on form submit
+        document.getElementById('questionForm').addEventListener('submit', function(e) {
+            if (questionType.value === 'part2_cue_card') {
+                updateCueCardStructure();
+            }
+        });
+    });
+    </script>
     @endpush
 </x-layout>
