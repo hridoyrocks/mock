@@ -4,6 +4,7 @@ namespace App\Services\AI;
 
 use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class AIEvaluationService
@@ -55,6 +56,10 @@ class AIEvaluationService
             // First, transcribe the audio
             $transcription = $this->transcribeAudio($audioPath);
             
+            if (empty($transcription)) {
+                throw new Exception('Failed to transcribe audio - no speech detected');
+            }
+            
             $prompt = $this->buildSpeakingPrompt($transcription, $question, $partNumber);
             
             $response = OpenAI::chat()->create([
@@ -89,15 +94,50 @@ class AIEvaluationService
      */
     private function transcribeAudio(string $audioPath): string
     {
-        $audio = fopen(storage_path('app/public/' . $audioPath), 'r');
-        
-        $response = OpenAI::audio()->transcribe([
-            'model' => 'whisper-1',
-            'file' => $audio,
-            'response_format' => 'text',
-        ]);
-
-        return $response->text;
+        try {
+            $fullPath = storage_path('app/public/' . $audioPath);
+            
+            if (!file_exists($fullPath)) {
+                throw new Exception("Audio file not found: {$fullPath}");
+            }
+            
+            // Check file size (OpenAI limit is 25MB)
+            $fileSize = filesize($fullPath);
+            if ($fileSize > 25 * 1024 * 1024) {
+                throw new Exception("Audio file too large: {$fileSize} bytes");
+            }
+            
+            Log::info('Transcribing audio', [
+                'path' => $audioPath,
+                'full_path' => $fullPath,
+                'size' => $fileSize,
+                'exists' => file_exists($fullPath)
+            ]);
+            
+            $audio = fopen($fullPath, 'r');
+            
+            if (!$audio) {
+                throw new Exception("Failed to open audio file");
+            }
+            
+            $response = OpenAI::audio()->transcribe([
+                'model' => 'whisper-1',
+                'file' => $audio,
+                'response_format' => 'json',
+                'language' => 'en' // Specify English for better accuracy
+            ]);
+            
+            fclose($audio);
+            
+            return $response->text ?? '';
+            
+        } catch (\Exception $e) {
+            Log::error('Audio transcription failed', [
+                'error' => $e->getMessage(),
+                'path' => $audioPath
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -116,13 +156,21 @@ Word Count: {$wordCount} (Required: {$requiredWords}+)
 Essay:
 {$text}
 
-Please provide a detailed evaluation in JSON format including:
-1. Band score (0-9) for each criterion
-2. Overall band score
-3. Specific feedback for each criterion
-4. Grammar errors found
-5. Vocabulary suggestions
-6. Improvement tips";
+Please provide a detailed evaluation in JSON format with the following structure:
+{
+    \"overall_band_score\": 6.5,
+    \"task_achievement_score\": 7.0,
+    \"coherence_cohesion_score\": 6.5,
+    \"lexical_resource_score\": 6.0,
+    \"grammar_score\": 6.5,
+    \"task_achievement_feedback\": \"Your response addresses all parts of the task...\",
+    \"coherence_cohesion_feedback\": \"The essay has a clear structure...\",
+    \"lexical_resource_feedback\": \"You use a range of vocabulary...\",
+    \"grammar_feedback\": \"You demonstrate good control of grammar...\",
+    \"grammar_errors\": [\"Subject-verb agreement in paragraph 2\", \"Article usage\"],
+    \"vocabulary_suggestions\": [{\"original\": \"big\", \"suggested\": \"substantial\"}, {\"original\": \"many\", \"suggested\": \"numerous\"}],
+    \"improvement_tips\": [\"Use more complex sentence structures\", \"Include more specific examples\"]
+}";
     }
 
     /**
@@ -142,13 +190,21 @@ Word Count: {$wordCount}
 Transcription:
 {$transcription}
 
-Please provide a detailed evaluation in JSON format including:
-1. Band score (0-9) for each criterion
-2. Overall band score
-3. Specific feedback for each criterion
-4. Pronunciation issues
-5. Vocabulary range assessment
-6. Fluency metrics";
+Please provide a detailed evaluation in JSON format with the following structure:
+{
+    \"overall_band_score\": 6.5,
+    \"fluency_coherence_score\": 7.0,
+    \"lexical_resource_score\": 6.5,
+    \"grammar_score\": 6.0,
+    \"pronunciation_score\": 6.5,
+    \"fluency_coherence_feedback\": \"You speak with good fluency...\",
+    \"lexical_resource_feedback\": \"You use a range of vocabulary...\",
+    \"grammar_feedback\": \"Your grammar is generally accurate...\",
+    \"pronunciation_feedback\": \"Your pronunciation is clear...\",
+    \"pronunciation_issues\": [\"Difficulty with 'th' sounds\", \"Word stress in multi-syllable words\"],
+    \"vocabulary_range\": [\"excellent\", \"substantial\", \"moreover\"],
+    \"improvement_tips\": [\"Practice linking words for better fluency\", \"Work on intonation patterns\"]
+}";
     }
 
     /**
@@ -158,26 +214,26 @@ Please provide a detailed evaluation in JSON format including:
     {
         return "You are an expert IELTS examiner evaluating Writing responses. 
         Evaluate based on the official IELTS criteria:
-        1. Task Achievement/Response
-        2. Coherence and Cohesion
-        3. Lexical Resource
-        4. Grammatical Range and Accuracy
+        1. Task Achievement/Response (25%)
+        2. Coherence and Cohesion (25%)
+        3. Lexical Resource (25%)
+        4. Grammatical Range and Accuracy (25%)
         
         Provide band scores from 0-9 with 0.5 increments. Be fair but strict.
-        Return your evaluation as a valid JSON object.";
+        Return your evaluation as a valid JSON object only, with no additional text.";
     }
 
     private function getSpeakingSystemPrompt(): string
     {
         return "You are an expert IELTS examiner evaluating Speaking responses.
         Evaluate based on the official IELTS criteria:
-        1. Fluency and Coherence
-        2. Lexical Resource
-        3. Grammatical Range and Accuracy
-        4. Pronunciation
+        1. Fluency and Coherence (25%)
+        2. Lexical Resource (25%)
+        3. Grammatical Range and Accuracy (25%)
+        4. Pronunciation (25%)
         
         Provide band scores from 0-9 with 0.5 increments. Be fair but strict.
-        Return your evaluation as a valid JSON object.";
+        Return your evaluation as a valid JSON object only, with no additional text.";
     }
 
     /**
@@ -203,6 +259,7 @@ Please provide a detailed evaluation in JSON format including:
             'grammar_errors' => $evaluation['grammar_errors'] ?? [],
             'vocabulary_suggestions' => $evaluation['vocabulary_suggestions'] ?? [],
             'improvement_tips' => $evaluation['improvement_tips'] ?? [],
+            'original_text' => $originalText, // Store for display in results
         ];
     }
 

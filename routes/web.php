@@ -80,6 +80,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+
+
 // Authenticated routes with role-based dashboard
 Route::middleware(['auth'])->group(function () {
     // Dashboard route with role-based redirection
@@ -213,6 +215,8 @@ Route::middleware(['auth'])->group(function () {
             });
         });
     });
+
+    
     
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -310,9 +314,3 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-// AI Evaluation API routes (protected)
-Route::middleware(['auth', 'subscription:premium'])->prefix('ai')->name('ai.')->group(function () {
-    Route::post('/evaluate/writing', [AIEvaluationController::class, 'evaluateWriting'])->name('evaluate.writing');
-    Route::post('/evaluate/speaking', [AIEvaluationController::class, 'evaluateSpeaking'])->name('evaluate.speaking');
-    Route::get('/evaluation/{id}', [AIEvaluationController::class, 'getEvaluation'])->name('evaluation.get');
-});
