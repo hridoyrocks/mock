@@ -7,6 +7,7 @@
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
         <meta http-equiv="Pragma" content="no-cache">
         <meta http-equiv="Expires" content="0">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
     </x-slot:meta>
     
     <style>
@@ -56,7 +57,7 @@
         }
         
         .content-area {
-            height: calc(100vh - 108px); /* Subtract header heights */
+            height: calc(100vh - 108px);
             overflow-y: auto;
             padding: 20px 20px;
             background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
@@ -177,10 +178,6 @@
             padding: 12px;
             background: rgba(0,0,0,0.03);
             border-radius: 10px;
-        }
-        
-        .phase-icon {
-            font-size: 24px;
         }
         
         /* Question Display */
@@ -435,7 +432,7 @@
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 20px;
-            color: #059669;
+            color: #111827;
         }
         
         .modal-message {
@@ -470,6 +467,108 @@
         .modal-button.secondary:hover {
             background: #4b5563;
             box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+        
+        /* Beautiful Audio Player */
+        .audio-player-container {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            margin-top: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-player-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .audio-visualizer {
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            height: 80px;
+            gap: 4px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .audio-bar {
+            width: 6px;
+            background: linear-gradient(to top, #4facfe 0%, #00f2fe 100%);
+            border-radius: 3px;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+            transition: height 0.1s ease;
+        }
+
+        .audio-bar:nth-child(1) { height: 30px; animation: dance 0.6s ease-in-out infinite; }
+        .audio-bar:nth-child(2) { height: 50px; animation: dance 0.6s ease-in-out infinite 0.1s; }
+        .audio-bar:nth-child(3) { height: 40px; animation: dance 0.6s ease-in-out infinite 0.2s; }
+        .audio-bar:nth-child(4) { height: 60px; animation: dance 0.6s ease-in-out infinite 0.3s; }
+        .audio-bar:nth-child(5) { height: 35px; animation: dance 0.6s ease-in-out infinite 0.4s; }
+        .audio-bar:nth-child(6) { height: 55px; animation: dance 0.6s ease-in-out infinite 0.5s; }
+        .audio-bar:nth-child(7) { height: 45px; animation: dance 0.6s ease-in-out infinite 0.6s; }
+
+        @keyframes dance {
+            0%, 100% { transform: scaleY(0.5); }
+            50% { transform: scaleY(1.2); }
+        }
+
+        .custom-audio-player {
+            width: 100%;
+            height: 50px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 25px;
+            padding: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Custom audio controls styling */
+        .custom-audio-player::-webkit-media-controls-panel {
+            background: transparent;
+        }
+
+        .custom-audio-player::-webkit-media-controls-play-button,
+        .custom-audio-player::-webkit-media-controls-mute-button {
+            background-color: rgba(255,255,255,0.8);
+            border-radius: 50%;
+        }
+
+        .custom-audio-player::-webkit-media-controls-current-time-display,
+        .custom-audio-player::-webkit-media-controls-time-remaining-display {
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .custom-audio-player::-webkit-media-controls-timeline {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+
+        .audio-player-label {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
         }
         
         /* Responsive Design */
@@ -510,11 +609,11 @@
             }
             
             .submit-btn-top span {
-                display: none; /* Hide text on mobile, show only icon */
+                display: none;
             }
         }
         
-        /* Tips Section (Optional) */
+        /* Tips Section */
         .tips-section {
             background: linear-gradient(135deg, #F9FAFB, #F3F4F6);
             border-radius: 10px;
@@ -539,13 +638,6 @@
             line-height: 1.5;
         }
         
-        /* Audio Player for Review */
-        .audio-player {
-            margin-top: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
         /* Scrollbar Styling */
         .content-area::-webkit-scrollbar {
             width: 8px;
@@ -565,18 +657,7 @@
         }
     </style>
 
-    <!-- IELTS Header -->
-    <div class="ielts-header">
-        <div class="ielts-header-left">
-            <svg class="w-6 h-6 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"></path>
-            </svg>
-            <span class="text-red-600 font-bold text-lg">Computer-delivered IELTS</span>
-        </div>
-        <div>
-            <span class="text-red-600 font-bold text-lg">IELTS</span>
-        </div>
-    </div>
+   
 
     <!-- User Info Bar with Submit Button -->
     <div class="user-bar">
@@ -626,13 +707,12 @@
                         <!-- Card Header -->
                         <div class="card-header">
                             <h3 class="card-title">
-                                Part {{ $question->part_number }}
                                 @if($question->part_number == 1)
-                                    - Introduction & Interview
+                                    Part 1
                                 @elseif($question->part_number == 2)
-                                    - Individual Long Turn
+                                    Part 2
                                 @else
-                                    - Two-way Discussion
+                                    Part 3
                                 @endif
                             </h3>
                             <span class="question-counter">
@@ -642,7 +722,6 @@
 
                         <!-- Phase Indicator -->
                         <div class="card-phase-indicator" id="phase-indicator-{{ $question->id }}">
-                            <span class="phase-icon">📖</span>
                             <span class="phase-text">Read the question carefully</span>
                         </div>
 
@@ -708,23 +787,33 @@
                             
                             <div class="mt-4">
                                 <button type="button" 
-                                        class="action-button primary disabled" 
+                                        class="action-button primary" 
                                         id="stop-btn-{{ $question->id }}"
-                                        onclick="stopAndNext({{ $question->id }})"
-                                        disabled>
+                                        onclick="stopAndNext({{ $question->id }})">
                                     Stop & Next Question
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Audio Player (for reviewing) -->
-                        <audio id="audio-player-{{ $question->id }}" controls class="audio-player hidden" style="width: 100%; margin-top: 20px;"></audio>
+                        <!-- Beautiful Audio Player -->
+                        <div class="audio-player-container hidden" id="audio-container-{{ $question->id }}">
+                            <div class="audio-player-label">Your Recording</div>
+                            <div class="audio-visualizer" id="visualizer-{{ $question->id }}">
+                                <div class="audio-bar"></div>
+                                <div class="audio-bar"></div>
+                                <div class="audio-bar"></div>
+                                <div class="audio-bar"></div>
+                                <div class="audio-bar"></div>
+                                <div class="audio-bar"></div>
+                                <div class="audio-bar"></div>
+                            </div>
+                            <audio id="audio-player-{{ $question->id }}" controls class="custom-audio-player"></audio>
+                        </div>
 
                         <!-- Tips Section -->
                         @if($question->speaking_tips)
                             <div class="tips-section">
                                 <div class="tips-header">
-                                    <span>💡</span>
                                     <span>Tips</span>
                                 </div>
                                 <div class="tips-content">
@@ -762,21 +851,71 @@
             </div>
         </div>
     </div>
+
+    <!-- Part Complete Modal -->
+    <div id="part-complete-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 class="modal-title text-gray-900">We've completed the section Part <span id="completed-part">1</span>.</h3>
+            <p class="modal-message">
+                Are you ready to move on to the next section?
+            </p>
+            <button class="modal-button w-full" onclick="continueToPart()">Next</button>
+        </div>
+    </div>
     
     @push('scripts')
     <script>
     // Progressive Card System
-    let currentQuestionIndex = 0;
     const questions = @json($testSet->questions->values());
+    const attemptId = {{ $attempt->id }};
+    const storageKey = `speaking_test_${attemptId}`;
+    
     let mediaRecorders = {};
     let audioChunks = {};
     let timers = {};
     let recordingStartTimes = {};
-    let recordingsCompleted = 0;
+    
+    // Load saved state or initialize
+    let savedState = loadTestState();
+    let currentQuestionIndex = savedState.currentQuestionIndex || 0;
+    let recordingsCompleted = savedState.recordingsCompleted || 0;
+    let completedQuestions = savedState.completedQuestions || [];
+
+    // Save state to sessionStorage
+    function saveTestState() {
+        const state = {
+            currentQuestionIndex: currentQuestionIndex,
+            recordingsCompleted: recordingsCompleted,
+            completedQuestions: completedQuestions,
+            timestamp: Date.now()
+        };
+        sessionStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    // Load state from sessionStorage
+    function loadTestState() {
+        const saved = sessionStorage.getItem(storageKey);
+        if (saved) {
+            const state = JSON.parse(saved);
+            // Check if session is still valid (e.g., within 2 hours)
+            if (Date.now() - state.timestamp < 2 * 60 * 60 * 1000) {
+                return state;
+            }
+        }
+        return {};
+    }
+
+    // Clear state on test completion
+    function clearTestState() {
+        sessionStorage.removeItem(storageKey);
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize first question
-        initializeQuestion(0);
+        // Restore UI state
+        restoreUIState();
+        
+        // Initialize current question
+        initializeQuestion(currentQuestionIndex);
         
         // Submit functionality
         const submitTestBtn = document.getElementById('submit-test-btn');
@@ -794,18 +933,59 @@
             if (window.UniversalTimer) {
                 window.UniversalTimer.stop();
             }
+            clearTestState(); // Clear state on submission
             submitButton.click();
         });
         
         cancelSubmitBtn.addEventListener('click', function() {
             submitModal.style.display = 'none';
         });
+        
+        // Save state before page unload
+        window.addEventListener('beforeunload', saveTestState);
     });
+
+    // Restore UI state after reload
+    function restoreUIState() {
+        // Hide all cards first
+        document.querySelectorAll('.question-card').forEach(card => {
+            card.classList.remove('active');
+        });
+        
+        // Mark completed questions
+        completedQuestions.forEach(questionId => {
+            const card = document.getElementById(`card-${questionId}`);
+            if (card) {
+                card.className = 'question-card completed';
+                const phaseIndicator = document.getElementById(`phase-indicator-${questionId}`);
+                if (phaseIndicator) {
+                    phaseIndicator.innerHTML = '<span class="phase-text">Answer recorded</span>';
+                }
+                
+                // Update progress dots
+                const questionIndex = questions.findIndex(q => q.id === questionId);
+                if (questionIndex !== -1) {
+                    const dots = document.querySelectorAll('.progress-dots')[questionIndex];
+                    if (dots) {
+                        const dot = dots.children[questionIndex];
+                        if (dot) dot.classList.add('completed');
+                    }
+                }
+            }
+        });
+        
+        // Show current card
+        if (currentQuestionIndex < questions.length) {
+            const currentCard = document.getElementById(`card-${questions[currentQuestionIndex].id}`);
+            if (currentCard) {
+                currentCard.classList.add('active');
+            }
+        }
+    }
 
     // Initialize a question
     function initializeQuestion(index) {
         if (index >= questions.length) {
-            // All questions completed
             showCompletionScreen();
             return;
         }
@@ -813,7 +993,6 @@
         const question = questions[index];
         const questionId = question.id;
         
-        // Start reading phase
         startReadingPhase(questionId);
     }
 
@@ -823,29 +1002,23 @@
         const readTime = questions[currentQuestionIndex].read_time || 5;
         let timeLeft = readTime;
         
-        // Update UI
         card.className = 'question-card reading-phase active';
         document.getElementById(`phase-indicator-${questionId}`).innerHTML = `
-            <span class="phase-icon">📖</span>
             <span class="phase-text">Read the question carefully</span>
         `;
         
-        // Show read timer
         document.getElementById(`read-timer-${questionId}`).style.display = 'block';
         document.getElementById(`recording-controls-${questionId}`).style.display = 'none';
         
-        // Start countdown
         const timerInterval = setInterval(() => {
             timeLeft--;
             updateTimerDisplay(questionId, timeLeft, readTime);
             
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                // Auto progress unless it's Part 2 with preparation time
                 if (questions[currentQuestionIndex].auto_progress !== false) {
                     startRecordingPhase(questionId);
                 } else {
-                    // For Part 2, show start button
                     showStartRecordingButton(questionId);
                 }
             }
@@ -880,18 +1053,14 @@
     async function startRecordingPhase(questionId) {
         const card = document.getElementById(`card-${questionId}`);
         
-        // Update UI
         card.className = 'question-card recording-phase active';
         document.getElementById(`phase-indicator-${questionId}`).innerHTML = `
-            <span class="phase-icon">🔴</span>
             <span class="phase-text">Recording - Please speak now</span>
         `;
         
-        // Hide read timer, show recording controls
         document.getElementById(`read-timer-${questionId}`).style.display = 'none';
         document.getElementById(`recording-controls-${questionId}`).style.display = 'block';
         
-        // Start recording
         try {
             await startRecording(questionId);
         } catch (error) {
@@ -915,25 +1084,17 @@
             const audioBlob = new Blob(audioChunks[questionId], { type: 'audio/webm' });
             await uploadRecording(questionId, audioBlob);
             
-            // Show audio player for review
-            const audioPlayer = document.getElementById(`audio-player-${questionId}`);
-            audioPlayer.src = URL.createObjectURL(audioBlob);
-            audioPlayer.classList.remove('hidden');
+            showAudioPlayer(questionId, audioBlob);
             
-            // Stop all tracks
             stream.getTracks().forEach(track => track.stop());
         };
         
         mediaRecorder.start();
         recordingStartTimes[questionId] = Date.now();
         
-        // Start recording timer
         updateRecordingTime(questionId);
-        
-        // Start volume meter
         startVolumeMeter(stream, questionId);
         
-        // Auto-stop after max time
         const maxTime = questions[currentQuestionIndex].max_response_time || 45;
         timers[`record-${questionId}`] = setTimeout(() => {
             stopAndNext(questionId);
@@ -942,6 +1103,9 @@
 
     // Update recording time display
     function updateRecordingTime(questionId) {
+        const minTime = questions[currentQuestionIndex].min_response_time || 5; // Reduced default
+        const stopBtn = document.getElementById(`stop-btn-${questionId}`);
+        
         const updateTime = () => {
             if (!recordingStartTimes[questionId]) return;
             
@@ -951,14 +1115,6 @@
             const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             
             document.getElementById(`recording-time-${questionId}`).textContent = display;
-            
-            // Check minimum time
-            const minTime = questions[currentQuestionIndex].min_response_time || 15;
-            const stopBtn = document.getElementById(`stop-btn-${questionId}`);
-            if (elapsed >= minTime) {
-                stopBtn.classList.remove('disabled');
-                stopBtn.disabled = false;
-            }
         };
         
         updateTime();
@@ -995,14 +1151,50 @@
         timers[`volume-${questionId}`] = setInterval(updateVolume, 100);
     }
 
-    // Stop recording and move to next question
+    // Show audio player with animation
+    function showAudioPlayer(questionId, audioBlob) {
+        const container = document.getElementById(`audio-container-${questionId}`);
+        const audioPlayer = document.getElementById(`audio-player-${questionId}`);
+        const visualizer = document.getElementById(`visualizer-${questionId}`);
+        
+        audioPlayer.src = URL.createObjectURL(audioBlob);
+        container.classList.remove('hidden');
+        
+        // Add smooth appearance animation
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            container.style.transition = 'all 0.5s ease';
+            container.style.opacity = '1';
+            container.style.transform = 'translateY(0)';
+        }, 100);
+        
+        audioPlayer.addEventListener('play', () => {
+            visualizer.style.display = 'flex';
+        });
+        
+        audioPlayer.addEventListener('pause', () => {
+            visualizer.style.display = 'none';
+        });
+        
+        audioPlayer.addEventListener('ended', () => {
+            visualizer.style.display = 'none';
+        });
+    }
+
+    // Stop recording and move to next question - IMPROVED VERSION
     window.stopAndNext = async function(questionId) {
+        // Immediately disable the button
+        const stopBtn = document.getElementById(`stop-btn-${questionId}`);
+        stopBtn.disabled = true;
+        stopBtn.textContent = 'Processing...';
+        
         // Stop recording
         if (mediaRecorders[questionId] && mediaRecorders[questionId].state === 'recording') {
             mediaRecorders[questionId].stop();
         }
         
-        // Clear timers
+        // Clear all timers
         Object.keys(timers).forEach(key => {
             if (key.includes(questionId)) {
                 clearInterval(timers[key]);
@@ -1010,20 +1202,50 @@
             }
         });
         
-        // Update card to completed
+        // Update card immediately
         const card = document.getElementById(`card-${questionId}`);
         card.className = 'question-card completed active';
         document.getElementById(`phase-indicator-${questionId}`).innerHTML = `
-            <span class="phase-icon">✓</span>
             <span class="phase-text">Answer recorded</span>
         `;
         
         recordingsCompleted++;
+        completedQuestions.push(questionId);
+        saveTestState(); // Save state after each question
         
-        // Wait a moment then transition
-        setTimeout(() => {
+        // Check if part is complete
+        if (!checkPartCompletion()) {
+            // Immediately transition
             transitionToNext();
-        }, 1500);
+        }
+    }
+
+    // Check if part is complete
+    function checkPartCompletion() {
+        const currentPart = questions[currentQuestionIndex].part_number;
+        const nextIndex = currentQuestionIndex + 1;
+        
+        if (nextIndex < questions.length) {
+            const nextPart = questions[nextIndex].part_number;
+            
+            if (currentPart !== nextPart) {
+                showPartCompleteModal(currentPart);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Show part completion modal
+    function showPartCompleteModal(partNumber) {
+        document.getElementById('completed-part').textContent = partNumber;
+        document.getElementById('part-complete-modal').style.display = 'flex';
+    }
+
+    // Continue to next part
+    function continueToPart() {
+        document.getElementById('part-complete-modal').style.display = 'none';
+        transitionToNext();
     }
 
     // Transition to next question
@@ -1042,26 +1264,35 @@
         }
     }
 
-    // Upload recording to server
+    // Upload recording to server - FIXED VERSION
     async function uploadRecording(questionId, audioBlob) {
         const formData = new FormData();
         formData.append('recording', audioBlob, 'recording.webm');
         
         try {
-            const response = await fetch(`{{ url('student/test/speaking/record') }}/${{{ $attempt->id }}}/${questionId}`, {
+            const response = await fetch(`{{ route('student.speaking.record', ['attempt' => $attempt->id, 'question' => ':questionId']) }}`.replace(':questionId', questionId), {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
                 },
                 body: formData
             });
             
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
             if (!data.success) {
-                console.error('Failed to save recording');
+                console.error('Failed to save recording:', data);
+            } else {
+                console.log('Recording saved successfully for question:', questionId);
             }
         } catch (error) {
             console.error('Upload error:', error);
+            // Don't alert user to avoid interrupting test flow
+            // Recording is already saved locally in blob
         }
     }
 
