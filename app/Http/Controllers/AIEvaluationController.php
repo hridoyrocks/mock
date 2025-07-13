@@ -67,7 +67,8 @@ class AIEvaluationController extends Controller
             if ($attempt->ai_evaluated_at) {
                 return response()->json([
                     'success' => true,
-                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
+                    'redirect_url' => route('ai.evaluation.get', $attempt->id),
+                    'already_evaluated' => true
                 ]);
             }
 
@@ -77,6 +78,7 @@ class AIEvaluationController extends Controller
                 ->get();
 
             $evaluations = [];
+            $hasEvaluated = false;
 
             foreach ($answers as $answer) {
                 if (empty($answer->answer)) {
@@ -103,7 +105,7 @@ class AIEvaluationController extends Controller
                 ]);
 
                 $evaluations[] = $evaluation;
-                auth()->user()->incrementAIEvaluationCount();
+                $hasEvaluated = true;
             }
 
             // Calculate overall band score
@@ -115,13 +117,16 @@ class AIEvaluationController extends Controller
                 'ai_evaluated_at' => now(),
             ]);
 
-            // Return status page URL for writing
+            // Increment AI usage count only if new evaluation happened
+            if ($hasEvaluated) {
+                auth()->user()->incrementAIEvaluationCount();
+            }
+
+            // Direct redirect to AI result page
             return response()->json([
                 'success' => true,
-                'redirect_url' => route('ai.evaluation.status.page', [
-                    'attempt' => $attempt->id,
-                    'type' => 'writing'
-                ])
+                'redirect_url' => route('ai.evaluation.get', $attempt->id),
+                'message' => 'Evaluation completed successfully!'
             ]);
 
         } catch (\Exception $e) {
@@ -149,28 +154,6 @@ class AIEvaluationController extends Controller
                 'user_id' => auth()->id(),
                 'attempt_id' => $request->input('attempt_id')
             ]);
-
-            // Test OpenAI connection first
-            try {
-                $testResponse = OpenAI::chat()->create([
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'user', 'content' => 'Say hello']
-                    ],
-                    'max_tokens' => 10
-                ]);
-                
-                Log::info('OpenAI test successful');
-            } catch (\Exception $e) {
-                Log::error('OpenAI test failed', [
-                    'error' => $e->getMessage()
-                ]);
-                
-                return response()->json([
-                    'success' => false,
-                    'error' => 'AI service is currently unavailable. Please try again later.'
-                ], 500);
-            }
 
             $attemptId = $request->input('attempt_id');
             
@@ -209,7 +192,8 @@ class AIEvaluationController extends Controller
             if ($attempt->ai_evaluated_at) {
                 return response()->json([
                     'success' => true,
-                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
+                    'redirect_url' => route('ai.evaluation.get', $attempt->id),
+                    'already_evaluated' => true
                 ]);
             }
 
@@ -227,6 +211,7 @@ class AIEvaluationController extends Controller
             }
 
             $evaluations = [];
+            $hasEvaluated = false;
 
             foreach ($answers as $answer) {
                 if ($answer->ai_evaluation) {
@@ -262,7 +247,7 @@ class AIEvaluationController extends Controller
                     ]);
 
                     $evaluations[] = $evaluation;
-                    auth()->user()->incrementAIEvaluationCount();
+                    $hasEvaluated = true;
                     
                 } catch (\Exception $e) {
                     Log::error('Failed to evaluate answer', [
@@ -289,13 +274,16 @@ class AIEvaluationController extends Controller
                 'ai_evaluated_at' => now(),
             ]);
 
-            // Return status page URL for speaking
+            // Increment AI usage count only if new evaluation happened
+            if ($hasEvaluated) {
+                auth()->user()->incrementAIEvaluationCount();
+            }
+
+            // Direct redirect to AI result page
             return response()->json([
                 'success' => true,
-                'redirect_url' => route('ai.evaluation.status.page', [
-                    'attempt' => $attempt->id,
-                    'type' => 'speaking'
-                ])
+                'redirect_url' => route('ai.evaluation.get', $attempt->id),
+                'message' => 'Evaluation completed successfully!'
             ]);
 
         } catch (\Exception $e) {
@@ -314,64 +302,6 @@ class AIEvaluationController extends Controller
     }
 
     /**
-     * Show evaluation status page.
-     */
-    public function showStatusPage($attemptId, $type)
-    {
-        $attempt = StudentAttempt::findOrFail($attemptId);
-        
-        if ($attempt->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        // If already completed, redirect directly to results
-        if ($attempt->ai_evaluated_at) {
-            return redirect()->route('ai.evaluation.get', $attempt);
-        }
-
-        return view('ai-evaluation.status', [
-            'attempt' => $attempt,
-            'type' => $type
-        ]);
-    }
-
-    /**
-     * Check evaluation status (AJAX).
-     */
-    public function checkStatus($attemptId)
-    {
-        try {
-            $attempt = StudentAttempt::findOrFail($attemptId);
-            
-            if ($attempt->user_id !== auth()->id()) {
-                return response()->json(['status' => 'unauthorized'], 403);
-            }
-            
-            if ($attempt->ai_evaluated_at) {
-                return response()->json([
-                    'status' => 'completed',
-                    'progress' => 100,
-                    'message' => 'Evaluation completed!',
-                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
-                ]);
-            }
-            
-            // For development without queue
-            return response()->json([
-                'status' => 'processing',
-                'progress' => 50,
-                'message' => 'Processing your evaluation...'
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Failed to check status'
-            ], 500);
-        }
-    }
-
-    /**
      * Get AI evaluation for an attempt.
      */
     public function getEvaluation($attemptId)
@@ -384,8 +314,9 @@ class AIEvaluationController extends Controller
             }
 
             if (!$attempt->ai_evaluated_at) {
+                // If not evaluated yet, redirect to result page with message
                 return redirect()->route('student.results.show', $attempt)
-                    ->with('error', 'This attempt has not been evaluated yet.');
+                    ->with('warning', 'AI evaluation is still processing. Please wait a moment and try again.');
             }
 
             $evaluations = $attempt->answers()
@@ -425,8 +356,8 @@ class AIEvaluationController extends Controller
                                 'essay_text' => $eval['evaluation']['original_text'] ?? '',
                             ];
                         })->toArray(),
-                        'overall_strengths' => ['Clear structure', 'Good vocabulary range'],
-                        'overall_improvements' => ['Work on grammar accuracy', 'Develop ideas more fully'],
+                        'overall_strengths' => $this->extractOverallStrengths($evaluations),
+                        'overall_improvements' => $this->extractOverallImprovements($evaluations),
                     ]
                 ]);
             } else {
@@ -464,13 +395,9 @@ class AIEvaluationController extends Controller
                                 'audio_url' => $recording ? Storage::url($recording->file_path) : null,
                             ];
                         })->toArray(),
-                        'strengths' => ['Good fluency', 'Clear pronunciation'],
-                        'improvements' => ['Expand vocabulary', 'Work on grammar accuracy'],
-                        'study_plan' => [
-                            'Practice speaking for 30 minutes daily',
-                            'Record yourself and listen back',
-                            'Learn 5 new words every day',
-                        ],
+                        'strengths' => $this->extractSpeakingStrengths($evaluations),
+                        'improvements' => $this->extractSpeakingImprovements($evaluations),
+                        'study_plan' => $this->generateStudyPlan($evaluations),
                     ]
                 ]);
             }
@@ -541,15 +468,7 @@ class AIEvaluationController extends Controller
                     'return_code' => $returnCode
                 ]);
                 
-                $command = "ffmpeg -i " . escapeshellarg($fullPath) . " " . escapeshellarg($mp3Path) . " 2>&1";
-                exec($command, $output, $returnCode);
-                
-                if ($returnCode !== 0) {
-                    Log::error('Alternative FFmpeg conversion also failed', [
-                        'output' => $output
-                    ]);
-                    return $fullPath;
-                }
+                return $fullPath;
             }
             
             Log::info('Audio converted successfully', ['mp3_path' => $mp3Path]);
@@ -589,5 +508,103 @@ class AIEvaluationController extends Controller
         }
         
         return $minutes . ' minutes';
+    }
+
+    /**
+     * Extract overall strengths from evaluations
+     */
+    private function extractOverallStrengths($evaluations)
+    {
+        $strengths = [];
+        
+        // Analyze criteria scores to determine strengths
+        $criteriaScores = [];
+        foreach ($evaluations as $eval) {
+            if (isset($eval['evaluation']['criteria'])) {
+                foreach ($eval['evaluation']['criteria'] as $criterion => $score) {
+                    if (!isset($criteriaScores[$criterion])) {
+                        $criteriaScores[$criterion] = [];
+                    }
+                    $criteriaScores[$criterion][] = $score;
+                }
+            }
+        }
+        
+        // Find criteria with high average scores
+        foreach ($criteriaScores as $criterion => $scores) {
+            $average = array_sum($scores) / count($scores);
+            if ($average >= 6.5) {
+                $strengths[] = "Strong performance in " . $criterion;
+            }
+        }
+        
+        if (empty($strengths)) {
+            $strengths = ['Consistent effort shown', 'Good attempt at addressing the tasks'];
+        }
+        
+        return $strengths;
+    }
+
+    /**
+     * Extract overall improvements from evaluations
+     */
+    private function extractOverallImprovements($evaluations)
+    {
+        $improvements = [];
+        
+        // Common improvement areas
+        $hasGrammarIssues = false;
+        $hasVocabularyIssues = false;
+        
+        foreach ($evaluations as $eval) {
+            if (isset($eval['evaluation']['grammar_errors']) && count($eval['evaluation']['grammar_errors']) > 0) {
+                $hasGrammarIssues = true;
+            }
+            if (isset($eval['evaluation']['vocabulary_suggestions']) && count($eval['evaluation']['vocabulary_suggestions']) > 0) {
+                $hasVocabularyIssues = true;
+            }
+        }
+        
+        if ($hasGrammarIssues) {
+            $improvements[] = 'Work on grammar accuracy and sentence structure';
+        }
+        if ($hasVocabularyIssues) {
+            $improvements[] = 'Expand vocabulary range and use more advanced words';
+        }
+        
+        if (empty($improvements)) {
+            $improvements = ['Continue practicing to improve consistency', 'Focus on time management'];
+        }
+        
+        return $improvements;
+    }
+
+    /**
+     * Extract speaking strengths
+     */
+    private function extractSpeakingStrengths($evaluations)
+    {
+        return ['Good fluency in parts', 'Clear pronunciation overall'];
+    }
+
+    /**
+     * Extract speaking improvements
+     */
+    private function extractSpeakingImprovements($evaluations)
+    {
+        return ['Expand vocabulary range', 'Work on complex grammar structures'];
+    }
+
+    /**
+     * Generate study plan
+     */
+    private function generateStudyPlan($evaluations)
+    {
+        return [
+            'Practice speaking for 30 minutes daily',
+            'Record yourself and listen for improvements',
+            'Learn 5 new words every day',
+            'Focus on pronunciation of difficult sounds'
+        ];
     }
 }

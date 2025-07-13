@@ -103,15 +103,7 @@ Route::prefix('ai')->name('ai.')->middleware(['auth'])->group(function () {
         ->name('evaluation.speaking')
         ->middleware(['feature:ai_speaking_evaluation']);
     
-    // Status page
-    Route::get('/evaluation/status/{attempt}/{type}', [AIEvaluationController::class, 'showStatusPage'])
-        ->name('evaluation.status.page');
-    
-    // AJAX status check
-    Route::get('/evaluation/status/{attempt}', [AIEvaluationController::class, 'checkStatus'])
-        ->name('evaluation.status');
-    
-    // Result page
+    // Result page (no status page needed anymore)
     Route::get('/evaluation/{attempt}', [AIEvaluationController::class, 'getEvaluation'])
         ->name('evaluation.get');
 });

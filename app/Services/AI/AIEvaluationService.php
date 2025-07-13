@@ -10,7 +10,8 @@ use Exception;
 class AIEvaluationService
 {
     private $model = 'gpt-4';
-    private $temperature = 0.3; // Lower temperature for more consistent evaluations
+    private $temperature = 0.3;
+    private $timeout = 120; // 2 minutes timeout
 
     /**
      * Evaluate IELTS Writing
@@ -18,9 +19,23 @@ class AIEvaluationService
     public function evaluateWriting(string $text, string $question, int $taskNumber): array
     {
         try {
+            Log::info('Starting writing evaluation', [
+                'text_length' => strlen($text),
+                'task_number' => $taskNumber
+            ]);
+
             $prompt = $this->buildWritingPrompt($text, $question, $taskNumber);
             
-            $response = OpenAI::chat()->create([
+            // Set timeout for HTTP request
+            $client = OpenAI::factory()
+                ->withApiKey(config('openai.api_key'))
+                ->withHttpClient(new \GuzzleHttp\Client([
+                    'timeout' => $this->timeout,
+                    'connect_timeout' => 30,
+                ]))
+                ->make();
+
+            $response = $client->chat()->create([
                 'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $this->getWritingSystemPrompt()],
@@ -30,9 +45,13 @@ class AIEvaluationService
                 'max_tokens' => 2000,
             ]);
 
-            $evaluation = json_decode($response->choices[0]->message->content, true);
+            $content = $response->choices[0]->message->content;
+            Log::info('AI Response received', ['response_length' => strlen($content)]);
+
+            $evaluation = json_decode($content, true);
             
             if (!$evaluation) {
+                Log::error('Failed to parse AI response', ['response' => $content]);
                 throw new Exception('Failed to parse AI response');
             }
 
@@ -53,6 +72,11 @@ class AIEvaluationService
     public function evaluateSpeaking(string $audioPath, string $question, int $partNumber): array
     {
         try {
+            Log::info('Starting speaking evaluation', [
+                'audio_path' => $audioPath,
+                'part_number' => $partNumber
+            ]);
+
             // First, transcribe the audio
             $transcription = $this->transcribeAudio($audioPath);
             
@@ -60,9 +84,20 @@ class AIEvaluationService
                 throw new Exception('Failed to transcribe audio - no speech detected');
             }
             
+            Log::info('Transcription complete', ['length' => strlen($transcription)]);
+            
             $prompt = $this->buildSpeakingPrompt($transcription, $question, $partNumber);
             
-            $response = OpenAI::chat()->create([
+            // Set timeout for HTTP request
+            $client = OpenAI::factory()
+                ->withApiKey(config('openai.api_key'))
+                ->withHttpClient(new \GuzzleHttp\Client([
+                    'timeout' => $this->timeout,
+                    'connect_timeout' => 30,
+                ]))
+                ->make();
+
+            $response = $client->chat()->create([
                 'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $this->getSpeakingSystemPrompt()],
@@ -72,9 +107,11 @@ class AIEvaluationService
                 'max_tokens' => 2000,
             ]);
 
-            $evaluation = json_decode($response->choices[0]->message->content, true);
+            $content = $response->choices[0]->message->content;
+            $evaluation = json_decode($content, true);
             
             if (!$evaluation) {
+                Log::error('Failed to parse AI response for speaking');
                 throw new Exception('Failed to parse AI response');
             }
 
@@ -90,80 +127,81 @@ class AIEvaluationService
     }
 
     /**
-     * Transcribe audio using Whisper API
+     * Transcribe audio using Whisper API with timeout
      */
     private function transcribeAudio(string $audioPath): string
-{
-    try {
-        // audioPath is already full path from controller
-        $fullPath = $audioPath;
-        
-        if (!file_exists($fullPath)) {
-            throw new Exception("Audio file not found: {$fullPath}");
+    {
+        try {
+            $fullPath = $audioPath;
+            
+            if (!file_exists($fullPath)) {
+                throw new Exception("Audio file not found: {$fullPath}");
+            }
+            
+            $fileSize = filesize($fullPath);
+            if ($fileSize > 25 * 1024 * 1024) {
+                throw new Exception("Audio file too large: {$fileSize} bytes");
+            }
+            
+            Log::info('Starting audio transcription', [
+                'path' => $audioPath,
+                'size' => $fileSize
+            ]);
+            
+            // Use Guzzle for better timeout control
+            $client = new \GuzzleHttp\Client([
+                'timeout' => $this->timeout,
+                'connect_timeout' => 30,
+            ]);
+            
+            $response = $client->post('https://api.openai.com/v1/audio/transcriptions', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . config('openai.api_key'),
+                ],
+                'multipart' => [
+                    [
+                        'name' => 'file',
+                        'contents' => fopen($fullPath, 'r'),
+                        'filename' => basename($fullPath)
+                    ],
+                    [
+                        'name' => 'model',
+                        'contents' => 'whisper-1'
+                    ],
+                    [
+                        'name' => 'language',
+                        'contents' => 'en'
+                    ],
+                    [
+                        'name' => 'response_format',
+                        'contents' => 'json'
+                    ]
+                ]
+            ]);
+            
+            $result = json_decode($response->getBody()->getContents(), true);
+            
+            if (!isset($result['text'])) {
+                throw new Exception('No transcription text in response');
+            }
+            
+            Log::info('Transcription successful', [
+                'text_length' => strlen($result['text'])
+            ]);
+            
+            return $result['text'];
+            
+        } catch (\Exception $e) {
+            Log::error('Audio transcription failed', [
+                'error' => $e->getMessage(),
+                'path' => $audioPath
+            ]);
+            throw $e;
         }
-        
-        // Check file size (OpenAI limit is 25MB)
-        $fileSize = filesize($fullPath);
-        if ($fileSize > 25 * 1024 * 1024) {
-            throw new Exception("Audio file too large: {$fileSize} bytes");
-        }
-        
-        Log::info('Transcribing audio', [
-            'path' => $audioPath,
-            'size' => $fileSize,
-            'exists' => file_exists($fullPath)
-        ]);
-        
-        // Use CURLFile instead of fopen for better compatibility
-        $curl = curl_init();
-        
-        curl_setopt_array($curl, [
-            CURLOPT_URL => 'https://api.openai.com/v1/audio/transcriptions',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 300,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => [
-                'file' => new \CURLFile($fullPath),
-                'model' => 'whisper-1',
-                'language' => 'en',
-                'response_format' => 'json'
-            ],
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . config('openai.api_key'),
-            ],
-        ]);
-        
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        curl_close($curl);
-        
-        if ($err) {
-            throw new Exception("cURL Error: " . $err);
-        }
-        
-        $result = json_decode($response, true);
-        
-        if (isset($result['error'])) {
-            throw new Exception("OpenAI API Error: " . $result['error']['message']);
-        }
-        
-        return $result['text'] ?? '';
-        
-    } catch (\Exception $e) {
-        Log::error('Audio transcription failed', [
-            'error' => $e->getMessage(),
-            'path' => $audioPath
-        ]);
-        throw $e;
     }
-}
 
-    /**
-     * Build writing evaluation prompt
-     */
+    // ... rest of the methods remain the same ...
+
     private function buildWritingPrompt(string $text, string $question, int $taskNumber): string
     {
         $wordCount = str_word_count($text);
@@ -194,9 +232,6 @@ Please provide a detailed evaluation in JSON format with the following structure
 }";
     }
 
-    /**
-     * Build speaking evaluation prompt
-     */
     private function buildSpeakingPrompt(string $transcription, string $question, int $partNumber): string
     {
         $wordCount = str_word_count($transcription);
@@ -228,9 +263,6 @@ Please provide a detailed evaluation in JSON format with the following structure
 }";
     }
 
-    /**
-     * System prompts for consistent evaluation
-     */
     private function getWritingSystemPrompt(): string
     {
         return "You are an expert IELTS examiner evaluating Writing responses. 
@@ -257,9 +289,6 @@ Please provide a detailed evaluation in JSON format with the following structure
         Return your evaluation as a valid JSON object only, with no additional text.";
     }
 
-    /**
-     * Format evaluations for consistent output
-     */
     private function formatWritingEvaluation(array $evaluation, string $originalText): array
     {
         return [
@@ -280,7 +309,7 @@ Please provide a detailed evaluation in JSON format with the following structure
             'grammar_errors' => $evaluation['grammar_errors'] ?? [],
             'vocabulary_suggestions' => $evaluation['vocabulary_suggestions'] ?? [],
             'improvement_tips' => $evaluation['improvement_tips'] ?? [],
-            'original_text' => $originalText, // Store for display in results
+            'original_text' => $originalText,
         ];
     }
 
@@ -308,12 +337,8 @@ Please provide a detailed evaluation in JSON format with the following structure
         ];
     }
 
-    /**
-     * Estimate speaking duration based on word count
-     */
     private function estimateSpeakingDuration(int $wordCount): string
     {
-        // Average speaking rate: 150-160 words per minute
         $minutes = round($wordCount / 155, 1);
         
         if ($minutes < 1) {

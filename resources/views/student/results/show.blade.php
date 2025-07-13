@@ -113,35 +113,83 @@
                         @endif
                     </div>
 
-                    {{-- AI Evaluation Button for Writing/Speaking --}}
+                    {{-- AI Evaluation Section for Writing/Speaking --}}
                     @if(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
                         <div class="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
-                            <h3 class="text-lg font-semibold mb-4 text-gray-800">Get Instant Evaluation</h3>
+                            <h3 class="text-lg font-semibold mb-4 text-gray-800">
+                                <i class="fas fa-robot mr-2 text-purple-600"></i>
+                                AI Evaluation
+                            </h3>
                             
                             @if(auth()->user()->hasFeature('ai_' . $attempt->testSet->section->name . '_evaluation'))
-                                @if(!$attempt->ai_evaluated_at)
-                                    <button onclick="startAIEvaluation({{ $attempt->id }}, '{{ $attempt->testSet->section->name }}')" 
-                                            id="ai-eval-btn"
-                                            class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
-                                        <i class="fas fa-robot mr-2"></i>
-                                        Get Instant Evaluation
-                                    </button>
+                                {{-- Check completion rate first --}}
+                                @if($attempt->completion_rate == 0)
+                                    <div class="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+                                        <div class="flex items-start">
+                                            <i class="fas fa-exclamation-circle text-yellow-600 text-xl mr-3 mt-1"></i>
+                                            <div>
+                                                <h4 class="font-semibold text-yellow-900">Test Not Completed</h4>
+                                                <p class="text-yellow-800 mt-1">
+                                                    You need to complete the {{ $attempt->testSet->section->name }} test before requesting AI evaluation.
+                                                </p>
+                                                <p class="text-sm text-yellow-700 mt-2">
+                                                    @if($attempt->testSet->section->name === 'speaking')
+                                                        Please record your answers for all speaking parts.
+                                                    @else
+                                                        Please write your answers for all writing tasks.
+                                                    @endif
+                                                </p>
+                                                {{-- Fixed route names --}}
+                                                <a href="{{ route('student.' . $attempt->testSet->section->name . '.start', $attempt->testSet) }}" 
+                                                   class="inline-block mt-3 bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition">
+                                                    <i class="fas fa-arrow-left mr-2"></i>
+                                                    Go Back to Test
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @elseif(!$attempt->ai_evaluated_at)
+                                    {{-- Test completed but not evaluated --}}
+                                    <div class="space-y-4">
+                                        <p class="text-gray-700">
+                                            Get instant feedback and band score prediction with our advanced AI evaluator.
+                                        </p>
+                                        
+                                        {{-- Completion info --}}
+                                        @if($attempt->completion_rate > 0)
+                                            <div class="bg-green-50 border border-green-300 rounded-lg p-3 mb-4">
+                                                <p class="text-sm text-green-800">
+                                                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                                    Test completed with {{ $attempt->completion_rate }}% completion rate
+                                                </p>
+                                            </div>
+                                        @endif
+                                        
+                                        <button onclick="startAIEvaluation({{ $attempt->id }}, '{{ $attempt->testSet->section->name }}')" 
+                                                id="ai-eval-btn"
+                                                class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
+                                            <i class="fas fa-robot mr-2"></i>
+                                            Get AI Evaluation
+                                        </button>
+                                    </div>
                                 @else
+                                    {{-- Already evaluated --}}
                                     <div class="space-y-4">
                                         <div class="bg-white p-4 rounded-lg">
-                                            <p class="text-sm text-gray-600 mb-2">Evaluation Completed</p>
+                                            <p class="text-sm text-gray-600 mb-2">AI Evaluation Completed</p>
                                             <p class="text-2xl font-bold text-purple-600">Band Score: {{ $attempt->ai_band_score ?? 'N/A' }}</p>
                                         </div>
                                         <a href="{{ route('ai.evaluation.get', $attempt->id) }}" 
                                            class="inline-block bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-teal-700 transition-all">
                                             <i class="fas fa-chart-line mr-2"></i>
-                                            View Detailed Evaluation
+                                            View Detailed AI Evaluation
                                         </a>
                                     </div>
                                 @endif
                             @else
+                                {{-- No access to AI evaluation --}}
                                 <div class="bg-white/70 p-4 rounded-lg">
-                                    <p class="text-gray-700 mb-3">Upgrade to Premium to unlock to get Instant evaluation for instant feedback and band score prediction.</p>
+                                    <p class="text-gray-700 mb-3">Upgrade to Premium to unlock AI evaluation for instant feedback and band score prediction.</p>
                                     <a href="{{ route('subscription.plans') }}" 
                                        class="inline-block bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all">
                                         <i class="fas fa-crown mr-2"></i>
@@ -227,10 +275,34 @@
                             </div>
                         @endif
                         
-                        <div class="mb-6">
+                        {{-- Question Analysis Section --}}
+                        <div class="mb-6 relative">
                             <h3 class="text-lg font-medium mb-3">Question Analysis</h3>
                             
-                            <div class="overflow-x-auto">
+                            @php
+                                $isPremium = auth()->user()->hasActiveSubscription() && 
+                                           !auth()->user()->hasPlan('free');
+                            @endphp
+                            
+                            @if(!$isPremium)
+                                {{-- Blur overlay for non-premium users --}}
+                                <div class="absolute inset-0 z-10 bg-white/50 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                                    <div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
+                                        <i class="fas fa-lock text-purple-600 text-4xl mb-4"></i>
+                                        <h4 class="text-lg font-semibold text-gray-900 mb-2">Premium Feature</h4>
+                                        <p class="text-gray-600 mb-4">
+                                            Unlock detailed question analysis with correct answers and explanations by upgrading to Premium.
+                                        </p>
+                                        <a href="{{ route('subscription.plans') }}" 
+                                           class="inline-block bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all">
+                                            <i class="fas fa-crown mr-2"></i>
+                                            Upgrade to Premium
+                                        </a>
+                                    </div>
+                                </div>
+                            @endif
+                            
+                            <div class="overflow-x-auto {{ !$isPremium ? 'blur-sm pointer-events-none' : '' }}">
                                 <table class="w-full text-sm text-left text-gray-500">
                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                         <tr>
@@ -291,7 +363,7 @@
                             </div>
                         </div>
                     @elseif(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
-                        {{-- Writing/Speaking submission display (unchanged) --}}
+                        {{-- Writing/Speaking submission display --}}
                         <div class="mb-6">
                             <h3 class="text-lg font-medium mb-3">Your Submission</h3>
                             
@@ -300,12 +372,16 @@
                                     <div class="mb-6 bg-gray-50 p-6 rounded-lg">
                                         <h4 class="font-semibold mb-3 text-gray-800">Task {{ $answer->question->order_number }}</h4>
                                         <div class="bg-white p-4 rounded border border-gray-200">
-                                            <div class="prose max-w-none text-gray-700">
-                                                {!! nl2br(e($answer->answer)) !!}
-                                            </div>
-                                            <div class="mt-3 text-sm text-gray-500">
-                                                Word count: {{ str_word_count($answer->answer) }}
-                                            </div>
+                                            @if(!empty($answer->answer))
+                                                <div class="prose max-w-none text-gray-700">
+                                                    {!! nl2br(e($answer->answer)) !!}
+                                                </div>
+                                                <div class="mt-3 text-sm text-gray-500">
+                                                    Word count: {{ str_word_count($answer->answer) }}
+                                                </div>
+                                            @else
+                                                <p class="text-gray-500 italic">No answer provided for this task.</p>
+                                            @endif
                                         </div>
                                     </div>
                                 @endforeach
@@ -342,78 +418,87 @@
         </div>
     </div>
 
-   {{-- AI Evaluation Modal --}}
-<div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h3 class="text-xl font-bold mb-4">Starting AI Evaluation...</h3>
-        <div class="flex items-center justify-center py-8">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+    {{-- AI Evaluation Modal --}}
+    <div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 class="text-xl font-bold mb-4">Starting AI Evaluation...</h3>
+            <div class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+            </div>
+            <p class="text-center text-gray-600" id="eval-status">Please wait while we analyze your response...</p>
+            <p class="text-center text-sm text-gray-500 mt-2">This may take 15-30 seconds</p>
         </div>
-        <p class="text-center text-gray-600" id="evaluation-status">Analyzing your response...</p>
-        <p class="text-center text-sm text-gray-500 mt-2">You will be redirected to the results page once complete.</p>
     </div>
-</div>
 
     @push('scripts')
-<script>
-function startAIEvaluation(attemptId, type) {
-    console.log('Starting evaluation for attempt:', attemptId);
-    
-    // Show loading modal
-    const modal = document.getElementById('aiEvalModal');
-    const statusText = document.getElementById('evaluation-status');
-    modal.classList.remove('hidden');
-    
-    // Disable button
-    const button = document.getElementById('ai-eval-btn');
-    button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
-    
-    // Update status
-    statusText.textContent = 'Sending request to AI...';
-    
-    const endpoint = `/ai/evaluate/${type}`;
-    
-    fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-            attempt_id: attemptId
+    <script>
+    function startAIEvaluation(attemptId, type) {
+        console.log('Starting AI evaluation for:', attemptId, type);
+        
+        // Show loading modal
+        document.getElementById('aiEvalModal').classList.remove('hidden');
+        
+        // Disable button
+        const button = document.getElementById('ai-eval-btn');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+        
+        // Route fix
+        const endpoint = `/ai/evaluate/${type}`;
+        
+        // Make API call
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                attempt_id: attemptId
+            })
         })
-    })
-    .then(response => {
-        statusText.textContent = 'Processing evaluation...';
-        return response.json();
-    })
-    .then(data => {
-        console.log('Evaluation response:', data);
-        
-        if (data.success) {
-            statusText.textContent = 'Evaluation complete! Redirecting...';
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                // Update status
+                document.getElementById('eval-status').innerHTML = '<i class="fas fa-check-circle text-green-600 mr-2"></i>Evaluation completed! Redirecting...';
+                
+                // Redirect after short delay
+                setTimeout(() => {
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        window.location.reload();
+                    }
+                }, 1500);
+            } else {
+                throw new Error(data.error || 'Failed to evaluate');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
             
-            // Small delay to show success message
-            setTimeout(() => {
-                // Redirect to evaluation result page
-                window.location.href = `/ai/evaluation/${attemptId}`;
-            }, 1000);
-        } else {
-            throw new Error(data.error || 'Failed to start evaluation');
-        }
-    })
-    .catch(error => {
-        console.error('Evaluation error:', error);
-        modal.classList.add('hidden');
-        button.disabled = false;
-        button.innerHTML = '<i class="fas fa-robot mr-2"></i> Get AI Evaluation';
-        
-        // Show detailed error
-        alert('Evaluation failed: ' + (error.message || 'Unknown error'));
-    });
-}
-</script>
-@endpush
+            // Hide modal
+            document.getElementById('aiEvalModal').classList.add('hidden');
+            
+            // Show error alert
+            alert(error.message || 'An error occurred. Please try again.');
+            
+            // Re-enable button
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-robot mr-2"></i> Get AI Evaluation';
+        });
+    }
+    </script>
+    @endpush
 </x-student-layout>

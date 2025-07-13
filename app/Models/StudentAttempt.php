@@ -21,19 +21,22 @@ class StudentAttempt extends Model
         'is_complete_attempt',
         'total_questions',
         'answered_questions',
-        'correct_answers'
-        
+        'correct_answers',
+        'ai_band_score',      // Added
+        'ai_evaluated_at'     // Added
     ];
     
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
-        'band_score' => 'float',  // decimal:1 এর বদলে float
-        'completion_rate' => 'float',  // decimal:2 এর বদলে float
+        'band_score' => 'float',
+        'completion_rate' => 'float',
         'is_complete_attempt' => 'boolean',
         'total_questions' => 'integer',
         'answered_questions' => 'integer',
         'correct_answers' => 'integer',
+        'ai_band_score' => 'float',           // Added
+        'ai_evaluated_at' => 'datetime',      // Added
     ];
     
     public function user(): BelongsTo

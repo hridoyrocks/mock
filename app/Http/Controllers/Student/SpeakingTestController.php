@@ -173,23 +173,35 @@ class SpeakingTestController extends Controller
      * Submit the speaking test.
      */
     public function submit(Request $request, StudentAttempt $attempt): RedirectResponse
-    {
-        // Verify the attempt belongs to the current user and is not already completed
-        if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
-            return redirect()->route('student.speaking.index')
-                ->with('error', 'Invalid attempt or test already submitted.');
-        }
-        
-        // Mark attempt as completed
-        $attempt->update([
-            'end_time' => now(),
-            'status' => 'completed',
-        ]);
-        
-        // INCREMENT TEST COUNT - NEW ADDITION
-        auth()->user()->incrementTestCount();
-        
-        return redirect()->route('student.results.show', $attempt)
-            ->with('success', 'Test submitted successfully!');
+{
+    // Verify the attempt belongs to the current user and is not already completed
+    if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
+        return redirect()->route('student.speaking.index')
+            ->with('error', 'Invalid attempt or test already submitted.');
     }
+    
+    // Calculate completion rate
+    $totalQuestions = $attempt->testSet->questions()->count();
+    $recordedAnswers = $attempt->answers()
+        ->whereHas('speakingRecording')
+        ->count();
+    
+    $completionRate = $totalQuestions > 0 ? round(($recordedAnswers / $totalQuestions) * 100, 2) : 0;
+    
+    // Mark attempt as completed
+    $attempt->update([
+        'end_time' => now(),
+        'status' => 'completed',
+        'completion_rate' => $completionRate,
+        'total_questions' => $totalQuestions,
+        'answered_questions' => $recordedAnswers,
+        'is_complete_attempt' => ($completionRate >= 80),
+    ]);
+    
+    // INCREMENT TEST COUNT
+    auth()->user()->incrementTestCount();
+    
+    return redirect()->route('student.results.show', $attempt)
+        ->with('success', 'Test submitted successfully!');
+}
 }

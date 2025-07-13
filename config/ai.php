@@ -23,10 +23,10 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'evaluation' => [
+     'evaluation' => [
         'cache_duration' => env('AI_CACHE_DURATION', 86400), // 24 hours
         'max_retries' => env('AI_MAX_RETRIES', 3),
-        'timeout' => env('AI_TIMEOUT', 60), // seconds
+        'timeout' => env('AI_TIMEOUT', 120), // increased to 2 minutes
         'queue' => env('AI_QUEUE', 'ai-evaluation'),
     ],
 
