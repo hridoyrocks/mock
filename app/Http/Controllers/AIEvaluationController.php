@@ -30,7 +30,6 @@ class AIEvaluationController extends Controller
                 'request_data' => $request->all()
             ]);
 
-            // Get attempt ID from request
             $attemptId = $request->input('attempt_id');
             
             if (!$attemptId) {
@@ -42,7 +41,7 @@ class AIEvaluationController extends Controller
             
             $attempt = StudentAttempt::findOrFail($attemptId);
 
-            // Check if user owns this attempt
+            // Validation checks
             if ($attempt->user_id !== auth()->id()) {
                 return response()->json([
                     'success' => false,
@@ -50,7 +49,6 @@ class AIEvaluationController extends Controller
                 ], 403);
             }
 
-            // Check if user has access to AI evaluation
             if (!auth()->user()->hasFeature('ai_writing_evaluation')) {
                 return response()->json([
                     'success' => false,
@@ -58,12 +56,19 @@ class AIEvaluationController extends Controller
                 ], 403);
             }
 
-            // Check if attempt is for writing section
             if ($attempt->testSet->section->name !== 'writing') {
                 return response()->json([
                     'success' => false,
                     'error' => 'This attempt is not for writing section.'
                 ], 400);
+            }
+
+            // Check if already evaluated
+            if ($attempt->ai_evaluated_at) {
+                return response()->json([
+                    'success' => true,
+                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
+                ]);
             }
 
             // Get writing answers
@@ -78,7 +83,6 @@ class AIEvaluationController extends Controller
                     continue;
                 }
 
-                // Check if already evaluated
                 if ($answer->ai_evaluation) {
                     $evaluations[] = $answer->ai_evaluation;
                     continue;
@@ -88,7 +92,7 @@ class AIEvaluationController extends Controller
                 $evaluation = $this->aiService->evaluateWriting(
                     $answer->answer,
                     $answer->question->content,
-                    $answer->question->order_number // Task 1 or Task 2
+                    $answer->question->order_number
                 );
 
                 // Store evaluation
@@ -99,8 +103,6 @@ class AIEvaluationController extends Controller
                 ]);
 
                 $evaluations[] = $evaluation;
-
-                // Increment AI usage counter
                 auth()->user()->incrementAIEvaluationCount();
             }
 
@@ -113,11 +115,13 @@ class AIEvaluationController extends Controller
                 'ai_evaluated_at' => now(),
             ]);
 
+            // Return status page URL for writing
             return response()->json([
                 'success' => true,
-                'evaluations' => $evaluations,
-                'overall_band' => $overallBand,
-                'message' => 'Writing evaluation completed successfully.'
+                'redirect_url' => route('ai.evaluation.status.page', [
+                    'attempt' => $attempt->id,
+                    'type' => 'writing'
+                ])
             ]);
 
         } catch (\Exception $e) {
@@ -143,9 +147,7 @@ class AIEvaluationController extends Controller
         try {
             Log::info('Speaking evaluation started', [
                 'user_id' => auth()->id(),
-                'attempt_id' => $request->input('attempt_id'),
-                'api_key_exists' => !empty(config('openai.api_key')),
-                'api_key_prefix' => substr(config('openai.api_key'), 0, 10)
+                'attempt_id' => $request->input('attempt_id')
             ]);
 
             // Test OpenAI connection first
@@ -158,22 +160,18 @@ class AIEvaluationController extends Controller
                     'max_tokens' => 10
                 ]);
                 
-                Log::info('OpenAI test successful', [
-                    'response' => $testResponse->choices[0]->message->content
-                ]);
+                Log::info('OpenAI test successful');
             } catch (\Exception $e) {
                 Log::error('OpenAI test failed', [
-                    'error' => $e->getMessage(),
-                    'code' => $e->getCode()
+                    'error' => $e->getMessage()
                 ]);
                 
                 return response()->json([
                     'success' => false,
-                    'error' => 'OpenAI connection failed: ' . $e->getMessage()
+                    'error' => 'AI service is currently unavailable. Please try again later.'
                 ], 500);
             }
 
-            // Get attempt ID from request
             $attemptId = $request->input('attempt_id');
             
             if (!$attemptId) {
@@ -185,7 +183,7 @@ class AIEvaluationController extends Controller
             
             $attempt = StudentAttempt::findOrFail($attemptId);
 
-            // Check if user owns this attempt
+            // Validation checks
             if ($attempt->user_id !== auth()->id()) {
                 return response()->json([
                     'success' => false,
@@ -193,7 +191,6 @@ class AIEvaluationController extends Controller
                 ], 403);
             }
 
-            // Check if user has access to AI evaluation
             if (!auth()->user()->hasFeature('ai_speaking_evaluation')) {
                 return response()->json([
                     'success' => false,
@@ -201,7 +198,6 @@ class AIEvaluationController extends Controller
                 ], 403);
             }
 
-            // Check if attempt is for speaking section
             if ($attempt->testSet->section->name !== 'speaking') {
                 return response()->json([
                     'success' => false,
@@ -209,16 +205,19 @@ class AIEvaluationController extends Controller
                 ], 400);
             }
 
+            // Check if already evaluated
+            if ($attempt->ai_evaluated_at) {
+                return response()->json([
+                    'success' => true,
+                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
+                ]);
+            }
+
             // Get speaking answers with audio
             $answers = $attempt->answers()
                 ->with('question', 'speakingRecording')
                 ->whereHas('speakingRecording')
                 ->get();
-
-            Log::info('Found answers with recordings', [
-                'count' => $answers->count(),
-                'answer_ids' => $answers->pluck('id')
-            ]);
 
             if ($answers->isEmpty()) {
                 return response()->json([
@@ -230,25 +229,13 @@ class AIEvaluationController extends Controller
             $evaluations = [];
 
             foreach ($answers as $answer) {
-                // Check if already evaluated
                 if ($answer->ai_evaluation) {
                     $evaluations[] = $answer->ai_evaluation;
                     continue;
                 }
 
-                // Get audio path
                 $audioPath = $answer->speakingRecording->file_path;
-                
-                // Check if file exists
                 $fullPath = storage_path('app/public/' . $audioPath);
-                
-                Log::info('Audio file check', [
-                    'answer_id' => $answer->id,
-                    'audio_path' => $audioPath,
-                    'exists' => file_exists($fullPath),
-                    'size' => file_exists($fullPath) ? filesize($fullPath) : 0,
-                    'readable' => file_exists($fullPath) ? is_readable($fullPath) : false
-                ]);
                 
                 if (!file_exists($fullPath)) {
                     Log::error('Audio file not found', [
@@ -258,23 +245,8 @@ class AIEvaluationController extends Controller
                     continue;
                 }
 
-                // Log for debugging
-                Log::info('Processing audio file', [
-                    'answer_id' => $answer->id,
-                    'audio_path' => $audioPath,
-                    'file_exists' => file_exists($fullPath),
-                    'file_size' => filesize($fullPath)
-                ]);
-                
-                // Convert webm to mp3 if needed
                 $processedAudioPath = $this->convertAudioIfNeeded($fullPath);
 
-                Log::info('Audio converted', [
-                    'original' => $fullPath,
-                    'processed' => $processedAudioPath
-                ]);
-
-                // Transcribe and evaluate with AI
                 try {
                     $evaluation = $this->aiService->evaluateSpeaking(
                         $processedAudioPath,
@@ -282,7 +254,6 @@ class AIEvaluationController extends Controller
                         $answer->question->order_number
                     );
 
-                    // Store evaluation
                     $answer->update([
                         'ai_evaluation' => $evaluation,
                         'ai_band_score' => $evaluation['band_score'] ?? null,
@@ -291,8 +262,6 @@ class AIEvaluationController extends Controller
                     ]);
 
                     $evaluations[] = $evaluation;
-
-                    // Increment AI usage counter
                     auth()->user()->incrementAIEvaluationCount();
                     
                 } catch (\Exception $e) {
@@ -320,11 +289,13 @@ class AIEvaluationController extends Controller
                 'ai_evaluated_at' => now(),
             ]);
 
+            // Return status page URL for speaking
             return response()->json([
                 'success' => true,
-                'evaluations' => $evaluations,
-                'overall_band' => $overallBand,
-                'message' => 'Speaking evaluation completed successfully.'
+                'redirect_url' => route('ai.evaluation.status.page', [
+                    'attempt' => $attempt->id,
+                    'type' => 'speaking'
+                ])
             ]);
 
         } catch (\Exception $e) {
@@ -343,6 +314,64 @@ class AIEvaluationController extends Controller
     }
 
     /**
+     * Show evaluation status page.
+     */
+    public function showStatusPage($attemptId, $type)
+    {
+        $attempt = StudentAttempt::findOrFail($attemptId);
+        
+        if ($attempt->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // If already completed, redirect directly to results
+        if ($attempt->ai_evaluated_at) {
+            return redirect()->route('ai.evaluation.get', $attempt);
+        }
+
+        return view('ai-evaluation.status', [
+            'attempt' => $attempt,
+            'type' => $type
+        ]);
+    }
+
+    /**
+     * Check evaluation status (AJAX).
+     */
+    public function checkStatus($attemptId)
+    {
+        try {
+            $attempt = StudentAttempt::findOrFail($attemptId);
+            
+            if ($attempt->user_id !== auth()->id()) {
+                return response()->json(['status' => 'unauthorized'], 403);
+            }
+            
+            if ($attempt->ai_evaluated_at) {
+                return response()->json([
+                    'status' => 'completed',
+                    'progress' => 100,
+                    'message' => 'Evaluation completed!',
+                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
+                ]);
+            }
+            
+            // For development without queue
+            return response()->json([
+                'status' => 'processing',
+                'progress' => 50,
+                'message' => 'Processing your evaluation...'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Failed to check status'
+            ], 500);
+        }
+    }
+
+    /**
      * Get AI evaluation for an attempt.
      */
     public function getEvaluation($attemptId)
@@ -350,17 +379,13 @@ class AIEvaluationController extends Controller
         try {
             $attempt = StudentAttempt::findOrFail($attemptId);
 
-            // Check if user owns this attempt
             if ($attempt->user_id !== auth()->id()) {
                 abort(403);
             }
 
-            // Check if attempt has been evaluated
             if (!$attempt->ai_evaluated_at) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'This attempt has not been evaluated yet.'
-                ], 404);
+                return redirect()->route('student.results.show', $attempt)
+                    ->with('error', 'This attempt has not been evaluated yet.');
             }
 
             $evaluations = $attempt->answers()
@@ -379,7 +404,6 @@ class AIEvaluationController extends Controller
                     ];
                 });
 
-            // Prepare response based on section type
             $section = $attempt->testSet->section->name;
             
             if ($section === 'writing') {
@@ -406,7 +430,6 @@ class AIEvaluationController extends Controller
                     ]
                 ]);
             } else {
-                // Speaking section
                 return view('ai-evaluation.speaking-result', [
                     'attempt' => $attempt,
                     'evaluation' => [
@@ -458,36 +481,8 @@ class AIEvaluationController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to retrieve evaluation.'
-            ], 500);
-        }
-    }
-
-    /**
-     * Check evaluation status
-     */
-    public function checkStatus($attemptId)
-    {
-        try {
-            $attempt = StudentAttempt::findOrFail($attemptId);
-            
-            if ($attempt->user_id !== auth()->id()) {
-                return response()->json(['status' => 'unauthorized'], 403);
-            }
-            
-            if ($attempt->ai_evaluated_at) {
-                return response()->json([
-                    'status' => 'completed',
-                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
-                ]);
-            }
-            
-            return response()->json(['status' => 'processing']);
-            
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'failed'], 500);
+            return redirect()->route('student.results.show', $attemptId)
+                ->with('error', 'Failed to retrieve evaluation.');
         }
     }
 
@@ -514,7 +509,6 @@ class AIEvaluationController extends Controller
             return 0;
         }
 
-        // Round to nearest 0.5
         $average = $totalScore / $count;
         return round($average * 2) / 2;
     }
@@ -529,13 +523,11 @@ class AIEvaluationController extends Controller
         if (in_array($extension, ['webm', 'ogg'])) {
             $mp3Path = str_replace('.' . $extension, '.mp3', $fullPath);
             
-            // Check if already converted
             if (file_exists($mp3Path)) {
                 Log::info('MP3 file already exists', ['path' => $mp3Path]);
                 return $mp3Path;
             }
             
-            // Convert using FFmpeg
             $command = "ffmpeg -i " . escapeshellarg($fullPath) . " -acodec libmp3lame -ab 128k " . escapeshellarg($mp3Path) . " 2>&1";
             
             Log::info('Running FFmpeg command', ['command' => $command]);
@@ -549,7 +541,6 @@ class AIEvaluationController extends Controller
                     'return_code' => $returnCode
                 ]);
                 
-                // Try alternative conversion method
                 $command = "ffmpeg -i " . escapeshellarg($fullPath) . " " . escapeshellarg($mp3Path) . " 2>&1";
                 exec($command, $output, $returnCode);
                 
@@ -557,7 +548,6 @@ class AIEvaluationController extends Controller
                     Log::error('Alternative FFmpeg conversion also failed', [
                         'output' => $output
                     ]);
-                    // Return original path if conversion fails
                     return $fullPath;
                 }
             }
@@ -592,7 +582,6 @@ class AIEvaluationController extends Controller
      */
     private function formatDuration($wordCount)
     {
-        // Assuming average speaking rate of 150 words per minute
         $minutes = round($wordCount / 150, 1);
         
         if ($minutes < 1) {

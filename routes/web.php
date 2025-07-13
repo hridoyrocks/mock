@@ -91,26 +91,30 @@ Route::middleware(['auth'])->group(function () {
         }
     })->name('dashboard');
     
-    // AI Evaluation routes - IMPORTANT: Add this section here
-    Route::prefix('ai')->name('ai.')->group(function () {
-        // Writing evaluation
-        Route::post('/evaluate/writing', [AIEvaluationController::class, 'evaluateWriting'])
-            ->name('evaluation.writing')
-            ->middleware(['feature:ai_writing_evaluation']);
-        
-        // Speaking evaluation
-        Route::post('/evaluate/speaking', [AIEvaluationController::class, 'evaluateSpeaking'])
-            ->name('evaluation.speaking')
-            ->middleware(['feature:ai_speaking_evaluation']);
-        
-        // Get evaluation result
-        Route::get('/evaluation/{attempt}', [AIEvaluationController::class, 'getEvaluation'])
-            ->name('evaluation.get');
-        
-        // Check evaluation status
-        Route::get('/evaluation/status/{attempt}', [AIEvaluationController::class, 'checkStatus'])
-            ->name('evaluation.status');
-    });
+    
+   // AI Evaluation routes
+Route::prefix('ai')->name('ai.')->middleware(['auth'])->group(function () {
+    // Evaluation endpoints
+    Route::post('/evaluate/writing', [AIEvaluationController::class, 'evaluateWriting'])
+        ->name('evaluation.writing')
+        ->middleware(['feature:ai_writing_evaluation']);
+    
+    Route::post('/evaluate/speaking', [AIEvaluationController::class, 'evaluateSpeaking'])
+        ->name('evaluation.speaking')
+        ->middleware(['feature:ai_speaking_evaluation']);
+    
+    // Status page
+    Route::get('/evaluation/status/{attempt}/{type}', [AIEvaluationController::class, 'showStatusPage'])
+        ->name('evaluation.status.page');
+    
+    // AJAX status check
+    Route::get('/evaluation/status/{attempt}', [AIEvaluationController::class, 'checkStatus'])
+        ->name('evaluation.status');
+    
+    // Result page
+    Route::get('/evaluation/{attempt}', [AIEvaluationController::class, 'getEvaluation'])
+        ->name('evaluation.get');
+});
     
     // Subscription routes (accessible to all authenticated users)
     Route::prefix('subscription')->name('subscription.')->group(function () {
