@@ -342,63 +342,78 @@
         </div>
     </div>
 
-    {{-- AI Evaluation Modal --}}
-    <div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 class="text-xl font-bold mb-4">Starting AI Evaluation...</h3>
-            <div class="flex items-center justify-center py-8">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-            </div>
-            <p class="text-center text-gray-600">Please wait while we analyze your response...</p>
+   {{-- AI Evaluation Modal --}}
+<div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <h3 class="text-xl font-bold mb-4">Starting AI Evaluation...</h3>
+        <div class="flex items-center justify-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
+        <p class="text-center text-gray-600" id="evaluation-status">Analyzing your response...</p>
+        <p class="text-center text-sm text-gray-500 mt-2">You will be redirected to the results page once complete.</p>
     </div>
+</div>
 
     @push('scripts')
-    <script>
-    function startAIEvaluation(attemptId, type) {
-        // Show loading modal
-        document.getElementById('aiEvalModal').classList.remove('hidden');
-        
-        // Disable button
-        const button = document.getElementById('ai-eval-btn');
-        button.disabled = true;
-        
-        // Route fix
-        const endpoint = type === 'writing' ? '/ai/evaluate/writing' : '/ai/evaluate/speaking';
-        
-        // Make API call
-        fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-                attempt_id: attemptId
-            })
+<script>
+function startAIEvaluation(attemptId, type) {
+    console.log('Starting evaluation for attempt:', attemptId);
+    
+    // Show loading modal
+    const modal = document.getElementById('aiEvalModal');
+    const statusText = document.getElementById('evaluation-status');
+    modal.classList.remove('hidden');
+    
+    // Disable button
+    const button = document.getElementById('ai-eval-btn');
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+    
+    // Update status
+    statusText.textContent = 'Sending request to AI...';
+    
+    const endpoint = `/ai/evaluate/${type}`;
+    
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            attempt_id: attemptId
         })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => Promise.reject(err));
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert(data.error || 'Failed to start evaluation');
-                document.getElementById('aiEvalModal').classList.add('hidden');
-                button.disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert(error.error || 'An error occurred. Please try again.');
-            document.getElementById('aiEvalModal').classList.add('hidden');
-            button.disabled = false;
-        });
-    }
-    </script>
-    @endpush
+    })
+    .then(response => {
+        statusText.textContent = 'Processing evaluation...';
+        return response.json();
+    })
+    .then(data => {
+        console.log('Evaluation response:', data);
+        
+        if (data.success) {
+            statusText.textContent = 'Evaluation complete! Redirecting...';
+            
+            // Small delay to show success message
+            setTimeout(() => {
+                // Redirect to evaluation result page
+                window.location.href = `/ai/evaluation/${attemptId}`;
+            }, 1000);
+        } else {
+            throw new Error(data.error || 'Failed to start evaluation');
+        }
+    })
+    .catch(error => {
+        console.error('Evaluation error:', error);
+        modal.classList.add('hidden');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-robot mr-2"></i> Get AI Evaluation';
+        
+        // Show detailed error
+        alert('Evaluation failed: ' + (error.message || 'Unknown error'));
+    });
+}
+</script>
+@endpush
 </x-student-layout>

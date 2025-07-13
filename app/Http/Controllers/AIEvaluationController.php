@@ -8,6 +8,7 @@ use App\Services\AI\AIEvaluationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use OpenAI\Laravel\Facades\OpenAI;
 
 class AIEvaluationController extends Controller
 {
@@ -24,6 +25,11 @@ class AIEvaluationController extends Controller
     public function evaluateWriting(Request $request)
     {
         try {
+            Log::info('Writing evaluation started', [
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
             // Get attempt ID from request
             $attemptId = $request->input('attempt_id');
             
@@ -135,6 +141,38 @@ class AIEvaluationController extends Controller
     public function evaluateSpeaking(Request $request)
     {
         try {
+            Log::info('Speaking evaluation started', [
+                'user_id' => auth()->id(),
+                'attempt_id' => $request->input('attempt_id'),
+                'api_key_exists' => !empty(config('openai.api_key')),
+                'api_key_prefix' => substr(config('openai.api_key'), 0, 10)
+            ]);
+
+            // Test OpenAI connection first
+            try {
+                $testResponse = OpenAI::chat()->create([
+                    'model' => 'gpt-3.5-turbo',
+                    'messages' => [
+                        ['role' => 'user', 'content' => 'Say hello']
+                    ],
+                    'max_tokens' => 10
+                ]);
+                
+                Log::info('OpenAI test successful', [
+                    'response' => $testResponse->choices[0]->message->content
+                ]);
+            } catch (\Exception $e) {
+                Log::error('OpenAI test failed', [
+                    'error' => $e->getMessage(),
+                    'code' => $e->getCode()
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => 'OpenAI connection failed: ' . $e->getMessage()
+                ], 500);
+            }
+
             // Get attempt ID from request
             $attemptId = $request->input('attempt_id');
             
@@ -177,6 +215,11 @@ class AIEvaluationController extends Controller
                 ->whereHas('speakingRecording')
                 ->get();
 
+            Log::info('Found answers with recordings', [
+                'count' => $answers->count(),
+                'answer_ids' => $answers->pluck('id')
+            ]);
+
             if ($answers->isEmpty()) {
                 return response()->json([
                     'success' => false,
@@ -198,6 +241,15 @@ class AIEvaluationController extends Controller
                 
                 // Check if file exists
                 $fullPath = storage_path('app/public/' . $audioPath);
+                
+                Log::info('Audio file check', [
+                    'answer_id' => $answer->id,
+                    'audio_path' => $audioPath,
+                    'exists' => file_exists($fullPath),
+                    'size' => file_exists($fullPath) ? filesize($fullPath) : 0,
+                    'readable' => file_exists($fullPath) ? is_readable($fullPath) : false
+                ]);
+                
                 if (!file_exists($fullPath)) {
                     Log::error('Audio file not found', [
                         'path' => $audioPath,
@@ -211,37 +263,51 @@ class AIEvaluationController extends Controller
                     'answer_id' => $answer->id,
                     'audio_path' => $audioPath,
                     'file_exists' => file_exists($fullPath),
-                    'file_size' => file_exists($fullPath) ? filesize($fullPath) : 0
+                    'file_size' => filesize($fullPath)
                 ]);
                 
-                // Convert webm to a format OpenAI accepts if needed
-                $processedAudioPath = $this->convertAudioIfNeeded($fullPath, $audioPath);
+                // Convert webm to mp3 if needed
+                $processedAudioPath = $this->convertAudioIfNeeded($fullPath);
 
-                // Transcribe and evaluate with AI
-                $evaluation = $this->aiService->evaluateSpeaking(
-                    $processedAudioPath,
-                    $answer->question->content,
-                    $answer->question->order_number
-                );
-
-                // Store evaluation
-                $answer->update([
-                    'ai_evaluation' => $evaluation,
-                    'ai_band_score' => $evaluation['band_score'] ?? null,
-                    'ai_evaluated_at' => now(),
-                    'transcription' => $evaluation['transcription'] ?? null,
+                Log::info('Audio converted', [
+                    'original' => $fullPath,
+                    'processed' => $processedAudioPath
                 ]);
 
-                $evaluations[] = $evaluation;
+                // Transcribe and evaluate with AI
+                try {
+                    $evaluation = $this->aiService->evaluateSpeaking(
+                        $processedAudioPath,
+                        $answer->question->content,
+                        $answer->question->order_number
+                    );
 
-                // Increment AI usage counter
-                auth()->user()->incrementAIEvaluationCount();
+                    // Store evaluation
+                    $answer->update([
+                        'ai_evaluation' => $evaluation,
+                        'ai_band_score' => $evaluation['band_score'] ?? null,
+                        'ai_evaluated_at' => now(),
+                        'transcription' => $evaluation['transcription'] ?? null,
+                    ]);
+
+                    $evaluations[] = $evaluation;
+
+                    // Increment AI usage counter
+                    auth()->user()->incrementAIEvaluationCount();
+                    
+                } catch (\Exception $e) {
+                    Log::error('Failed to evaluate answer', [
+                        'answer_id' => $answer->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    continue;
+                }
             }
 
             if (empty($evaluations)) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'No recordings could be evaluated.'
+                    'error' => 'No recordings could be evaluated. Please check the logs.'
                 ], 500);
             }
 
@@ -270,8 +336,8 @@ class AIEvaluationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to evaluate speaking. Please try again later.',
-                'debug' => config('app.debug') ? $e->getMessage() : null
+                'error' => 'Failed to evaluate speaking. Error: ' . $e->getMessage(),
+                'debug' => config('app.debug') ? $e->getTrace() : null
             ], 500);
         }
     }
@@ -400,6 +466,32 @@ class AIEvaluationController extends Controller
     }
 
     /**
+     * Check evaluation status
+     */
+    public function checkStatus($attemptId)
+    {
+        try {
+            $attempt = StudentAttempt::findOrFail($attemptId);
+            
+            if ($attempt->user_id !== auth()->id()) {
+                return response()->json(['status' => 'unauthorized'], 403);
+            }
+            
+            if ($attempt->ai_evaluated_at) {
+                return response()->json([
+                    'status' => 'completed',
+                    'redirect_url' => route('ai.evaluation.get', $attempt->id)
+                ]);
+            }
+            
+            return response()->json(['status' => 'processing']);
+            
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'failed'], 500);
+        }
+    }
+
+    /**
      * Calculate overall band score from evaluations.
      */
     private function calculateOverallBand(array $evaluations): float
@@ -430,21 +522,24 @@ class AIEvaluationController extends Controller
     /**
      * Convert audio to MP3 if needed (OpenAI doesn't support webm)
      */
-    private function convertAudioIfNeeded($fullPath, $originalPath)
+    private function convertAudioIfNeeded($fullPath)
     {
         $extension = pathinfo($fullPath, PATHINFO_EXTENSION);
         
         if (in_array($extension, ['webm', 'ogg'])) {
             $mp3Path = str_replace('.' . $extension, '.mp3', $fullPath);
-            $mp3RelativePath = str_replace('.' . $extension, '.mp3', $originalPath);
             
             // Check if already converted
             if (file_exists($mp3Path)) {
-                return $mp3RelativePath;
+                Log::info('MP3 file already exists', ['path' => $mp3Path]);
+                return $mp3Path;
             }
             
             // Convert using FFmpeg
             $command = "ffmpeg -i " . escapeshellarg($fullPath) . " -acodec libmp3lame -ab 128k " . escapeshellarg($mp3Path) . " 2>&1";
+            
+            Log::info('Running FFmpeg command', ['command' => $command]);
+            
             exec($command, $output, $returnCode);
             
             if ($returnCode !== 0) {
@@ -459,15 +554,19 @@ class AIEvaluationController extends Controller
                 exec($command, $output, $returnCode);
                 
                 if ($returnCode !== 0) {
+                    Log::error('Alternative FFmpeg conversion also failed', [
+                        'output' => $output
+                    ]);
                     // Return original path if conversion fails
-                    return $originalPath;
+                    return $fullPath;
                 }
             }
             
-            return $mp3RelativePath;
+            Log::info('Audio converted successfully', ['mp3_path' => $mp3Path]);
+            return $mp3Path;
         }
         
-        return $originalPath;
+        return $fullPath;
     }
     
     /**

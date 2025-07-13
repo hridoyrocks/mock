@@ -57,7 +57,7 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/verify-otp', [OtpVerificationController::class, 'verify'])->name('auth.otp.verify');
     Route::post('/resend-otp', [OtpVerificationController::class, 'resend'])->name('auth.otp.resend');
     
-   Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPasswordForm'])
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotPasswordForm'])
         ->name('password.request');
     
     Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])
@@ -80,8 +80,6 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-
-
 // Authenticated routes with role-based dashboard
 Route::middleware(['auth'])->group(function () {
     // Dashboard route with role-based redirection
@@ -92,6 +90,27 @@ Route::middleware(['auth'])->group(function () {
             return redirect()->route('student.dashboard');
         }
     })->name('dashboard');
+    
+    // AI Evaluation routes - IMPORTANT: Add this section here
+    Route::prefix('ai')->name('ai.')->group(function () {
+        // Writing evaluation
+        Route::post('/evaluate/writing', [AIEvaluationController::class, 'evaluateWriting'])
+            ->name('evaluation.writing')
+            ->middleware(['feature:ai_writing_evaluation']);
+        
+        // Speaking evaluation
+        Route::post('/evaluate/speaking', [AIEvaluationController::class, 'evaluateSpeaking'])
+            ->name('evaluation.speaking')
+            ->middleware(['feature:ai_speaking_evaluation']);
+        
+        // Get evaluation result
+        Route::get('/evaluation/{attempt}', [AIEvaluationController::class, 'getEvaluation'])
+            ->name('evaluation.get');
+        
+        // Check evaluation status
+        Route::get('/evaluation/status/{attempt}', [AIEvaluationController::class, 'checkStatus'])
+            ->name('evaluation.status');
+    });
     
     // Subscription routes (accessible to all authenticated users)
     Route::prefix('subscription')->name('subscription.')->group(function () {
@@ -175,11 +194,6 @@ Route::middleware(['auth'])->group(function () {
                 });
                 
                 Route::post('/submit/{attempt}', [WritingTestController::class, 'submit'])->name('submit');
-                
-                // AI Evaluation for premium users
-                Route::middleware(['feature:ai_writing_evaluation'])->group(function () {
-                    Route::post('/evaluate/{attempt}', [AIEvaluationController::class, 'evaluateWriting'])->name('evaluate');
-                });
             });
             
             // Speaking section - with feature check for AI evaluation
@@ -198,25 +212,13 @@ Route::middleware(['auth'])->group(function () {
                 });
                 
                 Route::post('/submit/{attempt}', [SpeakingTestController::class, 'submit'])->name('submit');
-                
-                // AI Evaluation for premium users
-                Route::middleware(['feature:ai_speaking_evaluation'])->group(function () {
-                    Route::post('/evaluate/{attempt}', [AIEvaluationController::class, 'evaluateSpeaking'])->name('evaluate');
-                });
             });
             
             // Results
             Route::get('/results', [ResultController::class, 'index'])->name('results');
             Route::get('/results/{attempt}', [ResultController::class, 'show'])->name('results.show');
-            
-            // AI Evaluation results (premium feature)
-            Route::middleware(['feature:ai_evaluation'])->group(function () {
-                Route::get('/results/{attempt}/ai-feedback', [ResultController::class, 'aiFeedback'])->name('results.ai-feedback');
-            });
         });
     });
-
-    
     
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -230,24 +232,23 @@ Route::middleware(['auth'])->group(function () {
         // Test sets management
         Route::resource('test-sets', TestSetController::class);
 
-
         // Add these NEW routes for Part Audio Management
-    Route::prefix('test-sets/{testSet}')->name('test-sets.')->group(function () {
-        // Part Audio Management Routes
-        Route::get('/part-audios', [App\Http\Controllers\Admin\TestPartAudioController::class, 'index'])
-            ->name('part-audios');
-        Route::post('/part-audios', [App\Http\Controllers\Admin\TestPartAudioController::class, 'upload'])
-            ->name('part-audios.upload');
-        Route::delete('/part-audios/{partNumber}', [App\Http\Controllers\Admin\TestPartAudioController::class, 'destroy'])
-            ->name('part-audios.destroy');
-           // Add this helper route for checking part audio existence
-        Route::get('/check-part-audio/{partNumber}', function($testSetId, $partNumber) {
-            $testSet = \App\Models\TestSet::findOrFail($testSetId);
-            return response()->json([
-                'hasAudio' => $testSet->hasPartAudio($partNumber)
-            ]);
-        })->name('check-part-audio');
-    });
+        Route::prefix('test-sets/{testSet}')->name('test-sets.')->group(function () {
+            // Part Audio Management Routes
+            Route::get('/part-audios', [App\Http\Controllers\Admin\TestPartAudioController::class, 'index'])
+                ->name('part-audios');
+            Route::post('/part-audios', [App\Http\Controllers\Admin\TestPartAudioController::class, 'upload'])
+                ->name('part-audios.upload');
+            Route::delete('/part-audios/{partNumber}', [App\Http\Controllers\Admin\TestPartAudioController::class, 'destroy'])
+                ->name('part-audios.destroy');
+            // Add this helper route for checking part audio existence
+            Route::get('/check-part-audio/{partNumber}', function($testSetId, $partNumber) {
+                $testSet = \App\Models\TestSet::findOrFail($testSetId);
+                return response()->json([
+                    'hasAudio' => $testSet->hasPartAudio($partNumber)
+                ]);
+            })->name('check-part-audio');
+        });
 
         // Questions management
         Route::prefix('questions')->name('questions.')->group(function () {
@@ -313,4 +314,3 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 });
-

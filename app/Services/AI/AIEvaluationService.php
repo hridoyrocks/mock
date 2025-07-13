@@ -93,52 +93,73 @@ class AIEvaluationService
      * Transcribe audio using Whisper API
      */
     private function transcribeAudio(string $audioPath): string
-    {
-        try {
-            $fullPath = storage_path('app/public/' . $audioPath);
-            
-            if (!file_exists($fullPath)) {
-                throw new Exception("Audio file not found: {$fullPath}");
-            }
-            
-            // Check file size (OpenAI limit is 25MB)
-            $fileSize = filesize($fullPath);
-            if ($fileSize > 25 * 1024 * 1024) {
-                throw new Exception("Audio file too large: {$fileSize} bytes");
-            }
-            
-            Log::info('Transcribing audio', [
-                'path' => $audioPath,
-                'full_path' => $fullPath,
-                'size' => $fileSize,
-                'exists' => file_exists($fullPath)
-            ]);
-            
-            $audio = fopen($fullPath, 'r');
-            
-            if (!$audio) {
-                throw new Exception("Failed to open audio file");
-            }
-            
-            $response = OpenAI::audio()->transcribe([
-                'model' => 'whisper-1',
-                'file' => $audio,
-                'response_format' => 'json',
-                'language' => 'en' // Specify English for better accuracy
-            ]);
-            
-            fclose($audio);
-            
-            return $response->text ?? '';
-            
-        } catch (\Exception $e) {
-            Log::error('Audio transcription failed', [
-                'error' => $e->getMessage(),
-                'path' => $audioPath
-            ]);
-            throw $e;
+{
+    try {
+        // audioPath is already full path from controller
+        $fullPath = $audioPath;
+        
+        if (!file_exists($fullPath)) {
+            throw new Exception("Audio file not found: {$fullPath}");
         }
+        
+        // Check file size (OpenAI limit is 25MB)
+        $fileSize = filesize($fullPath);
+        if ($fileSize > 25 * 1024 * 1024) {
+            throw new Exception("Audio file too large: {$fileSize} bytes");
+        }
+        
+        Log::info('Transcribing audio', [
+            'path' => $audioPath,
+            'size' => $fileSize,
+            'exists' => file_exists($fullPath)
+        ]);
+        
+        // Use CURLFile instead of fopen for better compatibility
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, [
+            CURLOPT_URL => 'https://api.openai.com/v1/audio/transcriptions',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 300,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => [
+                'file' => new \CURLFile($fullPath),
+                'model' => 'whisper-1',
+                'language' => 'en',
+                'response_format' => 'json'
+            ],
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . config('openai.api_key'),
+            ],
+        ]);
+        
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+        
+        if ($err) {
+            throw new Exception("cURL Error: " . $err);
+        }
+        
+        $result = json_decode($response, true);
+        
+        if (isset($result['error'])) {
+            throw new Exception("OpenAI API Error: " . $result['error']['message']);
+        }
+        
+        return $result['text'] ?? '';
+        
+    } catch (\Exception $e) {
+        Log::error('Audio transcription failed', [
+            'error' => $e->getMessage(),
+            'path' => $audioPath
+        ]);
+        throw $e;
     }
+}
 
     /**
      * Build writing evaluation prompt

@@ -16,13 +16,13 @@ class StudentAttempt extends Model
         'status', 
         'band_score', 
         'feedback',
-        // নতুন fields
         'completion_rate',
         'confidence_level',
         'is_complete_attempt',
         'total_questions',
         'answered_questions',
         'correct_answers'
+        
     ];
     
     protected $casts = [
