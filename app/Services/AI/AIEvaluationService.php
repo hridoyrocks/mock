@@ -21,21 +21,19 @@ class AIEvaluationService
         try {
             Log::info('Starting writing evaluation', [
                 'text_length' => strlen($text),
-                'task_number' => $taskNumber
+                'task_number' => $taskNumber,
+                'has_api_key' => !empty(config('openai.api_key'))
             ]);
+
+            // Check API key
+            if (empty(config('openai.api_key'))) {
+                throw new Exception('OpenAI API key is not configured');
+            }
 
             $prompt = $this->buildWritingPrompt($text, $question, $taskNumber);
             
-            // Set timeout for HTTP request
-            $client = OpenAI::factory()
-                ->withApiKey(config('openai.api_key'))
-                ->withHttpClient(new \GuzzleHttp\Client([
-                    'timeout' => $this->timeout,
-                    'connect_timeout' => 30,
-                ]))
-                ->make();
-
-            $response = $client->chat()->create([
+            // Fix: Use the facade directly without creating new client
+            $response = OpenAI::chat()->create([
                 'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $this->getWritingSystemPrompt()],
@@ -61,6 +59,7 @@ class AIEvaluationService
             Log::error('AI Writing evaluation failed', [
                 'error' => $e->getMessage(),
                 'text_length' => strlen($text),
+                'trace' => $e->getTraceAsString()
             ]);
             throw $e;
         }
@@ -88,16 +87,8 @@ class AIEvaluationService
             
             $prompt = $this->buildSpeakingPrompt($transcription, $question, $partNumber);
             
-            // Set timeout for HTTP request
-            $client = OpenAI::factory()
-                ->withApiKey(config('openai.api_key'))
-                ->withHttpClient(new \GuzzleHttp\Client([
-                    'timeout' => $this->timeout,
-                    'connect_timeout' => 30,
-                ]))
-                ->make();
-
-            $response = $client->chat()->create([
+            // Fix: Use the facade directly
+            $response = OpenAI::chat()->create([
                 'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $this->getSpeakingSystemPrompt()],
@@ -121,13 +112,14 @@ class AIEvaluationService
             Log::error('AI Speaking evaluation failed', [
                 'error' => $e->getMessage(),
                 'audio_path' => $audioPath,
+                'trace' => $e->getTraceAsString()
             ]);
             throw $e;
         }
     }
 
     /**
-     * Transcribe audio using Whisper API with timeout
+     * Transcribe audio using Whisper API
      */
     private function transcribeAudio(string $audioPath): string
     {
@@ -148,48 +140,23 @@ class AIEvaluationService
                 'size' => $fileSize
             ]);
             
-            // Use Guzzle for better timeout control
-            $client = new \GuzzleHttp\Client([
-                'timeout' => $this->timeout,
-                'connect_timeout' => 30,
+            // Fix: Use OpenAI facade for transcription
+            $response = OpenAI::audio()->transcribe([
+                'model' => 'whisper-1',
+                'file' => fopen($fullPath, 'r'),
+                'response_format' => 'json',
+                'language' => 'en'
             ]);
             
-            $response = $client->post('https://api.openai.com/v1/audio/transcriptions', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . config('openai.api_key'),
-                ],
-                'multipart' => [
-                    [
-                        'name' => 'file',
-                        'contents' => fopen($fullPath, 'r'),
-                        'filename' => basename($fullPath)
-                    ],
-                    [
-                        'name' => 'model',
-                        'contents' => 'whisper-1'
-                    ],
-                    [
-                        'name' => 'language',
-                        'contents' => 'en'
-                    ],
-                    [
-                        'name' => 'response_format',
-                        'contents' => 'json'
-                    ]
-                ]
-            ]);
-            
-            $result = json_decode($response->getBody()->getContents(), true);
-            
-            if (!isset($result['text'])) {
+            if (!isset($response->text)) {
                 throw new Exception('No transcription text in response');
             }
             
             Log::info('Transcription successful', [
-                'text_length' => strlen($result['text'])
+                'text_length' => strlen($response->text)
             ]);
             
-            return $result['text'];
+            return $response->text;
             
         } catch (\Exception $e) {
             Log::error('Audio transcription failed', [
@@ -200,8 +167,7 @@ class AIEvaluationService
         }
     }
 
-    // ... rest of the methods remain the same ...
-
+    // Rest of the methods remain the same...
     private function buildWritingPrompt(string $text, string $question, int $taskNumber): string
     {
         $wordCount = str_word_count($text);
