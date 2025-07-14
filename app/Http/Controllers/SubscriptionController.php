@@ -8,6 +8,12 @@ use App\Services\Payment\PaymentGatewayFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
+use Endroid\QrCode\Writer\PngWriter;
 
 class SubscriptionController extends Controller
 {
@@ -131,5 +137,86 @@ class SubscriptionController extends Controller
             'subscription',
             'plan'
         ));
+    }
+
+  public function downloadInvoice(PaymentTransaction $transaction)
+    {
+        // Check if transaction belongs to user
+        if ($transaction->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Create verification URL
+        $verificationUrl = route('invoice.verify', [
+            'transaction' => $transaction->transaction_id
+        ]);
+
+        try {
+            // Generate QR Code
+            $result = Builder::create()
+                ->writer(new PngWriter())
+                ->writerOptions([])
+                ->data($verificationUrl)
+                ->encoding(new Encoding('UTF-8'))
+                ->errorCorrectionLevel(ErrorCorrectionLevel::High)
+                ->size(200)
+                ->margin(10)
+                ->roundBlockSizeMode(RoundBlockSizeMode::Margin)
+                ->build();
+
+            // Convert to base64
+            $qrCodeBase64 = base64_encode($result->getString());
+        } catch (\Exception $e) {
+            // Fallback if QR generation fails
+            Log::error('QR Code generation failed: ' . $e->getMessage());
+            $qrCodeBase64 = null;
+        }
+
+        // Prepare data for PDF
+        $user = auth()->user();
+        $subscription = $transaction->subscription;
+        $plan = $subscription->plan;
+
+        $data = [
+            'transaction' => $transaction,
+            'user' => $user,
+            'subscription' => $subscription,
+            'plan' => $plan,
+            'qrCode' => $qrCodeBase64
+        ];
+
+        // Generate PDF
+        $pdf = PDF::loadView('subscription.invoice-pdf', $data);
+        $pdf->setPaper('A4', 'portrait');
+        
+        // Optional: Set PDF metadata
+        $pdf->setOptions([
+            'title' => 'Invoice #' . $transaction->transaction_id,
+            'author' => 'CD IELTS Master',
+            'subject' => 'Payment Invoice',
+            'keywords' => 'invoice, payment, subscription',
+            'creator' => 'CD IELTS Master',
+            'display_mode' => 'fullscreen',
+            'dpi' => 150,
+            'enable_php' => true,
+        ]);
+        
+        return $pdf->download('invoice-' . $transaction->transaction_id . '.pdf');
+    }
+
+     public function verifyInvoice($transactionId)
+    {
+        $transaction = PaymentTransaction::where('transaction_id', $transactionId)
+            ->with(['user', 'subscription.plan'])
+            ->first();
+        
+        if (!$transaction) {
+            abort(404, 'Invoice not found');
+        }
+
+        return view('invoice.verify', [
+            'transaction' => $transaction,
+            'isValid' => $transaction->status === 'completed'
+        ]);
     }
 }

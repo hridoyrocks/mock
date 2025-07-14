@@ -80,6 +80,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar')->middleware('auth');
+
 // Authenticated routes with role-based dashboard
 Route::middleware(['auth'])->group(function () {
     // Dashboard route with role-based redirection
@@ -91,7 +93,17 @@ Route::middleware(['auth'])->group(function () {
         }
     })->name('dashboard');
     
-    
+  // Invoice routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/invoice/{transaction}/download', [SubscriptionController::class, 'downloadInvoice'])
+        ->name('invoice.download');
+});
+
+// Public verification route (no auth required)
+Route::get('/invoice/verify/{transaction}', [SubscriptionController::class, 'verifyInvoice'])
+    ->name('invoice.verify');
+
+
    // AI Evaluation routes
 Route::prefix('ai')->name('ai.')->middleware(['auth'])->group(function () {
     // Evaluation endpoints

@@ -15,6 +15,7 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="//unpkg.com/alpinejs" defer></script>
     
     <style>
         body { 
@@ -152,9 +153,9 @@
     
     @stack('styles')
 </head>
-<body class="antialiased">
+<body class="antialiased overflow-hidden">
     <!-- Particle Background -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="particle w-1 h-1 bg-purple-500 rounded-full" style="left: 10%; animation-duration: 15s; animation-delay: 0s;"></div>
         <div class="particle w-1 h-1 bg-blue-500 rounded-full" style="left: 20%; animation-duration: 20s; animation-delay: 2s;"></div>
         <div class="particle w-1 h-1 bg-pink-500 rounded-full" style="left: 30%; animation-duration: 18s; animation-delay: 4s;"></div>
@@ -166,24 +167,8 @@
         <div class="particle w-1 h-1 bg-green-500 rounded-full" style="left: 90%; animation-duration: 16s; animation-delay: 16s;"></div>
     </div>
 
-    <div x-data="{ 
-        sidebarOpen: false, 
-        profileDropdown: false,
-        notificationOpen: false,
-        searchOpen: false,
-        currentTime: new Date().toLocaleTimeString(),
-        greeting: getGreeting()
-    }" 
-    x-init="
-        setInterval(() => currentTime = new Date().toLocaleTimeString(), 1000);
-        function getGreeting() {
-            const hour = new Date().getHours();
-            if (hour < 12) return 'Good Morning';
-            if (hour < 17) return 'Good Afternoon';
-            return 'Good Evening';
-        }
-    "
-    class="flex min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div x-data="layoutData()" 
+         class="relative z-10 flex h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
         
         <!-- Mobile Menu Overlay -->
         <div x-show="sidebarOpen" 
@@ -199,7 +184,7 @@
 
         <!-- Modern Sidebar -->
         <div :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}"
-             class="fixed inset-y-0 left-0 z-50 w-72 h-screen glass-dark transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:relative lg:inset-auto flex flex-col">
+             class="fixed inset-y-0 left-0 z-50 w-72 h-full glass-dark transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen flex flex-col flex-shrink-0">
             
             <!-- Logo Section -->
             <div class="p-6 border-b border-white/10">
@@ -223,9 +208,14 @@
             <div class="p-6 border-b border-white/10">
                 <div class="flex items-center space-x-4">
                     <div class="relative">
-                        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
-                            {{ substr(auth()->user()->name, 0, 1) }}
-                        </div>
+                        @if(auth()->user()->avatar_url)
+                            <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" 
+                                 class="w-16 h-16 rounded-xl object-cover border-2 border-purple-500">
+                        @else
+                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                                {{ substr(auth()->user()->name, 0, 1) }}
+                            </div>
+                        @endif
                         <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-slate-900"></div>
                     </div>
                     <div class="flex-1">
@@ -389,9 +379,9 @@
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col min-h-screen">
+        <div class="flex-1 flex flex-col relative z-20">
             <!-- Modern Top Bar -->
-            <header class="glass-dark border-b border-white/10 z-30">
+            <header class="glass-dark border-b border-white/10 z-30 flex-shrink-0 relative">
                 <div class="px-4 sm:px-6 lg:px-8 py-4">
                     <div class="flex items-center justify-between">
                         <!-- Left Section -->
@@ -422,7 +412,7 @@
                             </button>
 
                             <!-- Notifications -->
-                            <div class="relative" @click.outside="notificationOpen = false">
+                            <div class="relative z-50" @click.outside="notificationOpen = false">
                                 <button @click="notificationOpen = !notificationOpen" 
                                         class="relative w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200">
                                     <i class="fas fa-bell"></i>
@@ -435,13 +425,15 @@
 
                                 <!-- Notification Dropdown -->
                                 <div x-show="notificationOpen"
+                                     x-cloak
                                      x-transition:enter="transition ease-out duration-200"
                                      x-transition:enter-start="transform opacity-0 scale-95"
                                      x-transition:enter-end="transform opacity-100 scale-100"
                                      x-transition:leave="transition ease-in duration-75"
                                      x-transition:leave-start="transform opacity-100 scale-100"
                                      x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute right-0 mt-2 w-80 glass rounded-xl overflow-hidden">
+                                     class="absolute right-0 mt-2 w-80 glass rounded-xl overflow-hidden"
+                                     style="z-index: 9999;">
                                     <div class="p-4 border-b border-white/10">
                                         <h3 class="text-white font-semibold">Notifications</h3>
                                     </div>
@@ -462,24 +454,31 @@
                             </div>
 
                             <!-- Profile Dropdown -->
-                            <div class="relative" @click.outside="profileDropdown = false">
+                            <div class="relative z-50" @click.outside="profileDropdown = false">
                                 <button @click="profileDropdown = !profileDropdown" 
                                         class="flex items-center space-x-3 px-3 py-2 rounded-lg glass hover:border-purple-500/50 transition-all duration-200">
-                                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                                        {{ substr(auth()->user()->name, 0, 1) }}
-                                    </div>
+                                    @if(auth()->user()->avatar_url)
+                                        <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" 
+                                             class="w-8 h-8 rounded-lg object-cover">
+                                    @else
+                                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                            {{ substr(auth()->user()->name, 0, 1) }}
+                                        </div>
+                                    @endif
                                     <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                                 </button>
 
                                 <!-- Profile Menu -->
                                 <div x-show="profileDropdown"
+                                     x-cloak
                                      x-transition:enter="transition ease-out duration-200"
                                      x-transition:enter-start="transform opacity-0 scale-95"
                                      x-transition:enter-end="transform opacity-100 scale-100"
                                      x-transition:leave="transition ease-in duration-75"
                                      x-transition:leave-start="transform opacity-100 scale-100"
                                      x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute right-0 mt-2 w-56 glass rounded-xl overflow-hidden">
+                                     class="absolute right-0 mt-2 w-56 glass rounded-xl overflow-hidden"
+                                     style="z-index: 9999;">
                                     <div class="p-4 border-b border-white/10">
                                         <p class="text-white font-medium">{{ auth()->user()->name }}</p>
                                         <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
@@ -510,8 +509,8 @@
             </header>
 
             <!-- Main Content -->
-            <main class="flex-1 overflow-y-auto">
-                <div class="min-h-screen">
+            <main class="flex-1 overflow-y-auto overflow-x-hidden">
+                <div class="h-full">
                     {{ $slot }}
                 </div>
             </main>
@@ -627,5 +626,31 @@
     @endif
 
     @stack('scripts')
+    
+    <script>
+        function layoutData() {
+            return {
+                sidebarOpen: false,
+                profileDropdown: false,
+                notificationOpen: false,
+                searchOpen: false,
+                currentTime: new Date().toLocaleTimeString(),
+                greeting: '',
+                
+                init() {
+                    // Set greeting
+                    const hour = new Date().getHours();
+                    if (hour < 12) this.greeting = 'Good Morning';
+                    else if (hour < 17) this.greeting = 'Good Afternoon';
+                    else this.greeting = 'Good Evening';
+                    
+                    // Update time every second
+                    setInterval(() => {
+                        this.currentTime = new Date().toLocaleTimeString();
+                    }, 1000);
+                }
+            }
+        }
+    </script>
 </body>
 </html>

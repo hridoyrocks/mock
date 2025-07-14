@@ -121,66 +121,66 @@
                 <!-- Left Column - Main Content -->
                 <div class="lg:col-span-2 space-y-6">
                     <!-- Interactive Test Selection -->
-                    <div class="glass rounded-2xl p-6">
-                        <h2 class="text-xl font-bold text-white mb-6">
-                            <i class="fas fa-gamepad text-purple-400 mr-2"></i>
-                            Start Your Practice
-                        </h2>
-                        
-                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <!-- Listening Card -->
-                            <div class="group relative">
-                                <div class="absolute inset-0 bg-gradient-to-br from-violet-600 to-purple-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                                <a href="{{ route('student.listening.index') }}" 
-                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-violet-500/50 transition-all duration-300 hover:-translate-y-1">
-                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                        <i class="fas fa-headphones text-white text-2xl"></i>
-                                    </div>
-                                    <p class="text-white font-semibold">Listening</p>
-                                    <p class="text-xs text-gray-400 mt-1">30 min</p>
-                                </a>
-                            </div>
+<div class="glass rounded-2xl p-6">
+    <h2 class="text-xl font-bold text-white mb-6">
+        <i class="fas fa-gamepad text-purple-400 mr-2"></i>
+        Start Your Practice
+    </h2>
+    
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Listening Card -->
+        <div class="group relative">
+            <div class="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-purple-600/20 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+            <a href="{{ route('student.listening.index') }}" 
+               class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-violet-500/30 transition-all duration-300 hover:-translate-y-1 bg-violet-500/10">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-500/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform backdrop-blur-sm">
+                    <i class="fas fa-headphones text-violet-300 text-2xl"></i>
+                </div>
+                <p class="text-white font-semibold">Listening</p>
+                <p class="text-xs text-gray-400 mt-1">30 min</p>
+            </a>
+        </div>
 
-                            <!-- Reading Card -->
-                            <div class="group relative">
-                                <div class="absolute inset-0 bg-gradient-to-br from-emerald-600 to-green-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                                <a href="{{ route('student.reading.index') }}" 
-                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-emerald-500/50 transition-all duration-300 hover:-translate-y-1">
-                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                        <i class="fas fa-book-open text-white text-2xl"></i>
-                                    </div>
-                                    <p class="text-white font-semibold">Reading</p>
-                                    <p class="text-xs text-gray-400 mt-1">60 min</p>
-                                </a>
-                            </div>
+        <!-- Reading Card -->
+        <div class="group relative">
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-green-600/20 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+            <a href="{{ route('student.reading.index') }}" 
+               class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-emerald-500/30 transition-all duration-300 hover:-translate-y-1 bg-emerald-500/10">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/30 to-green-500/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform backdrop-blur-sm">
+                    <i class="fas fa-book-open text-emerald-300 text-2xl"></i>
+                </div>
+                <p class="text-white font-semibold">Reading</p>
+                <p class="text-xs text-gray-400 mt-1">60 min</p>
+            </a>
+        </div>
 
-                            <!-- Writing Card -->
-                            <div class="group relative">
-                                <div class="absolute inset-0 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                                <a href="{{ route('student.writing.index') }}" 
-                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1">
-                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                        <i class="fas fa-pen-fancy text-white text-2xl"></i>
-                                    </div>
-                                    <p class="text-white font-semibold">Writing</p>
-                                    <p class="text-xs text-gray-400 mt-1">60 min</p>
-                                </a>
-                            </div>
+        <!-- Writing Card -->
+        <div class="group relative">
+            <div class="absolute inset-0 bg-gradient-to-br from-amber-600/20 to-orange-600/20 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+            <a href="{{ route('student.writing.index') }}" 
+               class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-amber-500/30 transition-all duration-300 hover:-translate-y-1 bg-amber-500/10">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform backdrop-blur-sm">
+                    <i class="fas fa-pen-fancy text-amber-300 text-2xl"></i>
+                </div>
+                <p class="text-white font-semibold">Writing</p>
+                <p class="text-xs text-gray-400 mt-1">60 min</p>
+            </a>
+        </div>
 
-                            <!-- Speaking Card -->
-                            <div class="group relative">
-                                <div class="absolute inset-0 bg-gradient-to-br from-rose-600 to-pink-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                                <a href="{{ route('student.speaking.index') }}" 
-                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-rose-500/50 transition-all duration-300 hover:-translate-y-1">
-                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                        <i class="fas fa-microphone text-white text-2xl"></i>
-                                    </div>
-                                    <p class="text-white font-semibold">Speaking</p>
-                                    <p class="text-xs text-gray-400 mt-1">15 min</p>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Speaking Card -->
+        <div class="group relative">
+            <div class="absolute inset-0 bg-gradient-to-br from-rose-600/20 to-pink-600/20 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+            <a href="{{ route('student.speaking.index') }}" 
+               class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-rose-500/30 transition-all duration-300 hover:-translate-y-1 bg-rose-500/10">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500/30 to-pink-500/30 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform backdrop-blur-sm">
+                    <i class="fas fa-microphone text-rose-300 text-2xl"></i>
+                </div>
+                <p class="text-white font-semibold">Speaking</p>
+                <p class="text-xs text-gray-400 mt-1">15 min</p>
+            </a>
+        </div>
+    </div>
+</div>
 
                     <!-- Performance Chart -->
                     <div class="glass rounded-2xl p-6">

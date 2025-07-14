@@ -14,6 +14,7 @@ use App\Models\PaymentTransaction;
 use App\Models\StudentAttempt;
 
 
+
 class User extends Authenticatable
 {
    use HasApiTokens, HasFactory, Notifiable;
@@ -40,6 +41,7 @@ class User extends Authenticatable
     'timezone',
     'currency',
     'is_social_signup',
+    'avatar_url',
     ];
 
     protected $casts = [

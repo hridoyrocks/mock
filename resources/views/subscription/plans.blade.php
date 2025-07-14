@@ -1,132 +1,244 @@
 <x-student-layout>
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-6xl mx-auto">
-        {{-- Header --}}
-        <div class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
-            <p class="text-xl text-gray-600">Select the perfect plan for your IELTS preparation journey</p>
-        </div>
-
-        {{-- Plans Grid --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            @foreach($plans as $plan)
-            <div class="bg-white rounded-lg shadow-lg border-2 {{ $plan->is_featured ? 'border-blue-500' : 'border-gray-200' }} relative">
-                @if($plan->is_featured)
-                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span class="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
-                </div>
-                @endif
+    <x-slot:title>Choose Your Plan</x-slot>
+    
+    <!-- Header Section -->
+    <section class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-pink-600/20"></div>
+        <div class="relative px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+            <div class="max-w-7xl mx-auto text-center">
+                <h1 class="text-4xl lg:text-5xl font-bold text-white mb-6">
+                    Choose Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Perfect Plan</span>
+                </h1>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Select the ideal plan for your IELTS preparation journey and achieve your dream band score
+                </p>
                 
-                <div class="p-8">
-                    {{-- Plan Name & Price --}}
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ $plan->name }}</h3>
-                    <p class="text-gray-600 mb-6">{{ $plan->description }}</p>
+                <!-- Trust Badges -->
+                <div class="flex flex-wrap items-center justify-center gap-6 mt-8">
+                    <div class="flex items-center space-x-2 text-gray-400">
+                        <i class="fas fa-users"></i>
+                        <span>10,000+ Students</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-gray-400">
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <span>4.8/5 Rating</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-gray-400">
+                        <i class="fas fa-shield-alt text-green-400"></i>
+                        <span>Money Back Guarantee</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Plans Section -->
+    <section class="px-4 sm:px-6 lg:px-8 pb-20 -mt-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Plans Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                @foreach($plans as $plan)
+                <div class="relative group">
+                    @if($plan->is_featured)
+                    <div class="absolute -top-5 left-1/2 transform -translate-x-1/2 z-20">
+                        <span class="px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg neon-purple">
+                            <i class="fas fa-star mr-1"></i>Most Popular
+                        </span>
+                    </div>
+                    @endif
                     
-                    <div class="mb-6">
-                        @if($plan->discount_price)
-                        <div class="flex items-baseline">
-                            <span class="text-4xl font-bold text-gray-900">৳{{ number_format($plan->discount_price, 0) }}</span>
-                            <span class="text-xl text-gray-500 line-through ml-2">৳{{ number_format($plan->price, 0) }}</span>
-                            <span class="text-sm text-green-600 ml-2">Save {{ $plan->discount_percentage }}%</span>
+                    <div class="glass rounded-2xl p-8 h-full border {{ $plan->is_featured ? 'border-purple-500/50 shadow-lg shadow-purple-500/20' : 'border-white/10' }} hover:border-purple-500/30 transition-all duration-300 {{ $plan->is_featured ? 'scale-105' : '' }}">
+                        <!-- Plan Header -->
+                        <div class="text-center mb-8">
+                            <div class="w-20 h-20 rounded-2xl bg-gradient-to-br 
+                                {{ $plan->slug === 'pro' ? 'from-purple-600 to-pink-600' : ($plan->slug === 'premium' ? 'from-blue-600 to-cyan-600' : 'from-gray-600 to-gray-700') }} 
+                                p-0.5 mx-auto mb-4">
+                                <div class="w-full h-full rounded-2xl bg-slate-900 flex items-center justify-center">
+                                    <i class="fas {{ $plan->slug === 'pro' ? 'fa-crown' : ($plan->slug === 'premium' ? 'fa-gem' : 'fa-user') }} text-3xl text-white"></i>
+                                </div>
+                            </div>
+                            
+                            <h3 class="text-2xl font-bold text-white mb-2">{{ $plan->name }}</h3>
+                            <p class="text-gray-400 text-sm">{{ $plan->description }}</p>
                         </div>
-                        @else
-                        <div class="flex items-baseline">
-                            <span class="text-4xl font-bold text-gray-900">
-                                @if($plan->is_free)
-                                    Free
-                                @else
-                                    ৳{{ number_format($plan->price, 0) }}
-                                @endif
+                        
+                        <!-- Price -->
+                        <div class="text-center mb-8">
+                            @if($plan->discount_price)
+                            <div class="flex items-baseline justify-center">
+                                <span class="text-4xl font-bold text-white">৳{{ number_format($plan->discount_price, 0) }}</span>
+                                <span class="text-xl text-gray-500 line-through ml-2">৳{{ number_format($plan->price, 0) }}</span>
+                            </div>
+                            <span class="inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/50">
+                                Save {{ round((($plan->price - $plan->discount_price) / $plan->price) * 100) }}%
                             </span>
-                            @if(!$plan->is_free)
-                            <span class="text-gray-600 ml-2">/ month</span>
+                            @else
+                            <div class="flex items-baseline justify-center">
+                                <span class="text-4xl font-bold text-white">
+                                    @if($plan->is_free)
+                                        Free
+                                    @else
+                                        ৳{{ number_format($plan->price, 0) }}
+                                    @endif
+                                </span>
+                                @if(!$plan->is_free)
+                                <span class="text-gray-400 ml-2">/ month</span>
+                                @endif
+                            </div>
                             @endif
                         </div>
-                        @endif
+                        
+                        <!-- Features -->
+                        <ul class="space-y-4 mb-8">
+                            @foreach($plan->features as $feature)
+                            <li class="flex items-start">
+                                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i class="fas fa-check text-white text-xs"></i>
+                                </div>
+                                <span class="text-gray-300 ml-3">
+                                    {{ $feature->name }}
+                                    @if($feature->pivot->value && $feature->pivot->value !== 'true')
+                                        <span class="text-purple-400 font-medium">({{ $feature->pivot->value }})</span>
+                                    @endif
+                                </span>
+                            </li>
+                            @endforeach
+                        </ul>
+                        
+                        <!-- Action Button -->
+                        @auth
+                            @if($currentPlan && $currentPlan->id === $plan->id)
+                            <button class="w-full glass text-gray-400 px-6 py-3 rounded-xl font-semibold cursor-not-allowed border border-gray-600">
+                                <i class="fas fa-check-circle mr-2"></i>Current Plan
+                            </button>
+                            @else
+                            <form action="{{ route('subscription.subscribe', $plan) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="w-full px-6 py-3 rounded-xl font-semibold transition-all
+                                    {{ $plan->is_featured 
+                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl neon-purple' 
+                                        : 'glass text-white hover:border-purple-500/50 border border-white/20' }}">
+                                    @if($plan->is_free)
+                                        <i class="fas fa-arrow-down mr-2"></i>Switch to Free
+                                    @elseif($currentPlan && $currentPlan->price < $plan->price)
+                                        <i class="fas fa-rocket mr-2"></i>Upgrade Now
+                                    @else
+                                        <i class="fas fa-bolt mr-2"></i>Get Started
+                                    @endif
+                                </button>
+                            </form>
+                            @endif
+                        @else
+                        <a href="{{ route('register') }}" class="block w-full text-center px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all shadow-lg hover:shadow-xl neon-purple">
+                            <i class="fas fa-user-plus mr-2"></i>Sign Up to Start
+                        </a>
+                        @endauth
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
+            <!-- Comparison Table (Optional) -->
+            <div class="glass rounded-2xl p-8 mb-16 border border-white/10">
+                <h3 class="text-2xl font-bold text-white mb-6 text-center">Compare Plans</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-white/10">
+                                <th class="text-left py-4 px-4 text-gray-400 font-medium">Features</th>
+                                <th class="text-center py-4 px-4 text-gray-400 font-medium">Free</th>
+                                <th class="text-center py-4 px-4 text-purple-400 font-medium">Premium</th>
+                                <th class="text-center py-4 px-4 text-pink-400 font-medium">Pro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-white/5">
+                                <td class="py-4 px-4 text-gray-300">Mock Tests per Month</td>
+                                <td class="text-center py-4 px-4 text-white">3</td>
+                                <td class="text-center py-4 px-4 text-white">Unlimited</td>
+                                <td class="text-center py-4 px-4 text-white">Unlimited</td>
+                            </tr>
+                            <tr class="border-b border-white/5">
+                                <td class="py-4 px-4 text-gray-300">AI Evaluation</td>
+                                <td class="text-center py-4 px-4">
+                                    <i class="fas fa-times text-gray-500"></i>
+                                </td>
+                                <td class="text-center py-4 px-4">
+                                    <i class="fas fa-check text-green-400"></i>
+                                </td>
+                                <td class="text-center py-4 px-4">
+                                    <i class="fas fa-check text-green-400"></i>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-white/5">
+                                <td class="py-4 px-4 text-gray-300">Priority Support</td>
+                                <td class="text-center py-4 px-4">
+                                    <i class="fas fa-times text-gray-500"></i>
+                                </td>
+                                <td class="text-center py-4 px-4">
+                                    <i class="fas fa-check text-green-400"></i>
+                                </td>
+                                <td class="text-center py-4 px-4">
+                                    <i class="fas fa-check text-green-400"></i>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl font-bold text-white mb-8 text-center">
+                    <i class="fas fa-question-circle text-purple-400 mr-3"></i>
+                    Frequently Asked Questions
+                </h2>
+                
+                <div class="space-y-6">
+                    <div class="glass rounded-xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
+                        <h3 class="font-semibold text-white mb-2 flex items-center">
+                            <i class="fas fa-sync-alt text-purple-400 mr-3"></i>
+                            Can I change my plan anytime?
+                        </h3>
+                        <p class="text-gray-400">Yes, you can upgrade or downgrade your plan at any time. Changes will take effect immediately, and you'll be charged or credited proportionally.</p>
                     </div>
                     
-                    {{-- Features --}}
-                    <ul class="space-y-3 mb-8">
-                        @foreach($plan->features as $feature)
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
-                            <span class="text-gray-700">
-                                {{ $feature->name }}
-                                @if($feature->pivot->value && $feature->pivot->value !== 'true')
-                                    <span class="font-semibold">({{ $feature->pivot->value }})</span>
-                                @endif
-                            </span>
-                        </li>
-                        @endforeach
-                    </ul>
+                    <div class="glass rounded-xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
+                        <h3 class="font-semibold text-white mb-2 flex items-center">
+                            <i class="fas fa-credit-card text-blue-400 mr-3"></i>
+                            What payment methods do you accept?
+                        </h3>
+                        <p class="text-gray-400">We accept international cards through Stripe, and local payments through bKash and Nagad for your convenience.</p>
+                    </div>
                     
-                    {{-- Action Button --}}
-                    @auth
-                        @if($currentPlan && $currentPlan->id === $plan->id)
-                        <button class="w-full bg-gray-100 text-gray-500 px-6 py-3 rounded-lg font-semibold cursor-not-allowed">
-                            Current Plan
-                        </button>
-                        @else
-                        <form action="{{ route('subscription.subscribe', $plan) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="w-full {{ $plan->is_featured ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-800 hover:bg-gray-900' }} text-white px-6 py-3 rounded-lg font-semibold transition">
-                                @if($plan->is_free)
-                                    Switch to Free
-                                @elseif($currentPlan && $currentPlan->price < $plan->price)
-                                    Upgrade Now
-                                @else
-                                    Get Started
-                                @endif
-                            </button>
-                        </form>
-                        @endif
-                    @else
-                    <a href="{{ route('register') }}" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition">
-                        Sign Up to Start
-                    </a>
-                    @endauth
+                    <div class="glass rounded-xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
+                        <h3 class="font-semibold text-white mb-2 flex items-center">
+                            <i class="fas fa-gift text-green-400 mr-3"></i>
+                            Is there a free trial?
+                        </h3>
+                        <p class="text-gray-400">We offer a generous free plan that includes 3 mock tests per month. This allows you to experience our platform before upgrading.</p>
+                    </div>
+                    
+                    <div class="glass rounded-xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
+                        <h3 class="font-semibold text-white mb-2 flex items-center">
+                            <i class="fas fa-ban text-red-400 mr-3"></i>
+                            Can I cancel my subscription?
+                        </h3>
+                        <p class="text-gray-400">Yes, you can cancel your subscription anytime. You'll continue to have access until the end of your billing period.</p>
+                    </div>
                 </div>
             </div>
-            @endforeach
-        </div>
 
-        {{-- FAQ Section --}}
-        <div class="max-w-3xl mx-auto">
-            <h2 class="text-2xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h2>
-            
-            <div class="space-y-6">
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="font-semibold text-gray-900 mb-2">Can I change my plan anytime?</h3>
-                    <p class="text-gray-600">Yes, you can upgrade or downgrade your plan at any time. Changes will take effect immediately, and you'll be charged or credited proportionally.</p>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="font-semibold text-gray-900 mb-2">What payment methods do you accept?</h3>
-                    <p class="text-gray-600">We accept international cards through Stripe, and local payments through bKash and Nagad for your convenience.</p>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="font-semibold text-gray-900 mb-2">Is there a free trial?</h3>
-                    <p class="text-gray-600">We offer a generous free plan that includes 3 mock tests per month. This allows you to experience our platform before upgrading.</p>
-                </div>
-                
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="font-semibold text-gray-900 mb-2">Can I cancel my subscription?</h3>
-                    <p class="text-gray-600">Yes, you can cancel your subscription anytime. You'll continue to have access until the end of your billing period.</p>
+            <!-- Money Back Guarantee -->
+            <div class="text-center">
+                <div class="inline-flex items-center glass rounded-2xl px-8 py-6 border border-green-500/30">
+                    <i class="fas fa-shield-alt text-4xl text-green-400 mr-4"></i>
+                    <div class="text-left">
+                        <p class="font-bold text-white text-lg">30-Day Money Back Guarantee</p>
+                        <p class="text-sm text-gray-400">Not satisfied? Get a full refund within 30 days, no questions asked.</p>
+                    </div>
                 </div>
             </div>
         </div>
-
-        {{-- Money Back Guarantee --}}
-        <div class="mt-12 text-center">
-            <div class="inline-flex items-center text-gray-600">
-                <i class="fas fa-shield-alt text-2xl mr-3"></i>
-                <div class="text-left">
-                    <p class="font-semibold">30-Day Money Back Guarantee</p>
-                    <p class="text-sm">Not satisfied? Get a full refund within 30 days.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    </section>
 </x-student-layout>
