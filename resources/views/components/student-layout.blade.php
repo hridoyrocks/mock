@@ -509,11 +509,69 @@
             </header>
 
             <!-- Main Content -->
+            <!-- Main Content -->
             <main class="flex-1 overflow-y-auto overflow-x-hidden">
-                <div class="h-full">
-                    {{ $slot }}
+                <div class="min-h-full flex flex-col">
+                    <!-- Page Content -->
+                    <div class="flex-1">
+                        {{ $slot }}
+                    </div>
+                    
+                    <!-- Footer -->
+                    <footer class="glass-dark border-t border-white/10 mt-12">
+                        <div class="px-4 sm:px-6 lg:px-8 py-8">
+                            <div class="max-w-7xl mx-auto">
+                                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <!-- Copyright -->
+                                    <div class="text-center md:text-left">
+                                        <p class="text-gray-400 text-sm">
+                                            © {{ date('Y') }} CD IELTS. All rights reserved.
+                                        </p>
+                                        <p class="text-gray-500 text-xs mt-1">
+                                            Made with <i class="fas fa-heart text-pink-500 mx-1"></i> for IELTS aspirants
+                                        </p>
+                                    </div>
+                                    
+                                    <!-- Social Links -->
+                                    <div class="flex items-center gap-4">
+                                        <a href="#" 
+                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
+                                           target="_blank"
+                                           rel="noopener noreferrer">
+                                            <i class="fab fa-facebook-f"></i>
+                                        </a>
+                                        <a href="#" 
+                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
+                                           target="_blank"
+                                           rel="noopener noreferrer">
+                                            <i class="fab fa-twitter"></i>
+                                        </a>
+                                        <a href="#" 
+                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
+                                           target="_blank"
+                                           rel="noopener noreferrer">
+                                            <i class="fab fa-instagram"></i>
+                                        </a>
+                                        <a href="#" 
+                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
+                                           target="_blank"
+                                           rel="noopener noreferrer">
+                                            <i class="fab fa-linkedin-in"></i>
+                                        </a>
+                                        <a href="#" 
+                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
+                                           target="_blank"
+                                           rel="noopener noreferrer">
+                                            <i class="fab fa-youtube"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </footer>
                 </div>
             </main>
+        </div>
         </div>
 
         <!-- Search Modal -->
