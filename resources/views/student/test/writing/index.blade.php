@@ -2,56 +2,8 @@
 <x-student-layout>
     <x-slot:title>Writing Tests</x-slot>
 
-    <!-- Hero Section -->
-    <section class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-amber-600/20 via-transparent to-orange-600/20"></div>
-        <div class="relative px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-            <div class="max-w-7xl mx-auto">
-                <div class="text-center">
-                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 mb-6 neon-pink">
-                        <i class="fas fa-pen-fancy text-white text-3xl"></i>
-                    </div>
-                    <h1 class="text-4xl lg:text-5xl font-bold text-white mb-4">
-                        Writing Tests
-                    </h1>
-                    <p class="text-gray-300 text-lg max-w-2xl mx-auto">
-                        Perfect your academic and general writing skills
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Test Info Cards -->
-    <section class="px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
-        <div class="max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
-                <div class="glass rounded-xl p-6 text-center hover-lift">
-                    <i class="fas fa-clock text-amber-400 text-2xl mb-3"></i>
-                    <p class="text-2xl font-bold text-white">60</p>
-                    <p class="text-sm text-gray-400">Minutes</p>
-                </div>
-                <div class="glass rounded-xl p-6 text-center hover-lift">
-                    <i class="fas fa-tasks text-orange-400 text-2xl mb-3"></i>
-                    <p class="text-2xl font-bold text-white">2</p>
-                    <p class="text-sm text-gray-400">Tasks</p>
-                </div>
-                <div class="glass rounded-xl p-6 text-center hover-lift">
-                    <i class="fas fa-align-left text-yellow-400 text-2xl mb-3"></i>
-                    <p class="text-2xl font-bold text-white">150/250</p>
-                    <p class="text-sm text-gray-400">Min Words</p>
-                </div>
-                <div class="glass rounded-xl p-6 text-center hover-lift">
-                    <i class="fas fa-robot text-red-400 text-2xl mb-3"></i>
-                    <p class="text-2xl font-bold text-white">Instant</p>
-                    <p class="text-sm text-gray-400">Evaluation</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Tests Grid -->
-    <section class="px-4 sm:px-6 lg:px-8 pb-12">
+    <section class="px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-7xl mx-auto">
             @if ($testSets->count() > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -138,10 +90,10 @@
                                         <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                                     </a>
                                 @else
-                                    <button onclick="window.location.href='{{ route('student.writing.onboarding.confirm-details', $testSet) }}'"
+                                    <button onclick="startTest(this, '{{ route('student.writing.onboarding.confirm-details', $testSet) }}')"
                                             class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-medium hover:from-amber-700 hover:to-orange-700 transition-all neon-pink group">
                                         <i class="fas fa-play-circle mr-2"></i>
-                                        Start Test
+                                        <span class="button-text">Start Test</span>
                                         <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                                     </button>
                                 @endif
@@ -218,4 +170,30 @@
             </div>
         </div>
     </section>
+    
+    @push('scripts')
+    <script>
+        function startTest(button, url) {
+            // Disable button
+            button.disabled = true;
+            
+            // Change button content to loading state
+            button.innerHTML = `
+                <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Loading Test...</span>
+            `;
+            
+            // Add loading class to button
+            button.classList.add('opacity-90', 'cursor-not-allowed');
+            
+            // Navigate to URL after a small delay
+            setTimeout(() => {
+                window.location.href = url;
+            }, 3000);
+        }
+    </script>
+    @endpush
 </x-student-layout>

@@ -7,12 +7,7 @@
         <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-pink-600/20"></div>
         <div class="relative px-4 sm:px-6 lg:px-8 py-8">
             <div class="max-w-7xl mx-auto">
-                <!-- Back Button -->
-                <a href="{{ route('student.results') }}" 
-                   class="inline-flex items-center text-purple-400 hover:text-purple-300 mb-6 transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    Back to Results
-                </a>
+               
 
                 <!-- Test Info Header -->
                 <div class="glass rounded-2xl p-6 lg:p-8">
@@ -179,13 +174,13 @@
                                         id="ai-eval-btn"
                                         class="block w-full sm:w-auto mx-auto px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105">
                                     <i class="fas fa-magic mr-2"></i>
-                                    Get AI Evaluation
+                                    Get Instant Evaluation
                                 </button>
                             </div>
                         @else
                             <div class="flex items-center justify-between glass rounded-xl p-4">
                                 <div>
-                                    <p class="text-gray-400 text-sm">AI Band Score</p>
+                                    <p class="text-gray-400 text-sm">Band Score</p>
                                     <p class="text-3xl font-bold text-white">{{ $attempt->ai_band_score ?? 'N/A' }}</p>
                                 </div>
                                 <a href="{{ route('ai.evaluation.get', $attempt->id) }}" 
@@ -198,7 +193,7 @@
                     @else
                         <div class="text-center py-6">
                             <i class="fas fa-crown text-6xl text-purple-400 mb-4"></i>
-                            <p class="text-gray-300 mb-4">Upgrade to Premium to unlock AI evaluation for instant feedback.</p>
+                            <p class="text-gray-300 mb-4">Upgrade to Premium to unlock Instant evaluation for instant feedback.</p>
                             <a href="{{ route('subscription.plans') }}" 
                                class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
                                 <i class="fas fa-rocket mr-2"></i>
@@ -432,7 +427,7 @@
     {{-- AI Evaluation Modal --}}
     <div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="glass rounded-2xl max-w-md w-full p-8">
-            <h3 class="text-2xl font-bold text-white mb-6 text-center">Starting AI Evaluation</h3>
+            <h3 class="text-2xl font-bold text-white mb-6 text-center">Starting Insant Evaluation</h3>
             <div class="flex items-center justify-center py-8">
                 <div class="relative">
                     <div class="w-20 h-20 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin"></div>
@@ -494,7 +489,7 @@
             alert(error.message || 'An error occurred. Please try again.');
             
             button.disabled = false;
-            button.innerHTML = '<i class="fas fa-magic mr-2"></i> Get AI Evaluation';
+            button.innerHTML = '<i class="fas fa-magic mr-2"></i> Get Instant Evaluation';
         });
     }
     </script>

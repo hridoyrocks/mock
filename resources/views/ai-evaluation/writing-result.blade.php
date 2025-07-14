@@ -1,154 +1,220 @@
 <x-student-layout>
-    <x-slot:title>AI Writing Evaluation</x-slot:title>
+    <x-slot:title>AI Writing Evaluation</x-slot>
     
-    <div class="container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
-            {{-- Header --}}
-            <div class="mb-8">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900">AI Writing Evaluation</h1>
-                        <p class="text-gray-600 mt-1">{{ $attempt->testSet->title }} - {{ $attempt->created_at->format('d M Y, h:i A') }}</p>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-600">Overall Band Score</div>
-                        <div class="text-4xl font-bold text-blue-600">{{ number_format($evaluation['overall_band'], 1) }}</div>
+    <!-- Header Section -->
+    <section class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-pink-600/20"></div>
+        <div class="relative px-4 sm:px-6 lg:px-8 py-8">
+            <div class="max-w-7xl mx-auto">
+                
+                <!-- Test Info Header -->
+                <div class="glass rounded-2xl p-8">
+                    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                        <div>
+                            <h1 class="text-3xl lg:text-4xl font-bold text-white mb-2">
+                                <i class="fas fa-robot text-purple-400 mr-3"></i>
+                                Instant Writing Evaluation
+                            </h1>
+                            <p class="text-gray-300">
+                                {{ $attempt->testSet->title }} • {{ $attempt->created_at->format('d M Y, h:i A') }}
+                            </p>
+                        </div>
+                        
+                        <div class="glass rounded-xl px-8 py-6 text-center border-purple-500/30">
+                            <p class="text-gray-400 text-sm mb-1">Overall Band Score</p>
+                            <p class="text-5xl font-bold text-white">
+                                {{ number_format($evaluation['overall_band'], 1) }}
+                            </p>
+                            <div class="mt-2 text-xs text-purple-400">AI Generated</div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
 
-            {{-- Task Results --}}
+    <!-- Main Content -->
+    <section class="px-4 sm:px-6 lg:px-8 pb-12 -mt-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Task Results -->
             @foreach($evaluation['tasks'] as $index => $task)
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                <div class="p-6">
-                    {{-- Task Header --}}
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xl font-semibold text-gray-900">
-                            Task {{ $index + 1 }}: {{ $task['question_title'] }}
-                        </h2>
-                        <span class="text-2xl font-bold text-blue-600">{{ number_format($task['band_score'], 1) }}</span>
+            <div class="glass rounded-2xl p-6 mb-8">
+                <!-- Task Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-white">
+                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 mr-3">
+                            {{ $index + 1 }}
+                        </span>
+                        {{ $task['question_title'] }}
+                    </h2>
+                    <div class="glass rounded-lg px-4 py-2 border-purple-500/30">
+                        <span class="text-2xl font-bold text-white">{{ number_format($task['band_score'], 1) }}</span>
                     </div>
+                </div>
 
-                    {{-- Word Count --}}
-                    <div class="mb-4">
-                        <span class="text-sm text-gray-600">Word Count: </span>
-                        <span class="font-medium {{ $task['word_count'] >= $task['required_words'] ? 'text-green-600' : 'text-red-600' }}">
+                <!-- Word Count Badge -->
+                <div class="mb-6">
+                    <span class="glass px-4 py-2 rounded-lg inline-flex items-center
+                           {{ $task['word_count'] >= $task['required_words'] ? 'border-green-500/30' : 'border-red-500/30' }}">
+                        <i class="fas fa-file-word mr-2 {{ $task['word_count'] >= $task['required_words'] ? 'text-green-400' : 'text-red-400' }}"></i>
+                        <span class="text-gray-300">Word Count: </span>
+                        <span class="ml-2 font-semibold {{ $task['word_count'] >= $task['required_words'] ? 'text-green-400' : 'text-red-400' }}">
                             {{ $task['word_count'] }} / {{ $task['required_words'] }}
                         </span>
+                    </span>
+                </div>
+
+                <!-- Criteria Scores Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    @foreach($task['criteria'] as $criterion => $score)
+                    <div class="glass rounded-xl p-6 text-center hover:border-purple-500/50 transition-all">
+                        <p class="text-gray-400 text-sm mb-2">{{ $criterion }}</p>
+                        <p class="text-3xl font-bold 
+                           {{ $score >= 7 ? 'text-green-400' : ($score >= 5 ? 'text-yellow-400' : 'text-red-400') }}">
+                            {{ number_format($score, 1) }}
+                        </p>
+                        <div class="mt-3 w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-1000"
+                                 style="width: {{ ($score/9)*100 }}%"></div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+
+                <!-- Detailed Feedback Grid -->
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <!-- Task Achievement -->
+                    <div class="glass rounded-xl p-5 border-l-4 border-blue-500">
+                        <h3 class="font-semibold text-white mb-3 flex items-center">
+                            <i class="fas fa-bullseye text-blue-400 mr-2"></i>
+                            Task Achievement
+                        </h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">{{ $task['feedback']['task_achievement'] }}</p>
                     </div>
 
-                    {{-- Criteria Scores --}}
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        @foreach($task['criteria'] as $criterion => $score)
-                        <div class="text-center p-4 bg-gray-50 rounded-lg">
-                            <div class="text-sm text-gray-600 mb-1">{{ $criterion }}</div>
-                            <div class="text-2xl font-bold {{ $score >= 7 ? 'text-green-600' : ($score >= 5 ? 'text-yellow-600' : 'text-red-600') }}">
-                                {{ number_format($score, 1) }}
+                    <!-- Coherence and Cohesion -->
+                    <div class="glass rounded-xl p-5 border-l-4 border-green-500">
+                        <h3 class="font-semibold text-white mb-3 flex items-center">
+                            <i class="fas fa-link text-green-400 mr-2"></i>
+                            Coherence and Cohesion
+                        </h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">{{ $task['feedback']['coherence_cohesion'] }}</p>
+                    </div>
+
+                    <!-- Lexical Resource -->
+                    <div class="glass rounded-xl p-5 border-l-4 border-yellow-500">
+                        <h3 class="font-semibold text-white mb-3 flex items-center">
+                            <i class="fas fa-book text-yellow-400 mr-2"></i>
+                            Lexical Resource
+                        </h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">{{ $task['feedback']['lexical_resource'] }}</p>
+                        @if(!empty($task['vocabulary_suggestions']))
+                        <div class="mt-4">
+                            <p class="text-xs text-gray-400 mb-2">Vocabulary improvements:</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($task['vocabulary_suggestions'] as $suggestion)
+                                <span class="glass px-2 py-1 rounded text-xs border-yellow-500/30">
+                                    <span class="text-yellow-400">{{ $suggestion['original'] }}</span>
+                                    <i class="fas fa-arrow-right mx-1 text-gray-500"></i>
+                                    <span class="text-green-400">{{ $suggestion['suggested'] }}</span>
+                                </span>
+                                @endforeach
                             </div>
                         </div>
+                        @endif
+                    </div>
+
+                    <!-- Grammar -->
+                    <div class="glass rounded-xl p-5 border-l-4 border-red-500">
+                        <h3 class="font-semibold text-white mb-3 flex items-center">
+                            <i class="fas fa-spell-check text-red-400 mr-2"></i>
+                            Grammatical Range and Accuracy
+                        </h3>
+                        <p class="text-gray-300 text-sm leading-relaxed">{{ $task['feedback']['grammar'] }}</p>
+                        @if(!empty($task['grammar_errors']))
+                        <div class="mt-4">
+                            <p class="text-xs text-gray-400 mb-2">Grammar issues:</p>
+                            <ul class="space-y-1">
+                                @foreach($task['grammar_errors'] as $error)
+                                <li class="text-xs text-gray-300 flex items-start">
+                                    <i class="fas fa-circle text-red-400 mr-2 mt-1" style="font-size: 4px;"></i>
+                                    {{ $error }}
+                                </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Improvement Tips -->
+                @if(!empty($task['improvement_tips']))
+                <div class="glass rounded-xl p-5 bg-purple-500/10 border-purple-500/30 mb-6">
+                    <h3 class="font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+                        Tips for Improvement
+                    </h3>
+                    <ul class="space-y-2">
+                        @foreach($task['improvement_tips'] as $tip)
+                        <li class="flex items-start text-sm text-gray-300">
+                            <i class="fas fa-check-circle text-purple-400 mr-2 mt-0.5"></i>
+                            {{ $tip }}
+                        </li>
                         @endforeach
-                    </div>
+                    </ul>
+                </div>
+                @endif
 
-                    {{-- Detailed Feedback --}}
-                    <div class="space-y-4">
-                        {{-- Task Achievement --}}
-                        <div class="border-l-4 border-blue-500 pl-4">
-                            <h3 class="font-semibold text-gray-900 mb-2">Task Achievement</h3>
-                            <p class="text-gray-700">{{ $task['feedback']['task_achievement'] }}</p>
-                        </div>
-
-                        {{-- Coherence and Cohesion --}}
-                        <div class="border-l-4 border-green-500 pl-4">
-                            <h3 class="font-semibold text-gray-900 mb-2">Coherence and Cohesion</h3>
-                            <p class="text-gray-700">{{ $task['feedback']['coherence_cohesion'] }}</p>
-                        </div>
-
-                        {{-- Lexical Resource --}}
-                        <div class="border-l-4 border-yellow-500 pl-4">
-                            <h3 class="font-semibold text-gray-900 mb-2">Lexical Resource</h3>
-                            <p class="text-gray-700">{{ $task['feedback']['lexical_resource'] }}</p>
-                            @if(!empty($task['vocabulary_suggestions']))
-                            <div class="mt-2">
-                                <p class="text-sm text-gray-600 mb-1">Suggested vocabulary improvements:</p>
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach($task['vocabulary_suggestions'] as $suggestion)
-                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
-                                        {{ $suggestion['original'] }} → {{ $suggestion['suggested'] }}
-                                    </span>
-                                    @endforeach
-                                </div>
-                            </div>
-                            @endif
-                        </div>
-
-                        {{-- Grammar --}}
-                        <div class="border-l-4 border-red-500 pl-4">
-                            <h3 class="font-semibold text-gray-900 mb-2">Grammatical Range and Accuracy</h3>
-                            <p class="text-gray-700">{{ $task['feedback']['grammar'] }}</p>
-                            @if(!empty($task['grammar_errors']))
-                            <div class="mt-2">
-                                <p class="text-sm text-gray-600 mb-1">Grammar issues found:</p>
-                                <ul class="list-disc list-inside text-sm text-gray-700">
-                                    @foreach($task['grammar_errors'] as $error)
-                                    <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Improvement Tips --}}
-                    @if(!empty($task['improvement_tips']))
-                    <div class="mt-6 bg-blue-50 rounded-lg p-4">
-                        <h3 class="font-semibold text-blue-900 mb-2">💡 Tips for Improvement</h3>
-                        <ul class="space-y-1">
-                            @foreach($task['improvement_tips'] as $tip)
-                            <li class="flex items-start">
-                                <span class="text-blue-600 mr-2">•</span>
-                                <span class="text-blue-800">{{ $tip }}</span>
-                            </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
-
-                    {{-- Show/Hide Essay --}}
-                    <div class="mt-6">
-                        <button onclick="toggleEssay({{ $index }})" class="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                            <i class="fas fa-eye mr-1"></i> View Your Essay
-                        </button>
-                        <div id="essay-{{ $index }}" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
-                            <h4 class="font-semibold text-gray-900 mb-2">Your Response:</h4>
-                            <div class="whitespace-pre-wrap text-gray-700">{{ $task['essay_text'] }}</div>
-                        </div>
-                    </div>
+                <!-- Show/Hide Essay -->
+                <button onclick="toggleEssay({{ $index }})" 
+                        class="flex items-center justify-between w-full glass rounded-xl p-4 hover:border-purple-500/50 transition-all">
+                    <h3 class="font-medium text-white">
+                        <i class="fas fa-file-alt text-purple-400 mr-2"></i>
+                        View Your Essay
+                    </h3>
+                    <i class="fas fa-chevron-down text-purple-400 transition-transform" id="essay-chevron-{{ $index }}"></i>
+                </button>
+                <div id="essay-{{ $index }}" class="hidden mt-4 glass rounded-xl p-5 bg-blue-500/10 border-blue-500/30">
+                    <h4 class="font-semibold text-white mb-3">Your Response:</h4>
+                    <div class="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed">{{ $task['essay_text'] }}</div>
                 </div>
             </div>
             @endforeach
 
-            {{-- Overall Summary --}}
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-6 mb-6">
-                <h2 class="text-2xl font-bold mb-4">Overall Performance Summary</h2>
+            <!-- Overall Summary -->
+            <div class="glass rounded-2xl p-8 bg-gradient-to-br from-purple-600/20 to-pink-600/20 border-purple-500/30 mb-8">
+                <h2 class="text-2xl font-bold text-white mb-6">
+                    <i class="fas fa-chart-line text-purple-400 mr-2"></i>
+                    Overall Performance Summary
+                </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="font-semibold mb-2">Strengths:</h3>
-                        <ul class="space-y-1">
+                    <!-- Strengths -->
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="font-semibold text-white mb-4 flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-2"></i>
+                            Your Strengths
+                        </h3>
+                        <ul class="space-y-3">
                             @foreach($evaluation['overall_strengths'] as $strength)
-                            <li class="flex items-start">
-                                <i class="fas fa-check mt-1 mr-2"></i>
-                                <span>{{ $strength }}</span>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fas fa-check-circle text-green-400 mr-3 mt-0.5"></i>
+                                {{ $strength }}
                             </li>
                             @endforeach
                         </ul>
                     </div>
-                    <div>
-                        <h3 class="font-semibold mb-2">Areas for Improvement:</h3>
-                        <ul class="space-y-1">
+                    
+                    <!-- Areas for Improvement -->
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="font-semibold text-white mb-4 flex items-center">
+                            <i class="fas fa-chart-line text-blue-400 mr-2"></i>
+                            Areas for Improvement
+                        </h3>
+                        <ul class="space-y-3">
                             @foreach($evaluation['overall_improvements'] as $improvement)
-                            <li class="flex items-start">
-                                <i class="fas fa-arrow-up mt-1 mr-2"></i>
-                                <span>{{ $improvement }}</span>
+                            <li class="flex items-start text-gray-300">
+                                <i class="fas fa-arrow-up text-purple-400 mr-3 mt-0.5"></i>
+                                {{ $improvement }}
                             </li>
                             @endforeach
                         </ul>
@@ -156,31 +222,32 @@
                 </div>
             </div>
 
-            
+            <!-- Action Buttons (Centered) -->
+            <div class="flex justify-center">
+                <a href="{{ route('student.writing.index') }}" 
+                   class="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                    <i class="fas fa-redo mr-2"></i> Practice Again
+                </a>
+            </div>
         </div>
-    </div>
+    </section>
 
     @push('scripts')
     <script>
     function toggleEssay(index) {
         const essay = document.getElementById(`essay-${index}`);
+        const chevron = document.getElementById(`essay-chevron-${index}`);
         essay.classList.toggle('hidden');
-    }
-
-    function downloadPDF() {
-        // Implement PDF download functionality
-        alert('PDF download will be implemented');
+        chevron.classList.toggle('rotate-180');
     }
     </script>
     @endpush
-
+    
     @push('styles')
     <style>
-    @media print {
-        .no-print {
-            display: none !important;
+        .rotate-180 {
+            transform: rotate(180deg);
         }
-    }
     </style>
     @endpush
 </x-student-layout>

@@ -1,409 +1,288 @@
-
 <x-admin-layout>
     <x-slot:title>Dashboard</x-slot>
-    
-    <x-slot:header>
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">RX - Admin Dashboard</h1>
-            
+
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Welcome back, {{ auth()->user()->name }}!</h1>
+                <p class="mt-2 text-gray-600">Here's what's happening with your platform today.</p>
+            </div>
+            <div class="mt-4 flex space-x-3 sm:mt-0">
+                <button class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <i class="lucide-download mr-2"></i>Export
+                </button>
+                <button class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
+                    <i class="lucide-calendar mr-2"></i>Last 30 Days
+                </button>
+            </div>
         </div>
-    </x-slot>
+    </div>
 
-    <div class="p-4 sm:p-6 lg:p-8">
-        <!-- Key Metrics with Subscription Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-            <!-- Total Students -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
+    <!-- Key Metrics Grid -->
+    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @php
+            $metrics = [
+                [
+                    'title' => 'Total Students',
+                    'value' => \App\Models\User::where('is_admin', false)->count(),
+                    'change' => '+12.5%',
+                    'changeType' => 'positive',
+                    'icon' => 'users',
+                    'color' => 'blue',
+                    'subtext' => 'Active users'
+                ],
+                [
+                    'title' => 'Monthly Revenue',
+                    'value' => '৳' . number_format(\App\Models\PaymentTransaction::where('status', 'completed')->whereMonth('created_at', now()->month)->sum('amount'), 0),
+                    'change' => '+23.1%',
+                    'changeType' => 'positive',
+                    'icon' => 'trending-up',
+                    'color' => 'green',
+                    'subtext' => 'This month'
+                ],
+                [
+                    'title' => 'Active Subscriptions',
+                    'value' => \App\Models\UserSubscription::active()->count(),
+                    'change' => '+18.2%',
+                    'changeType' => 'positive',
+                    'icon' => 'crown',
+                    'color' => 'purple',
+                    'subtext' => 'Premium users'
+                ],
+                [
+                    'title' => 'Pending Reviews',
+                    'value' => \App\Models\StudentAttempt::where('status', 'completed')->whereNull('band_score')->count(),
+                    'change' => '-5',
+                    'changeType' => 'negative',
+                    'icon' => 'clock',
+                    'color' => 'orange',
+                    'subtext' => 'Needs attention'
+                ]
+            ];
+        @endphp
+
+        @foreach($metrics as $metric)
+            <div class="metric-card rounded-xl bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-600">{{ $metric['title'] }}</p>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">{{ $metric['value'] }}</p>
+                        <div class="mt-2 flex items-center text-sm">
+                            <span class="font-medium {{ $metric['changeType'] === 'positive' ? 'text-green-600' : 'text-red-600' }}">
+                                {{ $metric['change'] }}
+                            </span>
+                            <span class="ml-2 text-gray-500">{{ $metric['subtext'] }}</span>
                         </div>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Total Students</p>
-                        <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_students']) }}</p>
-                        @php
-                            $premiumUsers = \App\Models\User::where('subscription_status', '!=', 'free')->count();
-                            $premiumPercentage = $stats['total_students'] > 0 ? round(($premiumUsers / $stats['total_students']) * 100, 1) : 0;
-                        @endphp
-                        <p class="text-xs text-green-600 mt-1">{{ $premiumPercentage }}% Premium</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Monthly Revenue -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg 
+                        @if($metric['color'] === 'blue') bg-blue-100
+                        @elseif($metric['color'] === 'green') bg-green-100
+                        @elseif($metric['color'] === 'purple') bg-purple-100
+                        @else bg-orange-100
+                        @endif">
+                        @if($metric['icon'] === 'users')
+                            <svg class="h-6 w-6 @if($metric['color'] === 'blue') text-blue-600 @elseif($metric['color'] === 'green') text-green-600 @elseif($metric['color'] === 'purple') text-purple-600 @else text-orange-600 @endif" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                             </svg>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Revenue This Month</p>
-                        @php
-                            $monthlyRevenue = \App\Models\PaymentTransaction::where('status', 'completed')
-                                ->whereMonth('created_at', now()->month)
-                                ->sum('amount');
-                        @endphp
-                        <p class="text-2xl font-bold text-gray-900">৳{{ number_format($monthlyRevenue, 0) }}</p>
-                        <p class="text-xs text-green-600 mt-1">+15% from last month</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Active Subscriptions -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        @elseif($metric['icon'] === 'trending-up')
+                            <svg class="h-6 w-6 @if($metric['color'] === 'blue') text-blue-600 @elseif($metric['color'] === 'green') text-green-600 @elseif($metric['color'] === 'purple') text-purple-600 @else text-orange-600 @endif" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                             </svg>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Active Subscriptions</p>
-                        @php
-                            $activeSubscriptions = \App\Models\UserSubscription::active()->count();
-                        @endphp
-                        <p class="text-2xl font-bold text-gray-900">{{ number_format($activeSubscriptions) }}</p>
-                        @php
-                            $expiringCount = \App\Models\UserSubscription::expiringSoon(7)->count();
-                        @endphp
-                        @if($expiringCount > 0)
-                            <p class="text-xs text-yellow-600 mt-1">{{ $expiringCount }} expiring soon</p>
+                        @elseif($metric['icon'] === 'crown')
+                            <svg class="h-6 w-6 @if($metric['color'] === 'blue') text-blue-600 @elseif($metric['color'] === 'green') text-green-600 @elseif($metric['color'] === 'purple') text-purple-600 @else text-orange-600 @endif" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                            </svg>
                         @else
-                            <p class="text-xs text-green-600 mt-1">All healthy</p>
+                            <svg class="h-6 w-6 @if($metric['color'] === 'blue') text-blue-600 @elseif($metric['color'] === 'green') text-green-600 @elseif($metric['color'] === 'purple') text-purple-600 @else text-orange-600 @endif" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
                         @endif
                     </div>
                 </div>
             </div>
+        @endforeach
+    </div>
 
-            <!-- Pending Reviews -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Pending Reviews</p>
-                        <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['pending_evaluations']) }}</p>
-                        @if($stats['pending_evaluations'] > 0)
-                            <p class="text-xs text-red-600 mt-1">Action required</p>
-                        @else
-                            <p class="text-xs text-green-600 mt-1">All caught up</p>
-                        @endif
-                    </div>
+    <!-- Charts Row -->
+    <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Revenue Chart -->
+        <div class="rounded-xl bg-white p-6 shadow-sm lg:col-span-2">
+            <div class="mb-6 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Revenue Overview</h3>
+                    <p class="text-sm text-gray-600">Monthly revenue and growth trends</p>
                 </div>
+                <div class="flex space-x-2">
+                    <button class="rounded-lg px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100">Day</button>
+                    <button class="rounded-lg bg-gray-100 px-3 py-1 text-sm font-medium text-gray-900">Month</button>
+                    <button class="rounded-lg px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100">Year</button>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="revenueChart"></canvas>
             </div>
         </div>
 
-        <!-- Subscription Overview Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Plan Distribution Chart -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Subscription Distribution</h3>
+        <!-- User Distribution -->
+        <div class="rounded-xl bg-white p-6 shadow-sm">
+            <h3 class="mb-6 text-lg font-semibold text-gray-900">User Distribution</h3>
+            <div class="h-80">
+                <canvas id="userDistributionChart"></canvas>
+            </div>
+            <div class="mt-6 space-y-3">
                 @php
-                    $planDistribution = \App\Models\User::select('subscription_status', \DB::raw('count(*) as count'))
-                        ->where('is_admin', false)
-                        ->groupBy('subscription_status')
-                        ->get();
+                    $plans = [
+                        ['name' => 'Free', 'count' => \App\Models\User::where('subscription_status', 'free')->count(), 'color' => 'bg-gray-400'],
+                        ['name' => 'Premium', 'count' => \App\Models\User::where('subscription_status', 'premium')->count(), 'color' => 'bg-blue-500'],
+                        ['name' => 'Pro', 'count' => \App\Models\User::where('subscription_status', 'pro')->count(), 'color' => 'bg-purple-500']
+                    ];
                 @endphp
-                <div class="space-y-4">
-                    @foreach($planDistribution as $plan)
-                        <div>
-                            <div class="flex justify-between text-sm mb-1">
-                                <span class="font-medium capitalize">{{ $plan->subscription_status }}</span>
-                                <span class="text-gray-600">{{ $plan->count }} users</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="h-2 rounded-full
-                                    @if($plan->subscription_status === 'pro') bg-purple-600
-                                    @elseif($plan->subscription_status === 'premium') bg-blue-600
-                                    @else bg-gray-400
-                                    @endif"
-                                    style="width: {{ ($plan->count / $stats['total_students']) * 100 }}%">
-                                </div>
-                            </div>
+                @foreach($plans as $plan)
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="h-3 w-3 rounded-full {{ $plan['color'] }}"></div>
+                            <span class="ml-2 text-sm font-medium text-gray-700">{{ $plan['name'] }}</span>
                         </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <!-- Revenue Trends -->
-            <div class="lg:col-span-2 bg-white rounded-lg shadow p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-semibold text-gray-900">Revenue Trends</h3>
-                    <select class="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-                        <option>Last 12 months</option>
-                        <option>Last 6 months</option>
-                        <option>Last 30 days</option>
-                    </select>
-                </div>
-                <div class="h-64">
-                    <canvas id="revenueChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Recent Transactions -->
-            <div class="lg:col-span-2 bg-white rounded-lg shadow p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Recent Transactions</h3>
-                    <a href="{{ route('admin.subscriptions.transactions') }}" class="text-sm text-indigo-600 hover:text-indigo-800">View All →</a>
-                </div>
-                @php
-                    $recentTransactions = \App\Models\PaymentTransaction::with(['user', 'subscription.plan'])
-                        ->latest()
-                        ->take(5)
-                        ->get();
-                @endphp
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead>
-                            <tr class="border-b">
-                                <th class="text-left py-2 text-xs font-medium text-gray-500 uppercase">User</th>
-                                <th class="text-left py-2 text-xs font-medium text-gray-500 uppercase">Plan</th>
-                                <th class="text-left py-2 text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                <th class="text-left py-2 text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th class="text-left py-2 text-xs font-medium text-gray-500 uppercase">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            @forelse($recentTransactions as $transaction)
-                                <tr>
-                                    <td class="py-3">
-                                        <div class="text-sm font-medium text-gray-900">{{ $transaction->user->name }}</div>
-                                        <div class="text-xs text-gray-500">{{ $transaction->user->email }}</div>
-                                    </td>
-                                    <td class="py-3">
-                                        @if($transaction->subscription)
-                                            <span class="text-sm text-gray-900">{{ $transaction->subscription->plan->name }}</span>
-                                        @else
-                                            <span class="text-sm text-gray-500">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="text-sm font-medium text-gray-900">৳{{ number_format($transaction->amount, 0) }}</span>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
-                                            @if($transaction->status === 'completed') bg-green-100 text-green-800
-                                            @elseif($transaction->status === 'pending') bg-yellow-100 text-yellow-800
-                                            @else bg-red-100 text-red-800
-                                            @endif">
-                                            {{ ucfirst($transaction->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 text-sm text-gray-500">
-                                        {{ $transaction->created_at->diffForHumans() }}
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="py-4 text-center text-gray-500">No transactions yet</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Subscription Actions & Stats -->
-            <div class="space-y-6">
-                <!-- Quick Stats -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Subscription Stats</h3>
-                    <div class="space-y-4">
-                        @php
-                            $todayRevenue = \App\Models\PaymentTransaction::where('status', 'completed')
-                                ->whereDate('created_at', today())
-                                ->sum('amount');
-                            $newSubscribersToday = \App\Models\UserSubscription::whereDate('created_at', today())->count();
-                            $churnRate = 2.5; // Calculate actual churn rate
-                        @endphp
-                        <div>
-                            <p class="text-sm text-gray-600">Today's Revenue</p>
-                            <p class="text-2xl font-bold text-gray-900">৳{{ number_format($todayRevenue, 0) }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">New Subscribers Today</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ $newSubscribersToday }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Churn Rate</p>
-                            <p class="text-2xl font-bold {{ $churnRate < 5 ? 'text-green-600' : 'text-red-600' }}">{{ $churnRate }}%</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                    <div class="space-y-3">
-                        <a href="{{ route('admin.subscriptions.users') }}" class="block w-full bg-indigo-600 text-white text-center py-2 px-4 rounded-lg hover:bg-indigo-700 transition">
-                            <i class="fas fa-users mr-2"></i> Manage Users
-                        </a>
-                        <a href="{{ route('admin.subscriptions.transactions') }}" class="block w-full bg-green-600 text-white text-center py-2 px-4 rounded-lg hover:bg-green-700 transition">
-                            <i class="fas fa-receipt mr-2"></i> View Transactions
-                        </a>
-                        <button onclick="showGrantModal()" class="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition">
-                            <i class="fas fa-gift mr-2"></i> Grant Subscription
-                        </button>
-<a href="{{ route('admin.subscription-plans.index') }}" class="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded-lg hover:bg-purple-700 transition">
-    <i class="fas fa-tags mr-2"></i> Manage Plans
-</a>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section Performance with Subscription Impact -->
-        <div class="bg-white rounded-lg shadow p-6 mb-8">
-            <h3 class="text-lg font-semibold text-gray-900 mb-6">Section Performance & Usage</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                @foreach($section_stats as $section)
-                    @php
-                        // Get usage stats for this section
-                        $monthlyAttempts = \App\Models\StudentAttempt::whereHas('testSet', function($q) use ($section) {
-                            $q->where('section_id', $section->id);
-                        })->whereMonth('created_at', now()->month)->count();
-                        
-                        $premiumAttempts = \App\Models\StudentAttempt::whereHas('testSet', function($q) use ($section) {
-                            $q->where('section_id', $section->id);
-                        })->whereHas('user', function($q) {
-                            $q->where('subscription_status', '!=', 'free');
-                        })->whereMonth('created_at', now()->month)->count();
-                    @endphp
-                    <div class="border rounded-lg p-4 hover:border-indigo-300 transition-colors">
-                        <h4 class="text-sm font-semibold text-gray-900 capitalize mb-3">{{ $section->name }}</h4>
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Test Sets</span>
-                                <span class="font-medium">{{ $section->test_sets_count }}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Questions</span>
-                                <span class="font-medium">{{ $section->total_questions }}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Monthly Usage</span>
-                                <span class="font-medium">{{ $monthlyAttempts }}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Premium %</span>
-                                <span class="font-medium text-purple-600">
-                                    {{ $monthlyAttempts > 0 ? round(($premiumAttempts / $monthlyAttempts) * 100) : 0 }}%
-                                </span>
-                            </div>
-                            <div class="pt-2">
-                                <a href="{{ route('admin.questions.create', ['section' => $section->name]) }}" 
-                                   class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">
-                                    Add Content →
-                                </a>
-                            </div>
-                        </div>
+                        <span class="text-sm font-semibold text-gray-900">{{ $plan['count'] }}</span>
                     </div>
                 @endforeach
             </div>
         </div>
+    </div>
 
-        <!-- AI Evaluation Stats -->
-        <div class="bg-white rounded-lg shadow p-6 mb-8">
-            <h3 class="text-lg font-semibold text-gray-900 mb-6">AI Evaluation Usage</h3>
-            @php
-                $aiWritingCount = \App\Models\StudentAnswer::whereNotNull('ai_evaluation')->whereMonth('ai_evaluated_at', now()->month)->count();
-                $aiSpeakingCount = \App\Models\StudentAnswer::whereNotNull('ai_evaluation')->whereMonth('ai_evaluated_at', now()->month)->count();
-                $totalAIUsage = $aiWritingCount + $aiSpeakingCount;
-            @endphp
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="text-center p-4 bg-purple-50 rounded-lg">
-                    <i class="fas fa-robot text-3xl text-purple-600 mb-2"></i>
-                    <p class="text-2xl font-bold text-gray-900">{{ $totalAIUsage }}</p>
-                    <p class="text-sm text-gray-600">Total AI Evaluations</p>
-                </div>
-                <div class="text-center p-4 bg-blue-50 rounded-lg">
-                    <i class="fas fa-pen-alt text-3xl text-blue-600 mb-2"></i>
-                    <p class="text-2xl font-bold text-gray-900">{{ $aiWritingCount }}</p>
-                    <p class="text-sm text-gray-600">Writing Evaluations</p>
-                </div>
-                <div class="text-center p-4 bg-green-50 rounded-lg">
-                    <i class="fas fa-microphone text-3xl text-green-600 mb-2"></i>
-                    <p class="text-2xl font-bold text-gray-900">{{ $aiSpeakingCount }}</p>
-                    <p class="text-sm text-gray-600">Speaking Evaluations</p>
-                </div>
+    <!-- Activity Feed & Quick Actions -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Recent Activity -->
+        <div class="rounded-xl bg-white p-6 shadow-sm lg:col-span-2">
+            <div class="mb-6 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                <a href="{{ route('admin.attempts.index') }}" class="text-sm font-medium text-primary hover:text-primary-dark">
+                    View all →
+                </a>
+            </div>
+            
+            <div class="space-y-4">
+                @php
+                    $recentAttempts = \App\Models\StudentAttempt::with(['user', 'testSet.section'])
+                        ->latest()
+                        ->take(5)
+                        ->get();
+                @endphp
+                
+                @forelse($recentAttempts as $attempt)
+                    <div class="flex items-center rounded-lg border border-gray-200 p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                            <svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-900">{{ $attempt->user->name }}</p>
+                            <p class="text-xs text-gray-500">
+                                Completed {{ $attempt->testSet->section->name }} test • {{ $attempt->created_at->diffForHumans() }}
+                            </p>
+                        </div>
+                        <div class="ml-4">
+                            @if($attempt->band_score)
+                                <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+                                    Band {{ $attempt->band_score }}
+                                </span>
+                            @else
+                                <span class="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+                                    Pending
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-center text-sm text-gray-500">No recent activity</p>
+                @endforelse
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a href="{{ route('admin.questions.create') }}" 
-               class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-300 transition-colors">
-                <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                </svg>
-                <p class="text-sm font-medium text-gray-900">Create Question</p>
-                <p class="text-xs text-gray-500 mt-1">Add new test content</p>
-            </a>
-
-            <a href="{{ route('admin.test-sets.create') }}" 
-               class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-300 transition-colors">
-                <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <p class="text-sm font-medium text-gray-900">New Test Set</p>
-                <p class="text-xs text-gray-500 mt-1">Create test collection</p>
-            </a>
-
-            <a href="{{ route('admin.subscriptions.users') }}" 
-               class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-300 transition-colors">
-                <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <p class="text-sm font-medium text-gray-900">Manage Subscriptions</p>
-                <p class="text-xs text-gray-500 mt-1">User subscriptions</p>
-            </a>
-
-            <a href="{{ route('admin.attempts.index', ['status' => 'completed']) }}" 
-               class="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-yellow-300 transition-colors">
-                <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                </svg>
-                <p class="text-sm font-medium text-gray-900">Review Tests</p>
-                <p class="text-xs text-gray-500 mt-1">Evaluate submissions</p>
-            </a>
-        </div>
-    </div>
-
-    {{-- Grant Subscription Modal --}}
-    <div id="grantModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Quick Grant Subscription</h3>
-            <form method="GET" action="{{ route('admin.subscriptions.users') }}">
-                <p class="text-sm text-gray-600 mb-4">Search for a user to grant subscription:</p>
-                <input type="text" name="search" placeholder="Email or name..." required
-                       class="w-full rounded-md border-gray-300 shadow-sm mb-4">
-                <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="closeGrantModal()" 
-                            class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
-                    <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700">
-                        Search User
-                    </button>
+        <!-- Quick Actions & Stats -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="rounded-xl bg-white p-6 shadow-sm">
+                <h3 class="mb-4 text-lg font-semibold text-gray-900">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{{ route('admin.questions.create') }}" 
+                       class="flex items-center rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Add Question</p>
+                            <p class="text-xs text-gray-500">Create new test content</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ route('admin.test-sets.create') }}" 
+                       class="flex items-center rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                            <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">New Test Set</p>
+                            <p class="text-xs text-gray-500">Create test collection</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ route('admin.subscriptions.users') }}" 
+                       class="flex items-center rounded-lg border border-gray-200 p-3 hover:bg-gray-50">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+                            <svg class="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 00-2-2H5.5A2.5 2.5 0 003 6.5v11A2.5 2.5 0 005.5 20H6a2 2 0 002-2v-2m4-13v13m0-13h2a2 2 0 012 2v2m-4-4h2a2 2 0 012 2v2m0 0v11a2 2 0 01-2 2h-.5a2.5 2.5 0 01-2.5-2.5v-11A2.5 2.5 0 0114.5 4H15a2 2 0 012 2v2z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Grant Access</p>
+                            <p class="text-xs text-gray-500">Manage subscriptions</p>
+                        </div>
+                    </a>
                 </div>
-            </form>
+            </div>
+
+            <!-- System Health -->
+            <div class="rounded-xl bg-white p-6 shadow-sm">
+                <h3 class="mb-4 text-lg font-semibold text-gray-900">System Health</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600">Server Status</span>
+                            <span class="font-medium text-green-600">Operational</span>
+                        </div>
+                        <div class="mt-2 h-2 w-full rounded-full bg-gray-200">
+                            <div class="h-2 w-full rounded-full bg-green-500"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600">API Response</span>
+                            <span class="font-medium text-gray-900">45ms</span>
+                        </div>
+                        <div class="mt-2 h-2 w-full rounded-full bg-gray-200">
+                            <div class="h-2 w-3/4 rounded-full bg-blue-500"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600">Storage Used</span>
+                            <span class="font-medium text-gray-900">62%</span>
+                        </div>
+                        <div class="mt-2 h-2 w-full rounded-full bg-gray-200">
+                            <div class="h-2 w-3/5 rounded-full bg-yellow-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -416,62 +295,133 @@
             type: 'line',
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                datasets: [
-                    {
-                        label: 'Revenue (BDT)',
-                        data: [45000, 52000, 48000, 65000, 72000, 81000, 95000, 88000, 102000, 115000, 125000, 135000],
-                        borderColor: 'rgb(79, 70, 229)',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Subscriptions',
-                        data: [120, 145, 135, 180, 195, 220, 250, 235, 275, 310, 340, 365],
-                        borderColor: 'rgb(236, 72, 153)',
-                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                        tension: 0.3,
-                        yAxisID: 'y1'
-                    }
-                ]
+                datasets: [{
+                    label: 'Revenue',
+                    data: [
+                        @php
+                            $monthlyRevenue = [];
+                            for ($i = 1; $i <= 12; $i++) {
+                                $revenue = \App\Models\PaymentTransaction::where('status', 'completed')
+                                    ->whereMonth('created_at', $i)
+                                    ->whereYear('created_at', now()->year)
+                                    ->sum('amount');
+                                $monthlyRevenue[] = $revenue;
+                            }
+                            echo implode(',', $monthlyRevenue);
+                        @endphp
+                    ],
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        bodyFont: {
+                            size: 14
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return '৳' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
                 },
                 scales: {
                     y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        },
                         ticks: {
                             callback: function(value) {
                                 return '৳' + value.toLocaleString();
-                            }
+                            },
+                            font: {
+                                size: 12
+                            },
+                            color: '#6b7280'
                         }
                     },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
+                    x: {
                         grid: {
-                            drawOnChartArea: false,
+                            display: false,
+                            drawBorder: false
                         },
-                    },
+                        ticks: {
+                            font: {
+                                size: 12
+                            },
+                            color: '#6b7280'
+                        }
+                    }
                 }
             }
         });
 
-        // Modal functions
-        function showGrantModal() {
-            document.getElementById('grantModal').classList.remove('hidden');
-        }
-        
-        function closeGrantModal() {
-            document.getElementById('grantModal').classList.add('hidden');
-        }
+        // User Distribution Chart
+        const userDistCtx = document.getElementById('userDistributionChart').getContext('2d');
+        const userDistChart = new Chart(userDistCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Free', 'Premium', 'Pro'],
+                datasets: [{
+                    data: [
+                        {{ \App\Models\User::where('subscription_status', 'free')->count() }},
+                        {{ \App\Models\User::where('subscription_status', 'premium')->count() }},
+                        {{ \App\Models\User::where('subscription_status', 'pro')->count() }}
+                    ],
+                    backgroundColor: ['#9ca3af', '#3b82f6', '#8b5cf6'],
+                    borderWidth: 0,
+                    spacing: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        cornerRadius: 8
+                    }
+                },
+                cutout: '75%'
+            }
+        });
+
+        // Real-time updates simulation
+        setInterval(() => {
+            // Add animation to metrics
+            document.querySelectorAll('.metric-card').forEach(card => {
+                card.classList.add('animate-pulse');
+                setTimeout(() => card.classList.remove('animate-pulse'), 1000);
+            });
+        }, 30000);
     </script>
     @endpush
 </x-admin-layout>
