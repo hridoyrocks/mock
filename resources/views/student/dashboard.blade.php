@@ -1,604 +1,616 @@
 {{-- resources/views/student/dashboard.blade.php --}}
 <x-student-layout>
-    <x-slot:title>Dashboard - IELTS Master Pro</x-slot>
-    
-    <x-slot:header>
-        <div class="flex items-center justify-between">
-            <div>
-                <h3 class="text-2xl font-bold gradient-text">
-                    Welcome back, {{ auth()->user()->name }}! 👋
-                </h3>
-                <p class="text-gray-600 mt-1">{{ now()->format('l, F j, Y') }}</p>
-            </div>
-            <!-- Daily Motivation -->
-            <div class="hidden lg:flex items-center bg-gradient-to-r from-red-50 to-orange-50 px-6 py-3 rounded-xl border border-red-200">
-                <i class="fas fa-quote-left text-red-400 mr-3"></i>
-                <div>
-                    <p class="text-sm font-medium text-gray-700">"Success is the sum of small efforts repeated daily"</p>
-                    <p class="text-xs text-gray-500 mt-0.5">Keep pushing forward! 🎯</p>
+    <x-slot:title>Dashboard</x-slot>
+
+    <!-- Hero Section with Journey Progress -->
+    <section class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-pink-600/20"></div>
+        <div class="relative px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+            <div class="max-w-7xl mx-auto">
+                <!-- Welcome Banner -->
+                <div class="glass rounded-2xl p-8 lg:p-12 mb-8">
+                    <div class="flex flex-col lg:flex-row items-center justify-between gap-8">
+                        <div class="flex-1 text-center lg:text-left">
+                            <h1 class="text-3xl lg:text-4xl font-bold text-white mb-4">
+                                Welcome back, {{ auth()->user()->name }}! 🎯
+                            </h1>
+                            <p class="text-gray-300 text-lg mb-6">
+                                You're on fire! Keep up the great work.
+                            </p>
+                            
+                            <!-- Quick Stats -->
+                            <div class="flex flex-wrap gap-4 justify-center lg:justify-start">
+                                <div class="glass rounded-xl px-6 py-3 border-purple-500/30">
+                                    <p class="text-gray-400 text-sm">Current Streak</p>
+                                    <p class="text-2xl font-bold text-white">
+                                        <i class="fas fa-fire text-orange-500 mr-1"></i>
+                                        {{ auth()->user()->study_streak_days ?? 0 }} days
+                                    </p>
+                                </div>
+                                <div class="glass rounded-xl px-6 py-3 border-blue-500/30">
+                                    <p class="text-gray-400 text-sm">Average Score</p>
+                                    <p class="text-2xl font-bold text-white">
+                                        {{ $stats['average_band_score'] ? number_format($stats['average_band_score'], 1) : 'N/A' }}
+                                    </p>
+                                </div>
+                                <div class="glass rounded-xl px-6 py-3 border-pink-500/30">
+                                    <p class="text-gray-400 text-sm">Tests Completed</p>
+                                    <p class="text-2xl font-bold text-white">
+                                        {{ $stats['completed_attempts'] }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Journey Visualization -->
+                        <div class="relative">
+                            <div class="w-48 h-48 lg:w-64 lg:h-64 relative">
+                                <!-- Circular Progress -->
+                                <svg class="w-full h-full transform -rotate-90">
+                                    <circle cx="50%" cy="50%" r="45%" 
+                                            stroke="rgba(255,255,255,0.1)" 
+                                            stroke-width="8" 
+                                            fill="none" />
+                                    <circle cx="50%" cy="50%" r="45%" 
+                                            stroke="url(#gradient)" 
+                                            stroke-width="8" 
+                                            fill="none"
+                                            stroke-linecap="round"
+                                            stroke-dasharray="{{ 2 * 3.14159 * 45 }}"
+                                            stroke-dashoffset="{{ 2 * 3.14159 * 45 * (1 - ($userGoal ? $userGoal->progress_percentage / 100 : 0)) }}" />
+                                    <defs>
+                                        <linearGradient id="gradient">
+                                            <stop offset="0%" stop-color="#a855f7" />
+                                            <stop offset="100%" stop-color="#ec4899" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                
+                                <!-- Center Content -->
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    @if($userGoal)
+                                        <p class="text-gray-400 text-sm">Target Band</p>
+                                        <p class="text-4xl font-bold text-white">{{ $userGoal->target_band_score }}</p>
+                                        <p class="text-sm text-purple-400">{{ round($userGoal->progress_percentage) }}% Complete</p>
+                                    @else
+                                        <button onclick="openGoalModal()" class="glass px-4 py-2 rounded-lg text-white hover:border-purple-500/50 transition-all">
+                                            <i class="fas fa-plus mr-2"></i>Set Goal
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Challenge / Focus Area -->
+                <div class="glass rounded-2xl p-6 mb-8 border-purple-500/30 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
+                    <div class="relative flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-white mb-2">
+                                <i class="fas fa-bullseye text-purple-400 mr-2"></i>
+                                Today's Focus
+                            </h3>
+                            <p class="text-gray-300">Based on your recent performance, we recommend focusing on:</p>
+                        </div>
+                        <div class="text-right">
+                            @php
+                                $weakestSection = $sectionPerformance->where('attempts_count', '>', 0)->sortBy('average_score')->first();
+                            @endphp
+                            @if($weakestSection)
+                                <p class="text-2xl font-bold text-white capitalize">{{ $weakestSection['name'] }}</p>
+                                <a href="{{ route('student.' . $weakestSection['name'] . '.index') }}" 
+                                   class="inline-flex items-center text-purple-400 hover:text-purple-300 mt-2">
+                                    Practice Now <i class="fas fa-arrow-right ml-2"></i>
+                                </a>
+                            @else
+                                <p class="text-lg text-gray-400">Complete a test to get recommendations</p>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </x-slot>
-    
-    <!-- Dashboard Content -->
-    <div class="p-6">
-        <!-- Achievement Alert (if new achievements) -->
-        @if($recentAchievements && $recentAchievements->where('is_seen', false)->count() > 0)
-            <div class="mb-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-1">
-                <div class="bg-white rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center animate-bounce">
-                                <i class="fas fa-trophy text-yellow-600 text-xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <h4 class="font-bold text-gray-900">Congratulations! 🎉</h4>
-                                <p class="text-sm text-gray-600">You've unlocked {{ $recentAchievements->where('is_seen', false)->count() }} new achievements!</p>
-                            </div>
-                        </div>
-                        <button onclick="viewAchievements()" class="px-6 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-medium hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            View Achievements
-                        </button>
-                    </div>
-                </div>
-            </div>
-        @endif
+    </section>
 
-        <!-- Goal Setting Card (if no goal) -->
-        @if(!$userGoal)
-            <div class="mb-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-1">
-                <div class="bg-white rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
-                                <i class="fas fa-bullseye text-purple-600 text-2xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <h4 class="text-lg font-bold text-gray-900">Set Your IELTS Goal</h4>
-                                <p class="text-sm text-gray-600 mt-1">Define your target score and track your progress</p>
-                            </div>
-                        </div>
-                        <button onclick="setGoalModal()" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                            Set Goal Now
-                        </button>
-                    </div>
-                </div>
-            </div>
-        @endif
-
-        <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            <!-- Study Streak -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-100 to-red-100 rounded-full -mr-12 -mt-12"></div>
-                <div class="relative">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-lg pulse-glow">
-                            <i class="fas fa-fire text-white text-xl"></i>
-                        </div>
-                        @if(auth()->user()->study_streak_days >= 7)
-                            <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium animate-pulse">On Fire!</span>
-                        @endif
-                    </div>
-                    <h3 class="text-3xl font-bold gradient-text">{{ auth()->user()->study_streak_days ?? 0 }}</h3>
-                    <p class="text-sm text-gray-600 mt-1">Day Streak</p>
-                </div>
-            </div>
-
-            <!-- Tests This Month -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full -mr-12 -mt-12"></div>
-                <div class="relative">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-file-alt text-white text-xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-3xl font-bold text-gray-900">{{ auth()->user()->tests_taken_this_month }}</h3>
-                    <p class="text-sm text-gray-600 mt-1">Tests This Month</p>
-                    <div class="mt-2">
-                        @php
-                            $testLimit = auth()->user()->getFeatureLimit('mock_tests_per_month');
-                            $percentage = $testLimit === 'unlimited' ? 0 : (auth()->user()->tests_taken_this_month / $testLimit) * 100;
-                        @endphp
-                        <div class="flex items-center justify-between text-xs mb-1">
-                            <span class="text-gray-500">Usage</span>
-                            <span class="font-medium">{{ $testLimit === 'unlimited' ? 'Unlimited' : auth()->user()->tests_taken_this_month . '/' . $testLimit }}</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5">
-                            <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-1.5 rounded-full transition-all duration-500" 
-                                 style="width: {{ min($percentage, 100) }}%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Average Score -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full -mr-12 -mt-12"></div>
-                <div class="relative">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-chart-line text-white text-xl"></i>
-                        </div>
-                        @if($stats['average_band_score'] && $stats['average_band_score'] >= 7)
-                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Excellent!</span>
-                        @endif
-                    </div>
-                    <h3 class="text-3xl font-bold text-gray-900">
-                        {{ $stats['average_band_score'] ? number_format($stats['average_band_score'], 1) : '-' }}
-                    </h3>
-                    <p class="text-sm text-gray-600 mt-1">Average Band</p>
-                </div>
-            </div>
-
-            <!-- Achievement Points -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full -mr-12 -mt-12"></div>
-                <div class="relative">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                            <i class="fas fa-star text-white text-xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-3xl font-bold text-gray-900">{{ auth()->user()->achievement_points ?? 0 }}</h3>
-                    <p class="text-sm text-gray-600 mt-1">Points Earned</p>
-                </div>
-            </div>
-
-            <!-- Subscription Status -->
-            <div class="bg-gradient-to-br from-red-500 to-orange-500 rounded-xl shadow-sm p-6 text-white hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-white rounded-full opacity-10 -mr-16 -mt-16"></div>
-                <div class="relative">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-                            <i class="fas fa-crown text-white text-xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-3xl font-bold">{{ ucfirst(auth()->user()->subscription_status) }}</h3>
-                    @if(auth()->user()->activeSubscription())
-                        <p class="text-sm text-red-100 mt-1">{{ auth()->user()->activeSubscription()->days_remaining }} days left</p>
-                    @else
-                        <p class="text-sm text-red-100 mt-1">Upgrade for more</p>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left Column -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                        <i class="fas fa-rocket text-red-500 mr-2"></i>
-                        Quick Actions
-                    </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <button onclick="window.location='{{ route('student.listening.index') }}'" 
-                                class="group p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:from-blue-100 hover:to-blue-200 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-                            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-headphones text-white text-xl"></i>
-                            </div>
-                            <p class="text-sm font-medium text-gray-700">Listening Test</p>
-                        </button>
-                        
-                        <button onclick="window.location='{{ route('student.reading.index') }}'" 
-                                class="group p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:from-green-100 hover:to-green-200 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-                            <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-book-open text-white text-xl"></i>
-                            </div>
-                            <p class="text-sm font-medium text-gray-700">Reading Test</p>
-                        </button>
-                        
-                        <button onclick="window.location='{{ route('student.writing.index') }}'" 
-                                class="group p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl hover:from-yellow-100 hover:to-yellow-200 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-                            <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-pen text-white text-xl"></i>
-                            </div>
-                            <p class="text-sm font-medium text-gray-700">Writing Test</p>
-                        </button>
-                        
-                        <button onclick="window.location='{{ route('student.speaking.index') }}'" 
-                                class="group p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:from-purple-100 hover:to-purple-200 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-                            <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-microphone text-white text-xl"></i>
-                            </div>
-                            <p class="text-sm font-medium text-gray-700">Speaking Test</p>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Performance Overview -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-lg font-bold text-gray-900 flex items-center">
-                            <i class="fas fa-chart-bar text-red-500 mr-2"></i>
-                            Performance Overview
+    <!-- Main Dashboard Content -->
+    <section class="px-4 sm:px-6 lg:px-8 pb-12">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column - Main Content -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Interactive Test Selection -->
+                    <div class="glass rounded-2xl p-6">
+                        <h2 class="text-xl font-bold text-white mb-6">
+                            <i class="fas fa-gamepad text-purple-400 mr-2"></i>
+                            Start Your Practice
                         </h2>
-                        <select class="text-sm border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
-                            <option>Last 30 Days</option>
-                            <option>Last 7 Days</option>
-                            <option>All Time</option>
-                        </select>
+                        
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Listening Card -->
+                            <div class="group relative">
+                                <div class="absolute inset-0 bg-gradient-to-br from-violet-600 to-purple-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                <a href="{{ route('student.listening.index') }}" 
+                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-violet-500/50 transition-all duration-300 hover:-translate-y-1">
+                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-headphones text-white text-2xl"></i>
+                                    </div>
+                                    <p class="text-white font-semibold">Listening</p>
+                                    <p class="text-xs text-gray-400 mt-1">30 min</p>
+                                </a>
+                            </div>
+
+                            <!-- Reading Card -->
+                            <div class="group relative">
+                                <div class="absolute inset-0 bg-gradient-to-br from-emerald-600 to-green-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                <a href="{{ route('student.reading.index') }}" 
+                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-emerald-500/50 transition-all duration-300 hover:-translate-y-1">
+                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-book-open text-white text-2xl"></i>
+                                    </div>
+                                    <p class="text-white font-semibold">Reading</p>
+                                    <p class="text-xs text-gray-400 mt-1">60 min</p>
+                                </a>
+                            </div>
+
+                            <!-- Writing Card -->
+                            <div class="group relative">
+                                <div class="absolute inset-0 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                <a href="{{ route('student.writing.index') }}" 
+                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1">
+                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-pen-fancy text-white text-2xl"></i>
+                                    </div>
+                                    <p class="text-white font-semibold">Writing</p>
+                                    <p class="text-xs text-gray-400 mt-1">60 min</p>
+                                </a>
+                            </div>
+
+                            <!-- Speaking Card -->
+                            <div class="group relative">
+                                <div class="absolute inset-0 bg-gradient-to-br from-rose-600 to-pink-600 rounded-xl blur opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                <a href="{{ route('student.speaking.index') }}" 
+                                   class="relative glass rounded-xl p-6 flex flex-col items-center justify-center hover:border-rose-500/50 transition-all duration-300 hover:-translate-y-1">
+                                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-microphone text-white text-2xl"></i>
+                                    </div>
+                                    <p class="text-white font-semibold">Speaking</p>
+                                    <p class="text-xs text-gray-400 mt-1">15 min</p>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    
-                    @if($sectionPerformance->where('attempts_count', '>', 0)->isNotEmpty())
+
+                    <!-- Performance Chart -->
+                    <div class="glass rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-white">
+                                <i class="fas fa-chart-line text-blue-400 mr-2"></i>
+                                Your Progress
+                            </h2>
+                            <select class="glass bg-transparent text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option>Last 7 days</option>
+                                <option>Last 30 days</option>
+                                <option>All time</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Progress Bars for Each Section -->
                         <div class="space-y-4">
-                            @foreach($sectionPerformance as $performance)
-                                @if($performance['attempts_count'] > 0)
-                                    <div class="group hover:bg-gray-50 p-4 rounded-xl transition-all duration-200">
-                                        <div class="flex items-center justify-between mb-3">
-                                            <div class="flex items-center">
+                            @foreach($sectionPerformance as $section)
+                                @if($section['attempts_count'] > 0)
+                                    <div class="group">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="flex items-center space-x-2">
                                                 @php
                                                     $sectionIcons = [
-                                                        'listening' => ['icon' => 'fa-headphones', 'color' => 'blue'],
-                                                        'reading' => ['icon' => 'fa-book-open', 'color' => 'green'],
-                                                        'writing' => ['icon' => 'fa-pen', 'color' => 'yellow'],
-                                                        'speaking' => ['icon' => 'fa-microphone', 'color' => 'purple']
+                                                        'listening' => 'fa-headphones',
+                                                        'reading' => 'fa-book-open',
+                                                        'writing' => 'fa-pen-fancy',
+                                                        'speaking' => 'fa-microphone'
                                                     ];
-                                                    $section = $sectionIcons[$performance['name']] ?? ['icon' => 'fa-question', 'color' => 'gray'];
+                                                    $sectionColors = [
+                                                        'listening' => 'purple',
+                                                        'reading' => 'blue',
+                                                        'writing' => 'green',
+                                                        'speaking' => 'pink'
+                                                    ];
                                                 @endphp
-                                                <div class="w-12 h-12 bg-{{ $section['color'] }}-100 rounded-xl flex items-center justify-center mr-4">
-                                                    <i class="fas {{ $section['icon'] }} text-{{ $section['color'] }}-600 text-lg"></i>
-                                                </div>
-                                                <div>
-                                                    <h4 class="font-semibold text-gray-900 capitalize">{{ $performance['name'] }}</h4>
-                                                    <p class="text-sm text-gray-500">{{ $performance['attempts_count'] }} tests completed</p>
-                                                </div>
+                                                <i class="fas {{ $sectionIcons[$section['name']] ?? 'fa-question' }} text-{{ $sectionColors[$section['name']] ?? 'gray' }}-400"></i>
+                                                <span class="text-white font-medium capitalize">{{ $section['name'] }}</span>
                                             </div>
                                             <div class="text-right">
-                                                <p class="text-3xl font-bold gradient-text">{{ number_format($performance['average_score'], 1) }}</p>
-                                                <p class="text-xs text-gray-500">Best: {{ number_format($performance['best_score'], 1) }}</p>
+                                                <span class="text-2xl font-bold text-white">{{ number_format($section['average_score'], 1) }}</span>
+                                                <span class="text-xs text-gray-400 ml-1">/ 9.0</span>
                                             </div>
                                         </div>
                                         <div class="relative">
-                                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                                <div class="h-3 rounded-full transition-all duration-1000 bg-gradient-to-r from-{{ $section['color'] }}-500 to-{{ $section['color'] }}-600"
-                                                     style="width: {{ min(($performance['average_score'] / 9) * 100, 100) }}%">
-                                                </div>
+                                            <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                                                <div class="h-full bg-gradient-to-r from-{{ $sectionColors[$section['name']] }}-500 to-{{ $sectionColors[$section['name']] }}-400 rounded-full transition-all duration-1000 hover:shadow-lg hover:shadow-{{ $sectionColors[$section['name']] }}-500/50"
+                                                     style="width: {{ ($section['average_score'] / 9) * 100 }}%"></div>
                                             </div>
-                                            <span class="absolute -top-1 text-xs font-medium text-gray-700"
-                                                  style="left: {{ min(($performance['average_score'] / 9) * 100, 95) }}%">
-                                                {{ number_format($performance['average_score'], 1) }}
-                                            </span>
+                                            <div class="flex justify-between mt-1">
+                                                <span class="text-xs text-gray-500">{{ $section['attempts_count'] }} attempts</span>
+                                                <span class="text-xs text-gray-500">Best: {{ number_format($section['best_score'], 1) }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 @endif
                             @endforeach
+                            
+                            @if($sectionPerformance->where('attempts_count', '>', 0)->isEmpty())
+                                <div class="text-center py-12">
+                                    <i class="fas fa-chart-area text-6xl text-gray-600 mb-4"></i>
+                                    <p class="text-gray-400">No data available yet</p>
+                                    <p class="text-sm text-gray-500 mt-2">Complete your first test to see your progress</p>
+                                </div>
+                            @endif
                         </div>
-                    @else
-                        <div class="text-center py-12">
-                            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-chart-bar text-4xl text-gray-300"></i>
-                            </div>
-                            <p class="text-gray-500 mb-4">No test data available yet</p>
-                            <a href="{{ route('student.index') }}" 
-                               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg font-medium hover:from-red-600 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                                <i class="fas fa-play-circle mr-2"></i>
-                                Start Your First Test
-                            </a>
-                        </div>
-                    @endif
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-lg font-bold text-gray-900 flex items-center">
-                            <i class="fas fa-history text-red-500 mr-2"></i>
-                            Recent Activity
-                        </h2>
-                        <a href="{{ route('student.results') }}" class="text-sm text-red-600 hover:text-red-700 font-medium">
-                            View All →
-                        </a>
                     </div>
 
-                    @if($recentAttempts->isNotEmpty())
-                        <div class="space-y-3">
-                            @foreach($recentAttempts as $attempt)
-                                <div class="group bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 hover:from-red-50 hover:to-orange-50 transition-all duration-300 cursor-pointer border border-gray-200 hover:border-red-200"
-                                     onclick="window.location='{{ route('student.results.show', $attempt) }}'">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center space-x-4">
-                                            @php
-                                                $sectionInfo = [
-                                                    'listening' => ['icon' => 'fa-headphones', 'gradient' => 'from-blue-500 to-indigo-500'],
-                                                    'reading' => ['icon' => 'fa-book-open', 'gradient' => 'from-green-500 to-emerald-500'],
-                                                    'writing' => ['icon' => 'fa-pen', 'gradient' => 'from-yellow-500 to-orange-500'],
-                                                    'speaking' => ['icon' => 'fa-microphone', 'gradient' => 'from-purple-500 to-pink-500']
-                                                ];
-                                                $section = $sectionInfo[$attempt->testSet->section->name] ?? ['icon' => 'fa-question', 'gradient' => 'from-gray-500 to-gray-600'];
-                                            @endphp
-                                            <div class="w-14 h-14 bg-gradient-to-br {{ $section['gradient'] }} rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-                                                <i class="fas {{ $section['icon'] }} text-white text-xl"></i>
-                                            </div>
-                                            <div>
-                                                <h4 class="font-semibold text-gray-900 group-hover:text-red-600 transition-colors">
-                                                    {{ $attempt->testSet->title }}
-                                                </h4>
-                                                <div class="flex items-center space-x-3 mt-1">
-                                                    <span class="text-sm text-gray-600">
-                                                        <i class="far fa-clock mr-1"></i>
-                                                        {{ $attempt->created_at->diffForHumans() }}
-                                                    </span>
-                                                    <span class="text-sm text-gray-600">
-                                                        <i class="far fa-calendar mr-1"></i>
-                                                        {{ $attempt->created_at->format('M d, Y') }}
-                                                    </span>
+                    <!-- Recent Activity Timeline -->
+                    <div class="glass rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-white">
+                                <i class="fas fa-history text-purple-400 mr-2"></i>
+                                Recent Activity
+                            </h2>
+                            <a href="{{ route('student.results') }}" class="text-purple-400 hover:text-purple-300 text-sm">
+                                View All <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                        
+                        @if($recentAttempts->isNotEmpty())
+                            <div class="space-y-4">
+                                @foreach($recentAttempts as $attempt)
+                                    <a href="{{ route('student.results.show', $attempt) }}" 
+                                       class="block group">
+                                        <div class="glass rounded-xl p-4 hover:border-purple-500/50 transition-all duration-300">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-4">
+                                                    @php
+                                                        $sectionColors = [
+                                                            'listening' => 'from-violet-500 to-purple-500',
+                                                            'reading' => 'from-blue-500 to-cyan-500',
+                                                            'writing' => 'from-green-500 to-emerald-500',
+                                                            'speaking' => 'from-rose-500 to-pink-500'
+                                                        ];
+                                                        $gradientClass = $sectionColors[$attempt->testSet->section->name] ?? 'from-gray-500 to-gray-600';
+                                                    @endphp
+                                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br {{ $gradientClass }} flex items-center justify-center">
+                                                        <i class="fas {{ $icons[$attempt->testSet->section->name] ?? 'fa-question' }} text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="text-white font-medium group-hover:text-purple-400 transition-colors">
+                                                            {{ $attempt->testSet->title }}
+                                                        </h4>
+                                                        <p class="text-sm text-gray-400">
+                                                            {{ $attempt->created_at->diffForHumans() }} • {{ $attempt->created_at->format('M d, Y') }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="text-right">
+                                                    @if($attempt->band_score)
+                                                        <p class="text-2xl font-bold text-white">{{ number_format($attempt->band_score, 1) }}</p>
+                                                        <p class="text-xs text-gray-400">Band Score</p>
+                                                    @else
+                                                        <span class="glass px-3 py-1 rounded-full text-xs text-yellow-400 border-yellow-500/30">
+                                                            <i class="fas fa-clock mr-1"></i>Pending
+                                                        </span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            @if($attempt->band_score)
-                                                <div class="text-3xl font-bold gradient-text">{{ number_format($attempt->band_score, 1) }}</div>
-                                                <p class="text-xs text-gray-600">Band Score</p>
-                                            @else
-                                                <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                                    <i class="fas fa-clock mr-1"></i>
-                                                    Pending
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-8">
-                            <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
-                            <p class="text-gray-500">No recent activity</p>
-                        </div>
-                    @endif
+                                    </a>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-12">
+                                <i class="fas fa-inbox text-6xl text-gray-600 mb-4"></i>
+                                <p class="text-gray-400">No recent activity</p>
+                                <a href="{{ route('student.index') }}" class="inline-flex items-center mt-4 text-purple-400 hover:text-purple-300">
+                                    Start your first test <i class="fas fa-arrow-right ml-2"></i>
+                                </a>
+                            </div>
+                        @endif
+                    </div>
                 </div>
-            </div>
 
-            <!-- Right Column -->
-            <div class="space-y-6">
-                <!-- Study Goal -->
-                @if($userGoal)
-                    <div class="bg-gradient-to-br from-red-500 to-orange-500 rounded-xl p-6 text-white shadow-xl">
+                <!-- Right Column - Sidebar Content -->
+                <div class="space-y-6">
+                    <!-- Achievement Showcase -->
+                    <div class="glass rounded-2xl p-6">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="font-bold text-lg flex items-center">
-                                <i class="fas fa-bullseye mr-2"></i>
-                                Your IELTS Goal
+                            <h3 class="text-lg font-bold text-white">
+                                <i class="fas fa-trophy text-yellow-400 mr-2"></i>
+                                Achievements
                             </h3>
-                            <button onclick="editGoalModal()" class="text-white/80 hover:text-white">
-                                <i class="fas fa-edit"></i>
+                            <button onclick="openAchievementsModal()" class="text-purple-400 hover:text-purple-300">
+                                <i class="fas fa-expand"></i>
                             </button>
                         </div>
-                        <div class="space-y-4">
-                            <div>
-                                <div class="flex justify-between items-end mb-2">
-                                    <span class="text-sm text-red-100">Target Band Score</span>
-                                    <span class="text-3xl font-bold">{{ $userGoal->target_band_score }}</span>
-                                </div>
+                        
+                        @if($recentAchievements->isNotEmpty())
+                            <div class="grid grid-cols-3 gap-3">
+                                @foreach($recentAchievements->take(6) as $achievement)
+                                    <div class="group relative">
+                                        <div class="w-full aspect-square rounded-xl bg-gradient-to-br from-{{ $achievement->badge->color }}-500/20 to-{{ $achievement->badge->color }}-600/20 flex items-center justify-center hover:from-{{ $achievement->badge->color }}-500/30 hover:to-{{ $achievement->badge->color }}-600/30 transition-all cursor-pointer"
+                                             onclick="showAchievementDetails({{ $achievement->badge->id }})">
+                                            <i class="{{ $achievement->badge->icon }} text-{{ $achievement->badge->color }}-400 text-2xl"></i>
+                                        </div>
+                                        @if(!$achievement->is_seen)
+                                            <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                                        @endif
+                                    </div>
+                                @endforeach
                             </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm text-red-100">Days Remaining</span>
-                                    <span class="font-bold">{{ $userGoal->days_remaining }} days</span>
-                                </div>
+                            <div class="mt-4 text-center">
+                                <p class="text-sm text-gray-400">
+                                    <span class="text-white font-bold">{{ auth()->user()->achievement_points ?? 0 }}</span> Total Points
+                                </p>
                             </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <span class="text-sm text-red-100">Progress</span>
-                                    <span class="font-bold">{{ round($userGoal->progress_percentage) }}%</span>
-                                </div>
-                                <div class="w-full bg-red-700 rounded-full h-3">
-                                    <div class="bg-white h-3 rounded-full transition-all duration-1000"
-                                         style="width: {{ $userGoal->progress_percentage }}%"></div>
-                                </div>
+                        @else
+                            <div class="text-center py-8">
+                                <i class="fas fa-medal text-4xl text-gray-600 mb-3"></i>
+                                <p class="text-gray-400 text-sm">Complete tests to earn achievements!</p>
                             </div>
-                            @if($userGoal->study_reason)
-                                <div class="pt-2 border-t border-red-400">
-                                    <p class="text-sm text-red-100">Motivation:</p>
-                                    <p class="text-sm font-medium mt-1">{{ $userGoal->study_reason }}</p>
+                        @endif
+                    </div>
+
+                    <!-- Leaderboard -->
+                    <div class="glass rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <i class="fas fa-crown text-yellow-400 mr-2"></i>
+                                Leaderboard
+                            </h3>
+                            <select onchange="changeLeaderboardPeriod(this.value)" 
+                                    class="glass bg-transparent text-white text-xs rounded px-2 py-1 focus:outline-none">
+                                <option value="weekly">This Week</option>
+                                <option value="monthly">This Month</option>
+                                <option value="all_time">All Time</option>
+                            </select>
+                        </div>
+                        
+                        <div id="leaderboard-content">
+                            @if($leaderboard->isNotEmpty())
+                                <div class="space-y-3">
+                                    @foreach($leaderboard->take(5) as $entry)
+                                        <div class="flex items-center space-x-3 {{ $entry->user_id === auth()->id() ? 'glass rounded-lg p-2 border-purple-500/50' : '' }}">
+                                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br 
+                                                {{ $loop->iteration === 1 ? 'from-yellow-500 to-amber-500' : 
+                                                   ($loop->iteration === 2 ? 'from-gray-400 to-gray-500' : 
+                                                   ($loop->iteration === 3 ? 'from-orange-500 to-amber-600' : 'from-purple-500 to-pink-500')) }} 
+                                                flex items-center justify-center text-white font-bold text-sm">
+                                                {{ $loop->iteration }}
+                                            </div>
+                                            <div class="flex-1">
+                                                <p class="text-white font-medium text-sm">
+                                                    {{ $entry->user_id === auth()->id() ? 'You' : Str::limit($entry->user->name, 15) }}
+                                                </p>
+                                                <p class="text-xs text-gray-400">{{ $entry->total_points }} pts</p>
+                                            </div>
+                                            @if($loop->iteration <= 3)
+                                                <i class="fas fa-trophy text-{{ $loop->iteration === 1 ? 'yellow' : ($loop->iteration === 2 ? 'gray' : 'orange') }}-400"></i>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                    
+                                    @if(!$userInLeaderboard)
+                                        <div class="pt-3 border-t border-white/10">
+                                            <p class="text-xs text-gray-400 text-center">
+                                                You're not in top 5. Keep practicing!
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
+                                <div class="text-center py-6">
+                                    <i class="fas fa-users text-4xl text-gray-600 mb-3"></i>
+                                    <p class="text-gray-400 text-sm">No leaderboard data yet</p>
                                 </div>
                             @endif
                         </div>
                     </div>
-                @endif
 
-                <!-- Leaderboard -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-lg font-bold text-gray-900 flex items-center">
-                            <i class="fas fa-trophy text-yellow-500 mr-2"></i>
-                            Leaderboard
-                        </h2>
-                        <select onchange="changeLeaderboardPeriod(this.value)" 
-                                class="text-sm border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
-                            <option value="weekly">This Week</option>
-                            <option value="monthly">This Month</option>
-                            <option value="all_time">All Time</option>
-                        </select>
-                    </div>
-                    
-                    <div id="leaderboard-content">
-                        @include('partials.leaderboard-content', ['leaderboard' => $leaderboard, 'userInLeaderboard' => $userInLeaderboard])
-                    </div>
-                </div>
-
-                <!-- Achievement Progress -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-lg font-bold text-gray-900 flex items-center">
-                            <i class="fas fa-medal text-red-500 mr-2"></i>
-                            Next Achievements
-                        </h2>
-                        <button onclick="viewAchievements()" class="text-sm text-red-600 hover:text-red-700">
-                            View All
+                    <!-- Study Tips -->
+                    <div class="glass rounded-2xl p-6 border-purple-500/30 bg-gradient-to-br from-purple-600/10 to-pink-600/10">
+                        <h3 class="text-lg font-bold text-white mb-3">
+                            <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+                            Pro Tip
+                        </h3>
+                        <p class="text-sm text-gray-300 leading-relaxed">
+                            @php
+                                $tips = [
+                                    'Focus on your weakest section for maximum improvement!',
+                                    'Practice speaking with yourself in the mirror to build confidence.',
+                                    'Read diverse topics to expand your vocabulary naturally.',
+                                    'Time management is key - practice with a timer always.',
+                                    'Listen to various English accents to prepare for the test.',
+                                    'Write at least 250 words daily to improve your writing skills.',
+                                    'Record yourself speaking and analyze your pronunciation.',
+                                    'Learn 5 new words every day and use them in sentences.',
+                                    'Take mock tests regularly to track your progress.',
+                                    'Stay consistent - even 30 minutes daily makes a difference!'
+                                ];
+                            @endphp
+                            {{ $tips[array_rand($tips)] }}
+                        </p>
+                        <button class="mt-4 text-xs text-purple-400 hover:text-purple-300">
+                            Get more tips <i class="fas fa-arrow-right ml-1"></i>
                         </button>
                     </div>
-                    
-                    @if($progressToNext->isNotEmpty())
-                        <div class="space-y-4">
-                            @foreach($progressToNext->take(3) as $progress)
-                                <div class="group hover:bg-gray-50 p-3 rounded-lg transition-all duration-200">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <div class="flex items-center">
-                                            <div class="w-10 h-10 rounded-lg bg-{{ $progress['badge']->color }}-100 flex items-center justify-center mr-3">
-                                                <i class="{{ $progress['badge']->icon }} text-{{ $progress['badge']->color }}-600"></i>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900">{{ $progress['badge']->name }}</p>
-                                                <p class="text-xs text-gray-500">{{ $progress['badge']->points }} pts</p>
-                                            </div>
-                                        </div>
-                                        <span class="text-sm font-medium text-gray-700">{{ $progress['current'] }}/{{ $progress['target'] }}</span>
-                                    </div>
-                                    <div class="relative">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-gradient-to-r from-{{ $progress['badge']->color }}-500 to-{{ $progress['badge']->color }}-600 h-2 rounded-full transition-all duration-500"
-                                                 style="width: {{ $progress['percentage'] }}%"></div>
-                                        </div>
-                                    </div>
-                                    <p class="text-xs text-gray-500 mt-2">{{ $progress['badge']->description }}</p>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-8">
-                            <i class="fas fa-trophy text-4xl text-gray-300 mb-2"></i>
-                            <p class="text-sm text-gray-500">Keep practicing to unlock achievements!</p>
-                        </div>
-                    @endif
-                </div>
 
-                <!-- Study Tips -->
-                <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-6 text-white shadow-xl">
-                    <h3 class="font-bold text-lg mb-4 flex items-center">
-                        <i class="fas fa-lightbulb mr-2"></i>
-                        Daily Tip
-                    </h3>
-                    <p class="text-sm opacity-90 leading-relaxed">
-                        Focus on your weakest section today. Consistent practice in challenging areas leads to the biggest improvements!
-                    </p>
-                    <button class="mt-4 text-sm font-medium text-white/80 hover:text-white transition-colors">
-                        Get more tips →
-                    </button>
+                    <!-- Upcoming Features -->
+                    <div class="glass rounded-2xl p-6">
+                        <h3 class="text-lg font-bold text-white mb-4">
+                            <i class="fas fa-rocket text-purple-400 mr-2"></i>
+                            Coming Soon
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+                                    <i class="fas fa-users text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-white font-medium text-sm">Study Groups</p>
+                                    <p class="text-xs text-gray-400">Connect with peers</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                                    <i class="fas fa-robot text-green-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-white font-medium text-sm">AI Tutor</p>
+                                    <p class="text-xs text-gray-400">Personalized guidance</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                                    <i class="fas fa-calendar-check text-purple-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-white font-medium text-sm">Study Planner</p>
+                                    <p class="text-xs text-gray-400">Smart scheduling</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Achievements Modal -->
-    <div id="achievementsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-4xl shadow-xl rounded-xl bg-white">
-            <div class="mt-3">
+    <!-- Modals -->
+    <!-- Goal Setting Modal -->
+    <div id="goalModal" class="hidden fixed inset-0 z-50 overflow-y-auto" x-data="{ open: false }">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeGoalModal()"></div>
+            
+            <div class="relative glass rounded-2xl w-full max-w-md p-6 lg:p-8">
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-2xl font-bold gradient-text">
-                        <i class="fas fa-trophy text-yellow-500 mr-2"></i>Your Achievements
+                    <h3 class="text-2xl font-bold text-white">
+                        <i class="fas fa-bullseye text-purple-400 mr-2"></i>
+                        Set Your IELTS Goal
                     </h3>
-                    <button onclick="closeAchievementsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="fas fa-times text-2xl"></i>
+                    <button onclick="closeGoalModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-h-96 overflow-y-auto p-2">
-                    @foreach($allBadges as $badge)
-                        @php
-                            $earned = $userAchievements->contains('badge_id', $badge->id);
-                            $achievement = $earned ? $userAchievements->firstWhere('badge_id', $badge->id) : null;
-                        @endphp
-                        <div class="text-center p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer transform hover:scale-105
-                            {{ $earned ? 'border-' . $badge->color . '-500 bg-' . $badge->color . '-50 shadow-lg' : 'border-gray-200 bg-gray-50 opacity-60' }}"
-                            onclick="showBadgeDetails({{ $badge->id }})">
-                            <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-{{ $badge->color }}-100 flex items-center justify-center
-                                {{ $earned ? 'ring-4 ring-' . $badge->color . '-500 ring-opacity-50' : '' }}">
-                                <i class="{{ $badge->icon }} text-{{ $badge->color }}-600 text-3xl"></i>
-                            </div>
-                            <h4 class="font-semibold text-gray-900">{{ $badge->name }}</h4>
-                            <p class="text-sm text-gray-600 mt-1">{{ $badge->points }} pts</p>
-                            @if($earned)
-                                <p class="text-xs text-{{ $badge->color }}-600 mt-2">
-                                    <i class="fas fa-check-circle"></i> Earned
-                                </p>
-                            @else
-                                <p class="text-xs text-gray-500 mt-2">
-                                    <i class="fas fa-lock"></i> Locked
-                                </p>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Goal Setting Modal -->
-    <div id="goalModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-xl rounded-xl bg-white">
-            <form action="{{ route('student.goals.store') }}" method="POST">
-                @csrf
-                <div class="mt-3">
-                    <div class="flex items-center mb-6">
-                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center mr-3">
-                            <i class="fas fa-bullseye text-white text-xl"></i>
-                        </div>
-                        <h3 class="text-xl font-bold gradient-text">Set Your IELTS Goal</h3>
-                    </div>
-                    
+                <form action="{{ route('student.goals.store') }}" method="POST">
+                    @csrf
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Target Band Score</label>
-                            <select name="target_band_score" class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" required>
-                                <option value="">Select target score</option>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Target Band Score</label>
+                            <select name="target_band_score" class="w-full glass bg-transparent text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                                <option value="">Select your target</option>
                                 @for($i = 4.0; $i <= 9.0; $i += 0.5)
-                                    <option value="{{ $i }}">{{ number_format($i, 1) }}</option>
+                                    <option value="{{ $i }}" class="bg-gray-900">Band {{ number_format($i, 1) }}</option>
                                 @endfor
                             </select>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
-                            <input type="date" name="target_date" min="{{ date('Y-m-d', strtotime('+1 day')) }}" 
-                                   class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" required>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Target Date</label>
+                            <input type="date" 
+                                   name="target_date" 
+                                   min="{{ date('Y-m-d', strtotime('+1 day')) }}"
+                                   class="w-full glass bg-transparent text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500" 
+                                   required>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Why are you taking IELTS?</label>
-                            <textarea name="study_reason" rows="3" 
-                                      class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
-                                      placeholder="e.g., Study abroad, Immigration, Career advancement..."></textarea>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Your Motivation</label>
+                            <textarea name="study_reason" 
+                                      rows="3" 
+                                      class="w-full glass bg-transparent text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                                      placeholder="Why are you taking IELTS? (e.g., Study abroad, Immigration, Career)"></textarea>
+                        </div>
+                        
+                        <div class="flex gap-3 pt-4">
+                            <button type="button" 
+                                    onclick="closeGoalModal()" 
+                                    class="flex-1 glass rounded-lg py-3 text-white hover:border-gray-500/50 transition-all">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    class="flex-1 rounded-lg py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                Set Goal
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="flex justify-end space-x-3 mt-6">
-                        <button type="button" onclick="closeGoalModal()" 
-                                class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                            Cancel
-                        </button>
-                        <button type="submit" class="px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg font-medium hover:from-red-600 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl">
-                            Set Goal
-                        </button>
-                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements Modal -->
+    <div id="achievementsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeAchievementsModal()"></div>
+            
+            <div class="relative glass rounded-2xl w-full max-w-4xl p-6 lg:p-8 max-h-[80vh] overflow-hidden">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-white">
+                        <i class="fas fa-trophy text-yellow-400 mr-2"></i>
+                        Your Achievements
+                    </h3>
+                    <button onclick="closeAchievementsModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
                 </div>
-            </form>
+                
+                <div class="overflow-y-auto max-h-[60vh] pr-2">
+                    @if($allBadges)
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            @foreach($allBadges as $badge)
+                                @php
+                                    $earned = $userAchievements->contains('badge_id', $badge->id);
+                                @endphp
+                                <div class="glass rounded-xl p-4 text-center cursor-pointer transition-all duration-300 
+                                     {{ $earned ? 'border-' . $badge->color . '-500/50 hover:border-' . $badge->color . '-400/70' : 'opacity-50 hover:opacity-70' }}"
+                                     onclick="showAchievementDetails({{ $badge->id }})">
+                                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-{{ $badge->color }}-500/20 to-{{ $badge->color }}-600/20 flex items-center justify-center mx-auto mb-3
+                                         {{ $earned ? 'neon-' . $badge->color : '' }}">
+                                        <i class="{{ $badge->icon }} text-{{ $badge->color }}-400 text-3xl"></i>
+                                    </div>
+                                    <h4 class="text-white font-semibold text-sm">{{ $badge->name }}</h4>
+                                    <p class="text-xs text-gray-400 mt-1">{{ $badge->points }} pts</p>
+                                    <p class="text-xs mt-2">
+                                        @if($earned)
+                                            <span class="text-{{ $badge->color }}-400">
+                                                <i class="fas fa-check-circle"></i> Earned
+                                            </span>
+                                        @else
+                                            <span class="text-gray-500">
+                                                <i class="fas fa-lock"></i> Locked
+                                            </span>
+                                        @endif
+                                    </p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 
     @push('scripts')
     <script>
-        // Confetti animation for achievements
-        function celebrateAchievement() {
-            // Add confetti library and trigger
+        // Modal Functions
+        function openGoalModal() {
+            document.getElementById('goalModal').classList.remove('hidden');
         }
-
-        // Leaderboard functionality
-        function changeLeaderboardPeriod(period) {
-            fetch(`{{ route('student.leaderboard') }}/${period}`)
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById('leaderboard-content').innerHTML = html;
-                });
+        
+        function closeGoalModal() {
+            document.getElementById('goalModal').classList.add('hidden');
         }
-
-        // Achievement functionality
-        function viewAchievements() {
+        
+        function openAchievementsModal() {
             document.getElementById('achievementsModal').classList.remove('hidden');
             // Mark achievements as seen
             fetch('{{ route('student.achievements.mark-seen') }}', {
@@ -609,65 +621,62 @@
                 }
             });
         }
-
+        
         function closeAchievementsModal() {
             document.getElementById('achievementsModal').classList.add('hidden');
         }
-
-        function showBadgeDetails(badgeId) {
+        
+        function showAchievementDetails(badgeId) {
             fetch(`/student/achievements/${badgeId}`)
                 .then(response => response.json())
                 .then(data => {
-                    // Create a nice modal or tooltip with badge details
-                    const details = data.earned 
+                    // You can create a nice tooltip or modal here
+                    const message = data.earned 
                         ? `${data.badge.description}\n\nEarned on: ${data.earned_at}` 
                         : `${data.badge.description}\n\nKeep working to unlock this achievement!`;
-                    alert(details);
+                    
+                    // For now, using alert, but you can make a nice modal
+                    alert(message);
                 });
         }
-
-        // Goal functionality
-        function setGoalModal() {
-            document.getElementById('goalModal').classList.remove('hidden');
+        
+        function changeLeaderboardPeriod(period) {
+            fetch(`{{ route('student.leaderboard') }}/${period}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('leaderboard-content').innerHTML = html;
+                });
         }
-
-        function closeGoalModal() {
-            document.getElementById('goalModal').classList.add('hidden');
-        }
-
-        function editGoalModal() {
-            // Implement edit goal functionality
-            setGoalModal();
-        }
-
-        // Close modals when clicking outside
+        
+        // Close modals on outside click
         window.onclick = function(event) {
-            const achievementsModal = document.getElementById('achievementsModal');
-            const goalModal = document.getElementById('goalModal');
-            
-            if (event.target == achievementsModal) {
-                achievementsModal.classList.add('hidden');
-            }
-            if (event.target == goalModal) {
-                goalModal.classList.add('hidden');
+            if (event.target.classList.contains('fixed') && event.target.classList.contains('inset-0')) {
+                closeGoalModal();
+                closeAchievementsModal();
             }
         }
-
-        // Auto-refresh leaderboard every 5 minutes
+        
+        // Auto refresh leaderboard every 5 minutes
         setInterval(() => {
             const select = document.querySelector('select[onchange*="changeLeaderboardPeriod"]');
             if (select) {
                 changeLeaderboardPeriod(select.value);
             }
         }, 300000);
-
-        // Add floating animation to achievement cards
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.hover\\:-translate-y-1');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
-        });
+        
+        // Daily tips array
+        const dailyTips = [
+            "Focus on your weakest section for maximum improvement!",
+            "Practice speaking with yourself in the mirror to build confidence.",
+            "Read diverse topics to expand your vocabulary naturally.",
+            "Time management is key - practice with a timer always.",
+            "Listen to various English accents to prepare for the test.",
+            "Write at least 250 words daily to improve your writing skills.",
+            "Record yourself speaking and analyze your pronunciation.",
+            "Learn 5 new words every day and use them in sentences.",
+            "Take mock tests regularly to track your progress.",
+            "Stay consistent - even 30 minutes daily makes a difference!"
+        ];
     </script>
     @endpush
 </x-student-layout>
