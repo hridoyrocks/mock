@@ -73,6 +73,11 @@ Route::middleware(['guest'])->group(function () {
 // Logout Route (authenticated only)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Maintenance page (accessible during maintenance) - MOVED HERE
+Route::get('/maintenance', [App\Http\Controllers\MaintenanceController::class, 'index'])
+    ->name('maintenance')
+    ->middleware('auth');
+
 // Profile routes (authenticated)
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -81,6 +86,16 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar')->middleware('auth');
+
+// Invoice routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/invoice/{transaction}/download', [SubscriptionController::class, 'downloadInvoice'])
+        ->name('invoice.download');
+});
+
+// Public verification route (no auth required)
+Route::get('/invoice/verify/{transaction}', [SubscriptionController::class, 'verifyInvoice'])
+    ->name('invoice.verify');
 
 // Authenticated routes with role-based dashboard
 Route::middleware(['auth'])->group(function () {
@@ -92,33 +107,22 @@ Route::middleware(['auth'])->group(function () {
             return redirect()->route('student.dashboard');
         }
     })->name('dashboard');
-    
-  // Invoice routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/invoice/{transaction}/download', [SubscriptionController::class, 'downloadInvoice'])
-        ->name('invoice.download');
-});
 
-// Public verification route (no auth required)
-Route::get('/invoice/verify/{transaction}', [SubscriptionController::class, 'verifyInvoice'])
-    ->name('invoice.verify');
-
-
-   // AI Evaluation routes
-Route::prefix('ai')->name('ai.')->middleware(['auth'])->group(function () {
-    // Evaluation endpoints
-    Route::post('/evaluate/writing', [AIEvaluationController::class, 'evaluateWriting'])
-        ->name('evaluation.writing')
-        ->middleware(['feature:ai_writing_evaluation']);
-    
-    Route::post('/evaluate/speaking', [AIEvaluationController::class, 'evaluateSpeaking'])
-        ->name('evaluation.speaking')
-        ->middleware(['feature:ai_speaking_evaluation']);
-    
-    // Result page (no status page needed anymore)
-    Route::get('/evaluation/{attempt}', [AIEvaluationController::class, 'getEvaluation'])
-        ->name('evaluation.get');
-});
+    // AI Evaluation routes
+    Route::prefix('ai')->name('ai.')->group(function () {
+        // Evaluation endpoints
+        Route::post('/evaluate/writing', [AIEvaluationController::class, 'evaluateWriting'])
+            ->name('evaluation.writing')
+            ->middleware(['feature:ai_writing_evaluation']);
+        
+        Route::post('/evaluate/speaking', [AIEvaluationController::class, 'evaluateSpeaking'])
+            ->name('evaluation.speaking')
+            ->middleware(['feature:ai_speaking_evaluation']);
+        
+        // Result page (no status page needed anymore)
+        Route::get('/evaluation/{attempt}', [AIEvaluationController::class, 'getEvaluation'])
+            ->name('evaluation.get');
+    });
     
     // Subscription routes (accessible to all authenticated users)
     Route::prefix('subscription')->name('subscription.')->group(function () {
@@ -319,6 +323,12 @@ Route::prefix('ai')->name('ai.')->middleware(['auth'])->group(function () {
             Route::get('/{subscriptionFeature}/edit', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'edit'])->name('edit');
             Route::put('/{subscriptionFeature}', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'update'])->name('update');
             Route::delete('/{subscriptionFeature}', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'destroy'])->name('destroy');
+        });
+        
+        // Maintenance Mode Management - FIXED PLACEMENT
+        Route::prefix('maintenance')->name('maintenance.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\MaintenanceModeController::class, 'index'])->name('index');
+            Route::post('/toggle', [App\Http\Controllers\Admin\MaintenanceModeController::class, 'toggle'])->name('toggle');
         });
     });
 });

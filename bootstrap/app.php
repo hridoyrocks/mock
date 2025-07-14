@@ -19,11 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'feature' => \App\Http\Middleware\CheckFeatureAccess::class,
             'usage.limit' => \App\Http\Middleware\TrackUsageLimit::class,
             'verify.webhook' => \App\Http\Middleware\VerifyWebhookSignature::class,
+            'maintenance.check' => \App\Http\Middleware\CheckMaintenanceMode::class,
         ]);
         
         // Web middleware group
         $middleware->web(append: [
-            // Add any custom web middleware here if needed
+            \App\Http\Middleware\CheckMaintenanceMode::class,
         ]);
         
         // API middleware group

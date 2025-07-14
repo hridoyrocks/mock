@@ -73,6 +73,13 @@ class LoginController extends Controller
         $this->handleDeviceTracking($request, $user);
 
         return redirect()->intended($this->redirectPath());
+
+if (!$user->is_admin && MaintenanceMode::isActive()) {
+            return redirect()->route('maintenance');
+        }
+
+        return redirect()->intended($this->redirectPath());
+
     }
 
     private function handleDeviceTracking(Request $request, $user)
