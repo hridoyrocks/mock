@@ -389,6 +389,41 @@
             <!-- Main Content -->
             <main class="flex-1 overflow-y-auto bg-gray-50">
                 {{ $slot }}
+
+                <!-- Simple Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <!-- Left Side -->
+                <div class="flex items-center space-x-8">
+                    <p class="text-sm text-gray-600">
+                        © {{ date('Y') }} CD IELTS. All rights reserved.
+                    </p>
+                    <div class="hidden md:flex items-center space-x-6">
+                        <a href="#" class="text-sm text-gray-500 hover:text-gray-700">Privacy</a>
+                        <a href="#" class="text-sm text-gray-500 hover:text-gray-700">Terms</a>
+                        <a href="#" class="text-sm text-gray-500 hover:text-gray-700">Contact</a>
+                    </div>
+                </div>
+                
+                <!-- Right Side -->
+                <div class="flex items-center space-x-6">
+                    <span class="text-sm text-gray-500">Follow us:</span>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-gray-600">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-gray-600">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-gray-600">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
             </main>
         </div>
     </div>
