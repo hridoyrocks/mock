@@ -18,6 +18,7 @@ class SubscriptionPlan extends Model
         'features',
         'sort_order',
         'is_active',
+        'is_free',
         'is_featured'
     ];
 
@@ -26,6 +27,7 @@ class SubscriptionPlan extends Model
         'discount_price' => 'decimal:2',
         'features' => 'array',
         'is_active' => 'boolean',
+        'is_free' => 'boolean', 
         'is_featured' => 'boolean',
     ];
 

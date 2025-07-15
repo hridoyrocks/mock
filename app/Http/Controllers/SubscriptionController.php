@@ -67,30 +67,61 @@ class SubscriptionController extends Controller
      * Subscribe to a plan.
      */
     public function subscribe(Request $request, SubscriptionPlan $plan)
-    {
-        $user = auth()->user();
+{
+    $user = auth()->user();
 
-        // Check if user already has this plan
-        if ($user->hasPlan($plan->slug)) {
-            return redirect()->route('subscription.index')
-                ->with('info', 'You already have this plan.');
-        }
-
-        // Free plan doesn't need payment
-        if ($plan->is_free) {
-            $user->subscribeTo($plan);
-            return redirect()->route('subscription.index')
-                ->with('success', 'Successfully subscribed to the Free plan!');
-        }
-
-        // For paid plans, redirect to payment
-        session([
-            'subscription_plan_id' => $plan->id,
-            'subscription_amount' => $plan->current_price,
-        ]);
-
-        return view('subscription.checkout', compact('plan'));
+    // Check if user already has this plan
+    if ($user->hasPlan($plan->slug)) {
+        return redirect()->route('subscription.index')
+            ->with('info', 'You already have this plan.');
     }
+
+    // Handle coupon if provided
+    $couponCode = $request->input('coupon_code');
+    $couponDetails = null;
+    
+    if ($couponCode) {
+        $coupon = \App\Models\Coupon::where('code', strtoupper($couponCode))->first();
+        
+        if ($coupon && $coupon->canBeUsedByUser($user) && $coupon->plan_id === $plan->id) {
+            $discount = $coupon->calculateDiscount($plan->current_price);
+            $couponDetails = [
+                'code' => $coupon->code,
+                'formatted_discount' => $coupon->formatted_discount,
+                'discount_amount' => $discount['discount_amount'],
+                'final_price' => $discount['final_price'],
+                'coupon_id' => $coupon->id
+            ];
+            
+            session(['applied_coupon_details' => $couponDetails]);
+        }
+    }
+
+    // Free plan doesn't need payment
+    if ($plan->is_free || ($couponDetails && $couponDetails['final_price'] == 0)) {
+        $paymentDetails = [
+            'payment_method' => 'free',
+            'coupon_code' => $couponCode
+        ];
+        
+        $user->subscribeTo($plan, $paymentDetails);
+        
+        // Clear coupon session
+        session()->forget('applied_coupon_details');
+        
+        return redirect()->route('subscription.welcome')
+            ->with('success', 'Successfully subscribed to the ' . $plan->name . ' plan!');
+    }
+
+    // For paid plans, redirect to payment
+    session([
+        'subscription_plan_id' => $plan->id,
+        'subscription_amount' => $couponDetails ? $couponDetails['final_price'] : $plan->current_price,
+        'coupon_code' => $couponCode
+    ]);
+
+    return view('subscription.checkout', compact('plan'));
+}
 
     /**
      * Cancel subscription.

@@ -16,35 +16,73 @@ class SubscriptionManager
      * Subscribe user to a plan
      */
     public function subscribe(User $user, SubscriptionPlan $plan, array $paymentDetails = []): UserSubscription
-    {
-        return DB::transaction(function () use ($user, $plan, $paymentDetails) {
-            // Cancel existing active subscriptions
-            $this->cancelExistingSubscriptions($user);
+{
+    return DB::transaction(function () use ($user, $plan, $paymentDetails) {
+        // Cancel existing active subscriptions
+        $this->cancelExistingSubscriptions($user);
 
-            // Create new subscription
-            $subscription = UserSubscription::create([
+        // Check for coupon
+        $coupon = null;
+        $finalPrice = $plan->current_price;
+        $discountAmount = 0;
+        
+        if (isset($paymentDetails['coupon_code'])) {
+            $coupon = Coupon::where('code', $paymentDetails['coupon_code'])->first();
+            
+            if ($coupon && $coupon->canBeUsedByUser($user) && $coupon->plan_id === $plan->id) {
+                $discount = $coupon->calculateDiscount($plan->current_price);
+                $finalPrice = $discount['final_price'];
+                $discountAmount = $discount['discount_amount'];
+            }
+        }
+
+        // Determine subscription duration
+        $durationDays = $plan->duration_days;
+        if ($coupon && $coupon->discount_type === 'trial' && $coupon->duration_days) {
+            $durationDays = $coupon->duration_days;
+        }
+
+        // Create subscription
+        $subscription = UserSubscription::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'starts_at' => now(),
+            'ends_at' => now()->addDays($durationDays),
+            'auto_renew' => $finalPrice > 0, // Auto-renew only for paid subscriptions
+            'payment_method' => $paymentDetails['payment_method'] ?? null,
+            'payment_reference' => $paymentDetails['payment_reference'] ?? null,
+        ]);
+
+        // Create coupon redemption record
+        if ($coupon) {
+            CouponRedemption::create([
                 'user_id' => $user->id,
-                'plan_id' => $plan->id,
-                'status' => 'active',
-                'starts_at' => now(),
-                'ends_at' => now()->addDays($plan->duration_days),
-                'auto_renew' => true,
-                'payment_method' => $paymentDetails['payment_method'] ?? null,
-                'payment_reference' => $paymentDetails['payment_reference'] ?? null,
+                'coupon_id' => $coupon->id,
+                'subscription_id' => $subscription->id,
+                'original_price' => $plan->current_price,
+                'discount_amount' => $discountAmount,
+                'final_price' => $finalPrice,
+                'redeemed_at' => now(),
+                'expires_at' => $subscription->ends_at,
             ]);
+            
+            // Increment coupon usage
+            $coupon->incrementUsage();
+        }
 
-            // Update user status
-            $user->update([
-                'subscription_status' => $plan->slug,
-                'subscription_ends_at' => $subscription->ends_at,
-            ]);
+        // Update user status
+        $user->update([
+            'subscription_status' => $plan->slug,
+            'subscription_ends_at' => $subscription->ends_at,
+        ]);
 
-            // Reset usage counters for new billing period
-            $user->resetMonthlyCounters();
+        // Reset usage counters
+        $user->resetMonthlyCounters();
 
-            return $subscription;
-        });
-    }
+        return $subscription;
+    });
+}
 
     /**
      * Cancel user's active subscriptions

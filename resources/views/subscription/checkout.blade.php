@@ -201,26 +201,52 @@
                             </div>
                         </div>
                         
-                        <!-- Price Breakdown -->
-                        <div class="space-y-3 mb-6">
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Subtotal</span>
-                                <span class="text-white font-medium">৳{{ number_format($plan->price, 0) }}</span>
-                            </div>
-                            @if($plan->discount_price)
-                            <div class="flex justify-between text-green-400">
-                                <span class="flex items-center">
-                                    <i class="fas fa-tag mr-2 text-sm"></i>
-                                    Discount
-                                </span>
-                                <span>-৳{{ number_format($plan->price - $plan->discount_price, 0) }}</span>
-                            </div>
-                            @endif
-                            <div class="border-t border-white/10 pt-3 flex justify-between">
-                                <span class="font-bold text-white">Total Due Today</span>
-                                <span class="font-bold text-2xl text-white">৳{{ number_format($plan->current_price, 0) }}</span>
-                            </div>
-                        </div>
+                        {{-- Price Breakdown section update করুন --}}
+<div class="space-y-3 mb-6">
+    <div class="flex justify-between">
+        <span class="text-gray-400">Subtotal</span>
+        <span class="text-white font-medium">৳{{ number_format($plan->price, 0) }}</span>
+    </div>
+    
+    {{-- Coupon Applied --}}
+    @if(session('applied_coupon_details'))
+        @php
+            $couponDetails = session('applied_coupon_details');
+        @endphp
+        <div class="glass rounded-lg p-3 border border-green-500/30 bg-green-500/10">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-green-400 flex items-center">
+                    <i class="fas fa-tag mr-2"></i>
+                    Coupon Applied
+                </span>
+                <span class="text-xs text-gray-400">{{ $couponDetails['code'] }}</span>
+            </div>
+            <div class="flex justify-between text-green-400">
+                <span>{{ $couponDetails['formatted_discount'] }}</span>
+                <span>-৳{{ number_format($couponDetails['discount_amount'], 0) }}</span>
+            </div>
+        </div>
+    @elseif($plan->discount_price)
+        <div class="flex justify-between text-green-400">
+            <span class="flex items-center">
+                <i class="fas fa-tag mr-2 text-sm"></i>
+                Discount
+            </span>
+            <span>-৳{{ number_format($plan->price - $plan->discount_price, 0) }}</span>
+        </div>
+    @endif
+    
+    <div class="border-t border-white/10 pt-3 flex justify-between">
+        <span class="font-bold text-white">Total Due Today</span>
+        <span class="font-bold text-2xl text-white">
+            @if(session('applied_coupon_details'))
+                ৳{{ number_format(session('applied_coupon_details.final_price'), 0) }}
+            @else
+                ৳{{ number_format($plan->current_price, 0) }}
+            @endif
+        </span>
+    </div>
+</div>
                         
                         <!-- Billing Info -->
                         <div class="glass rounded-xl p-4 mb-6 border border-blue-500/30 bg-blue-500/10">

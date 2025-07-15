@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Select Test Set - Add Question</x-slot>
     
     <x-slot:header>

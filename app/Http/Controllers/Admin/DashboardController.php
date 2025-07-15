@@ -34,6 +34,11 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
+// Add coupon stats
+    $stats['active_coupons'] = \App\Models\Coupon::active()->valid()->count();
+    $stats['total_coupon_redemptions'] = \App\Models\CouponRedemption::count();
+    $stats['coupon_discount_given'] = \App\Models\CouponRedemption::sum('discount_amount');
+
         // Recent activities
         $recent_attempts = StudentAttempt::with(['user', 'testSet.section'])
             ->latest()

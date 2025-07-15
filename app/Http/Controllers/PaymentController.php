@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\SubscriptionPlan;
 use App\Models\PaymentTransaction;
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use App\Services\Payment\PaymentGatewayFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -18,224 +21,459 @@ class PaymentController extends Controller
         $this->gatewayFactory = $gatewayFactory;
     }
 
-    /**
-     * Process payment.
-     */
     public function process(Request $request)
     {
-        $request->validate([
-            'payment_method' => 'required|in:stripe,bkash,nagad',
-            'plan_id' => 'required|exists:subscription_plans,id',
-        ]);
-
-        $user = auth()->user();
-        $plan = SubscriptionPlan::findOrFail($request->plan_id);
-
-        // Create pending transaction
-        $transaction = PaymentTransaction::create([
-            'user_id' => $user->id,
-            'transaction_id' => PaymentTransaction::generateTransactionId(),
-            'payment_method' => $request->payment_method,
-            'amount' => $plan->current_price,
-            'currency' => 'BDT',
-            'status' => 'pending',
-        ]);
-
         try {
-            $gateway = $this->gatewayFactory->make($request->payment_method);
+            // Validate request
+            $validated = $request->validate([
+                'plan_id' => 'required|exists:subscription_plans,id',
+                'payment_method' => 'required|in:stripe,bkash,nagad',
+                'payment_method_id' => 'required_if:payment_method,stripe',
+                'terms' => 'required|accepted',
+            ]);
+
+            $user = auth()->user();
+            $plan = SubscriptionPlan::findOrFail($request->plan_id);
             
-            // Process payment based on gateway
-            $response = $gateway->processPayment([
-                'amount' => $plan->current_price,
-                'currency' => 'BDT',
-                'transaction_id' => $transaction->transaction_id,
-                'success_url' => route('payment.success', ['transaction' => $transaction->id]),
-                'cancel_url' => route('payment.failed', ['transaction' => $transaction->id]),
-                'customer_email' => $user->email,
-                'customer_name' => $user->name,
-                'description' => "Subscription to {$plan->name} plan",
-            ]);
-
-            // Store gateway response
-            $transaction->update([
-                'gateway_response' => $response,
-            ]);
-
-            // Redirect to payment gateway
-            if (isset($response['redirect_url'])) {
-                return redirect($response['redirect_url']);
+            // Get amount from session (might be discounted)
+            $amount = session('subscription_amount', $plan->current_price);
+            $couponCode = session('coupon_code');
+            
+            // Verify coupon again if present
+            $coupon = null;
+            $discountAmount = 0;
+            
+            if ($couponCode) {
+                $coupon = Coupon::where('code', strtoupper($couponCode))->first();
+                
+                if (!$coupon || !$coupon->canBeUsedByUser($user) || $coupon->plan_id !== $plan->id) {
+                    // Invalid coupon, reset to original price
+                    $amount = $plan->current_price;
+                    $couponCode = null;
+                    Log::warning('Invalid coupon attempted during payment', [
+                        'user_id' => $user->id,
+                        'coupon_code' => $couponCode
+                    ]);
+                } else {
+                    // Calculate discount
+                    $discount = $coupon->calculateDiscount($plan->current_price);
+                    $amount = $discount['final_price'];
+                    $discountAmount = $discount['discount_amount'];
+                }
             }
 
-            // For API-based gateways
-            return response()->json($response);
+            // If amount is 0 (free or 100% discount), process without payment gateway
+            if ($amount == 0) {
+                DB::beginTransaction();
+                
+                try {
+                    // Create payment transaction record
+                    $transaction = PaymentTransaction::create([
+                        'user_id' => $user->id,
+                        'subscription_id' => null, // Will be updated after subscription creation
+                        'transaction_id' => 'FREE-' . strtoupper(Str::random(10)),
+                        'amount' => $plan->current_price,
+                        'discount_amount' => $discountAmount,
+                        'currency' => $user->currency ?? 'BDT',
+                        'payment_method' => $coupon ? 'coupon' : 'free',
+                        'status' => 'completed',
+                        'gateway_response' => [
+                            'coupon_code' => $couponCode,
+                            'message' => $coupon ? 'Redeemed with coupon' : 'Free plan'
+                        ],
+                        'coupon_id' => $coupon?->id,
+                    ]);
+
+                    // Subscribe user
+                    $paymentDetails = [
+                        'payment_method' => $coupon ? 'coupon' : 'free',
+                        'payment_reference' => $transaction->transaction_id,
+                        'coupon_code' => $couponCode
+                    ];
+                    
+                    $subscription = $user->subscribeTo($plan, $paymentDetails);
+                    
+                    // Update transaction with subscription ID
+                    $transaction->update(['subscription_id' => $subscription->id]);
+
+                    DB::commit();
+
+                    // Clear sessions
+                    $this->clearPaymentSessions();
+
+                    return redirect()->route('subscription.welcome')
+                        ->with('success', 'Successfully subscribed to ' . $plan->name . ' plan!');
+                        
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    throw $e;
+                }
+            }
+
+            // Process payment through gateway
+            $gateway = $this->gatewayFactory->make($request->payment_method);
+            
+            // Prepare payment data
+            $paymentData = [
+                'amount' => $amount,
+                'currency' => $user->currency ?? 'BDT',
+                'customer' => [
+                    'email' => $user->email,
+                    'name' => $user->name,
+                    'phone' => $user->phone_number,
+                ],
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'plan_id' => $plan->id,
+                    'coupon_code' => $couponCode,
+                    'discount_amount' => $discountAmount,
+                    'original_amount' => $plan->current_price,
+                ],
+                'success_url' => route('payment.success'),
+                'cancel_url' => route('subscription.plans'),
+            ];
+
+            // Handle different payment methods
+            switch ($request->payment_method) {
+                case 'stripe':
+                    return $this->processStripePayment($request, $gateway, $paymentData, $plan, $coupon);
+                    
+                case 'bkash':
+                    return $this->processBkashPayment($gateway, $paymentData, $plan, $coupon);
+                    
+                case 'nagad':
+                    return $this->processNagadPayment($gateway, $paymentData, $plan, $coupon);
+                    
+                default:
+                    throw new \Exception('Invalid payment method');
+            }
 
         } catch (\Exception $e) {
             Log::error('Payment processing failed', [
                 'error' => $e->getMessage(),
-                'transaction' => $transaction->id,
+                'user_id' => auth()->id(),
+                'plan_id' => $request->plan_id ?? null,
             ]);
 
-            $transaction->markAsFailed(['error' => $e->getMessage()]);
-
-            return redirect()->route('subscription.plans')
-                ->with('error', 'Payment processing failed. Please try again.');
+            return back()->with('error', 'Payment processing failed. Please try again.');
         }
     }
 
-    /**
-     * Handle successful payment.
-     */
-    public function success(Request $request)
+    protected function processStripePayment($request, $gateway, $paymentData, $plan, $coupon)
     {
-        $transaction = PaymentTransaction::findOrFail($request->transaction);
-
-        // Verify transaction belongs to user
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        // Check if already processed
-        if ($transaction->isSuccessful()) {
-            return redirect()->route('subscription.index')
-                ->with('info', 'This payment has already been processed.');
-        }
-
         try {
-            DB::beginTransaction();
+            // Add Stripe specific data
+            $paymentData['payment_method_id'] = $request->payment_method_id;
+            
+            // Create payment intent
+            $result = $gateway->createPayment($paymentData);
+            
+            if ($result['status'] === 'requires_action' && isset($result['client_secret'])) {
+                // 3D Secure authentication required
+                return response()->json([
+                    'requires_action' => true,
+                    'client_secret' => $result['client_secret']
+                ]);
+            }
+            
+            if ($result['status'] === 'succeeded') {
+                // Payment successful, create subscription
+                return $this->handleSuccessfulPayment($result, $plan, $coupon, 'stripe');
+            }
+            
+            // Payment failed
+            return back()->with('error', 'Payment failed. Please try again.');
+            
+        } catch (\Exception $e) {
+            Log::error('Stripe payment failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            
+            return back()->with('error', 'Payment processing failed.');
+        }
+    }
 
-            // Mark transaction as completed
-            $transaction->markAsCompleted([
-                'payment_id' => $request->payment_id,
-                'completed_at' => now(),
+    protected function processBkashPayment($gateway, $paymentData, $plan, $coupon)
+    {
+        try {
+            // Create bKash payment
+            $result = $gateway->createPayment($paymentData);
+            
+            if (isset($result['payment_url'])) {
+                // Store payment info in session for callback
+                session([
+                    'bkash_payment' => [
+                        'payment_id' => $result['payment_id'],
+                        'plan_id' => $plan->id,
+                        'coupon_id' => $coupon?->id,
+                        'amount' => $paymentData['amount'],
+                        'discount_amount' => $paymentData['metadata']['discount_amount'],
+                    ]
+                ]);
+                
+                // Redirect to bKash payment page
+                return redirect($result['payment_url']);
+            }
+            
+            return back()->with('error', 'Failed to initiate bKash payment.');
+            
+        } catch (\Exception $e) {
+            Log::error('bKash payment failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            
+            return back()->with('error', 'Payment processing failed.');
+        }
+    }
+
+    protected function processNagadPayment($gateway, $paymentData, $plan, $coupon)
+    {
+        try {
+            // Create Nagad payment
+            $result = $gateway->createPayment($paymentData);
+            
+            if (isset($result['payment_url'])) {
+                // Store payment info in session for callback
+                session([
+                    'nagad_payment' => [
+                        'payment_id' => $result['payment_id'],
+                        'plan_id' => $plan->id,
+                        'coupon_id' => $coupon?->id,
+                        'amount' => $paymentData['amount'],
+                        'discount_amount' => $paymentData['metadata']['discount_amount'],
+                    ]
+                ]);
+                
+                // Redirect to Nagad payment page
+                return redirect($result['payment_url']);
+            }
+            
+            return back()->with('error', 'Failed to initiate Nagad payment.');
+            
+        } catch (\Exception $e) {
+            Log::error('Nagad payment failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            
+            return back()->with('error', 'Payment processing failed.');
+        }
+    }
+
+    protected function handleSuccessfulPayment($paymentResult, $plan, $coupon, $paymentMethod)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $user = auth()->user();
+            
+            // Create payment transaction
+            $transaction = PaymentTransaction::create([
+                'user_id' => $user->id,
+                'subscription_id' => null, // Will be updated
+                'transaction_id' => $paymentResult['transaction_id'],
+                'amount' => $paymentResult['amount'],
+                'discount_amount' => session('applied_coupon_details.discount_amount', 0),
+                'currency' => $paymentResult['currency'] ?? 'BDT',
+                'payment_method' => $paymentMethod,
+                'status' => 'completed',
+                'gateway_response' => $paymentResult,
+                'coupon_id' => $coupon?->id,
             ]);
 
-            // Get plan from session or transaction
-            $planId = session('subscription_plan_id');
-            $plan = SubscriptionPlan::findOrFail($planId);
-
-            // Subscribe user to plan
-            $subscription = $transaction->user->subscribeTo($plan, [
-                'payment_method' => $transaction->payment_method,
+            // Subscribe user
+            $paymentDetails = [
+                'payment_method' => $paymentMethod,
                 'payment_reference' => $transaction->transaction_id,
-            ]);
-
-            // Link transaction to subscription
+                'coupon_code' => $coupon?->code
+            ];
+            
+            $subscription = $user->subscribeTo($plan, $paymentDetails);
+            
+            // Update transaction with subscription ID
             $transaction->update(['subscription_id' => $subscription->id]);
 
             DB::commit();
 
-            // Clear session
-            session()->forget(['subscription_plan_id', 'subscription_amount']);
+            // Clear sessions
+            $this->clearPaymentSessions();
 
-            return redirect()->route('subscription.index')
-                ->with('success', 'Payment successful! You are now subscribed to the ' . $plan->name . ' plan.');
-
+            // Send notifications
+            $user->notify(new \App\Notifications\PaymentSuccessful($transaction));
+            
+            return redirect()->route('subscription.welcome')
+                ->with('success', 'Payment successful! Welcome to ' . $plan->name . ' plan.');
+                
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to activate subscription after payment', [
+            
+            Log::error('Failed to process successful payment', [
                 'error' => $e->getMessage(),
-                'transaction' => $transaction->id,
+                'payment_result' => $paymentResult
             ]);
-
-            return redirect()->route('subscription.index')
-                ->with('error', 'Payment received but failed to activate subscription. Please contact support.');
+            
+            return redirect()->route('payment.failed')
+                ->with('error', 'Payment was successful but subscription activation failed. Please contact support.');
         }
     }
 
-    /**
-     * Handle failed payment.
-     */
+    public function success(Request $request)
+    {
+        // Handle payment success callback (for payment gateways that use callbacks)
+        $paymentMethod = $request->input('payment_method');
+        
+        try {
+            switch ($paymentMethod) {
+                case 'bkash':
+                    return $this->handleBkashCallback($request);
+                    
+                case 'nagad':
+                    return $this->handleNagadCallback($request);
+                    
+                default:
+                    return redirect()->route('subscription.welcome');
+            }
+        } catch (\Exception $e) {
+            Log::error('Payment callback failed', [
+                'error' => $e->getMessage(),
+                'method' => $paymentMethod
+            ]);
+            
+            return redirect()->route('payment.failed');
+        }
+    }
+
     public function failed(Request $request)
     {
-        $transaction = PaymentTransaction::findOrFail($request->transaction);
-
-        // Verify transaction belongs to user
-        if ($transaction->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $transaction->markAsFailed([
-            'failed_at' => now(),
-            'reason' => $request->reason ?? 'Payment cancelled by user',
-        ]);
-
-        return redirect()->route('subscription.plans')
-            ->with('error', 'Payment failed or cancelled. Please try again.');
+        $this->clearPaymentSessions();
+        
+        return view('payment.failed');
     }
 
-    /**
-     * Handle payment gateway webhooks.
-     */
-     public function webhook(Request $request, $provider)
+    protected function handleBkashCallback(Request $request)
     {
+        $paymentInfo = session('bkash_payment');
+        
+        if (!$paymentInfo) {
+            return redirect()->route('subscription.plans')
+                ->with('error', 'Payment session expired.');
+        }
+        
+        // Verify payment with bKash
+        $gateway = $this->gatewayFactory->make('bkash');
+        $result = $gateway->verifyPayment($paymentInfo['payment_id']);
+        
+        if ($result['status'] === 'completed') {
+            $plan = SubscriptionPlan::find($paymentInfo['plan_id']);
+            $coupon = $paymentInfo['coupon_id'] ? Coupon::find($paymentInfo['coupon_id']) : null;
+            
+            return $this->handleSuccessfulPayment($result, $plan, $coupon, 'bkash');
+        }
+        
+        return redirect()->route('payment.failed');
+    }
+
+    protected function handleNagadCallback(Request $request)
+    {
+        $paymentInfo = session('nagad_payment');
+        
+        if (!$paymentInfo) {
+            return redirect()->route('subscription.plans')
+                ->with('error', 'Payment session expired.');
+        }
+        
+        // Verify payment with Nagad
+        $gateway = $this->gatewayFactory->make('nagad');
+        $result = $gateway->verifyPayment($paymentInfo['payment_id']);
+        
+        if ($result['status'] === 'completed') {
+            $plan = SubscriptionPlan::find($paymentInfo['plan_id']);
+            $coupon = $paymentInfo['coupon_id'] ? Coupon::find($paymentInfo['coupon_id']) : null;
+            
+            return $this->handleSuccessfulPayment($result, $plan, $coupon, 'nagad');
+        }
+        
+        return redirect()->route('payment.failed');
+    }
+
+    protected function clearPaymentSessions()
+    {
+        session()->forget([
+            'subscription_plan_id',
+            'subscription_amount',
+            'coupon_code',
+            'applied_coupon_details',
+            'bkash_payment',
+            'nagad_payment'
+        ]);
+    }
+
+    // Webhook handler
+    public function webhook(Request $request, $provider)
+    {
+        Log::info('Webhook received', [
+            'provider' => $provider,
+            'data' => $request->all()
+        ]);
+        
         try {
-            // Log webhook for debugging
-            Log::channel('webhooks')->info('Webhook received', [
-                'provider' => $provider,
-                'headers' => $request->headers->all(),
-                'payload' => $request->all(),
-            ]);
-            
             $gateway = $this->gatewayFactory->make($provider);
+            $result = $gateway->handleWebhook($request);
             
-            // Pass full request for signature verification
-            $response = $gateway->handleWebhook([
-                'headers' => $request->headers->all(),
-                'body' => $request->getContent(),
-                'payload' => $request->all(),
-                'signature' => $request->header($this->getSignatureHeader($provider)),
-            ]);
-
-            if ($response['status'] === 'success') {
-                $transaction = PaymentTransaction::where('transaction_id', $response['transaction_id'])->first();
-
-                if ($transaction && $transaction->isPending()) {
-                    DB::beginTransaction();
-
-                    $transaction->markAsCompleted($response['data'] ?? []);
-
-                    // Get plan and subscribe user
-                    $plan = SubscriptionPlan::find($response['plan_id'] ?? $transaction->gateway_response['plan_id'] ?? null);
-                    if ($plan) {
-                        $subscription = $transaction->user->subscribeTo($plan, [
-                            'payment_method' => $transaction->payment_method,
-                            'payment_reference' => $transaction->transaction_id,
-                        ]);
-
-                        $transaction->update(['subscription_id' => $subscription->id]);
-                    }
-
-                    DB::commit();
-                }
-            } elseif ($response['status'] === 'failed') {
-                $transaction = PaymentTransaction::where('transaction_id', $response['transaction_id'])->first();
-                if ($transaction) {
-                    $transaction->markAsFailed($response['data'] ?? []);
+            if ($result['status'] === 'success') {
+                // Process based on webhook type
+                if ($result['type'] === 'payment.succeeded') {
+                    $this->processWebhookPaymentSuccess($result['data'], $provider);
+                } elseif ($result['type'] === 'payment.failed') {
+                    $this->processWebhookPaymentFailed($result['data'], $provider);
                 }
             }
-
-            return response()->json(['status' => 'success']);
-
+            
+            return response()->json(['status' => 'ok']);
+            
         } catch (\Exception $e) {
             Log::error('Webhook processing failed', [
                 'provider' => $provider,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error' => $e->getMessage()
             ]);
-
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            
+            return response()->json(['error' => 'Webhook processing failed'], 400);
         }
     }
 
-      private function getSignatureHeader($provider): string
+    protected function processWebhookPaymentSuccess($data, $provider)
     {
-        return match($provider) {
-            'stripe' => 'Stripe-Signature',
-            'bkash' => 'X-Signature',
-            'nagad' => 'X-Nagad-Signature',
-            default => 'X-Signature',
-        };
+        // Find transaction by gateway reference
+        $transaction = PaymentTransaction::where('transaction_id', $data['transaction_id'])
+            ->where('payment_method', $provider)
+            ->first();
+            
+        if ($transaction && $transaction->status !== 'completed') {
+            $transaction->update([
+                'status' => 'completed',
+                'gateway_response' => array_merge($transaction->gateway_response ?? [], $data)
+            ]);
+            
+            // Activate subscription if not already active
+            if ($transaction->subscription && !$transaction->subscription->isActive()) {
+                $transaction->subscription->update(['status' => 'active']);
+            }
+        }
     }
 
-
+    protected function processWebhookPaymentFailed($data, $provider)
+    {
+        $transaction = PaymentTransaction::where('transaction_id', $data['transaction_id'])
+            ->where('payment_method', $provider)
+            ->first();
+            
+        if ($transaction) {
+            $transaction->update([
+                'status' => 'failed',
+                'gateway_response' => array_merge($transaction->gateway_response ?? [], $data)
+            ]);
+        }
+    }
 }

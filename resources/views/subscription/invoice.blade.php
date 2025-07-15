@@ -151,14 +151,8 @@
                     <i class="fas fa-download mr-2"></i>
                     Download PDF
                 </a>
-                <button onclick="window.print()" class="inline-flex items-center px-6 py-3 rounded-xl glass text-white hover:border-purple-500/50 transition-all">
-                    <i class="fas fa-print mr-2"></i>
-                    Print
-                </button>
-                <a href="{{ route('subscription.index') }}" class="inline-flex items-center px-6 py-3 rounded-xl glass text-gray-300 hover:text-white hover:border-purple-500/50 transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    Back
-                </a>
+                
+                
             </div>
         </div>
     </section>

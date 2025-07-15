@@ -93,6 +93,18 @@ Route::middleware(['auth'])->group(function () {
         ->name('invoice.download');
 });
 
+
+Route::middleware(['auth'])->group(function () {
+    // Coupon routes
+    Route::prefix('coupon')->name('coupon.')->group(function () {
+        Route::post('/validate', [App\Http\Controllers\CouponController::class, 'validate'])->name('validate');
+        Route::post('/apply', [App\Http\Controllers\CouponController::class, 'apply'])->name('apply');
+        Route::delete('/remove', [App\Http\Controllers\CouponController::class, 'remove'])->name('remove');
+    });
+});
+
+
+
 // Public verification route (no auth required)
 Route::get('/invoice/verify/{transaction}', [SubscriptionController::class, 'verifyInvoice'])
     ->name('invoice.verify');
@@ -330,5 +342,19 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [App\Http\Controllers\Admin\MaintenanceModeController::class, 'index'])->name('index');
             Route::post('/toggle', [App\Http\Controllers\Admin\MaintenanceModeController::class, 'toggle'])->name('toggle');
         });
+
+// Coupon Management
+    Route::prefix('coupons')->name('coupons.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\CouponController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Admin\CouponController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\Admin\CouponController::class, 'store'])->name('store');
+        Route::get('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'show'])->name('show');
+        Route::get('/{coupon}/edit', [App\Http\Controllers\Admin\CouponController::class, 'edit'])->name('edit');
+        Route::put('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'update'])->name('update');
+        Route::delete('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'destroy'])->name('destroy');
+        Route::patch('/{coupon}/toggle-status', [App\Http\Controllers\Admin\CouponController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/bulk-export', [App\Http\Controllers\Admin\CouponController::class, 'bulkExport'])->name('bulk-export');
+    });
+
     });
 });
