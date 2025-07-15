@@ -22,142 +22,147 @@ class PaymentController extends Controller
     }
 
     public function process(Request $request)
-    {
-        try {
-            // Validate request
-            $validated = $request->validate([
-                'plan_id' => 'required|exists:subscription_plans,id',
-                'payment_method' => 'required|in:stripe,bkash,nagad',
-                'payment_method_id' => 'required_if:payment_method,stripe',
-                'terms' => 'required|accepted',
-            ]);
+{
+    try {
+        // Validate request
+        $validated = $request->validate([
+            'plan_id' => 'required|exists:subscription_plans,id',
+            'payment_method' => 'required|in:stripe,bkash,nagad',
+            'payment_method_id' => 'required_if:payment_method,stripe',
+            'terms' => 'required|accepted',
+        ]);
 
-            $user = auth()->user();
-            $plan = SubscriptionPlan::findOrFail($request->plan_id);
+        $user = auth()->user();
+        $plan = SubscriptionPlan::findOrFail($request->plan_id);
+        
+        // Get coupon details from session
+        $couponDetails = session('applied_coupon_details');
+        $amount = session('subscription_amount', $plan->current_price);
+        
+        // Verify coupon again if present
+        $coupon = null;
+        $discountAmount = 0;
+        $couponCode = null;
+        
+        if ($couponDetails && isset($couponDetails['coupon_id'])) {
+            $coupon = Coupon::find($couponDetails['coupon_id']);
             
-            // Get amount from session (might be discounted)
-            $amount = session('subscription_amount', $plan->current_price);
-            $couponCode = session('coupon_code');
-            
-            // Verify coupon again if present
-            $coupon = null;
-            $discountAmount = 0;
-            
-            if ($couponCode) {
-                $coupon = Coupon::where('code', strtoupper($couponCode))->first();
+            if (!$coupon || !$coupon->canBeUsedByUser($user) || $coupon->plan_id !== $plan->id) {
+                // Invalid coupon, reset to original price
+                $amount = $plan->current_price;
+                $couponDetails = null;
+                session()->forget(['applied_coupon_details', 'coupon_code', 'subscription_amount']);
                 
-                if (!$coupon || !$coupon->canBeUsedByUser($user) || $coupon->plan_id !== $plan->id) {
-                    // Invalid coupon, reset to original price
-                    $amount = $plan->current_price;
-                    $couponCode = null;
-                    Log::warning('Invalid coupon attempted during payment', [
-                        'user_id' => $user->id,
-                        'coupon_code' => $couponCode
-                    ]);
-                } else {
-                    // Calculate discount
-                    $discount = $coupon->calculateDiscount($plan->current_price);
-                    $amount = $discount['final_price'];
-                    $discountAmount = $discount['discount_amount'];
-                }
-            }
-
-            // If amount is 0 (free or 100% discount), process without payment gateway
-            if ($amount == 0) {
-                DB::beginTransaction();
-                
-                try {
-                    // Create payment transaction record
-                    $transaction = PaymentTransaction::create([
-                        'user_id' => $user->id,
-                        'subscription_id' => null, // Will be updated after subscription creation
-                        'transaction_id' => 'FREE-' . strtoupper(Str::random(10)),
-                        'amount' => $plan->current_price,
-                        'discount_amount' => $discountAmount,
-                        'currency' => $user->currency ?? 'BDT',
-                        'payment_method' => $coupon ? 'coupon' : 'free',
-                        'status' => 'completed',
-                        'gateway_response' => [
-                            'coupon_code' => $couponCode,
-                            'message' => $coupon ? 'Redeemed with coupon' : 'Free plan'
-                        ],
-                        'coupon_id' => $coupon?->id,
-                    ]);
-
-                    // Subscribe user
-                    $paymentDetails = [
-                        'payment_method' => $coupon ? 'coupon' : 'free',
-                        'payment_reference' => $transaction->transaction_id,
-                        'coupon_code' => $couponCode
-                    ];
-                    
-                    $subscription = $user->subscribeTo($plan, $paymentDetails);
-                    
-                    // Update transaction with subscription ID
-                    $transaction->update(['subscription_id' => $subscription->id]);
-
-                    DB::commit();
-
-                    // Clear sessions
-                    $this->clearPaymentSessions();
-
-                    return redirect()->route('subscription.welcome')
-                        ->with('success', 'Successfully subscribed to ' . $plan->name . ' plan!');
-                        
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    throw $e;
-                }
-            }
-
-            // Process payment through gateway
-            $gateway = $this->gatewayFactory->make($request->payment_method);
-            
-            // Prepare payment data
-            $paymentData = [
-                'amount' => $amount,
-                'currency' => $user->currency ?? 'BDT',
-                'customer' => [
-                    'email' => $user->email,
-                    'name' => $user->name,
-                    'phone' => $user->phone_number,
-                ],
-                'metadata' => [
+                Log::warning('Invalid coupon attempted during payment', [
                     'user_id' => $user->id,
-                    'plan_id' => $plan->id,
-                    'coupon_code' => $couponCode,
-                    'discount_amount' => $discountAmount,
-                    'original_amount' => $plan->current_price,
-                ],
-                'success_url' => route('payment.success'),
-                'cancel_url' => route('subscription.plans'),
-            ];
-
-            // Handle different payment methods
-            switch ($request->payment_method) {
-                case 'stripe':
-                    return $this->processStripePayment($request, $gateway, $paymentData, $plan, $coupon);
-                    
-                case 'bkash':
-                    return $this->processBkashPayment($gateway, $paymentData, $plan, $coupon);
-                    
-                case 'nagad':
-                    return $this->processNagadPayment($gateway, $paymentData, $plan, $coupon);
-                    
-                default:
-                    throw new \Exception('Invalid payment method');
+                    'coupon_id' => $couponDetails['coupon_id'] ?? null
+                ]);
+            } else {
+                // Use the already calculated discount from session
+                $couponCode = $coupon->code;
+                $discountAmount = $couponDetails['discount_amount'];
+                $amount = $couponDetails['final_price'];
             }
-
-        } catch (\Exception $e) {
-            Log::error('Payment processing failed', [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
-                'plan_id' => $request->plan_id ?? null,
-            ]);
-
-            return back()->with('error', 'Payment processing failed. Please try again.');
         }
+
+        // If amount is 0 (free or 100% discount), process without payment gateway
+        if ($amount == 0) {
+            DB::beginTransaction();
+            
+            try {
+                // Create payment transaction record
+                $transaction = PaymentTransaction::create([
+                    'user_id' => $user->id,
+                    'subscription_id' => null, // Will be updated after subscription creation
+                    'transaction_id' => 'FREE-' . strtoupper(Str::random(10)),
+                    'amount' => $plan->current_price,
+                    'discount_amount' => $discountAmount,
+                    'currency' => $user->currency ?? 'BDT',
+                    'payment_method' => $coupon ? 'coupon' : 'free',
+                    'status' => 'completed',
+                    'gateway_response' => [
+                        'coupon_code' => $couponCode,
+                        'message' => $coupon ? 'Redeemed with coupon' : 'Free plan'
+                    ],
+                    'coupon_id' => $coupon?->id,
+                ]);
+
+                // Subscribe user
+                $paymentDetails = [
+                    'payment_method' => $coupon ? 'coupon' : 'free',
+                    'payment_reference' => $transaction->transaction_id,
+                    'coupon_code' => $couponCode
+                ];
+                
+                $subscription = $user->subscribeTo($plan, $paymentDetails);
+                
+                // Update transaction with subscription ID
+                $transaction->update(['subscription_id' => $subscription->id]);
+
+                DB::commit();
+
+                // Clear sessions
+                $this->clearPaymentSessions();
+
+                return redirect()->route('subscription.welcome')
+                    ->with('success', 'Successfully subscribed to ' . $plan->name . ' plan!');
+                    
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        }
+
+        // Process payment through gateway
+        $gateway = $this->gatewayFactory->make($request->payment_method);
+        
+        // Prepare payment data
+        $paymentData = [
+            'amount' => $amount,
+            'currency' => $user->currency ?? 'BDT',
+            'customer' => [
+                'email' => $user->email,
+                'name' => $user->name,
+                'phone' => $user->phone_number,
+            ],
+            'metadata' => [
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'coupon_code' => $couponCode,
+                'coupon_id' => $coupon?->id,
+                'discount_amount' => $discountAmount,
+                'original_amount' => $plan->current_price,
+            ],
+            'success_url' => route('payment.success'),
+            'cancel_url' => route('subscription.plans'),
+        ];
+
+        // Handle different payment methods
+        switch ($request->payment_method) {
+            case 'stripe':
+                return $this->processStripePayment($request, $gateway, $paymentData, $plan, $coupon);
+                
+            case 'bkash':
+                return $this->processBkashPayment($gateway, $paymentData, $plan, $coupon);
+                
+            case 'nagad':
+                return $this->processNagadPayment($gateway, $paymentData, $plan, $coupon);
+                
+            default:
+                throw new \Exception('Invalid payment method');
+        }
+
+    } catch (\Exception $e) {
+        Log::error('Payment processing failed', [
+            'error' => $e->getMessage(),
+            'user_id' => auth()->id(),
+            'plan_id' => $request->plan_id ?? null,
+            'coupon_details' => session('applied_coupon_details'),
+        ]);
+
+        return back()->with('error', 'Payment processing failed. Please try again.');
     }
+}
 
     protected function processStripePayment($request, $gateway, $paymentData, $plan, $coupon)
     {
@@ -263,61 +268,62 @@ class PaymentController extends Controller
     }
 
     protected function handleSuccessfulPayment($paymentResult, $plan, $coupon, $paymentMethod)
-    {
-        DB::beginTransaction();
+{
+    DB::beginTransaction();
+    
+    try {
+        $user = auth()->user();
+        $couponDetails = session('applied_coupon_details');
         
-        try {
-            $user = auth()->user();
-            
-            // Create payment transaction
-            $transaction = PaymentTransaction::create([
-                'user_id' => $user->id,
-                'subscription_id' => null, // Will be updated
-                'transaction_id' => $paymentResult['transaction_id'],
-                'amount' => $paymentResult['amount'],
-                'discount_amount' => session('applied_coupon_details.discount_amount', 0),
-                'currency' => $paymentResult['currency'] ?? 'BDT',
-                'payment_method' => $paymentMethod,
-                'status' => 'completed',
-                'gateway_response' => $paymentResult,
-                'coupon_id' => $coupon?->id,
-            ]);
+        // Create payment transaction
+        $transaction = PaymentTransaction::create([
+            'user_id' => $user->id,
+            'subscription_id' => null, // Will be updated
+            'transaction_id' => $paymentResult['transaction_id'],
+            'amount' => $paymentResult['amount'],
+            'discount_amount' => $couponDetails['discount_amount'] ?? 0,
+            'currency' => $paymentResult['currency'] ?? 'BDT',
+            'payment_method' => $paymentMethod,
+            'status' => 'completed',
+            'gateway_response' => $paymentResult,
+            'coupon_id' => $coupon?->id,
+        ]);
 
-            // Subscribe user
-            $paymentDetails = [
-                'payment_method' => $paymentMethod,
-                'payment_reference' => $transaction->transaction_id,
-                'coupon_code' => $coupon?->code
-            ];
-            
-            $subscription = $user->subscribeTo($plan, $paymentDetails);
-            
-            // Update transaction with subscription ID
-            $transaction->update(['subscription_id' => $subscription->id]);
+        // Subscribe user
+        $paymentDetails = [
+            'payment_method' => $paymentMethod,
+            'payment_reference' => $transaction->transaction_id,
+            'coupon_code' => $coupon?->code
+        ];
+        
+        $subscription = $user->subscribeTo($plan, $paymentDetails);
+        
+        // Update transaction with subscription ID
+        $transaction->update(['subscription_id' => $subscription->id]);
 
-            DB::commit();
+        DB::commit();
 
-            // Clear sessions
-            $this->clearPaymentSessions();
+        // Clear sessions
+        $this->clearPaymentSessions();
 
-            // Send notifications
-            $user->notify(new \App\Notifications\PaymentSuccessful($transaction));
+        // Send notifications
+        $user->notify(new \App\Notifications\PaymentSuccessful($transaction));
+        
+        return redirect()->route('subscription.welcome')
+            ->with('success', 'Payment successful! Welcome to ' . $plan->name . ' plan.');
             
-            return redirect()->route('subscription.welcome')
-                ->with('success', 'Payment successful! Welcome to ' . $plan->name . ' plan.');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            Log::error('Failed to process successful payment', [
-                'error' => $e->getMessage(),
-                'payment_result' => $paymentResult
-            ]);
-            
-            return redirect()->route('payment.failed')
-                ->with('error', 'Payment was successful but subscription activation failed. Please contact support.');
-        }
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        Log::error('Failed to process successful payment', [
+            'error' => $e->getMessage(),
+            'payment_result' => $paymentResult
+        ]);
+        
+        return redirect()->route('payment.failed')
+            ->with('error', 'Payment was successful but subscription activation failed. Please contact support.');
     }
+}
 
     public function success(Request $request)
     {

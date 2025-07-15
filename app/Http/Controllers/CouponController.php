@@ -154,27 +154,77 @@ public function store(Request $request)
 }
 
     public function apply(Request $request)
-    {
-        $request->validate([
-            'code' => 'required|string'
-        ]);
+{
+    $request->validate([
+        'code' => 'required|string',
+        'plan_id' => 'nullable|exists:subscription_plans,id'
+    ]);
 
-        $coupon = Coupon::where('code', strtoupper($request->code))->first();
-        
-        if (!$coupon || !$coupon->canBeUsedByUser(Auth::user())) {
-            return back()->with('error', 'Invalid or expired coupon code.');
+    $coupon = Coupon::where('code', strtoupper($request->code))->first();
+    
+    if (!$coupon || !$coupon->canBeUsedByUser(Auth::user())) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid or expired coupon code.'
+        ], 400);
+    }
+
+    // Get plan from request or session
+    $planId = $request->plan_id ?? session('subscription_plan_id');
+    $plan = SubscriptionPlan::find($planId);
+    
+    if (!$plan || $coupon->plan_id !== $plan->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This coupon is not valid for the selected plan.'
+        ], 400);
+    }
+
+    // Calculate discount
+    $discount = $coupon->calculateDiscount($plan->current_price);
+    
+    // Store in session with all necessary data
+    session([
+        'applied_coupon_details' => [
+            'code' => $coupon->code,
+            'coupon_id' => $coupon->id,
+            'formatted_discount' => $coupon->formatted_discount,
+            'discount_amount' => $discount['discount_amount'],
+            'final_price' => $discount['final_price'],
+            'discount_type' => $coupon->discount_type,
+        ],
+        'coupon_code' => $coupon->code,
+        'subscription_amount' => $discount['final_price'], // This is important!
+        'subscription_plan_id' => $plan->id
+    ]);
+
+    // Force session save
+    session()->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Coupon applied successfully!',
+        'pricing' => $discount
+    ]);
+}
+
+public function remove()
+{
+    // Clear all coupon related sessions
+    session()->forget([
+        'applied_coupon_details',
+        'coupon_code',
+        'subscription_amount'
+    ]);
+    
+    // Reset to original plan price if plan is in session
+    if ($planId = session('subscription_plan_id')) {
+        $plan = SubscriptionPlan::find($planId);
+        if ($plan) {
+            session(['subscription_amount' => $plan->current_price]);
         }
-
-        // Store coupon in session for checkout
-        session(['applied_coupon' => $coupon->code]);
-
-        return back()->with('success', 'Coupon applied successfully!');
     }
-
-    public function remove()
-    {
-        session()->forget('applied_coupon');
-        
-        return back()->with('success', 'Coupon removed.');
-    }
+    
+    return back()->with('success', 'Coupon removed.');
+}
 }

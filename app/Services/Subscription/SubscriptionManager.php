@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\SubscriptionPlan;
 use App\Models\UserSubscription;
 use App\Models\PaymentTransaction;
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Exception;

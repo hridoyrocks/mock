@@ -143,6 +143,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe');
         Route::post('/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
         Route::get('/invoice/{transaction}', [SubscriptionController::class, 'invoice'])->name('invoice');
+        Route::get('/welcome', [SubscriptionController::class, 'welcome'])->name('welcome');
     });
 
     // Payment routes (inside auth - except webhook which is outside)
