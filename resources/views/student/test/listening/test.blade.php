@@ -105,23 +105,30 @@
         
         /* ========== QUESTION GROUP HEADERS ========== */
         .question-group-header {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;  /* Bold */
-            color: #1f2937;
-            margin: 30px 0 10px 0;
+            color: #000;
+            margin: 35px 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
         
         .question-instruction {
             font-size: 14px;
-            color: #6b7280;
+            color: #333;
             margin-bottom: 25px;
+            font-weight: 500;
+            background: #f5f5f5;
+            padding: 12px 20px;
+            border-left: 4px solid #666;
         }
         
         /* ========== QUESTION ITEMS - LEFT ALIGNED ========== */
         .question-item {
-            padding: 16px 0;
-            border-bottom: 1px solid #f3f4f6;
+            padding: 20px 0;
+            border-bottom: none;
             font-size: 15px;
+            margin-bottom: 20px;
         }
         
         .question-item:last-child {
@@ -131,198 +138,318 @@
         .question-content {
             display: flex;
             align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
         
         .question-number {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 28px;
-            height: 28px;
-            background: #f3f4f6;
-            border: 1px solid #e5e7eb;
-            border-radius: 4px;
-            font-weight: 600;
-            color: #374151;
-            font-size: 13px;
+            min-width: 32px;
+            height: 32px;
+            background: #e8e8e8;
+            border: 1px solid #999;
+            border-radius: 3px;
+            font-weight: 700;
+            color: #000;
+            font-size: 14px;
             flex-shrink: 0;
+            margin-right: 15px;
         }
         
         .question-text {
             flex: 1;
             line-height: 1.6;
             color: #1f2937;
+            font-size: 15px;
+            font-weight: 500;
         }
         
         /* ========== OPTIONS STYLING ========== */
         .options-list {
-            margin-left: 40px;
+            margin-left: 0;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
         }
         
         .option-item {
             display: flex;
             align-items: center;
-            padding: 10px 14px;
-            background: #fafafa;
-            border: 1px solid #e5e7eb;
-            border-radius: 4px;
+            padding: 8px 0;
+            background: transparent;
+            border: none;
             cursor: pointer;
             transition: all 0.2s ease;
+            position: relative;
         }
         
         .option-item:hover {
-            background: #f0f9ff;
-            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+            padding-left: 8px;
         }
         
         .option-radio {
-            margin-right: 10px;
-            width: 16px;
-            height: 16px;
+            margin-right: 12px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
+            accent-color: #3b82f6;
         }
         
         .option-label {
             flex: 1;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 15px;
+            color: #1f2937;
+            line-height: 1.5;
+        }
+        
+        .option-label strong {
+            font-weight: 600;
+            margin-right: 4px;
         }
         
         /* ========== INPUT FIELDS ========== */
         .answer-input {
-            margin-left: 40px;
+            margin-left: 47px;
         }
         
         .text-input, .select-input {
-            width: 300px;
-            padding: 8px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 4px;
+            width: 350px;
+            padding: 10px 14px;
+            border: 1px solid #ccc;
+            border-radius: 0;
             font-size: 14px;
             transition: all 0.2s ease;
-            background: #fafafa;
+            background: #f5f5f5;
+            font-family: Arial, sans-serif;
         }
         
         .text-input:hover, .select-input:hover {
-            border-color: #cbd5e0;
-            background: white;
+            border-color: #999;
+            background: #fafafa;
         }
         
         .text-input:focus, .select-input:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: #333;
             background: white;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: none;
+        }
+        
+        .text-input::placeholder {
+            color: #999;
+            font-style: italic;
         }
         
         /* ========== SPECIAL QUESTION TYPES STYLES ========== */
-        /* Matching Questions */
+        /* Matching Questions - Official IELTS Style */
         .matching-container {
             user-select: none;
-            margin-left: 40px;
-            margin-top: 20px;
+            margin-top: 30px;
+            display: flex;
+            gap: 40px;
         }
         
-        .matching-grid {
+        .matching-left-section {
+            flex: 1;
+        }
+        
+        .matching-table {
+            width: 100%;
+        }
+        
+        .matching-row {
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 20px;
-            align-items: start;
+            grid-template-columns: 40px 250px 180px;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
         }
         
-        .matching-item {
-            padding: 12px;
-            margin-bottom: 10px;
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
+        .question-number-inline {
+            font-weight: 700;
+            background: #e8e8e8;
+            padding: 4px 10px;
+            border-radius: 3px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+        }
+        
+        .matching-question {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        
+        .drop-box {
+            width: 100%;
+            height: 40px;
+            border: 2px dashed #d1d5db;
             border-radius: 6px;
-        }
-        
-        .matching-option {
-            padding: 12px;
-            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
             background: white;
-            border: 2px solid #3b82f6;
-            border-radius: 6px;
+            font-size: 14px;
+            padding: 0 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .drop-box.drag-over {
+            background: #f9fafb;
+            border-color: #9ca3af;
+            border-style: solid;
+        }
+        
+        .drop-box.has-answer {
+            border-style: solid;
+            border-color: #d1d5db;
+            background: white;
+            cursor: move;
+        }
+        
+        .drop-box .placeholder-text {
+            color: #9ca3af;
+            font-style: italic;
+            font-size: 13px;
+        }
+        
+        .matching-right-section {
+            width: 150px;
+            flex-shrink: 0;
+            margin-left: -180px;
+            margin-right: 50px;
+        }
+        
+        .matching-options-container {
+            position: sticky;
+            top: 100px;
+        }
+        
+        .matching-options-title {
+            display: none;
+        }
+        
+        .matching-options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .draggable-option {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #6b7280;
+            border-radius: 4px;
             cursor: move;
             transition: all 0.2s;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1f2937;
+            text-align: center;
+            user-select: none;
         }
         
-        .matching-option:hover {
-            transform: scale(1.02);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .draggable-option:hover:not(.placed) {
+            background: #f9fafb;
         }
         
-        .matching-option.dragging {
+        .draggable-option.dragging {
             opacity: 0.5;
+            cursor: grabbing;
         }
         
-        .matching-option.drag-over {
-            background: #dbeafe !important;
-            transform: scale(1.05);
+        .draggable-option.placed {
+            display: none !important;
         }
         
-        /* Form Completion */
+        /* Form Completion - Official IELTS Style */
         .form-completion-container {
             margin-left: 40px;
             margin-top: 20px;
         }
         
         .form-wrapper {
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 20px;
-            max-width: 500px;
+            background: white;
+            border: 2px solid #000;
+            padding: 40px 50px;
+            max-width: 650px;
+            margin: 0;
+            position: relative;
         }
         
         .form-title {
             text-align: center;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #1f2937;
+            font-weight: 700;
+            margin-bottom: 40px;
+            color: #000;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .form-field-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 36px 180px 1fr;
             align-items: center;
-            margin-bottom: 15px;
-            position: relative;
+            margin-bottom: 25px;
+            gap: 20px;
         }
         
         .form-label {
-            min-width: 120px;
-            padding-right: 15px;
-            font-weight: 500;
-            color: #374151;
+            font-weight: 600;
+            color: #000;
+            font-size: 14px;
+            text-align: left;
         }
         
         .form-question-number {
-            position: absolute;
-            left: -30px;
             font-weight: 600;
-            color: #6b7280;
-            font-size: 13px;
+            color: #333;
+            font-size: 14px;
+            background: #f0f0f0;
+            border: 1px solid #999;
+            padding: 6px 0;
+            text-align: center;
+            border-radius: 4px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .form-input {
-            flex: 1;
-            padding: 6px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
+            width: 100%;
+            max-width: 300px;
+            padding: 10px 14px;
+            border: 1px solid #999;
+            border-radius: 0;
             font-size: 14px;
             background: white;
+            font-family: Arial, sans-serif;
         }
         
         .form-input:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: #333;
+            background: white;
+            box-shadow: none;
+        }
+        
+        .form-input::placeholder {
+            color: #999;
+            font-style: italic;
+            font-size: 13px;
         }
         
         /* Diagram Labeling */
@@ -784,6 +911,68 @@
             }
         }
         
+        /* ========== QUESTION NAVIGATION ARROWS ========== */
+        .question-nav-arrows {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 50;
+        }
+        
+        .nav-arrow {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-arrow:hover {
+            background: #f8f9fa;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .nav-arrow:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+        
+        .nav-arrow svg {
+            color: #6b7280;
+        }
+        
+        .nav-arrow:hover svg {
+            color: #3b82f6;
+        }
+        
+        .nav-arrow:disabled svg {
+            color: #d1d5db;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .question-nav-arrows {
+                bottom: 140px;
+                top: auto;
+                transform: none;
+                flex-direction: row;
+                right: 50%;
+                transform: translateX(50%);
+            }
+        }
+        
         /* ========== ANIMATIONS ========== */
         @keyframes fadeIn {
             from {
@@ -841,6 +1030,20 @@
 
     <!-- Main Content -->
     <div class="content-area">
+        <!-- Question Navigation Arrows -->
+        <div class="question-nav-arrows">
+            <button type="button" class="nav-arrow prev-arrow" id="prev-question-btn" title="Previous Question">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <button type="button" class="nav-arrow next-arrow" id="next-question-btn" title="Next Question">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
+        
         <form id="listening-form" action="{{ route('student.listening.submit', $attempt) }}" method="POST">
             @csrf
             
@@ -896,7 +1099,7 @@
                             @endphp
                             
                             @if($question->question_type === 'matching' && $question->matching_pairs)
-                                {{-- MATCHING QUESTION --}}
+                                {{-- MATCHING QUESTION - OFFICIAL IELTS STYLE --}}
                                 <div class="question-item" id="question-{{ $question->id }}">
                                     <div class="question-content">
                                         <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + count($question->matching_pairs) - 1 }}</span>
@@ -904,33 +1107,41 @@
                                     </div>
                                     
                                     <div class="matching-container">
-                                        <div class="matching-grid">
-                                            <!-- Left side - Questions -->
-                                            <div class="matching-left">
+                                        <!-- Left Section - Questions with drop boxes -->
+                                        <div class="matching-left-section">
+                                            <div class="matching-table">
                                                 @foreach($question->matching_pairs as $index => $pair)
-                                                    <div class="matching-item">
-                                                        <strong>{{ $displayNumber + $index }}.</strong> {{ $pair['left'] }}
+                                                    <div class="matching-row">
+                                                        <span class="question-number-inline">{{ $displayNumber + $index }}</span>
+                                                        <span class="matching-question">{{ $pair['left'] }}</span>
+                                                        <div class="drop-box" 
+                                                             data-question-id="{{ $question->id }}" 
+                                                             data-index="{{ $index }}" 
+                                                             data-question-number="{{ $displayNumber + $index }}">
+                                                            <span class="placeholder-text">Drag answer here</span>
+                                                        </div>
                                                     </div>
                                                 @endforeach
                                             </div>
-                                            
-                                            <!-- Center - Lines (for desktop) -->
-                                            <div class="matching-lines" style="width: 60px; position: relative;">
-                                                <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-                                                    <!-- Lines will be drawn here by JavaScript -->
-                                                </svg>
-                                            </div>
-                                            
-                                            <!-- Right side - Options -->
-                                            <div class="matching-right">
-                                                @php
-                                                    $options = collect($question->matching_pairs)->pluck('right')->shuffle();
-                                                @endphp
-                                                @foreach($options as $index => $option)
-                                                    <div class="matching-option" data-option="{{ $option }}">
-                                                        <strong>{{ chr(65 + $index) }}.</strong> {{ $option }}
-                                                    </div>
-                                                @endforeach
+                                        </div>
+                                        
+                                        <!-- Right Section - Available Options -->
+                                        <div class="matching-right-section">
+                                            <div class="matching-options-container">
+                                                <div class="matching-options-title">Available answers:</div>
+                                                <div class="matching-options-grid">
+                                                    @php
+                                                        $options = collect($question->matching_pairs)->pluck('right')->shuffle();
+                                                    @endphp
+                                                    @foreach($options as $index => $option)
+                                                        <div class="draggable-option" 
+                                                             draggable="true" 
+                                                             data-option="{{ $option }}"
+                                                             data-option-letter="{{ chr(65 + $index) }}">
+                                                            <strong>{{ chr(65 + $index) }}.</strong> {{ $option }}
+                                                        </div>
+                                                    @endforeach
+                                                </div>
                                             </div>
                                         </div>
                                         
@@ -956,11 +1167,11 @@
                                     
                                     <div class="form-completion-container">
                                         <div class="form-wrapper">
-                                            <h4 class="form-title">{{ $question->form_structure['title'] ?? 'Form' }}</h4>
+                                            <h4 class="form-title">{{ $question->form_structure['title'] ?? 'HOLIDAY RENTAL ENQUIRY' }}</h4>
                                             
                                             @foreach($question->form_structure['fields'] as $index => $field)
                                                 <div class="form-field-row">
-                                                    <span class="form-question-number">{{ $displayNumber + $index }}</span>
+                                                    <div class="form-question-number">{{ $displayNumber + $index }}</div>
                                                     <label class="form-label">{{ $field['label'] }}:</label>
                                                     <input type="text" 
                                                            name="answers[{{ $question->id }}_{{ $index }}]"
@@ -2136,26 +2347,207 @@
         AnnotationSystem.openNotesPanel();
     });
     
-    // ========== Initialize ==========
+    // ========== Question Navigation Arrows ==========
+    const prevQuestionBtn = document.getElementById('prev-question-btn');
+    const nextQuestionBtn = document.getElementById('next-question-btn');
+    let currentQuestionIndex = 0;
+    const totalQuestionsNav = document.querySelectorAll('.number-btn').length;
     
-    // Play first part audio
-    playPartAudio('1');
+    function updateArrowButtons() {
+        prevQuestionBtn.disabled = currentQuestionIndex === 0;
+        nextQuestionBtn.disabled = currentQuestionIndex === totalQuestionsNav - 1;
+    }
     
-    // Update initial visibility
-    updateNumberButtonsVisibility('1');
-    
-    // Load saved answers
-    loadSavedAnswers();
-    
-    // Initialize annotation system
-    AnnotationSystem.init();
-    
-    // Periodically save answers
-    setInterval(saveAllAnswers, 30000);
-    
-    // Update answer count
-    updateAnswerCount();
-});
-</script>
-@endpush
+    function navigateToQuestion(index) {
+        if (index < 0 || index >= totalQuestionsNav) return;
+        
+        currentQuestionIndex = index;
+        const targetButton = numberButtons[index];
+        if (targetButton) {
+            targetButton.click();
+        }
+            updateArrowButtons();
+        }
+        
+        prevQuestionBtn.addEventListener('click', function() {
+            navigateToQuestion(currentQuestionIndex - 1);
+        });
+        
+        nextQuestionBtn.addEventListener('click', function() {
+            navigateToQuestion(currentQuestionIndex + 1);
+        });
+        
+        // Update current index when clicking number buttons
+        numberButtons.forEach((button, index) => {
+            button.addEventListener('click', function() {
+                currentQuestionIndex = index;
+                updateArrowButtons();
+            });
+        });
+        
+        // ========== Drag & Drop for Matching Questions ==========
+        function initializeDragAndDrop() {
+            const draggableOptions = document.querySelectorAll('.draggable-option');
+            const dropBoxes = document.querySelectorAll('.drop-box');
+            
+            // Setup draggable options
+            draggableOptions.forEach(option => {
+                option.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', this.dataset.option);
+                    e.dataTransfer.setData('option-letter', this.dataset.optionLetter);
+                    e.dataTransfer.setData('full-text', this.innerHTML);
+                    this.classList.add('dragging');
+                });
+                
+                option.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+            });
+            
+            // Setup drop boxes
+            dropBoxes.forEach(box => {
+                box.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    this.classList.add('drag-over');
+                });
+                
+                box.addEventListener('dragleave', function() {
+                    this.classList.remove('drag-over');
+                });
+                
+                box.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    
+                    const optionText = e.dataTransfer.getData('text/plain');
+                    const fullText = e.dataTransfer.getData('full-text');
+                    const questionId = this.dataset.questionId;
+                    const index = this.dataset.index;
+                    const questionNumber = this.dataset.questionNumber;
+                    
+                    // Check if box already has an answer
+                    if (this.classList.contains('has-answer')) {
+                        // Remove the old answer first
+                        const oldAnswer = this.textContent.replace(/^[A-Z]\.\s/, '');
+                        const oldOption = document.querySelector(`.draggable-option[data-option="${oldAnswer}"]`);
+                        if (oldOption) {
+                            oldOption.style.display = 'inline-block';
+                            oldOption.classList.remove('placed');
+                        }
+                    }
+                    
+                    // Add new answer
+                    this.innerHTML = fullText;
+                    this.classList.add('has-answer');
+                    
+                    // Update hidden input
+                    const hiddenInput = document.querySelector(`input[name="answers[${questionId}_${index}]"]`);
+                    if (hiddenInput) {
+                        hiddenInput.value = optionText;
+                        
+                        // Update navigation button
+                        const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                        if (navButton) {
+                            navButton.classList.add('answered');
+                        }
+                    }
+                    
+                    // Hide the dragged option
+                    const sourceOption = document.querySelector(`.draggable-option[data-option="${optionText}"]`);
+                    if (sourceOption) {
+                        sourceOption.style.display = 'none';
+                        sourceOption.classList.add('placed');
+                    }
+                    
+                    // Make the answer draggable for removal
+                    this.draggable = true;
+                    setupAnswerDrag(this);
+                    
+                    saveAllAnswers();
+                    updateAnswerCount();
+                });
+            });
+        }
+        
+        function setupAnswerDrag(answerBox) {
+            answerBox.addEventListener('dragstart', function(e) {
+                if (!this.classList.contains('has-answer')) return;
+                
+                const answerText = this.textContent.replace(/^[A-Z]\.\s/, '');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('remove-answer', 'true');
+                e.dataTransfer.setData('answer-text', answerText);
+                this.style.opacity = '0.5';
+            });
+            
+            answerBox.addEventListener('dragend', function(e) {
+                this.style.opacity = '';
+                
+                // Always remove answer when dragged out
+                if (this.classList.contains('has-answer')) {
+                    const answerText = this.textContent.replace(/^[A-Z]\.\s/, '');
+                    const questionNumber = this.dataset.questionNumber;
+                    const questionId = this.dataset.questionId;
+                    const index = this.dataset.index;
+                    
+                    // Clear the box
+                    this.innerHTML = '<span class="placeholder-text">Drag answer here</span>';
+                    this.classList.remove('has-answer');
+                    this.draggable = false;
+                    
+                    // Clear hidden input
+                    const hiddenInput = document.querySelector(`input[name="answers[${questionId}_${index}]"]`);
+                    if (hiddenInput) {
+                        hiddenInput.value = '';
+                    }
+                    
+                    // Show the option again
+                    const option = document.querySelector(`.draggable-option[data-option="${answerText}"]`);
+                    if (option) {
+                        option.style.display = 'inline-block';
+                        option.classList.remove('placed');
+                    }
+                    
+                    // Update navigation
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton) {
+                        navButton.classList.remove('answered');
+                    }
+                    
+                    saveAllAnswers();
+                    updateAnswerCount();
+                }
+            });
+        }
+        
+        // Initialize drag and drop on page load
+        initializeDragAndDrop();
+        
+        // ========== Initialize ==========
+        
+        // Play first part audio
+        playPartAudio('1');
+        
+        // Update initial visibility
+        updateNumberButtonsVisibility('1');
+        
+        // Load saved answers
+        loadSavedAnswers();
+        
+        // Initialize annotation system
+        AnnotationSystem.init();
+        
+        // Initialize arrow buttons
+        updateArrowButtons();
+        
+        // Periodically save answers
+        setInterval(saveAllAnswers, 30000);
+        
+        // Update answer count
+        updateAnswerCount();
+    });
+    </script>
+    @endpush
 </x-test-layout>

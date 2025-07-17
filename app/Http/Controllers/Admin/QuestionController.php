@@ -24,29 +24,38 @@ class QuestionController extends Controller
         $query = Question::with(['testSet', 'testSet.section', 'options']);
         
         // Filter by section
-        if ($request->has('section')) {
+        if ($request->filled('section')) {
             $query->whereHas('testSet.section', function ($q) use ($request) {
                 $q->where('name', $request->section);
             });
         }
         
         // Filter by test set
-        if ($request->has('test_set')) {
+        if ($request->filled('test_set')) {
             $query->where('test_set_id', $request->test_set);
         }
         
         // Filter by part
-        if ($request->has('part')) {
+        if ($request->filled('part')) {
             $query->where('part_number', $request->part);
+        }
+        
+        // Filter by question type
+        if ($request->filled('question_type')) {
+            $query->where('question_type', $request->question_type);
         }
         
         $questions = $query->orderBy('test_set_id')
                           ->orderBy('part_number')
                           ->orderBy('order_number')
-                          ->paginate(20);
+                          ->paginate(30);
         
-        // Get test sets for filtering
-        $testSets = TestSet::with('section')->get();
+        // Get test sets for filtering with question count
+        $testSets = TestSet::with('section')
+                          ->withCount('questions')
+                          ->orderBy('section_id')
+                          ->orderBy('title')
+                          ->get();
         
         return view('admin.questions.index', compact('questions', 'testSets'));
     }
@@ -126,6 +135,9 @@ class QuestionController extends Controller
             }
             $rules['content'] = 'nullable|string';
             $rules['passage_text'] = 'nullable|string';
+        } else if ($request->question_type === 'plan_map_diagram') {
+            // For diagram questions, content can be auto-generated
+            $rules['content'] = 'nullable|string';
         } else {
             $rules['content'] = 'required|string';
         }
@@ -198,10 +210,11 @@ class QuestionController extends Controller
             $rules['form_structure.fields.*.answer'] = 'required|string';
         }
 
-        if ($request->question_type === 'plan_map_diagram' && !$request->has('diagram_hotspots_json')) {
-            $rules['diagram_image'] = 'required|image|max:5120';
-            $rules['diagram_hotspots'] = 'required|array|min:1';
-            $rules['diagram_hotspots.*.answer'] = 'required|string';
+        if ($request->question_type === 'plan_map_diagram') {
+            $rules['diagram_image'] = 'nullable|image|max:5120';
+            if (!$request->has('diagram_hotspots_json')) {
+                $rules['dropdown_options'] = 'required|array|min:1';
+            }
         }
         
         try {
@@ -225,6 +238,7 @@ class QuestionController extends Controller
         
         // Handle type-specific data
         $typeSpecificData = [];
+        $sectionSpecificData = []; // Initialize here
 
         // Check for JSON data first (new approach)
         if ($request->has('matching_pairs_json')) {
@@ -281,10 +295,19 @@ class QuestionController extends Controller
         }
         
         if ($request->has('diagram_hotspots_json')) {
-            $diagramHotspots = json_decode($request->diagram_hotspots_json, true);
-            if ($diagramHotspots) {
-                $typeSpecificData['diagram_hotspots'] = $diagramHotspots;
-                \Log::info('Diagram hotspots from JSON:', $diagramHotspots);
+            $diagramData = json_decode($request->diagram_hotspots_json, true);
+            if ($diagramData) {
+                // Store the simplified diagram configuration
+                $typeSpecificData['diagram_hotspots'] = $diagramData;
+                
+                // Store in section specific data for compatibility
+                $sectionSpecificData['diagram_type'] = 'map_plan_diagram';
+                $sectionSpecificData['answer_type'] = 'dropdown';
+                $sectionSpecificData['dropdown_options'] = $diagramData['dropdown_options'] ?? [];
+                $sectionSpecificData['start_number'] = $diagramData['start_number'] ?? 1;
+                $sectionSpecificData['correct_answers'] = $diagramData['correct_answers'] ?? [];
+                
+                \Log::info('Simple diagram data from JSON:', $diagramData);
             }
         } elseif ($request->question_type === 'plan_map_diagram' && $request->has('diagram_hotspots')) {
             // Fallback to old approach
@@ -306,7 +329,65 @@ class QuestionController extends Controller
             }
         }
         
-        DB::transaction(function () use ($request, $testSet, $section, $mediaPath, $typeSpecificData) {
+        // Get diagram data before transaction
+        $diagramData = [];
+        if ($request->has('diagram_hotspots_json')) {
+            $diagramData = json_decode($request->diagram_hotspots_json, true) ?? [];
+            \Log::info('Diagram data received in controller:', ['data' => $diagramData]);
+        } else {
+            \Log::warning('No diagram_hotspots_json in request for plan_map_diagram question');
+        }
+        
+        DB::transaction(function () use ($request, $testSet, $section, $mediaPath, $typeSpecificData, $diagramData, &$sectionSpecificData) {
+            // Process fill-in-the-blank questions
+            // $sectionSpecificData already initialized above
+            
+            // Handle fill-in-the-blank answers
+            if (in_array($request->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion'])) {
+                // Extract blank answers from content
+                $content = $request->content;
+                $blankAnswers = [];
+                $blankIndex = 1;
+                
+                // Process [____N____] format blanks
+                if (preg_match_all('/\[____\d+____\]/', $content, $matches)) {
+                    // Get all blank answers from request
+                    $requestBlankAnswers = $request->input('blank_answers', []);
+                    
+                    // Re-index to 1-based
+                    foreach ($requestBlankAnswers as $index => $answer) {
+                        if (!empty($answer)) {
+                            $blankAnswers[$index + 1] = $answer;
+                        }
+                    }
+                }
+                
+                // Process dropdown options
+                if ($request->has('dropdown_options')) {
+                    $dropdownOptions = [];
+                    $dropdownCorrect = [];
+                    $requestDropdownOptions = $request->input('dropdown_options', []);
+                    $requestDropdownCorrect = $request->input('dropdown_correct', []);
+                    
+                    foreach ($requestDropdownOptions as $index => $optionsString) {
+                        if (!empty($optionsString)) {
+                            $dropdownOptions[$index + 1] = $optionsString;
+                            if (isset($requestDropdownCorrect[$index])) {
+                                $dropdownCorrect[$index + 1] = (int)$requestDropdownCorrect[$index];
+                            }
+                        }
+                    }
+                    
+                    if (!empty($dropdownOptions)) {
+                        $sectionSpecificData['dropdown_options'] = $dropdownOptions;
+                        $sectionSpecificData['dropdown_correct'] = $dropdownCorrect;
+                    }
+                }
+                
+                if (!empty($blankAnswers)) {
+                    $sectionSpecificData['blank_answers'] = $blankAnswers;
+                }
+            }
             // Determine if question should use part audio
             $usePartAudio = false; // Default to false
             
@@ -322,11 +403,25 @@ class QuestionController extends Controller
                 }
             }
             
+            // Generate content for diagram questions if not provided
+            $content = $request->content;
+            if ($request->question_type === 'plan_map_diagram' && empty($content)) {
+                $optionCount = is_array($diagramData) && isset($diagramData['dropdown_options']) ? 
+                              count($diagramData['dropdown_options']) : 4;
+                $startNum = is_array($diagramData) && isset($diagramData['start_number']) ? 
+                           $diagramData['start_number'] : 1;
+                $endNum = $startNum + $optionCount - 1;
+                
+                $content = "Label the diagram below. Write the correct letter, A-" . 
+                          chr(64 + $optionCount) . 
+                          ", next to questions $startNum-$endNum.";
+            }
+            
             // Prepare question data
             $questionData = [
                 'test_set_id' => $request->test_set_id,
                 'question_type' => $request->question_type,
-                'content' => $request->content,
+                'content' => $content,
                 'order_number' => $request->order_number,
                 'part_number' => $request->part_number ?? 1,
                 'marks' => $request->marks ?? 1,
@@ -372,11 +467,16 @@ class QuestionController extends Controller
             }
             if (isset($typeSpecificData['diagram_hotspots'])) {
                 $questionData['diagram_hotspots'] = $typeSpecificData['diagram_hotspots'];
+                // Set blank count for diagram questions based on number of options
+                if ($request->question_type === 'plan_map_diagram') {
+                    $questionData['blank_count'] = count($typeSpecificData['diagram_hotspots']['dropdown_options'] ?? []);
+                }
             }
             
-            // Also add to section_specific_data for backward compatibility
-            if (!empty($typeSpecificData)) {
-                $questionData['section_specific_data'] = $typeSpecificData;
+            // Merge all section specific data
+            $allSectionData = array_merge($sectionSpecificData, $typeSpecificData);
+            if (!empty($allSectionData)) {
+                $questionData['section_specific_data'] = $allSectionData;
             }
             
             \Log::info('Creating question with data:', $questionData);
@@ -384,6 +484,64 @@ class QuestionController extends Controller
             $question = Question::create($questionData);
             
             \Log::info('Question created:', ['id' => $question->id, 'use_part_audio' => $question->use_part_audio]);
+            
+            // IMPORTANT: Save blank answers to QuestionBlank table
+            if (in_array($request->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion', 'fill_blanks'])) {
+                // Extract blanks from content
+                preg_match_all('/\[____(\d+)____\]/', $question->content, $matches);
+                $blankNumbers = array_unique($matches[1]);
+                
+                // Get blank answers from request
+                $requestBlankAnswers = $request->input('blank_answers', []);
+                
+                // Re-index request array to match blank numbers
+                $blankAnswersByNumber = [];
+                $arrayIndex = 0;
+                foreach ($blankNumbers as $blankNum) {
+                    if (isset($requestBlankAnswers[$arrayIndex])) {
+                        $blankAnswersByNumber[$blankNum] = $requestBlankAnswers[$arrayIndex];
+                    }
+                    $arrayIndex++;
+                }
+                
+                \Log::info('Blank answers mapping', [
+                    'blank_numbers' => $blankNumbers,
+                    'request_answers' => $requestBlankAnswers,
+                    'mapped_answers' => $blankAnswersByNumber
+                ]);
+                
+                foreach ($blankAnswersByNumber as $blankNum => $answerText) {
+                    if (!empty($answerText)) {
+                        // Check for alternates (separated by |)
+                        $alternates = null;
+                        if (strpos($answerText, '|') !== false) {
+                            $parts = array_map('trim', explode('|', $answerText));
+                            $answerText = $parts[0]; // Primary answer
+                            $alternates = array_slice($parts, 1); // Alternate answers
+                        }
+                        
+                        // Create QuestionBlank entry
+                        $question->blanks()->create([
+                            'blank_number' => $blankNum,
+                            'correct_answer' => $answerText,
+                            'alternate_answers' => $alternates
+                        ]);
+                        
+                        \Log::info("Created blank {$blankNum} with answer: {$answerText}");
+                    }
+                }
+                
+                // Update section_specific_data to have clean format
+                $cleanBlanks = [];
+                foreach ($question->blanks as $blank) {
+                    $cleanBlanks[$blank->blank_number] = $blank->correct_answer;
+                }
+                
+                $sectionData = $question->section_specific_data ?? [];
+                $sectionData['blank_answers'] = $cleanBlanks;
+                $question->section_specific_data = $sectionData;
+                $question->save();
+            }
             
             // Create options if applicable (using new method)
             if ($this->needsOptions($request->question_type) && isset($request->options)) {
@@ -559,6 +717,59 @@ class QuestionController extends Controller
         }
 
         $question->update($updateData);
+        
+        // Handle blank answers for fill-in-the-blank questions
+        if (in_array($request->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion', 'fill_blanks'])) {
+            // Clear existing blanks
+            $question->blanks()->delete();
+            
+            // Extract blanks from content
+            preg_match_all('/\[____(\d+)____\]/', $request->content, $matches);
+            $blankNumbers = array_unique($matches[1]);
+            
+            // Get blank answers from request
+            $requestBlankAnswers = $request->input('blank_answers', []);
+            
+            // Re-index request array to match blank numbers
+            $blankAnswersByNumber = [];
+            $arrayIndex = 0;
+            foreach ($blankNumbers as $blankNum) {
+                if (isset($requestBlankAnswers[$arrayIndex])) {
+                    $blankAnswersByNumber[$blankNum] = $requestBlankAnswers[$arrayIndex];
+                }
+                $arrayIndex++;
+            }
+            
+            foreach ($blankAnswersByNumber as $blankNum => $answerText) {
+                if (!empty($answerText)) {
+                    // Check for alternates (separated by |)
+                    $alternates = null;
+                    if (strpos($answerText, '|') !== false) {
+                        $parts = array_map('trim', explode('|', $answerText));
+                        $answerText = $parts[0]; // Primary answer
+                        $alternates = array_slice($parts, 1); // Alternate answers
+                    }
+                    
+                    // Create QuestionBlank entry
+                    $question->blanks()->create([
+                        'blank_number' => $blankNum,
+                        'correct_answer' => $answerText,
+                        'alternate_answers' => $alternates
+                    ]);
+                }
+            }
+            
+            // Update section_specific_data
+            $cleanBlanks = [];
+            foreach ($question->blanks as $blank) {
+                $cleanBlanks[$blank->blank_number] = $blank->correct_answer;
+            }
+            
+            $sectionData = $question->section_specific_data ?? [];
+            $sectionData['blank_answers'] = $cleanBlanks;
+            $question->section_specific_data = $sectionData;
+            $question->save();
+        }
 
         return redirect()->route('admin.test-sets.show', $question->test_set_id)
             ->with('success', 'Question updated successfully.');
@@ -647,6 +858,26 @@ class QuestionController extends Controller
         }
         
         return $lastQuestion->order_number + 1;
+    }
+    
+    /**
+     * Get questions for a test set via AJAX
+     */
+    public function ajaxTestSet($testSetId)
+    {
+        $questions = Question::with(['testSet', 'testSet.section', 'options'])
+                            ->where('test_set_id', $testSetId)
+                            ->orderBy('part_number')
+                            ->orderBy('order_number')
+                            ->get();
+        
+        $selectedTestSet = TestSet::with('section')->find($testSetId);
+        
+        if (!$selectedTestSet) {
+            return response()->json(['error' => 'Test set not found'], 404);
+        }
+        
+        return view('admin.questions.partials.questions-list', compact('questions', 'selectedTestSet'));
     }
     
     /**

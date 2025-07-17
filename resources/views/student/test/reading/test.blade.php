@@ -235,7 +235,8 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
             name="answers[' . $question->id . '][blank_' . $blankCounter . ']" 
             class="gap-input" 
             placeholder="Type your answer"
-            data-question-number="' . $displayNum . '">';
+            data-question-number="' . $displayNum . '"
+            autocomplete="off">';
 }, $processedContent);
                                             
                                             // Replace dropdowns similarly
@@ -473,10 +474,45 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
         testSetId: {{ $testSet->id }},
         totalQuestions: {{ $totalQuestionCount }}
     };
+    
+    // Debug form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('reading-form');
+        const submitBtn = document.getElementById('submit-button');
+        
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                console.log('Form submission triggered');
+                
+                // Check if there are any required fields
+                const requiredFields = form.querySelectorAll('[required]');
+                let hasEmptyRequired = false;
+                
+                requiredFields.forEach(field => {
+                    if (!field.value || field.value.trim() === '') {
+                        console.error('Empty required field:', field.name);
+                        hasEmptyRequired = true;
+                    }
+                });
+                
+                if (hasEmptyRequired) {
+                    console.error('Form has empty required fields');
+                }
+                
+                // Log all form data
+                const formData = new FormData(form);
+                console.log('Form data:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, ':', value);
+                }
+            });
+        }
+    });
 </script>
 
 
 @vite('resources/js/reading-test.js')
+<script src="{{ asset('js/alternative-submit.js') }}"></script>
     @endpush
     
 </x-test-layout>

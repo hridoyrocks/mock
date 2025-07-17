@@ -133,59 +133,24 @@ class ResultController extends Controller
         \Log::info('Checking answer', [
             'question_id' => $question->id,
             'student_answer' => $studentAnswer,
-            'question_data' => $question->section_specific_data
+            'question_data' => $question->section_specific_data,
+            'has_blanks' => $question->blanks()->exists(),
+            'blank_count' => $question->blanks()->count(),
+            'blanks' => $question->blanks()->get()->toArray()
         ]);
         
         // Handle JSON answers (fill-in-the-blanks with multiple blanks)
         if ($this->isJson($studentAnswer)) {
             $studentAnswers = json_decode($studentAnswer, true);
+            
+            // Use the new trait method for blanks
+            $results = $question->checkMultipleBlanks($studentAnswers);
+            $allCorrect = ($results['total'] > 0 && $results['correct'] === $results['total']);
+            
+            // Also check dropdowns
             $sectionData = $question->section_specific_data;
-            
-            if (!$sectionData) {
-                \Log::warning('No section data for question', ['question_id' => $question->id]);
-                return false;
-            }
-            
-            $allCorrect = true;
-            
-            // Check blank answers
-            if (isset($sectionData['blank_answers']) && is_array($sectionData['blank_answers'])) {
-                foreach ($sectionData['blank_answers'] as $num => $correctAnswer) {
-                    // Try multiple key formats
-                    $studentBlankAnswer = null;
-                    
-                    // Try blank_1 format
-                    if (isset($studentAnswers['blank_' . $num])) {
-                        $studentBlankAnswer = $studentAnswers['blank_' . $num];
-                    }
-                    // Try numeric key
-                    elseif (isset($studentAnswers[$num])) {
-                        $studentBlankAnswer = $studentAnswers[$num];
-                    }
-                    // Try string numeric key
-                    elseif (isset($studentAnswers[(string)$num])) {
-                        $studentBlankAnswer = $studentAnswers[(string)$num];
-                    }
-                    
-                    \Log::info('Checking blank', [
-                        'blank_num' => $num,
-                        'student_answer' => $studentBlankAnswer,
-                        'correct_answer' => $correctAnswer,
-                        'all_student_answers' => $studentAnswers
-                    ]);
-                    
-                    if (!$this->compareAnswers($studentBlankAnswer ?? '', $correctAnswer)) {
-                        $allCorrect = false;
-                        \Log::info('Blank incorrect', ['blank' => $num]);
-                        break;
-                    }
-                }
-            }
-            
-            // Check dropdown answers
-            if ($allCorrect && isset($sectionData['dropdown_correct']) && is_array($sectionData['dropdown_correct'])) {
+            if ($allCorrect && $sectionData && isset($sectionData['dropdown_correct']) && is_array($sectionData['dropdown_correct'])) {
                 foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
-                    // Try multiple key formats
                     $studentDropdownAnswer = null;
                     
                     if (isset($studentAnswers['dropdown_' . $num])) {
@@ -211,7 +176,15 @@ class ResultController extends Controller
             return $allCorrect;
         }
         
-        // Single text answer
+        // Single text answer - check if it's a single blank
+        $blankAnswers = $question->getBlankAnswersArray();
+        if (!empty($blankAnswers) && count($blankAnswers) === 1) {
+            // Get the first (and only) blank answer
+            reset($blankAnswers);
+            $blankNum = key($blankAnswers);
+            return $question->checkBlankAnswer($blankNum, $studentAnswer);
+        }
+        
         return false;
     }
 

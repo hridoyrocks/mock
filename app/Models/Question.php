@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\ManagesBlanks;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Question extends Model
 {
+    use ManagesBlanks;
     protected $fillable = [
     'test_set_id', 
     'question_type', 
@@ -263,6 +265,11 @@ public function getProgressiveSettings()
     public function subQuestions(): HasMany
     {
         return $this->hasMany(Question::class, 'parent_question_id')->orderBy('sub_question_index');
+    }
+
+    public function blanks(): HasMany
+    {
+        return $this->hasMany(QuestionBlank::class)->orderBy('blank_number');
     }
 
     /**

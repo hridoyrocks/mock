@@ -64,6 +64,79 @@
                                             </button>
                                         </div>
                                         @endif
+                    
+                    <!-- Blank Answers Display (for fill-in-the-blank questions) -->
+                    @if(in_array($question->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion']))
+                    <div class="bg-white rounded-lg shadow-sm" id="blank-answers-section">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                <i class="fas fa-fill-drip mr-2"></i>Fill in the Blank Answers
+                            </h3>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div id="blank-answers-container" class="space-y-3">
+                                @php
+                                    // Extract blanks from content
+                                    preg_match_all('/\[____(\d+)____\]/', $question->content, $matches);
+                                    $blankNumbers = array_unique($matches[1]);
+                                    sort($blankNumbers);
+                                @endphp
+                                
+                                @if(count($blankNumbers) > 0)
+                                    @foreach($blankNumbers as $index => $blankNum)
+                                        @php
+                                            $blank = $question->blanks()->where('blank_number', $blankNum)->first();
+                                            $answer = '';
+                                            
+                                            if ($blank) {
+                                                $answer = $blank->correct_answer;
+                                                if ($blank->alternate_answers) {
+                                                    $answer .= '|' . implode('|', $blank->alternate_answers);
+                                                }
+                                            }
+                                        @endphp
+                                        
+                                        <div class="flex items-center gap-3 bg-white p-3 rounded border border-gray-200">
+                                            <label class="text-sm font-medium text-gray-700 w-24">
+                                                Blank {{ $blankNum }}:
+                                            </label>
+                                            <input type="text" 
+                                                   name="blank_answers[]" 
+                                                   value="{{ $answer }}"
+                                                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+                                                   placeholder="Answer (use | for alternatives: answer1|answer2)"
+                                                   required>
+                                            <span class="text-xs text-gray-500">[____{{ $blankNum }}____]</span>
+                                            
+                                            @if($blank)
+                                                <span class="text-green-600" title="Saved in database">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </span>
+                                            @else
+                                                <span class="text-red-600" title="Not saved">
+                                                    <i class="fas fa-exclamation-circle"></i>
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                    
+                                    <div class="mt-3 p-3 bg-blue-50 rounded">
+                                        <p class="text-sm text-blue-800">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            <strong>Tips:</strong> Use pipe (|) to separate alternative correct answers. 
+                                            Example: <code class="bg-white px-1 rounded">color|colour</code>
+                                        </p>
+                                    </div>
+                                @else
+                                    <p class="text-gray-500 text-sm">
+                                        No blanks found. Use [____1____] format in content to create blanks.
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                                         <textarea id="content" name="content" class="tinymce" required>{{ old('content', $question->content) }}</textarea>
                                         @if($question->question_type === 'passage')
                                         <input type="hidden" name="passage_text" value="{{ old('passage_text', $question->passage_text ?? $question->content) }}">

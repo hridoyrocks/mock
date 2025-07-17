@@ -724,7 +724,7 @@
                     <span class="text-sm font-medium text-gray-700 min-w-[80px]">Blank ${num}:</span>
                     <input type="text" 
                            id="blank_answer_${num}"
-                           name="blank_answers[${num}]" 
+                           name="blank_answers[]" 
                            class="blank-answer-input flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                            placeholder="Enter correct answer"
                            value="${storedValue}"
@@ -773,11 +773,11 @@
                     <input type="text" 
                            id="dropdown_options_${num}"
                            value="${storedOptions}" 
-                           name="dropdown_options[${num}]" 
+                           name="dropdown_options[]" 
                            class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Options (comma separated)"
                            data-dropdown-num="${num}">
-                    <select id="dropdown_correct_${num}" name="dropdown_correct[${num}]" 
+                    <select id="dropdown_correct_${num}" name="dropdown_correct[]" 
                             class="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                             data-dropdown-num="${num}">
                         ${storedOptions.split(',').map((opt, idx) => `<option value="${idx}" ${idx == storedCorrect ? 'selected' : ''}>${opt.trim()}</option>`).join('')}

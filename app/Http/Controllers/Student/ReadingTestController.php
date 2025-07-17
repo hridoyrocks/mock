@@ -120,31 +120,37 @@ class ReadingTestController extends Controller
         ]);
         
         DB::transaction(function () use ($request, $attempt) {
-            // Get total questions count (excluding passages)
-            $totalQuestions = $attempt->testSet->questions()
+            // Get all questions (excluding passages)
+            $questions = $attempt->testSet->questions()
                 ->where('question_type', '!=', 'passage')
-                ->count();
+                ->get();
             
-            // Load questions with their types to determine how to save answers
-            $attempt->load('testSet.questions.options');
-            $questions = $attempt->testSet->questions->keyBy('id');
+            // Calculate total question count INCLUDING blanks
+            $totalQuestions = 0;
+            foreach ($questions as $question) {
+                $blankCount = $question->countBlanks();
+                if ($blankCount > 0) {
+                    $totalQuestions += $blankCount; // Each blank counts as a separate question
+                } else {
+                    $totalQuestions += 1;
+                }
+            }
             
-            // Track answered questions
+            // Track answered questions and correct answers
             $answeredCount = 0;
+            $correctAnswers = 0;
             
             // Save answers
             foreach ($request->answers as $questionId => $answer) {
                 // Skip if no answer provided
-                if (empty($answer)) {
+                if (empty($answer) && $answer !== '0') {
                     continue;
                 }
                 
-                $question = $questions->get($questionId);
+                $question = $questions->find($questionId);
                 if (!$question || $question->question_type === 'passage') {
                     continue;
                 }
-                
-                $answeredCount++;
                 
                 if (is_array($answer)) {
                     // Handle array answers (blanks or multiple selections)
@@ -161,6 +167,11 @@ class ReadingTestController extends Controller
                                 'answer' => $combinedAnswer,
                             ]
                         );
+                        
+                        // Check each blank separately for IELTS scoring
+                        $blankResults = $this->checkMultiBlankAnswer($question, $answer);
+                        $answeredCount += $blankResults['answered'];
+                        $correctAnswers += $blankResults['correct'];
                     } else {
                         // Multiple selection question
                         foreach ($answer as $value) {
@@ -173,6 +184,7 @@ class ReadingTestController extends Controller
                                 ]);
                             }
                         }
+                        $answeredCount++;
                     }
                 } else {
                     // Single answer
@@ -190,6 +202,12 @@ class ReadingTestController extends Controller
                                 'answer' => null,
                             ]
                         );
+                        
+                        // Check if correct
+                        $option = $question->options->find($answer);
+                        if ($option && $option->is_correct) {
+                            $correctAnswers++;
+                        }
                     } else {
                         // Text answer
                         StudentAnswer::updateOrCreate(
@@ -202,7 +220,14 @@ class ReadingTestController extends Controller
                                 'answer' => $answer,
                             ]
                         );
+                        
+                        // Check text answer
+                        if ($this->checkSingleTextAnswer($question, $answer)) {
+                            $correctAnswers++;
+                        }
                     }
+                    
+                    $answeredCount++;
                 }
             }
             
@@ -214,33 +239,6 @@ class ReadingTestController extends Controller
             
             // INCREMENT TEST COUNT
             auth()->user()->incrementTestCount();
-            
-            // Calculate score
-            $correctAnswers = 0;
-            
-            // Load answers with options to check correctness
-            $attempt->load('answers.selectedOption', 'answers.question');
-            
-            foreach ($attempt->answers as $answer) {
-                $question = $answer->question;
-                
-                // Skip passage type questions
-                if ($question->question_type === 'passage') {
-                    continue;
-                }
-                
-                // Check if this is a question with options
-                if ($question->options->count() > 0) {
-                    if ($answer->selectedOption && $answer->selectedOption->is_correct) {
-                        $correctAnswers++;
-                    }
-                } else {
-                    // Text-based answer checking
-                    if ($this->checkTextAnswer($answer)) {
-                        $correctAnswers++;
-                    }
-                }
-            }
             
             // Use the new partial test score calculation
             $scoreData = \App\Helpers\ScoreCalculator::calculatePartialTestScore(
@@ -270,97 +268,93 @@ class ReadingTestController extends Controller
     }
     
     /**
-     * Check if a text-based answer is correct
+     * Check multi-blank answer and return results for IELTS scoring
+     */
+    protected function checkMultiBlankAnswer($question, $studentAnswers): array
+    {
+        // Use the new trait method
+        $results = $question->checkMultipleBlanks($studentAnswers);
+        
+        // Also check dropdowns (not handled by trait yet)
+        $sectionData = $question->section_specific_data;
+        $answeredCount = $results['total'];
+        $correctCount = $results['correct'];
+        
+        if ($sectionData && isset($sectionData['dropdown_correct']) && is_array($sectionData['dropdown_correct'])) {
+            foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
+                $studentDropdownAnswer = null;
+                
+                if (isset($studentAnswers['dropdown_' . $num])) {
+                    $studentDropdownAnswer = $studentAnswers['dropdown_' . $num];
+                } elseif (isset($studentAnswers[$num])) {
+                    $studentDropdownAnswer = $studentAnswers[$num];
+                }
+                
+                if (!empty($studentDropdownAnswer)) {
+                    $answeredCount++;
+                    
+                    $dropdownOptions = $sectionData['dropdown_options'][$num] ?? '';
+                    if ($dropdownOptions) {
+                        $options = array_map('trim', explode(',', $dropdownOptions));
+                        $correctOption = isset($options[$correctIndex]) ? $options[$correctIndex] : '';
+                        
+                        if ($this->compareAnswers($studentDropdownAnswer, $correctOption)) {
+                            $correctCount++;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return [
+            'answered' => $answeredCount,
+            'correct' => $correctCount,
+            'details' => $results['details'] ?? []
+        ];
+    }
+    
+    /**
+     * Check single text answer
+     */
+    protected function checkSingleTextAnswer($question, $studentAnswer): bool
+    {
+        $sectionData = $question->section_specific_data;
+        
+        // Check if there's a correct answer defined
+        if ($sectionData && isset($sectionData['correct_answer'])) {
+            return $this->compareAnswers($studentAnswer, $sectionData['correct_answer']);
+        }
+        
+        // For single blank questions, check blank_answers[1]
+        if ($sectionData && isset($sectionData['blank_answers']) && isset($sectionData['blank_answers'][1])) {
+            return $this->compareAnswers($studentAnswer, $sectionData['blank_answers'][1]);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if a text-based answer is correct (DEPRECATED - use checkMultiBlankAnswer instead)
      */
     protected function checkTextAnswer($answer): bool
     {
         $question = $answer->question;
         $studentAnswer = $answer->answer;
         
-        // Debug log
-        \Log::info('Checking answer', [
-            'question_id' => $question->id,
-            'student_answer' => $studentAnswer,
-            'question_data' => $question->section_specific_data
-        ]);
-        
         // Handle JSON answers (fill-in-the-blanks with multiple blanks)
         if ($this->isJson($studentAnswer)) {
             $studentAnswers = json_decode($studentAnswer, true);
-            $sectionData = $question->section_specific_data;
+            $results = $this->checkMultiBlankAnswer($question, $studentAnswers);
             
-            if (!$sectionData) {
-                \Log::warning('No section data for question', ['question_id' => $question->id]);
-                return false;
-            }
+            // For backward compatibility, return true only if ALL blanks are correct
+            $totalBlanks = count($question->section_specific_data['blank_answers'] ?? []) + 
+                          count($question->section_specific_data['dropdown_correct'] ?? []);
             
-            $allCorrect = true;
-            
-            // Check blank answers
-            if (isset($sectionData['blank_answers']) && is_array($sectionData['blank_answers'])) {
-                foreach ($sectionData['blank_answers'] as $num => $correctAnswer) {
-                    // Try multiple key formats
-                    $studentBlankAnswer = null;
-                    
-                    // Try blank_1 format
-                    if (isset($studentAnswers['blank_' . $num])) {
-                        $studentBlankAnswer = $studentAnswers['blank_' . $num];
-                    }
-                    // Try numeric key
-                    elseif (isset($studentAnswers[$num])) {
-                        $studentBlankAnswer = $studentAnswers[$num];
-                    }
-                    // Try string numeric key
-                    elseif (isset($studentAnswers[(string)$num])) {
-                        $studentBlankAnswer = $studentAnswers[(string)$num];
-                    }
-                    
-                    \Log::info('Checking blank', [
-                        'blank_num' => $num,
-                        'student_answer' => $studentBlankAnswer,
-                        'correct_answer' => $correctAnswer,
-                        'all_student_answers' => $studentAnswers
-                    ]);
-                    
-                    if (!$this->compareAnswers($studentBlankAnswer ?? '', $correctAnswer)) {
-                        $allCorrect = false;
-                        \Log::info('Blank incorrect', ['blank' => $num]);
-                        break;
-                    }
-                }
-            }
-            
-            // Check dropdown answers
-            if ($allCorrect && isset($sectionData['dropdown_correct']) && is_array($sectionData['dropdown_correct'])) {
-                foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
-                    // Try multiple key formats
-                    $studentDropdownAnswer = null;
-                    
-                    if (isset($studentAnswers['dropdown_' . $num])) {
-                        $studentDropdownAnswer = $studentAnswers['dropdown_' . $num];
-                    } elseif (isset($studentAnswers[$num])) {
-                        $studentDropdownAnswer = $studentAnswers[$num];
-                    }
-                    
-                    $dropdownOptions = $sectionData['dropdown_options'][$num] ?? '';
-                    
-                    if ($dropdownOptions) {
-                        $options = array_map('trim', explode(',', $dropdownOptions));
-                        $correctOption = $options[$correctIndex] ?? '';
-                        
-                        if (!$this->compareAnswers($studentDropdownAnswer ?? '', $correctOption)) {
-                            $allCorrect = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            return $allCorrect;
+            return $totalBlanks > 0 && $results['correct'] === $totalBlanks;
         }
         
         // Single text answer
-        return false;
+        return $this->checkSingleTextAnswer($question, $studentAnswer);
     }
 
     /**
@@ -378,16 +372,47 @@ class ReadingTestController extends Controller
         }
         
         // Normalize both answers
-        $studentAnswer = $this->normalizeAnswer($studentAnswer);
-        $correctAnswer = $this->normalizeAnswer($correctAnswer);
+        $studentNormalized = $this->normalizeAnswer($studentAnswer);
+        $correctNormalized = $this->normalizeAnswer($correctAnswer);
         
-        \Log::info('Comparing normalized answers', [
-            'student' => $studentAnswer,
-            'correct' => $correctAnswer,
-            'match' => $studentAnswer === $correctAnswer
+        // Check for exact match after normalization
+        if ($studentNormalized === $correctNormalized) {
+            return true;
+        }
+        
+        // Check for alternative answers (if correct answer contains '/')
+        if (strpos($correctAnswer, '/') !== false) {
+            $alternatives = array_map('trim', explode('/', $correctAnswer));
+            foreach ($alternatives as $alternative) {
+                if ($this->normalizeAnswer($alternative) === $studentNormalized) {
+                    return true;
+                }
+            }
+        }
+        
+        // Check for acceptable variations (if correct answer contains parentheses)
+        // e.g., "color(s)" accepts "color" or "colors"
+        if (preg_match('/\(([^)]+)\)/', $correctAnswer, $matches)) {
+            // Try without the parenthetical part
+            $withoutParentheses = str_replace($matches[0], '', $correctAnswer);
+            if ($this->normalizeAnswer($withoutParentheses) === $studentNormalized) {
+                return true;
+            }
+            
+            // Try with the parenthetical part included
+            $withParentheses = str_replace(['(', ')'], '', $correctAnswer);
+            if ($this->normalizeAnswer($withParentheses) === $studentNormalized) {
+                return true;
+            }
+        }
+        
+        \Log::info('Answer comparison failed', [
+            'student_normalized' => $studentNormalized,
+            'correct_normalized' => $correctNormalized,
+            'match' => false
         ]);
         
-        return $studentAnswer === $correctAnswer;
+        return false;
     }
 
     /**
@@ -407,29 +432,46 @@ class ReadingTestController extends Controller
         // Remove extra spaces
         $answer = preg_replace('/\s+/', ' ', $answer);
         
-        // Remove punctuation except apostrophes in contractions
-        $answer = preg_replace("/[^\w\s']/", '', $answer);
+        // Remove punctuation except apostrophes in contractions and hyphens
+        $answer = preg_replace("/[^\w\s'\-]/", '', $answer);
         
         // Handle common variations
         $replacements = [
-            // Contractions
-            "don't" => "dont",
-            "won't" => "wont",
-            "can't" => "cant",
-            "shouldn't" => "shouldnt",
-            "wouldn't" => "wouldnt",
-            "couldn't" => "couldnt",
-            "isn't" => "isnt",
-            "aren't" => "arent",
-            "wasn't" => "wasnt",
-            "weren't" => "werent",
-            "hasn't" => "hasnt",
-            "haven't" => "havent",
-            "hadn't" => "hadnt",
-            "doesn't" => "doesnt",
-            "didn't" => "didnt",
+            // Articles (remove them for flexibility)
+            ' the ' => ' ',
+            ' a ' => ' ',
+            ' an ' => ' ',
             
-            // Number words
+            // At the beginning
+            '/^the\s+/' => '',
+            '/^a\s+/' => '',
+            '/^an\s+/' => '',
+            
+            // Contractions
+            "don't" => "do not",
+            "won't" => "will not",
+            "can't" => "cannot",
+            "shouldn't" => "should not",
+            "wouldn't" => "would not", 
+            "couldn't" => "could not",
+            "isn't" => "is not",
+            "aren't" => "are not",
+            "wasn't" => "was not",
+            "weren't" => "were not",
+            "hasn't" => "has not",
+            "haven't" => "have not",
+            "hadn't" => "had not",
+            "doesn't" => "does not",
+            "didn't" => "did not",
+            "it's" => "it is",
+            "he's" => "he is",
+            "she's" => "she is",
+            "they're" => "they are",
+            "we're" => "we are",
+            "you're" => "you are",
+            "i'm" => "i am",
+            
+            // Number words to digits
             'zero' => '0', 'one' => '1', 'two' => '2', 'three' => '3',
             'four' => '4', 'five' => '5', 'six' => '6', 'seven' => '7',
             'eight' => '8', 'nine' => '9', 'ten' => '10',
@@ -439,13 +481,41 @@ class ReadingTestController extends Controller
             'twenty' => '20', 'thirty' => '30', 'forty' => '40',
             'fifty' => '50', 'sixty' => '60', 'seventy' => '70',
             'eighty' => '80', 'ninety' => '90', 'hundred' => '100',
+            'thousand' => '1000',
             
             // Common variations
             'ok' => 'okay',
             'alright' => 'all right',
+            '&' => 'and',
+            
+            // British vs American spelling
+            'colour' => 'color',
+            'honour' => 'honor',
+            'favour' => 'favor',
+            'labour' => 'labor',
+            'centre' => 'center',
+            'theatre' => 'theater',
+            'metre' => 'meter',
+            'litre' => 'liter',
+            'defence' => 'defense',
+            'licence' => 'license',
+            'practise' => 'practice',
+            'organisation' => 'organization',
+            'specialise' => 'specialize',
+            'analyse' => 'analyze',
+            'programme' => 'program',
         ];
         
+        // Apply string replacements
         $answer = strtr($answer, $replacements);
+        
+        // Apply regex replacements
+        $answer = preg_replace('/^the\s+/i', '', $answer);
+        $answer = preg_replace('/^a\s+/i', '', $answer);
+        $answer = preg_replace('/^an\s+/i', '', $answer);
+        
+        // Remove multiple spaces again after replacements
+        $answer = preg_replace('/\s+/', ' ', $answer);
         
         // Final trim
         return trim($answer);
@@ -456,16 +526,10 @@ class ReadingTestController extends Controller
      */
     protected function isJson($string): bool
     {
+        if (!is_string($string)) {
+            return false;
+        }
         json_decode($string);
         return (json_last_error() == JSON_ERROR_NONE);
-    }
-    
-    /**
-     * Check if student answer matches correct answer (case-insensitive, trimmed)
-     * This method is still here for backward compatibility but redirects to compareAnswers
-     */
-    protected function checkAnswer($studentAnswer, $correctAnswer): bool
-    {
-        return $this->compareAnswers($studentAnswer, $correctAnswer);
     }
 }

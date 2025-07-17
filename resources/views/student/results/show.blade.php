@@ -309,6 +309,44 @@
                                 @php
                                     $answer = $attempt->answers->where('question_id', $question->id)->first();
                                     $isAnswered = in_array($question->id, $answeredQuestions);
+                                    
+                                    // Check if answer is correct
+                                    $isCorrect = false;
+                                    $displayAnswer = 'No answer';
+                                    
+                                    if ($isAnswered && $answer) {
+                                        if ($answer->selectedOption) {
+                                            $displayAnswer = $answer->selectedOption->content;
+                                            $isCorrect = $answer->selectedOption->is_correct;
+                                        } elseif ($answer->answer) {
+                                            // Check if it's JSON (fill-in-the-blank)
+                                            $answerData = @json_decode($answer->answer, true);
+                                            if (is_array($answerData)) {
+                                                $displayParts = [];
+                                                foreach ($answerData as $key => $value) {
+                                                    if (!empty($value)) {
+                                                        $displayParts[] = $value;
+                                                    }
+                                                }
+                                                $displayAnswer = implode(', ', $displayParts);
+                                                
+                                                // For fill-in-the-blank, we need to check against section_specific_data
+                                                if ($question->section_specific_data && isset($question->section_specific_data['blank_answers'])) {
+                                                    $allBlanksCorrect = true;
+                                                    foreach ($question->section_specific_data['blank_answers'] as $num => $correctAnswer) {
+                                                        $studentAnswer = $answerData['blank_' . $num] ?? '';
+                                                        if (strtolower(trim($studentAnswer)) !== strtolower(trim($correctAnswer))) {
+                                                            $allBlanksCorrect = false;
+                                                            break;
+                                                        }
+                                                    }
+                                                    $isCorrect = $allBlanksCorrect;
+                                                }
+                                            } else {
+                                                $displayAnswer = $answer->answer;
+                                            }
+                                        }
+                                    }
                                 @endphp
                                 
                                 <div class="glass rounded-lg p-4 {{ !$isAnswered ? 'opacity-60' : '' }}">
@@ -323,17 +361,40 @@
                                                 </p>
                                             </div>
                                             
-                                            <div class="flex items-center gap-4 text-sm">
-                                                <span class="text-gray-400">
+                                            <div class="text-sm">
+                                                <p class="text-gray-400">
                                                     Your answer: 
                                                     <span class="text-white">
-                                                        @if($isAnswered && $answer)
-                                                            {{ $answer->selectedOption ? $answer->selectedOption->content : ($answer->answer ?: 'No answer') }}
-                                                        @else
+                                                        @if(!$isAnswered)
                                                             <span class="text-orange-400">Not attempted</span>
+                                                        @else
+                                                            {{ $displayAnswer }}
                                                         @endif
                                                     </span>
-                                                </span>
+                                                </p>
+                                                
+                                                {{-- Show correct answer for premium users --}}
+                                                @if($isPremium && $isAnswered && !$isCorrect)
+                                                    <p class="text-gray-400 mt-1">
+                                                        Correct answer: 
+                                                        <span class="text-green-400">
+                                                            @if($question->correctOption())
+                                                                {{ $question->correctOption()->content }}
+                                                            @elseif($question->section_specific_data && isset($question->section_specific_data['blank_answers']))
+                                                                @php
+                                                                    $blankAnswers = $question->getBlankAnswersArray();
+                                                                @endphp
+                                                                @if(!empty($blankAnswers))
+                                                                    {{ implode(', ', $blankAnswers) }}
+                                                                @else
+                                                                    {{ implode(', ', $question->section_specific_data['blank_answers']) }}
+                                                                @endif
+                                                            @else
+                                                                {{ $question->getCorrectAnswerForDisplay() }}
+                                                            @endif
+                                                        </span>
+                                                    </p>
+                                                @endif
                                             </div>
                                         </div>
                                         
@@ -342,7 +403,7 @@
                                                 <span class="text-orange-400">
                                                     <i class="fas fa-minus-circle text-xl"></i>
                                                 </span>
-                                            @elseif($answer && $answer->selectedOption && $answer->selectedOption->is_correct)
+                                            @elseif($isCorrect)
                                                 <span class="text-green-400">
                                                     <i class="fas fa-check-circle text-xl"></i>
                                                 </span>

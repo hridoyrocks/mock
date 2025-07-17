@@ -285,6 +285,9 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{question}', [QuestionController::class, 'update'])->name('update');
             Route::delete('/{question}', [QuestionController::class, 'destroy'])->name('destroy');
             
+            // AJAX route for loading questions by test set
+            Route::get('/ajax/test-set/{testSetId}', [QuestionController::class, 'ajaxTestSet'])->name('ajax.test-set');
+            
             // Reading Section Specific Routes
             Route::get('/reading/{testSet}/questions', [QuestionController::class, 'createReadingQuestion'])->name('reading.questions');
             Route::get('/reading/{testSet}/passage', [QuestionController::class, 'createReadingPassage'])->name('reading.passage');

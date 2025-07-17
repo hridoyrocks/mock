@@ -177,28 +177,50 @@
     </div>
 </div>
                         
-                        {{-- Diagram Labeling Panel --}}
+                        {{-- Simple Diagram Labeling Panel --}}
                         <div id="diagram-panel" class="type-specific-panel bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
                             <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-blue-50">
                                 <h3 class="text-base sm:text-lg font-medium text-gray-900">
-                                    Plan/Map/Diagram Setup
+                                    Plan/Map/Diagram Labelling Setup
                                 </h3>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    Upload a diagram with numbered locations
+                                </p>
                             </div>
                             
                             <div class="p-4 sm:p-6">
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Upload Diagram Image</label>
-                                    <input type="file" id="diagram-image" name="diagram_image" 
-                                           accept="image/*"
-                                           class="w-full px-3 py-2 border rounded-md text-sm">
+                                {{-- Image Upload Section --}}
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Upload Diagram/Map/Plan Image <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                                        <input type="file" 
+                                               id="diagram-image" 
+                                               name="diagram_image" 
+                                               accept="image/*"
+                                               class="w-full px-3 py-2 text-sm">
+                                        <p class="text-xs text-gray-500 mt-2">
+                                            Upload an image that already has numbered locations marked on it
+                                        </p>
+                                    </div>
                                 </div>
                                 
-                                <div id="diagram-preview" class="mb-4 relative">
-                                    {{-- Image preview and hotspot markers --}}
+                                {{-- Diagram Preview Area --}}
+                                <div id="diagram-preview" class="mb-6">
+                                    <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p class="mt-2 text-sm text-gray-600">
+                                            Upload an image to preview
+                                        </p>
+                                    </div>
                                 </div>
                                 
+                                {{-- Options Configuration --}}
                                 <div id="hotspots-container">
-                                    {{-- Hotspot fields will be added here --}}
+                                    {{-- Will be populated by JavaScript --}}
                                 </div>
                             </div>
                         </div>
@@ -244,6 +266,11 @@
         <input type="hidden" name="use_custom_audio" id="use_custom_audio" value="0">
     </div>
 </div>
+                    
+                    <!-- Debug Info (Remove in production) -->
+                    <div class="bg-yellow-50 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-gray-600">Debug: Check browser console for submission data</p>
+                    </div>
                     
                     <!-- Action Buttons - Sticky on Mobile -->
                     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky bottom-0 z-10 border-t sm:border-t-0 sm:relative">
@@ -367,6 +394,74 @@
         .type-specific-panel {
             transition: all 0.3s ease;
         }
+        
+        /* Enhanced label marker styles */
+        .label-marker {
+            transition: all 0.2s ease;
+        }
+
+        .label-marker:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .diagram-container {
+            user-select: none;
+        }
+
+        #diagram-img {
+            cursor: crosshair;
+        }
+
+        /* Dropdown option styles */
+        .dropdown-option {
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* Label configuration card */
+        .label-config-card {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .label-config-card:hover {
+            border-left-color: #3b82f6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Selected label highlight */
+        .label-marker.selected {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+
+        /* Responsive diagram container */
+        @media (max-width: 640px) {
+            #diagram-img {
+                max-height: 300px !important;
+            }
+            
+            .label-marker {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+            }
+        }
     </style>
     @endpush
     
@@ -375,6 +470,7 @@
 <script src="{{ asset('js/admin/question-common.js') }}"></script>
 <script src="{{ asset('js/admin/question-listening.js') }}"></script>
 <script src="{{ asset('js/admin/question-types.js') }}"></script>
+<script src="{{ asset('js/admin/question-diagram-simple.js') }}"></script>
 
 <script>
 // Function to clear all options
@@ -419,7 +515,11 @@ document.addEventListener('DOMContentLoaded', function() {
         clearAllOptions();
         
         // Initialize type-specific handlers
-        QuestionTypeHandlers.init(selectedType);
+        if (selectedType === 'plan_map_diagram') {
+            SimpleDiagramHandler.init();
+        } else {
+            QuestionTypeHandlers.init(selectedType);
+        }
         
         // Define question type categories
         const specialTypes = ['matching', 'form_completion', 'plan_map_diagram'];
@@ -583,46 +683,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             else if (questionType === 'plan_map_diagram') {
-                console.log('Processing diagram question...');
+                console.log('Processing simple diagram question...');
+                const diagramData = SimpleDiagramHandler.prepareSubmissionData();
+                console.log('Diagram data prepared:', diagramData);
                 
-                // Collect hotspots
-               const hotspots = [];
-    document.querySelectorAll('.hotspot-field').forEach((field, index) => {
-        const xInput = field.querySelector('input[name*="[x]"]');
-        const yInput = field.querySelector('input[name*="[y]"]');
-        const labelInput = field.querySelector('input[name*="[label]"]');
-        const answerInput = field.querySelector('input[name*="[answer]"]');
-        
-        if (xInput && yInput && labelInput && answerInput) {
-            const answer = answerInput.value.trim();
-            
-            if (answer) {
-                hotspots.push({
-                    id: index + 1,
-                    x: parseInt(xInput.value),
-                    y: parseInt(yInput.value),
-                    label: labelInput.value,
-                    answer: answer
-                });
-                console.log(`Hotspot ${index + 1}:`, labelInput.value, '->', answer);
+                // Debug: Check if hidden input is created
+                const hiddenInput = document.getElementById('diagram_data_json');
+                if (hiddenInput) {
+                    console.log('Hidden input value:', hiddenInput.value);
+                } else {
+                    console.error('Hidden input not found!');
+                }
             }
-        }
-    });
-    
-    if (hotspots.length > 0) {
-        // Check if hidden input already exists
-        let hiddenInput = document.getElementById('diagram_hotspots_json');
-        if (!hiddenInput) {
-            hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.id = 'diagram_hotspots_json';
-            hiddenInput.name = 'diagram_hotspots_json';
-            questionForm.appendChild(hiddenInput);
-        }
-        hiddenInput.value = JSON.stringify(hotspots);
-        console.log('Diagram hotspots JSON:', hiddenInput.value);
-    }
-}
             
             console.log('=== FORM SUBMISSION COMPLETED ===');
             // Form will submit normally
