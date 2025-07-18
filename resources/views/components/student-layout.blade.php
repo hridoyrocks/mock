@@ -350,6 +350,22 @@
                             <span class="text-xs text-gray-400">3 parts • 15 min</span>
                         </div>
                     </a>
+                    
+                    <!-- Full Tests -->
+                    <a href="{{ route('student.full-test.index') }}" 
+                       class="group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mb-2
+                              {{ request()->routeIs('student.full-test.*') ? 'glass bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-indigo-500/50' : 'hover:glass' }}">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                            <i class="fas fa-file-alt text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <span class="text-white font-medium block">Full Tests</span>
+                            <span class="text-xs text-gray-400">Complete IELTS</span>
+                        </div>
+                        <span class="ml-auto text-xs px-2 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold">
+                            Premium
+                        </span>
+                    </a>
                 </div>
 
                 <!-- Resources -->
@@ -417,11 +433,17 @@
                             <!-- Greeting & Time -->
                             <div class="hidden sm:block">
                                 <h1 class="text-xl font-semibold text-white">
-                                    Good {{ now()->format('A') === 'AM' ? 'Morning' : (now()->format('H') < 17 ? 'Afternoon' : 'Evening') }}, {{ explode(' ', auth()->user()->name)[0] }}! 👋
+                                    Good <span id="greeting-time">{{ now()->format('A') === 'AM' ? 'Morning' : (now()->format('H') < 17 ? 'Afternoon' : 'Evening') }}</span>, {{ explode(' ', auth()->user()->name)[0] }}! 👋
                                 </h1>
                                 <p class="text-xs text-gray-400 mt-1">
                                     <i class="far fa-clock mr-1"></i>
-                                    {{ now()->format('h:i A') }} • {{ now()->format('l, F j') }}
+                                    <span id="current-time">{{ now()->format('h:i A') }}</span> • <span id="current-date">{{ now()->format('l, F j') }}</span>
+                                    @if(auth()->user()->city || auth()->user()->country_name)
+                                        <span class="ml-2">
+                                            <i class="fas fa-map-marker-alt mr-1"></i>
+                                            {{ auth()->user()->city ? auth()->user()->city . ', ' : '' }}{{ auth()->user()->country_name }}
+                                        </span>
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -626,6 +648,11 @@
                                 <i class="fas fa-microphone text-pink-400 mr-2"></i>
                                 <span class="text-white text-sm">Speaking Tests</span>
                             </a>
+                            <a href="{{ route('student.full-test.index') }}" class="p-3 rounded-lg hover:bg-white/10 transition-colors col-span-2">
+                                <i class="fas fa-file-alt text-indigo-400 mr-2"></i>
+                                <span class="text-white text-sm">Full IELTS Tests</span>
+                                <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">Premium</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -686,7 +713,67 @@
         </div>
     @endif
 
+    <!-- Floating Chat Button for Mobile -->
+    <div class="lg:hidden fixed bottom-20 right-4 z-40">
+        <button onclick="toggleTawkChat()" 
+                class="w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group pulse-animation">
+            <i class="fas fa-comments text-xl group-hover:scale-110 transition-transform"></i>
+        </button>
+    </div>
+
     @stack('scripts')
+    
+    <!-- Start of Tawk.to Script -->
+    <script type="text/javascript">
+    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+    (function(){
+    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+    s1.async=true;
+    s1.src='https://embed.tawk.to/687a4082487057192063a83a/1j0eoo0j1';
+    s1.charset='UTF-8';
+    s1.setAttribute('crossorigin','*');
+    s0.parentNode.insertBefore(s1,s0);
+    })();
+    
+    // Customize Tawk.to appearance for glass effect
+    window.Tawk_API.onLoad = function(){
+        // Set custom colors to match your theme
+        window.Tawk_API.setAttributes({
+            'name': '{{ auth()->user()->name }}',
+            'email': '{{ auth()->user()->email }}',
+            'hash': '{{ hash("sha256", auth()->user()->email) }}'
+        }, function(error){});
+        
+        // Hide widget on mobile by default
+        if(window.innerWidth < 768) {
+            window.Tawk_API.hideWidget();
+        }
+    };
+    
+    // Custom styling for Tawk.to widget
+    window.Tawk_API.onChatMaximized = function(){
+        // Add glass effect class to chat widget
+        setTimeout(function() {
+            var tawkFrame = document.getElementById('tawkchat-iframe');
+            if(tawkFrame) {
+                tawkFrame.style.borderRadius = '20px';
+                tawkFrame.style.overflow = 'hidden';
+            }
+        }, 100);
+    };
+    
+    // Toggle function for mobile
+    function toggleTawkChat() {
+        if(window.Tawk_API && window.Tawk_API.getWindowType) {
+            if(window.Tawk_API.getWindowType() === 'min') {
+                window.Tawk_API.maximize();
+            } else {
+                window.Tawk_API.minimize();
+            }
+        }
+    }
+    </script>
+    <!-- End of Tawk.to Script -->
     
     <script>
         function layoutData() {
@@ -699,16 +786,65 @@
                 greeting: '',
                 
                 init() {
-                    // Set greeting
-                    const hour = new Date().getHours();
-                    if (hour < 12) this.greeting = 'Good Morning';
-                    else if (hour < 17) this.greeting = 'Good Afternoon';
-                    else this.greeting = 'Good Evening';
+                    // Update time based on user's timezone
+                    this.updateDateTime();
                     
                     // Update time every second
                     setInterval(() => {
-                        this.currentTime = new Date().toLocaleTimeString();
+                        this.updateDateTime();
                     }, 1000);
+                },
+                
+                updateDateTime() {
+                    const now = new Date();
+                    const userTimezone = '{{ auth()->user()->timezone ?? "Asia/Dhaka" }}';
+                    
+                    // Format time and date according to user's timezone
+                    const timeOptions = {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZone: userTimezone
+                    };
+                    
+                    const dateOptions = {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        timeZone: userTimezone
+                    };
+                    
+                    // Update time
+                    const timeElement = document.getElementById('current-time');
+                    if (timeElement) {
+                        timeElement.textContent = now.toLocaleString('en-US', timeOptions);
+                    }
+                    
+                    // Update date
+                    const dateElement = document.getElementById('current-date');
+                    if (dateElement) {
+                        dateElement.textContent = now.toLocaleDateString('en-US', dateOptions);
+                    }
+                    
+                    // Update greeting based on local time
+                    const hour = parseInt(now.toLocaleString('en-US', { 
+                        hour: 'numeric', 
+                        hour12: false, 
+                        timeZone: userTimezone 
+                    }));
+                    
+                    let greeting = 'Evening';
+                    if (hour >= 5 && hour < 12) {
+                        greeting = 'Morning';
+                    } else if (hour >= 12 && hour < 17) {
+                        greeting = 'Afternoon';
+                    }
+                    
+                    const greetingElement = document.getElementById('greeting-time');
+                    if (greetingElement) {
+                        greetingElement.textContent = greeting;
+                    }
                 }
             }
         }

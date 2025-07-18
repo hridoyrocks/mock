@@ -182,7 +182,18 @@ Route::middleware(['auth'])->group(function () {
 
         // Test routes
         Route::prefix('test')->group(function () {
-            Route::get('/', [TestController::class, 'index'])->name('index');
+            // Route::get('/', [TestController::class, 'index'])->name('index'); // Removed
+            
+            // Full Test routes
+            Route::prefix('full-test')->name('full-test.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Student\FullTestController::class, 'index'])->name('index');
+                Route::get('/{fullTest}/onboarding', [App\Http\Controllers\Student\FullTestController::class, 'onboarding'])->name('onboarding');
+                Route::post('/{fullTest}/start', [App\Http\Controllers\Student\FullTestController::class, 'start'])->name('start');
+                Route::get('/attempt/{fullTestAttempt}/section/{section}', [App\Http\Controllers\Student\FullTestController::class, 'section'])->name('section');
+                Route::post('/attempt/{fullTestAttempt}/complete-section', [App\Http\Controllers\Student\FullTestController::class, 'completeSection'])->name('complete-section');
+                Route::get('/attempt/{fullTestAttempt}/results', [App\Http\Controllers\Student\FullTestController::class, 'results'])->name('results');
+                Route::post('/attempt/{fullTestAttempt}/abandon', [App\Http\Controllers\Student\FullTestController::class, 'abandon'])->name('abandon');
+            });
             
             // Listening section - with usage limit check
             Route::prefix('listening')->name('listening.')->group(function () {
@@ -268,6 +279,11 @@ Route::middleware(['auth'])->group(function () {
         
         // Test sets management
         Route::resource('test-sets', TestSetController::class);
+        
+        // Full Tests management
+        Route::resource('full-tests', App\Http\Controllers\Admin\FullTestController::class);
+        Route::patch('/full-tests/{fullTest}/toggle-status', [App\Http\Controllers\Admin\FullTestController::class, 'toggleStatus'])->name('full-tests.toggle-status');
+        Route::post('/full-tests/reorder', [App\Http\Controllers\Admin\FullTestController::class, 'reorder'])->name('full-tests.reorder');
 
         // Add these NEW routes for Part Audio Management
         Route::prefix('test-sets/{testSet}')->name('test-sets.')->group(function () {

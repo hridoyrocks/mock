@@ -7,46 +7,57 @@
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 overflow-y-auto"
+         class="fixed inset-0 z-[999999] overflow-y-auto announcement-popup"
          style="display: none;">
         
         <!-- Backdrop with blur -->
-        <div class="fixed inset-0 bg-black/30 backdrop-blur-sm" @click="currentAnnouncement.is_dismissible ? dismissAnnouncement() : null"></div>
+        <div class="fixed inset-0 bg-black/40 backdrop-blur-md" @click="currentAnnouncement.is_dismissible ? dismissAnnouncement() : null"></div>
         
         <!-- Popup Container -->
         <div class="flex min-h-full items-center justify-center p-4">
-            <!-- Popup Content -->
+            <!-- Glass Effect Popup -->
             <div x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 transform scale-95"
                  x-transition:enter-end="opacity-100 transform scale-100"
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 transform scale-100"
                  x-transition:leave-end="opacity-0 transform scale-95"
-                 class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all">
+                 class="relative max-w-2xl w-full transform transition-all">
                 
-                <!-- Decorative gradient border -->
-                <div class="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 rounded-2xl opacity-75"></div>
-                <div class="relative bg-white rounded-2xl m-[2px]">
+                <!-- Glass morphism container -->
+                <div class="relative backdrop-blur-xl bg-white/20 rounded-3xl shadow-2xl border border-white/30 overflow-hidden">
                     
-                    <!-- Header with gradient background -->
+                    <!-- Gradient overlay for glass effect -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-white/5 pointer-events-none"></div>
+                    
+                    <!-- Close button in corner -->
+                    <button x-show="currentAnnouncement.is_dismissible" 
+                            @click="dismissAnnouncement()"
+                            class="absolute top-4 right-4 z-10 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full transition-all duration-200 group border border-white/30">
+                        <svg class="w-5 h-5 text-white group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Header with glass effect -->
                     <div x-bind:class="{
-                        'bg-gradient-to-r from-blue-500 to-blue-600': currentAnnouncement.type === 'info',
-                        'bg-gradient-to-r from-yellow-500 to-orange-500': currentAnnouncement.type === 'warning',
-                        'bg-gradient-to-r from-green-500 to-emerald-500': currentAnnouncement.type === 'success',
-                        'bg-gradient-to-r from-purple-500 to-pink-500': currentAnnouncement.type === 'promotion'
-                    }" class="px-8 py-6 text-white relative overflow-hidden">
-                        <!-- Background pattern -->
-                        <div class="absolute inset-0 opacity-10">
-                            <div class="absolute -right-10 -top-10 w-40 h-40 bg-white rounded-full"></div>
-                            <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-white rounded-full"></div>
+                        'from-blue-500/80 to-blue-600/80': currentAnnouncement.type === 'info',
+                        'from-yellow-500/80 to-orange-500/80': currentAnnouncement.type === 'warning',
+                        'from-green-500/80 to-emerald-500/80': currentAnnouncement.type === 'success',
+                        'from-purple-500/80 to-pink-500/80': currentAnnouncement.type === 'promotion'
+                    }" class="px-8 py-6 text-white relative overflow-hidden bg-gradient-to-r backdrop-blur-md">
+                        <!-- Glass texture pattern -->
+                        <div class="absolute inset-0 opacity-20">
+                            <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+                            <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
                         </div>
                         
-                        <div class="relative flex items-center justify-between">
+                        <div class="relative flex items-center">
                             <div class="flex items-center space-x-4">
-                                <!-- Animated icon background -->
+                                <!-- Animated icon with glass effect -->
                                 <div class="relative">
-                                    <div class="absolute inset-0 bg-white/20 rounded-full blur-lg animate-pulse"></div>
-                                    <div class="relative bg-white/25 p-3 rounded-full backdrop-blur-sm">
+                                    <div class="absolute inset-0 bg-white/30 rounded-full blur-xl animate-pulse"></div>
+                                    <div class="relative bg-white/20 p-3 rounded-full backdrop-blur-md border border-white/30">
                                         <svg x-show="currentAnnouncement.type === 'info'" class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
@@ -71,41 +82,34 @@
                                     </p>
                                 </div>
                             </div>
-                            <button x-show="currentAnnouncement.is_dismissible" 
-                                    @click="dismissAnnouncement()"
-                                    class="p-2 hover:bg-white/20 rounded-full transition-colors group">
-                                <svg class="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
                         </div>
                     </div>
                     
-                    <!-- Content -->
-                    <div class="p-8">
+                    <!-- Content with glass background -->
+                    <div class="p-8 bg-white/60 backdrop-blur-sm">
                         <!-- Image if available -->
                         <div x-show="currentAnnouncement.image_url" class="mb-6">
                             <img :src="currentAnnouncement.image_url" 
                                  alt="Announcement" 
-                                 class="w-full h-64 object-cover rounded-xl shadow-lg">
+                                 class="w-full h-64 object-cover rounded-xl shadow-lg border border-white/30">
                         </div>
                         
-                        <!-- Message with better typography -->
-                        <div class="prose prose-lg max-w-none">
-                            <p class="text-gray-700 leading-relaxed text-lg" x-text="currentAnnouncement.content"></p>
+                        <!-- Message with glass effect -->
+                        <div class="bg-white/40 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                            <p class="text-gray-800 leading-relaxed text-lg font-medium" x-text="currentAnnouncement.content"></p>
                         </div>
                         
                         <!-- Decorative divider -->
                         <div class="my-8 flex items-center">
-                            <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+                            <div class="flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                         </div>
                         
                         <!-- Action Buttons -->
                         <div class="flex justify-end items-center space-x-4">
-                            <!-- Dismiss button -->
+                            <!-- Dismiss button with glass effect -->
                             <button x-show="currentAnnouncement.is_dismissible"
                                     @click="dismissAnnouncement()"
-                                    class="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 hover:shadow-md">
+                                    class="px-6 py-3 text-sm font-medium text-gray-700 bg-white/50 backdrop-blur-sm hover:bg-white/70 rounded-xl transition-all duration-200 hover:shadow-md border border-white/30">
                                 <span class="flex items-center">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -132,13 +136,13 @@
                         </div>
                     </div>
                     
-                    <!-- Footer indicator for multiple announcements -->
-                    <div x-show="announcements.length > 1" class="px-8 pb-6">
+                    <!-- Footer indicator for multiple announcements with glass effect -->
+                    <div x-show="announcements.length > 1" class="px-8 pb-6 bg-white/40 backdrop-blur-sm">
                         <div class="flex items-center justify-center space-x-2">
                             <template x-for="(announcement, index) in announcements" :key="index">
                                 <button @click="currentIndex = index; currentAnnouncement = announcements[index]; showAnnouncement = true;"
-                                        :class="currentIndex === index ? 'bg-gray-800 w-8' : 'bg-gray-300 w-2'"
-                                        class="h-2 rounded-full transition-all duration-300 hover:bg-gray-600"></button>
+                                        :class="currentIndex === index ? 'bg-white/80 w-8' : 'bg-white/30 w-2'"
+                                        class="h-2 rounded-full transition-all duration-300 hover:bg-white/60 backdrop-blur-sm border border-white/20"></button>
                             </template>
                         </div>
                     </div>
@@ -209,13 +213,43 @@ function announcementPopup() {
 </script>
 
 <style>
-/* Additional styles for better animations */
+/* Glass morphism and animation styles */
 @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
 }
 
+@keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
 .animate-float {
     animation: float 3s ease-in-out infinite;
+}
+
+/* Enhanced glass effect */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Shimmer effect for glass surfaces */
+.glass-shimmer {
+    background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite;
+}
+
+/* Ensure announcement popup appears above Tawk.to */
+.announcement-popup {
+    z-index: 999999 !important;
 }
 </style>

@@ -26,9 +26,57 @@
         </div>
     </section>
 
-    <!-- Test Sections Grid -->
+    <!-- Full Test Section -->
     <section class="px-4 sm:px-6 lg:px-8 py-12">
         <div class="max-w-7xl mx-auto">
+            <!-- Full Test Card -->
+            <div class="glass rounded-2xl p-8 mb-12 relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+                <!-- Premium Badge -->
+                <div class="absolute top-4 right-4">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg">
+                        <i class="fas fa-crown mr-1"></i>
+                        Premium Feature
+                    </span>
+                </div>
+                
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative z-10">
+                    <div class="flex flex-col md:flex-row items-center justify-between">
+                        <div class="mb-6 md:mb-0">
+                            <h2 class="text-3xl font-bold text-white mb-3 flex items-center">
+                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mr-4 neon-purple">
+                                    <i class="fas fa-file-alt text-white text-2xl"></i>
+                                </div>
+                                Full IELTS Tests
+                            </h2>
+                            <p class="text-gray-300 text-lg mb-4">Experience the complete IELTS exam with all four modules in one sitting</p>
+                            
+                            <!-- Features -->
+                            <div class="flex flex-wrap gap-4">
+                                <div class="flex items-center text-sm text-gray-400">
+                                    <i class="fas fa-clock text-indigo-400 mr-2"></i>
+                                    <span>~3 hours duration</span>
+                                </div>
+                                <div class="flex items-center text-sm text-gray-400">
+                                    <i class="fas fa-chart-line text-purple-400 mr-2"></i>
+                                    <span>Overall band score</span>
+                                </div>
+                                <div class="flex items-center text-sm text-gray-400">
+                                    <i class="fas fa-tasks text-pink-400 mr-2"></i>
+                                    <span>Real exam experience</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{{ route('student.full-test.index') }}" class="btn-primary group">
+                            <span>Start Full Test</span>
+                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Individual Sections -->
+            <h2 class="text-2xl font-bold text-white mb-6">Practice Individual Sections</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 @php
                     // Get user's completed tests count for each section
