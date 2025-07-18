@@ -7,6 +7,7 @@ use App\Models\StudentAttempt;
 use App\Models\Question;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class ResultController extends Controller
 {
@@ -341,5 +342,46 @@ class ResultController extends Controller
                 'band_score' => $attempt->band_score,
             ]
         ]);
+    }
+    
+    /**
+     * Initiate a test retake
+     */
+    public function retake(StudentAttempt $attempt): RedirectResponse
+    {
+        // Ensure the attempt belongs to the authenticated user
+        if ($attempt->user_id !== auth()->id()) {
+            abort(403);
+        }
+        
+        // Check if retake is allowed
+        if (!$attempt->canRetake()) {
+            return redirect()->back()->with('error', 'You cannot retake this test.');
+        }
+        
+        // Get the test section name
+        $sectionName = $attempt->testSet->section->name;
+        
+        // Redirect to the appropriate test section onboarding
+        switch ($sectionName) {
+            case 'listening':
+                return redirect()->route('student.listening.onboarding.confirm-details', $attempt->testSet->id)
+                    ->with('info', 'Starting test retake...');
+                
+            case 'reading':
+                return redirect()->route('student.reading.onboarding.confirm-details', $attempt->testSet->id)
+                    ->with('info', 'Starting test retake...');
+                
+            case 'writing':
+                return redirect()->route('student.writing.onboarding.confirm-details', $attempt->testSet->id)
+                    ->with('info', 'Starting test retake...');
+                
+            case 'speaking':
+                return redirect()->route('student.speaking.onboarding.confirm-details', $attempt->testSet->id)
+                    ->with('info', 'Starting test retake...');
+                
+            default:
+                return redirect()->back()->with('error', 'Invalid test section.');
+        }
     }
 }

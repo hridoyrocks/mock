@@ -24,6 +24,8 @@
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
+            height: 100vh;
+            overflow: hidden;
         }
         
         /* ========== HEADER STYLES ========== */
@@ -46,10 +48,23 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 24px;
+            padding: 10px 20px;
             background-color: #1a1a1a;
             color: white;
-            border-bottom: 1px solid #333;
+            height: 50px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        /* Timer Center Wrapper */
+        .timer-center-wrapper {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
         }
         
         .user-info {
@@ -64,11 +79,36 @@
             gap: 12px;
         }
         
-        /* ========== CONTENT AREA - FULL WIDTH WHITE ========== */
-        .content-area {
+        /* ========== MAIN CONTAINER ========== */
+        .main-container {
+            position: fixed;
+            top: 50px; /* User bar height */
+            left: 0;
+            right: 0;
+            bottom: 70px; /* Bottom nav height */
             background: white;
-            min-height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* ========== FIXED PART HEADER ========== */
+        .part-header-container {
+            background: white;
+            padding: 20px 40px;
+            z-index: 10;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* ========== SCROLLABLE CONTENT AREA ========== */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
             padding: 30px 40px 120px;
+            position: relative;
+            background: white;
         }
         
         /* ========== PART SECTIONS ========== */
@@ -88,6 +128,20 @@
             margin: 0 0 30px 0;
             border-radius: 8px;
             border: 1px solid #e0e0e0;
+        }
+        
+        /* Hide original part headers in scrollable area */
+        .content-area .part-header {
+            display: none;
+        }
+        
+        /* Style for cloned fixed header */
+        .part-header-container .part-header {
+            display: block;
+            margin: 0;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: #f0f0f0;
         }
         
         .part-title {
@@ -555,6 +609,7 @@
             align-items: center;
             z-index: 100;
             box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+            height: 70px;
         }
         
         .nav-left {
@@ -857,8 +912,16 @@
         
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
+            .main-container {
+                bottom: 120px; /* Adjust for mobile bottom nav */
+            }
+            
             .content-area {
                 padding: 20px 20px 120px;
+            }
+            
+            .part-header-container {
+                padding: 15px 20px;
             }
             
             .parts-nav {
@@ -921,6 +984,24 @@
             flex-direction: column;
             gap: 10px;
             z-index: 50;
+        }
+        
+        /* ========== SCROLLBAR STYLING ========== */
+        .content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .content-area::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .content-area::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        .content-area::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
         
         .nav-arrow {
@@ -986,38 +1067,19 @@
         }
     </style>
 
-    <!-- IELTS Header -->
-    <div class="ielts-header">
-        <div class="ielts-header-left">
-            <svg class="w-6 h-6 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"></path>
-            </svg>
-            <span class="text-red-600 font-bold text-lg">Computer-delivered IELTS</span>
-        </div>
-        <div>
-            <span class="text-red-600 font-bold text-lg">IELTS</span>
-        </div>
-    </div>
+    
 
-    <!-- User Info Bar WITH Integrated Timer -->
-    <div class="user-bar">
+    <!-- Fixed User Info Bar -->
+    <div class="user-bar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: 50px;">
         <div class="user-info">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
             </svg>
             <span>{{ auth()->user()->name }} - BI {{ str_pad(auth()->id(), 6, '0', STR_PAD_LEFT) }}</span>
         </div>
-        <div class="user-controls">
-            <button class="bg-white text-black px-3 py-1 rounded text-sm help-button" id="help-button">Help ?</button>
-            <button class="bg-white text-black px-3 py-1 rounded text-sm hide-button">Hide</button>
-            <div class="flex items-center ml-2">
-                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071a1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                </svg>
-                <input type="range" min="0" max="100" value="75" class="ml-2 w-20" id="volume-slider">
-            </div>
-            
-            {{-- Integrated Timer Component --}}
+        
+        {{-- Integrated Timer Component - Center Position --}}
+        <div class="timer-center-wrapper">
             <x-test-timer 
                 :attempt="$attempt" 
                 auto-submit-form-id="listening-form"
@@ -1026,10 +1088,28 @@
                 :danger-time="60"
             />
         </div>
+        
+        <div class="user-controls">
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm help-button" id="help-button">Help ?</button>
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
+            <div class="flex items-center ml-2">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071a1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
+                <input type="range" min="0" max="100" value="75" class="ml-2 w-20" id="volume-slider">
+            </div>
+        </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="content-area">
+    <!-- Main Container with Fixed Part Header and Scrollable Content -->
+    <div class="main-container">
+        <!-- Fixed Part Header (will be updated dynamically) -->
+        <div class="part-header-container" id="fixed-part-header">
+            <!-- Part header will be cloned here -->
+        </div>
+        
+        <!-- Scrollable Content Area -->
+        <div class="content-area">
         <!-- Question Navigation Arrows -->
         <div class="question-nav-arrows">
             <button type="button" class="nav-arrow prev-arrow" id="prev-question-btn" title="Previous Question">
@@ -1069,8 +1149,8 @@
             
             @foreach ($groupedQuestions as $partNumber => $partQuestions)
                 <div class="part-section {{ $loop->first ? 'active' : '' }}" data-part="{{ $partNumber }}">
-                    <!-- Part Header -->
-                    <div class="part-header">
+                    <!-- Part Header (Hidden in content, will be cloned to fixed position) -->
+                    <div class="part-header" data-part-number="{{ $partNumber }}">
                         <div class="part-title">Part {{ $partNumber }}</div>
                         <div class="part-instruction">Listen and answer questions {{ $partNumber == 1 ? '1-10' : ($partNumber == 2 ? '11-20' : ($partNumber == 3 ? '21-30' : '31-40')) }}.</div>
                     </div>
@@ -1294,6 +1374,7 @@
             
             <button type="submit" id="submit-button" class="hidden">Submit</button>
         </form>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -1446,9 +1527,16 @@
     @endif
 @endforeach
     
+    
     @push('scripts')
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // ========== Disable Right Click ==========
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
         // Configuration
         const testConfig = {
             attemptId: {{ $attempt->id }},
@@ -1517,6 +1605,25 @@
             }
         });
         
+        // ========== Fixed Part Header Management ==========
+        function updateFixedPartHeader(partNumber) {
+            const fixedHeaderContainer = document.getElementById('fixed-part-header');
+            const originalHeader = document.querySelector(`.part-header[data-part-number="${partNumber}"]`);
+            
+            if (originalHeader && fixedHeaderContainer) {
+                // Clone the header
+                const clonedHeader = originalHeader.cloneNode(true);
+                clonedHeader.style.display = 'block';
+                
+                // Clear and append
+                fixedHeaderContainer.innerHTML = '';
+                fixedHeaderContainer.appendChild(clonedHeader);
+            }
+        }
+        
+        // Initialize with first part header
+        updateFixedPartHeader('1');
+        
         // ========== Part Navigation ==========
         partButtons.forEach(button => {
             button.addEventListener('click', function() {
@@ -1533,6 +1640,9 @@
                         section.classList.add('active');
                     }
                 });
+                
+                // Update fixed part header
+                updateFixedPartHeader(targetPart);
                 
                 // Update number buttons visibility
                 updateNumberButtonsVisibility(targetPart);
@@ -1559,7 +1669,11 @@
                     const currentActivePart = document.querySelector('.part-btn.active');
                     if (currentActivePart && currentActivePart.dataset.part !== partNumber) {
                         const partBtn = document.querySelector(`.part-btn[data-part="${partNumber}"]`);
-                        if (partBtn) partBtn.click();
+                        if (partBtn) {
+                            partBtn.click();
+                            // Update fixed header when switching parts
+                            updateFixedPartHeader(partNumber);
+                        }
                     }
                     
                     // Scroll to question
@@ -1901,32 +2015,38 @@
         },
         
         setupAnnotationHandlers() {
-            document.addEventListener('mouseup', (e) => {
-                if (e.target.closest('#annotation-menu') || 
-                    e.target.closest('#note-modal') || 
-                    e.target.closest('#notes-panel')) {
+                document.addEventListener('mouseup', (e) => {
+                    // Skip if clicking on annotation menu, note modal, or notes panel
+                    if (e.target.closest('#annotation-menu') || 
+                        e.target.closest('#note-modal') || 
+                        e.target.closest('#notes-panel')) {
                     return;
                 }
-                
-                setTimeout(() => {
-                    const selection = window.getSelection();
-                    const selectedText = selection.toString().trim();
                     
-                    if (selectedText && selectedText.length >= 3) {
-                        const range = selection.getRangeAt(0);
-                        const rect = range.getBoundingClientRect();
-                        this.currentRange = range;
-                        this.showMenu(rect, selectedText);
-                    } else {
-                        this.hideMenu();
+                    // Skip if right click
+                    if (e.button === 2) {
+                        return;
                     }
-                }, 10);
-            });
-            
-            // Hide menu on scroll
-            document.addEventListener('scroll', () => {
-                this.hideMenu();
-            }, true);
+                    
+                    setTimeout(() => {
+                        const selection = window.getSelection();
+                        const selectedText = selection.toString().trim();
+                        
+                        if (selectedText && selectedText.length >= 3) {
+                            const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                this.currentRange = range;
+                this.showMenu(rect, selectedText);
+            } else {
+                    this.hideMenu();
+                }
+            }, 10);
+        });
+        
+        // Hide menu on scroll
+        document.addEventListener('scroll', () => {
+            this.hideMenu();
+        }, true);
         },
         
         showMenu(rect, selectedText) {

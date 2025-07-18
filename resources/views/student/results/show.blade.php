@@ -42,21 +42,26 @@
                             </div>
                         </div>
 
-                        <!-- Band Score Display -->
-                        @if($attempt->band_score)
-                            <div class="glass rounded-xl px-8 py-6 text-center border-purple-500/30">
-                                <p class="text-gray-400 text-sm mb-1">Band Score</p>
-                                <p class="text-4xl font-bold text-white">
-                                    {{ number_format($attempt->band_score, 1) }}
+                        <div class="flex items-center gap-4">
+                            <!-- Band Score Display -->
+                            @if($attempt->band_score)
+                                <div class="glass rounded-xl px-8 py-6 text-center border-purple-500/30">
+                                    <p class="text-gray-400 text-sm mb-1">Band Score</p>
+                                    <p class="text-4xl font-bold text-white">
+                                        {{ number_format($attempt->band_score, 1) }}
+                                        @if(!$attempt->is_complete_attempt)
+                                            <span class="text-lg text-purple-400">*</span>
+                                        @endif
+                                    </p>
                                     @if(!$attempt->is_complete_attempt)
-                                        <span class="text-lg text-purple-400">*</span>
+                                        <p class="text-xs text-purple-400 mt-1">Projected</p>
                                     @endif
-                                </p>
-                                @if(!$attempt->is_complete_attempt)
-                                    <p class="text-xs text-purple-400 mt-1">Projected</p>
-                                @endif
-                            </div>
-                        @endif
+                                </div>
+                            @endif
+                            
+                            <!-- Retake Button -->
+                            
+                        </div>
                     </div>
                 </div>
             </div>
@@ -131,6 +136,27 @@
                     @endif
                 </div>
             </div>
+            
+            {{-- Retake Test Button (Alternative Position) --}}
+            @php
+                $canRetake = $attempt->status === 'completed';
+                $latestAttempt = \App\Models\StudentAttempt::getLatestAttempt($attempt->user_id, $attempt->test_set_id);
+                $isLatestAttempt = $latestAttempt && $attempt->id === $latestAttempt->id;
+            @endphp
+            
+            @if($canRetake && $isLatestAttempt)
+                <div class="glass rounded-xl p-6 mb-8 text-center">
+                    <p class="text-gray-300 mb-4">Want to improve your score? You can retake this test.</p>
+                    <form action="{{ route('student.results.retake', $attempt) }}" method="POST" class="inline-block">
+                        @csrf
+                        <button type="submit" 
+                                class="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 flex items-center">
+                            <i class="fas fa-redo mr-2"></i>
+                            Retake This Test
+                        </button>
+                    </form>
+                </div>
+            @endif
 
             {{-- AI Evaluation Section for Writing/Speaking --}}
             @if(in_array($attempt->testSet->section->name, ['writing', 'speaking']))

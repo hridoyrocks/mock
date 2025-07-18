@@ -1,5 +1,10 @@
 <?php
 
+// Include test routes
+if (file_exists(base_path('routes/test.php'))) {
+    require base_path('routes/test.php');
+}
+
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\StudentAttemptController;
 use App\Http\Controllers\Admin\TestSectionController;
@@ -168,6 +173,12 @@ Route::middleware(['auth'])->group(function () {
         
         // Leaderboard
         Route::get('/leaderboard/{period?}', [App\Http\Controllers\Student\DashboardController::class, 'getLeaderboard'])->name('leaderboard');
+        
+        // Announcements
+        Route::prefix('announcements')->name('announcements.')->group(function () {
+            Route::get('/active', [App\Http\Controllers\Student\AnnouncementController::class, 'getActiveAnnouncements'])->name('active');
+            Route::post('/{announcement}/dismiss', [App\Http\Controllers\Student\AnnouncementController::class, 'dismiss'])->name('dismiss');
+        });
 
         // Test routes
         Route::prefix('test')->group(function () {
@@ -242,6 +253,7 @@ Route::middleware(['auth'])->group(function () {
             // Results
             Route::get('/results', [ResultController::class, 'index'])->name('results');
             Route::get('/results/{attempt}', [ResultController::class, 'show'])->name('results.show');
+            Route::post('/results/{attempt}/retake', [ResultController::class, 'retake'])->name('results.retake');
         });
     });
     
@@ -348,17 +360,37 @@ Route::middleware(['auth'])->group(function () {
         });
 
 // Coupon Management
-    Route::prefix('coupons')->name('coupons.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\CouponController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\Admin\CouponController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\Admin\CouponController::class, 'store'])->name('store');
-        Route::get('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'show'])->name('show');
-        Route::get('/{coupon}/edit', [App\Http\Controllers\Admin\CouponController::class, 'edit'])->name('edit');
-        Route::put('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'update'])->name('update');
-        Route::delete('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'destroy'])->name('destroy');
-        Route::patch('/{coupon}/toggle-status', [App\Http\Controllers\Admin\CouponController::class, 'toggleStatus'])->name('toggle-status');
-        Route::post('/bulk-export', [App\Http\Controllers\Admin\CouponController::class, 'bulkExport'])->name('bulk-export');
-    });
+        // Coupon Management
+        Route::prefix('coupons')->name('coupons.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\CouponController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Admin\CouponController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\CouponController::class, 'store'])->name('store');
+            Route::get('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'show'])->name('show');
+            Route::get('/{coupon}/edit', [App\Http\Controllers\Admin\CouponController::class, 'edit'])->name('edit');
+            Route::put('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'update'])->name('update');
+            Route::delete('/{coupon}', [App\Http\Controllers\Admin\CouponController::class, 'destroy'])->name('destroy');
+            Route::patch('/{coupon}/toggle-status', [App\Http\Controllers\Admin\CouponController::class, 'toggleStatus'])->name('toggle-status');
+            Route::post('/bulk-export', [App\Http\Controllers\Admin\CouponController::class, 'bulkExport'])->name('bulk-export');
+        });
+        
+        // Announcement Management
+        Route::prefix('announcements')->name('announcements.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\AnnouncementController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Admin\AnnouncementController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\AnnouncementController::class, 'store'])->name('store');
+            Route::get('/{announcement}/edit', [App\Http\Controllers\Admin\AnnouncementController::class, 'edit'])->name('edit');
+            Route::put('/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'update'])->name('update');
+            Route::delete('/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'destroy'])->name('destroy');
+            Route::patch('/{announcement}/toggle-status', [App\Http\Controllers\Admin\AnnouncementController::class, 'toggleStatus'])->name('toggle-status');
+        });
+        
+        // Website Settings
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::get('/website', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'index'])->name('website');
+            Route::post('/website', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'update'])->name('website.update');
+            Route::delete('/website/logo', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'removeLogo'])->name('website.remove-logo');
+            Route::delete('/website/favicon', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'removeFavicon'])->name('website.remove-favicon');
+        });
 
     });
 });

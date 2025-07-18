@@ -10,14 +10,14 @@
                     @foreach ($testSets as $testSet)
                         @php
                             $attemptCount = \App\Models\StudentAttempt::where('test_set_id', $testSet->id)->count();
-                            $userCompleted = auth()->user()->attempts()
+                            $userAttempts = auth()->user()->attempts()
                                 ->where('test_set_id', $testSet->id)
                                 ->where('status', 'completed')
-                                ->exists();
-                            $userAttempt = $userCompleted ? auth()->user()->attempts()
-                                ->where('test_set_id', $testSet->id)
-                                ->where('status', 'completed')
-                                ->first() : null;
+                                ->orderBy('attempt_number', 'desc')
+                                ->get();
+                            $userCompleted = $userAttempts->count() > 0;
+                            $latestAttempt = $userAttempts->first();
+                            $totalAttempts = $userAttempts->count();
                         @endphp
                         
                         <div class="group relative">
@@ -29,10 +29,17 @@
                                 <!-- Status Badge -->
                                 @if($userCompleted)
                                     <div class="absolute top-4 right-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                            Completed
-                                        </span>
+                                        @if($totalAttempts > 1)
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                                <i class="fas fa-redo mr-1"></i>
+                                                Retaken ({{ $totalAttempts }}x)
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                                <i class="fas fa-check-circle mr-1"></i>
+                                                Completed
+                                            </span>
+                                        @endif
                                     </div>
                                 @endif
 
@@ -57,10 +64,13 @@
                                         <span>{{ $attemptCount }} students attempted</span>
                                     </div>
                                     @if($userCompleted)
-                                        @if($userAttempt->band_score)
+                                        @if($latestAttempt->band_score)
                                             <div class="flex items-center text-sm">
                                                 <i class="fas fa-star mr-2 text-yellow-400"></i>
-                                                <span class="text-white">Your Score: <strong>{{ $userAttempt->band_score }}</strong></span>
+                                                <span class="text-white">Your Score: <strong>{{ $latestAttempt->band_score }}</strong></span>
+                                                @if($totalAttempts > 1)
+                                                    <span class="text-gray-400 text-xs ml-2">(Latest)</span>
+                                                @endif
                                             </div>
                                         @else
                                             <div class="flex items-center text-sm text-yellow-400">
@@ -83,12 +93,26 @@
 
                                 <!-- Action Button -->
                                 @if($userCompleted)
-                                    <a href="{{ route('student.results.show', $userAttempt) }}" 
-                                       class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium hover:from-gray-700 hover:to-gray-800 transition-all group">
-                                        <i class="fas fa-chart-bar mr-2"></i>
-                                        View Results
-                                        <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                                    </a>
+                                    <div class="space-y-3">
+                                        <a href="{{ route('student.results.show', $latestAttempt) }}" 
+                                           class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium hover:from-gray-700 hover:to-gray-800 transition-all group">
+                                            <i class="fas fa-chart-bar mr-2"></i>
+                                            View Results
+                                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                                        </a>
+                                        
+                                        @if($latestAttempt->canRetake())
+                                            <form action="{{ route('student.results.retake', $latestAttempt) }}" method="POST" class="w-full">
+                                                @csrf
+                                                <button type="submit" 
+                                                        class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-medium hover:from-amber-700 hover:to-orange-700 transition-all group">
+                                                    <i class="fas fa-redo mr-2"></i>
+                                                    Retake Test
+                                                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 @else
                                     <button onclick="startTest(this, '{{ route('student.writing.onboarding.confirm-details', $testSet) }}')"
                                             class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white font-medium hover:from-amber-700 hover:to-orange-700 transition-all neon-pink group">

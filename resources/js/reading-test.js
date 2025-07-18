@@ -118,7 +118,21 @@ const SimpleSplitDivider = {
     },
 
     resetLayout() {
+        // Visual feedback for reset
+        this.divider.style.transition = 'all 0.3s ease';
+        this.divider.style.width = '5px';
+        this.divider.style.background = '#10b981';
+        
+        this.passageSection.style.transition = 'flex 0.3s ease';
         this.passageSection.style.flex = '0 0 50%';
+        
+        setTimeout(() => {
+            this.divider.style.width = '';
+            this.divider.style.background = '';
+            this.divider.style.transition = '';
+            this.passageSection.style.transition = '';
+        }, 300);
+        
         this.saveLayout(50);
     },
 
@@ -193,6 +207,9 @@ const NavigationHandler = {
                 const targetQuestionPart = document.querySelector(`.part-questions[data-part="${partNumber}"]`);
                 if (targetQuestionPart) {
                     targetQuestionPart.style.display = 'block';
+                    
+                    // Update global header
+                    NavigationHandler.updateGlobalHeader(partNumber);
                 }
 
                 // Update passage display
@@ -220,6 +237,29 @@ const NavigationHandler = {
                 }
             });
         });
+        
+        // Initialize the first part header
+        const firstPartBtn = document.querySelector('.part-btn.active');
+        if (firstPartBtn) {
+            NavigationHandler.updateGlobalHeader(firstPartBtn.dataset.part);
+        }
+    },
+    
+    updateGlobalHeader(partNumber) {
+        const headerContainer = document.getElementById('global-part-header');
+        const partData = document.querySelector(`.part-questions[data-part="${partNumber}"] .part-questions-inner`);
+        
+        if (headerContainer && partData) {
+            const startNumber = partData.dataset.startNumber;
+            const endNumber = partData.dataset.endNumber;
+            
+            headerContainer.innerHTML = `
+                <div class="part-header">
+                    <div class="part-title">Part ${partNumber}</div>
+                    <div class="part-instruction">Read and answer questions ${startNumber}-${endNumber}.</div>
+                </div>
+            `;
+        }
     },
 
     updateQuestionNumbersDisplay(activePart) {
@@ -829,7 +869,7 @@ const SimpleAnnotationSystem = {
 
             // Apply note styling
             const span = document.createElement('span');
-            span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #dc2626; cursor: pointer; padding: 1px 2px; border-radius: 2px;';
+            span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #dc2626; cursor: pointer; padding: 2px 4px; border-radius: 3px;';
             span.textContent = selectedText;
             span.title = noteText;
             span.dataset.note = noteText;
@@ -991,6 +1031,11 @@ const SimpleAnnotationSystem = {
                 return;
             }
 
+            // Skip right clicks
+            if (e.button === 2) {
+                return;
+            }
+
             setTimeout(() => {
                 const selection = window.getSelection();
                 const selectedText = selection.toString().trim();
@@ -1013,10 +1058,45 @@ const SimpleAnnotationSystem = {
             }, 10);
         });
 
+        // Right-click context menu
+        document.addEventListener('contextmenu', (e) => {
+            // Check if right-click is in passage or questions section
+            const passageContent = e.target.closest('.passage-content');
+            const questionsSection = e.target.closest('.questions-section');
+            
+            if (passageContent || questionsSection) {
+                e.preventDefault();
+                
+                // Get selected text if any
+                const selection = window.getSelection();
+                const selectedText = selection.toString().trim();
+                
+                if (selectedText && selectedText.length >= 3) {
+                    // If text is selected, use the selection range
+                    const range = selection.getRangeAt(0);
+                    this.currentRange = range;
+                    this.showContextMenu(e.clientX, e.clientY, selectedText);
+                } else {
+                    // If no text selected, show menu at cursor position
+                    this.showContextMenu(e.clientX, e.clientY, null);
+                }
+            }
+        });
+
         // Hide menu on document click
         document.addEventListener('mousedown', (e) => {
             if (this.currentMenu && !this.currentMenu.contains(e.target)) {
                 this.hideMenu();
+            }
+        });
+
+        // ESC key to exit fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.fullscreenElement) {
+                const fullscreenBtn = document.getElementById('fullscreen-btn');
+                if (fullscreenBtn) {
+                    fullscreenBtn.click();
+                }
             }
         });
     },
@@ -1166,6 +1246,167 @@ const SimpleAnnotationSystem = {
         }
     },
 
+    showContextMenu(x, y, selectedText) {
+        this.hideMenu();
+
+        const menu = document.createElement('div');
+        menu.id = 'annotation-menu';
+        menu.style.cssText = `
+            position: fixed;
+            top: ${y}px;
+            left: ${x}px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 4px;
+            z-index: 99999;
+            min-width: 150px;
+        `;
+
+        // If text is selected, show both options
+        if (selectedText) {
+            // Note option
+            const noteOption = document.createElement('button');
+            noteOption.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Add Note
+            `;
+            noteOption.style.cssText = `
+                display: flex;
+                align-items: center;
+                width: 100%;
+                padding: 8px 12px;
+                border: none;
+                background: white;
+                color: #374151;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-align: left;
+                border-radius: 4px;
+            `;
+            
+            noteOption.onmouseover = () => { noteOption.style.background = '#f3f4f6'; };
+            noteOption.onmouseout = () => { noteOption.style.background = 'white'; };
+            
+            noteOption.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                document.getElementById('selected-text-preview').textContent =
+                    `"${selectedText.substring(0, 40)}${selectedText.length > 40 ? '...' : ''}"`;;
+                this.noteModal.style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('note-textarea').focus();
+                }, 100);
+                this.hideMenu();
+            };
+
+            // Highlight option
+            const highlightOption = document.createElement('button');
+            highlightOption.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                Highlight
+            `;
+            highlightOption.style.cssText = `
+                display: flex;
+                align-items: center;
+                width: 100%;
+                padding: 8px 12px;
+                border: none;
+                background: white;
+                color: #374151;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-align: left;
+                border-radius: 4px;
+            `;
+            
+            highlightOption.onmouseover = () => { highlightOption.style.background = '#f3f4f6'; };
+            highlightOption.onmouseout = () => { highlightOption.style.background = 'white'; };
+            
+            highlightOption.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.applyHighlight({ name: 'Yellow', value: '#fef3c7' });
+                this.hideMenu();
+            };
+
+            menu.appendChild(noteOption);
+            menu.appendChild(highlightOption);
+        } else {
+            // No text selected - show instruction
+            const instruction = document.createElement('div');
+            instruction.innerHTML = `
+                <div style="padding: 12px; color: #6b7280; font-size: 13px; text-align: center;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: block; margin: 0 auto 8px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Select text first
+                </div>
+            `;
+            menu.appendChild(instruction);
+        }
+
+        // Add separator line
+        if (selectedText) {
+            const separator = document.createElement('div');
+            separator.style.cssText = 'height: 1px; background: #e5e7eb; margin: 4px 0;';
+            menu.appendChild(separator);
+        }
+
+        // View Notes option (always show)
+        const viewNotesOption = document.createElement('button');
+        viewNotesOption.innerHTML = `
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            View All Notes
+        `;
+        viewNotesOption.style.cssText = `
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: white;
+            color: #374151;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            border-radius: 4px;
+        `;
+        
+        viewNotesOption.onmouseover = () => { viewNotesOption.style.background = '#f3f4f6'; };
+        viewNotesOption.onmouseout = () => { viewNotesOption.style.background = 'white'; };
+        
+        viewNotesOption.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.openNotesPanel();
+            this.hideMenu();
+        };
+
+        menu.appendChild(viewNotesOption);
+        document.body.appendChild(menu);
+        this.currentMenu = menu;
+
+        // Adjust position if menu goes off screen
+        const rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            menu.style.left = `${window.innerWidth - rect.width - 10}px`;
+        }
+        if (rect.bottom > window.innerHeight) {
+            menu.style.top = `${window.innerHeight - rect.height - 10}px`;
+        }
+    },
+
     saveAnnotation(type, text, data) {
         const attemptId = window.testConfig?.attemptId || 'test';
         const key = `annotations_${attemptId}`;
@@ -1206,6 +1447,7 @@ const SimpleAnnotationSystem = {
     addNotesButton() {
         const navRight = document.querySelector('.nav-right');
         if (navRight && !document.getElementById('view-notes-btn')) {
+            // Notes button
             const notesBtn = document.createElement('button');
             notesBtn.id = 'view-notes-btn';
             notesBtn.innerHTML = `
@@ -1247,11 +1489,81 @@ const SimpleAnnotationSystem = {
             };
             notesBtn.onclick = () => this.openNotesPanel();
 
+            // Full Screen button
+            const fullscreenBtn = document.createElement('button');
+            fullscreenBtn.id = 'fullscreen-btn';
+            fullscreenBtn.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                </svg>
+                Full Screen
+            `;
+            fullscreenBtn.style.cssText = `
+                padding: 6px 12px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-right: 10px;
+                font-size: 13px;
+                display: flex;
+                align-items: center;
+                transition: all 0.2s;
+            `;
+            fullscreenBtn.onmouseover = () => {
+                fullscreenBtn.style.borderColor = '#3b82f6';
+                fullscreenBtn.style.color = '#3b82f6';
+            };
+            fullscreenBtn.onmouseout = () => {
+                fullscreenBtn.style.borderColor = '#e5e7eb';
+                fullscreenBtn.style.color = '';
+            };
+            fullscreenBtn.onclick = () => this.toggleFullScreen(fullscreenBtn);
+
             const submitBtn = navRight.querySelector('.submit-test-button');
             navRight.insertBefore(notesBtn, submitBtn);
+            navRight.insertBefore(fullscreenBtn, submitBtn);
 
             // Update notes count
             this.updateNotesCount();
+        }
+    },
+
+    toggleFullScreen(button) {
+        if (!document.fullscreenElement) {
+            // Enter fullscreen
+            document.documentElement.requestFullscreen().then(() => {
+                button.innerHTML = `
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V5m0 0h4m-4 0l5 5m-5 6v4m0 0h4m-4 0l5-5m-6-5l-5 5m5-5v4m0-4H5m10 6l5 5m0 0v-4m0 4h-4"></path>
+                    </svg>
+                    Exit Full Screen
+                `;
+                button.style.background = '#3b82f6';
+                button.style.color = 'white';
+                button.style.borderColor = '#3b82f6';
+                
+                // Add fullscreen class to body
+                document.body.classList.add('fullscreen-mode');
+            }).catch(err => {
+                console.error('Error entering fullscreen:', err);
+            });
+        } else {
+            // Exit fullscreen
+            document.exitFullscreen().then(() => {
+                button.innerHTML = `
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                    </svg>
+                    Full Screen
+                `;
+                button.style.background = 'white';
+                button.style.color = '';
+                button.style.borderColor = '#e5e7eb';
+                
+                // Remove fullscreen class from body
+                document.body.classList.remove('fullscreen-mode');
+            });
         }
     },
 
@@ -1274,7 +1586,7 @@ const SimpleAnnotationSystem = {
         annotations.forEach(annotation => {
             if (annotation.type === 'note') {
                 this.findAndStyleText(annotation.text, (span) => {
-                    span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #dc2626; cursor: pointer; padding: 1px 2px; border-radius: 2px;';
+                    span.style.cssText = 'background-color: #fee2e2; color: #dc2626; border-bottom: 1px solid #dc2626; cursor: pointer; padding: 2px 4px; border-radius: 3px;';
                     span.dataset.note = annotation.data;
                     span.dataset.noteId = Date.now();
                     span.onclick = () => this.showNoteTooltip(span, annotation.data);
@@ -1289,8 +1601,8 @@ const SimpleAnnotationSystem = {
                 this.findAndStyleText(annotation.text, (span) => {
                     span.style.backgroundColor = colors[annotation.data] || '#fef3c7';
                     span.style.cursor = 'pointer';
-                    span.style.padding = '1px 2px';
-                    span.style.borderRadius = '2px';
+                    span.style.padding = '2px 4px';
+                    span.style.borderRadius = '3px';
                     span.title = `${annotation.data} highlight - Click to remove`;
                     span.onclick = function (evt) {
                         evt.stopPropagation();

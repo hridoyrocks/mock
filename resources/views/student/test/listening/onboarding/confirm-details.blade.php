@@ -3,18 +3,7 @@
     <x-slot:title>Confirm Your Details - IELTS Test</x-slot>
     
     <div class="min-h-screen overflow-hidden fixed inset-0">
-        <!-- Main Header with Logos -->
-        <div class="bg-white border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between">
-                <div>
-                   <img src="{{ asset('images/bi-logo.webp') }}" alt="Banglay IELTS" class="h-10">
-                </div>
-                <div class="flex space-x-8 items-center">
-                    <img src="{{ asset('images/bc-logo.jpg') }}" alt="British Council" class="h-10">
-                    <img src="{{ asset('images/idp.png') }}" alt="IDP" class="h-10">
-                </div>
-            </div>
-        </div>
+        
         
         <!-- Dark navbar -->
         <div class="bg-gray-700 py-3">
@@ -80,6 +69,41 @@
                             </svg>
                             <p>If your details are not correct, please inform the invigilator.</p>
                         </div>
+                        
+                        @if(isset($attempts) && $attempts->count() > 0)
+                            <!-- Previous Attempts Section -->
+                            <div class="bg-white rounded-lg p-4 mb-6 border border-gray-200">
+                                <h3 class="font-medium text-gray-800 mb-3">Previous Attempts</h3>
+                                <div class="space-y-2">
+                                    @foreach($attempts as $previousAttempt)
+                                        <div class="flex items-center justify-between text-sm">
+                                            <div>
+                                                <span class="text-gray-600">Attempt {{ $previousAttempt->attempt_number }}:</span>
+                                                <span class="font-medium text-gray-800">{{ $previousAttempt->created_at->format('d M Y') }}</span>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                @if($previousAttempt->band_score)
+                                                    <span class="font-medium text-gray-800">Band: {{ $previousAttempt->band_score }}</span>
+                                                @endif
+                                                <a href="{{ route('student.results.show', $previousAttempt) }}" 
+                                                   class="text-blue-600 hover:text-blue-800 underline">
+                                                    View Result
+                                                </a>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                
+                                @if($canRetake && $attempts->first()->status === 'completed')
+                                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                        <p class="text-sm text-yellow-800">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            You are about to start a retake of this test (Attempt {{ $attempts->first()->attempt_number + 1 }}).
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                         
                         <!-- Button -->
                         <div class="flex justify-center">

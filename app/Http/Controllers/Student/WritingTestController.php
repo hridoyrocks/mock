@@ -37,18 +37,14 @@ class WritingTestController extends Controller
             abort(404);
         }
         
-        // Check if user has already completed this test
-        $existingAttempt = StudentAttempt::where('user_id', auth()->id())
-            ->where('test_set_id', $testSet->id)
-            ->where('status', 'completed')
-            ->first();
-            
-        if ($existingAttempt) {
-            return redirect()->route('student.results.show', $existingAttempt)
-                ->with('info', 'You have already completed this test.');
-        }
+        // Get all attempts for this test
+        $attempts = StudentAttempt::getAllAttemptsForUserAndTest(auth()->id(), $testSet->id);
         
-        return view('student.test.writing.onboarding.confirm-details', compact('testSet'));
+        // Show previous attempts if any exist
+        $latestAttempt = $attempts->first();
+        $canRetake = $latestAttempt && $latestAttempt->canRetake();
+        
+        return view('student.test.writing.onboarding.confirm-details', compact('testSet', 'attempts', 'canRetake'));
     }
 
     /**
@@ -82,17 +78,7 @@ class WritingTestController extends Controller
             abort(404);
         }
         
-        // Check if user has already completed this test
-        $existingAttempt = StudentAttempt::where('user_id', auth()->id())
-            ->where('test_set_id', $testSet->id)
-            ->where('status', 'completed')
-            ->first();
-            
-        if ($existingAttempt) {
-            \Log::info('User already completed this test');
-            return redirect()->route('student.results.show', $existingAttempt)
-                ->with('info', 'You have already completed this test.');
-        }
+        // No need to check for existing completed attempts - allow retakes
         
         // Get all questions for this test set
         $allQuestions = $testSet->questions()->get();
@@ -158,12 +144,29 @@ class WritingTestController extends Controller
             ->first();
             
         if (!$attempt) {
+            // Get the latest completed attempt to determine attempt number
+            $latestAttempt = StudentAttempt::getLatestAttempt(auth()->id(), $testSet->id);
+            
+            $attemptNumber = 1;
+            $isRetake = false;
+            $originalAttemptId = null;
+            
+            if ($latestAttempt) {
+                // This is a retake
+                $attemptNumber = $latestAttempt->attempt_number + 1;
+                $isRetake = true;
+                $originalAttemptId = $latestAttempt->original_attempt_id ?? $latestAttempt->id;
+            }
+            
             // Create a new attempt
             $attempt = StudentAttempt::create([
                 'user_id' => auth()->id(),
                 'test_set_id' => $testSet->id,
                 'start_time' => now(),
                 'status' => 'in_progress',
+                'attempt_number' => $attemptNumber,
+                'is_retake' => $isRetake,
+                'original_attempt_id' => $originalAttemptId,
             ]);
             
             \Log::info('Created new attempt', ['attempt_id' => $attempt->id]);

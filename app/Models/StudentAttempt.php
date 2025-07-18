@@ -23,7 +23,10 @@ class StudentAttempt extends Model
         'answered_questions',
         'correct_answers',
         'ai_band_score',      // Added
-        'ai_evaluated_at'     // Added
+        'ai_evaluated_at',     // Added
+        'attempt_number',      // Added for retake
+        'is_retake',          // Added for retake
+        'original_attempt_id' // Added for retake
     ];
     
     protected $casts = [
@@ -37,6 +40,8 @@ class StudentAttempt extends Model
         'correct_answers' => 'integer',
         'ai_band_score' => 'float',           // Added
         'ai_evaluated_at' => 'datetime',      // Added
+        'attempt_number' => 'integer',        // Added for retake
+        'is_retake' => 'boolean',            // Added for retake
     ];
     
     public function user(): BelongsTo
@@ -52,5 +57,59 @@ class StudentAttempt extends Model
     public function answers(): HasMany
     {
         return $this->hasMany(StudentAnswer::class, 'attempt_id');
+    }
+    
+    /**
+     * Get the original attempt (for retakes)
+     */
+    public function originalAttempt(): BelongsTo
+    {
+        return $this->belongsTo(StudentAttempt::class, 'original_attempt_id');
+    }
+    
+    /**
+     * Get all retakes for this attempt
+     */
+    public function retakes(): HasMany
+    {
+        return $this->hasMany(StudentAttempt::class, 'original_attempt_id');
+    }
+    
+    /**
+     * Get all attempts for a user and test set (including retakes)
+     */
+    public static function getAllAttemptsForUserAndTest($userId, $testSetId)
+    {
+        return self::where('user_id', $userId)
+            ->where('test_set_id', $testSetId)
+            ->orderBy('attempt_number', 'desc')
+            ->get();
+    }
+    
+    /**
+     * Get the latest attempt for a user and test set
+     */
+    public static function getLatestAttempt($userId, $testSetId)
+    {
+        return self::where('user_id', $userId)
+            ->where('test_set_id', $testSetId)
+            ->orderBy('attempt_number', 'desc')
+            ->orderBy('id', 'desc')  // Fallback for old records without attempt_number
+            ->first();
+    }
+    
+    /**
+     * Check if user can retake this test
+     */
+    public function canRetake(): bool
+    {
+        // Only completed tests can be retaken
+        if ($this->status !== 'completed') {
+            return false;
+        }
+        
+        // Check if this is already the latest attempt
+        $latestAttempt = self::getLatestAttempt($this->user_id, $this->test_set_id);
+        return $this->id === $latestAttempt->id;
     }
 }

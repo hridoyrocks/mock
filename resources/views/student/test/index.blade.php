@@ -30,6 +30,53 @@
     <section class="px-4 sm:px-6 lg:px-8 py-12">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                @php
+                    // Get user's completed tests count for each section
+                    $listeningCompleted = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'listening'); })
+                        ->where('status', 'completed')
+                        ->distinct('test_set_id')
+                        ->count('test_set_id');
+                        
+                    $readingCompleted = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'reading'); })
+                        ->where('status', 'completed')
+                        ->distinct('test_set_id')
+                        ->count('test_set_id');
+                        
+                    $writingCompleted = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'writing'); })
+                        ->where('status', 'completed')
+                        ->distinct('test_set_id')
+                        ->count('test_set_id');
+                        
+                    $speakingCompleted = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'speaking'); })
+                        ->where('status', 'completed')
+                        ->distinct('test_set_id')
+                        ->count('test_set_id');
+                        
+                    // Get retakes count
+                    $listeningRetakes = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'listening'); })
+                        ->where('is_retake', true)
+                        ->count();
+                        
+                    $readingRetakes = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'reading'); })
+                        ->where('is_retake', true)
+                        ->count();
+                        
+                    $writingRetakes = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'writing'); })
+                        ->where('is_retake', true)
+                        ->count();
+                        
+                    $speakingRetakes = auth()->user()->attempts()
+                        ->whereHas('testSet.section', function($q) { $q->where('name', 'speaking'); })
+                        ->where('is_retake', true)
+                        ->count();
+                @endphp
                 
                 <!-- Listening Card -->
                 <div class="group relative">
@@ -44,6 +91,18 @@
                             
                             <!-- Content -->
                             <h3 class="text-2xl font-bold text-white mb-3 text-center">Listening</h3>
+                            
+                            @if($listeningCompleted > 0)
+                                <div class="text-center mb-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        {{ $listeningCompleted }} Completed
+                                        @if($listeningRetakes > 0)
+                                            <span class="ml-2 text-purple-400">| {{ $listeningRetakes }} Retakes</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endif
                             
                             <!-- Details -->
                             <div class="space-y-2 mb-6">
@@ -84,6 +143,18 @@
                             <!-- Content -->
                             <h3 class="text-2xl font-bold text-white mb-3 text-center">Reading</h3>
                             
+                            @if($readingCompleted > 0)
+                                <div class="text-center mb-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        {{ $readingCompleted }} Completed
+                                        @if($readingRetakes > 0)
+                                            <span class="ml-2 text-purple-400">| {{ $readingRetakes }} Retakes</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endif
+                            
                             <!-- Details -->
                             <div class="space-y-2 mb-6">
                                 <div class="flex items-center justify-between text-sm">
@@ -123,6 +194,18 @@
                             <!-- Content -->
                             <h3 class="text-2xl font-bold text-white mb-3 text-center">Writing</h3>
                             
+                            @if($writingCompleted > 0)
+                                <div class="text-center mb-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        {{ $writingCompleted }} Completed
+                                        @if($writingRetakes > 0)
+                                            <span class="ml-2 text-purple-400">| {{ $writingRetakes }} Retakes</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endif
+                            
                             <!-- Details -->
                             <div class="space-y-2 mb-6">
                                 <div class="flex items-center justify-between text-sm">
@@ -161,6 +244,18 @@
                             
                             <!-- Content -->
                             <h3 class="text-2xl font-bold text-white mb-3 text-center">Speaking</h3>
+                            
+                            @if($speakingCompleted > 0)
+                                <div class="text-center mb-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        {{ $speakingCompleted }} Completed
+                                        @if($speakingRetakes > 0)
+                                            <span class="ml-2 text-purple-400">| {{ $speakingRetakes }} Retakes</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endif
                             
                             <!-- Details -->
                             <div class="space-y-2 mb-6">

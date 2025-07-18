@@ -105,6 +105,9 @@
                                         <div>
                                             <h3 class="text-white font-semibold text-lg group-hover:text-purple-400 transition-colors">
                                                 {{ $attempt->testSet->title }}
+                                                @if($attempt->is_retake)
+                                                    <span class="text-sm text-purple-400 ml-2">(Attempt {{ $attempt->attempt_number }})</span>
+                                                @endif
                                             </h3>
                                             <div class="flex items-center gap-4 mt-1">
                                                 <span class="text-sm text-gray-400">

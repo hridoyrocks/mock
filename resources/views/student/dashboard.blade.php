@@ -679,4 +679,6 @@
         ];
     </script>
     @endpush
+    <!-- Announcement Popup Component -->
+    @include('components.announcement-popup')
 </x-student-layout>

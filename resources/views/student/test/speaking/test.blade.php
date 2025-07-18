@@ -42,6 +42,7 @@
             padding: 10px 20px;
             background-color: #1a1a1a;
             color: white;
+            height: 50px;
         }
         
         .user-info {
@@ -57,37 +58,18 @@
         }
         
         .content-area {
-            height: calc(100vh - 108px);
+            height: calc(100vh - 100px);
             overflow-y: auto;
-            padding: 20px 20px;
+            padding: 20px 20px 80px;
             background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
         }
         
-        /* Submit Button in User Bar */
-        .submit-btn-top {
-            background: #10b981;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .submit-btn-top:hover {
-            background: #059669;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-        
-        .submit-btn-top svg {
-            width: 16px;
-            height: 16px;
+        /* Timer Center Wrapper */
+        .timer-center-wrapper {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
         }
         
         /* Question Card Container */
@@ -345,6 +327,41 @@
             margin: 24px 0;
             text-align: left;
             box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            z-index: 100;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+            height: 60px;
+        }
+        
+        .submit-test-button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .submit-test-button:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
         
         .cue-card-title {
@@ -659,19 +676,17 @@
 
    
 
-    <!-- User Info Bar with Submit Button -->
-    <div class="user-bar">
+    <!-- User Info Bar WITH Integrated Timer -->
+    <div class="user-bar" style="height: 50px;">
         <div class="user-info">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
             </svg>
             <span>{{ auth()->user()->name }} - BI {{ str_pad(auth()->id(), 6, '0', STR_PAD_LEFT) }}</span>
         </div>
-        <div class="user-controls">
-            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Help ?</button>
-            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
-            
-            {{-- Integrated Timer Component --}}
+        
+        {{-- Integrated Timer Component - Center Position --}}
+        <div class="timer-center-wrapper">
             <x-test-timer 
                 :attempt="$attempt" 
                 auto-submit-form-id="speaking-form"
@@ -679,14 +694,11 @@
                 :warning-time="300"
                 :danger-time="120"
             />
-            
-            {{-- Submit Button in Top Bar --}}
-            <button type="button" id="submit-test-btn" class="submit-btn-top">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>Submit Test</span>
-            </button>
+        </div>
+        
+        <div class="user-controls">
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm help-button" id="help-button">Help ?</button>
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
         </div>
     </div>
 
@@ -834,6 +846,15 @@
             
             <button type="submit" id="submit-button" class="hidden">Submit</button>
         </form>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav" style="height: 60px;">
+        <div class="nav-right">
+            <button type="button" id="submit-test-btn" class="submit-test-button">
+                Submit Test
+            </button>
+        </div>
     </div>
 
     <!-- Submit Modal -->

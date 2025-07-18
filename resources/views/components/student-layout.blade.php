@@ -6,7 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? 'IELTS Journey' }} - CD IELTS Master</title>
+    <title>{{ $title ?? 'IELTS Journey' }} - {{ \App\Models\WebsiteSetting::getSettings()->site_name }}</title>
+
+    @php
+        $settings = \App\Models\WebsiteSetting::getSettings();
+    @endphp
+    
+    <!-- Favicon -->
+    @if($settings->favicon)
+        <link rel="icon" type="image/png" href="{{ $settings->favicon_url }}">
+    @endif
+    
+    <!-- Meta Tags -->
+    @if($settings->meta_tags)
+        @if($settings->meta_tags['description'] ?? null)
+            <meta name="description" content="{{ $settings->meta_tags['description'] }}">
+        @endif
+        @if($settings->meta_tags['keywords'] ?? null)
+            <meta name="keywords" content="{{ $settings->meta_tags['keywords'] }}">
+        @endif
+    @endif
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -190,11 +209,15 @@
             <div class="p-6 border-b border-white/10">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center neon-purple">
-                            <i class="fas fa-graduation-cap text-white text-xl"></i>
-                        </div>
+                        @if($settings->site_logo)
+                            <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_name }}" class="h-12 w-auto">
+                        @else
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center neon-purple">
+                                <i class="fas fa-graduation-cap text-white text-xl"></i>
+                            </div>
+                        @endif
                         <div>
-                            <h2 class="text-xl font-bold text-white">CD IELTS</h2>
+                            <h2 class="text-xl font-bold text-white">{{ $settings->site_name }}</h2>
                             <p class="text-xs text-gray-400">Master Your Journey</p>
                         </div>
                     </div>
@@ -525,46 +548,26 @@
                                     <!-- Copyright -->
                                     <div class="text-center md:text-left">
                                         <p class="text-gray-400 text-sm">
-                                            © {{ date('Y') }} CD IELTS. All rights reserved.
+                                            {{ $settings->copyright_text ?? '© ' . date('Y') . ' ' . $settings->site_name . '. All rights reserved.' }}
                                         </p>
-                                        <p class="text-gray-500 text-xs mt-1">
-                                            Made with <i class="fas fa-heart text-pink-500 mx-1"></i> for IELTS aspirants
-                                        </p>
+                                        @if($settings->footer_text)
+                                            <p class="text-gray-500 text-xs mt-1">{{ $settings->footer_text }}</p>
+                                        @endif
                                     </div>
                                     
                                     <!-- Social Links -->
-                                    <div class="flex items-center gap-4">
-                                        <a href="#" 
-                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
-                                           target="_blank"
-                                           rel="noopener noreferrer">
-                                            <i class="fab fa-facebook-f"></i>
-                                        </a>
-                                        <a href="#" 
-                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
-                                           target="_blank"
-                                           rel="noopener noreferrer">
-                                            <i class="fab fa-twitter"></i>
-                                        </a>
-                                        <a href="#" 
-                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
-                                           target="_blank"
-                                           rel="noopener noreferrer">
-                                            <i class="fab fa-instagram"></i>
-                                        </a>
-                                        <a href="#" 
-                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
-                                           target="_blank"
-                                           rel="noopener noreferrer">
-                                            <i class="fab fa-linkedin-in"></i>
-                                        </a>
-                                        <a href="#" 
-                                           class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
-                                           target="_blank"
-                                           rel="noopener noreferrer">
-                                            <i class="fab fa-youtube"></i>
-                                        </a>
-                                    </div>
+                                    @if($settings->hasSocialLinks())
+                                        <div class="flex items-center gap-4">
+                                            @foreach($settings->social_links as $social)
+                                                <a href="{{ $social['url'] }}" 
+                                                   class="w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-purple-500/50 transition-all duration-200"
+                                                   target="_blank"
+                                                   rel="noopener noreferrer">
+                                                    <i class="{{ $social['icon'] }}"></i>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

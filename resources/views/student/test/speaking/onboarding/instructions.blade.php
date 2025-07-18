@@ -2,18 +2,7 @@
     <x-slot:title>Test Instructions - IELTS Speaking Test</x-slot>
     
     <div class="min-h-screen bg-blue-50">
-        <!-- Header with IELTS logos -->
-        <div class="bg-white py-2 border-b">
-            <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
-                <img src="{{ asset('images/ielts-logo.png') }}" alt="IELTS" class="h-10">
-                <div class="flex space-x-6">
-                    <img src="{{ asset('images/british-council.png') }}" alt="British Council" class="h-10">
-                    <img src="{{ asset('images/idp.png') }}" alt="IDP" class="h-10">
-                    <img src="{{ asset('images/cambridge.png') }}" alt="Cambridge Assessment English" class="h-10">
-                </div>
-            </div>
-        </div>
-        
+      
         <!-- Dark navbar -->
         <div class="bg-gray-800 py-2">
             <div class="max-w-7xl mx-auto px-4">

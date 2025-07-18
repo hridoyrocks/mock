@@ -5,7 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>CD IELTS - Unlock Your Global Future</title>
+    @php
+        $settings = \App\Models\WebsiteSetting::getSettings();
+    @endphp
+
+    <title>{{ $settings->site_name }} - Unlock Your Global Future</title>
+    
+    <!-- Favicon -->
+    @if($settings->favicon)
+        <link rel="icon" type="image/png" href="{{ $settings->favicon_url }}">
+    @endif
+    
+    <!-- Meta Tags -->
+    @if($settings->meta_tags)
+        @if($settings->meta_tags['description'] ?? null)
+            <meta name="description" content="{{ $settings->meta_tags['description'] }}">
+        @endif
+        @if($settings->meta_tags['keywords'] ?? null)
+            <meta name="keywords" content="{{ $settings->meta_tags['keywords'] }}">
+        @endif
+    @endif
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">

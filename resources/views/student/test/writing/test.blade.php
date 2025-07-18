@@ -44,10 +44,20 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 20px;
-            background-color: #212529;
+            padding: 10px 20px;
+            background-color: #1a1a1a;
             color: white;
+            height: 50px;
             flex-shrink: 0;
+            position: relative;
+        }
+        
+        /* Timer Center Wrapper */
+        .timer-center-wrapper {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
         }
         
         .user-info {
@@ -65,6 +75,7 @@
             flex: 1;
             display: flex;
             overflow: hidden;
+            margin-bottom: 60px; /* Space for bottom nav */
         }
         
         .left-panel {
@@ -82,22 +93,49 @@
             padding: 20px;
         }
         
-        .task-info {
-            background-color: #f3f4f6;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 20px;
+        /* Global Part Header - Full Width */
+        .global-part-header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 16px 5%;
+            z-index: 200;
+            flex-shrink: 0;
         }
         
-        .task-info h3 {
-            margin: 0 0 5px 0;
-            color: #1f2937;
+        .global-part-header .part-header-inner {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .global-part-header .part-header-inner:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .part-header-content {
+            flex: 1;
+        }
+        
+        .part-title {
             font-size: 18px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 4px;
         }
         
-        .task-info p {
-            margin: 0;
+        .part-instruction {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+        
+        .part-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             color: #6b7280;
             font-size: 14px;
         }
@@ -214,6 +252,8 @@
             justify-content: space-between;
             align-items: center;
             z-index: 100;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+            height: 60px;
         }
         
         .nav-left {
@@ -251,25 +291,46 @@
         .nav-right {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+        }
+        
+        .btn-secondary {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
         }
         
         .submit-btn {
             background-color: #10b981;
             color: white;
             border: none;
-            padding: 8px 20px;
-            border-radius: 4px;
+            padding: 10px 24px;
+            border-radius: 6px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
         
         .submit-btn:hover {
             background-color: #059669;
             transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
         
         .modal-overlay {
@@ -405,32 +466,19 @@
     </style>
 
     <div class="main-container">
-        <!-- IELTS Header -->
-        <div class="ielts-header">
-            <div class="ielts-header-left">
-                <svg class="w-6 h-6 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"></path>
-                </svg>
-                <span class="text-red-600 font-bold text-lg">Computer-delivered IELTS</span>
-            </div>
-            <div>
-                <span class="text-red-600 font-bold text-lg">IELTS</span>
-            </div>
-        </div>
+       
 
-        <!-- User Info Bar -->
-        <div class="user-bar">
+        <!-- User Info Bar WITH Integrated Timer -->
+        <div class="user-bar" style="height: 50px;">
             <div class="user-info">
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
                 </svg>
                 <span>{{ auth()->user()->name }} - BI {{ str_pad(auth()->id(), 6, '0', STR_PAD_LEFT) }}</span>
             </div>
-            <div class="user-controls">
-                <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm">Help ?</button>
-                <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm">Hide</button>
-                
-                {{-- Timer Component --}}
+            
+            {{-- Integrated Timer Component - Center Position --}}
+            <div class="timer-center-wrapper">
                 <x-test-timer 
                     :attempt="$attempt" 
                     auto-submit-form-id="writing-form"
@@ -439,37 +487,43 @@
                     :danger-time="300"
                 />
             </div>
+            
+            <div class="user-controls">
+                <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm help-button" id="help-button">Help ?</button>
+                <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
+            </div>
+        </div>
+
+        @php
+            // Get all questions and sort by order_number
+            $questions = $testSet->questions()->orderBy('order_number')->get();
+            
+            // If we have less than 2 questions, show error
+            if ($questions->count() < 2) {
+                echo '<div style="padding: 20px; color: red;">This writing test needs at least 2 questions. Currently has: ' . $questions->count() . '</div>';
+                return;
+            }
+            
+            // Take first 2 questions as Task 1 and Task 2
+            $taskOneQuestion = $questions->first();
+            $taskTwoQuestion = $questions->skip(1)->first();
+            
+            // Get existing answers
+            $taskOneAnswer = $attempt->answers->where('question_id', $taskOneQuestion->id)->first();
+            $taskTwoAnswer = $attempt->answers->where('question_id', $taskTwoQuestion->id)->first();
+        @endphp
+
+        <!-- Global Part Header -->
+        <div class="global-part-header" id="global-part-header">
+            <!-- Part header will be updated by JavaScript -->
         </div>
 
         <!-- Main Content Area -->
         <div class="content-wrapper">
-            @php
-                // Get all questions and sort by order_number
-                $questions = $testSet->questions()->orderBy('order_number')->get();
-                
-                // If we have less than 2 questions, show error
-                if ($questions->count() < 2) {
-                    echo '<div style="padding: 20px; color: red;">This writing test needs at least 2 questions. Currently has: ' . $questions->count() . '</div>';
-                    return;
-                }
-                
-                // Take first 2 questions as Task 1 and Task 2
-                $taskOneQuestion = $questions->first();
-                $taskTwoQuestion = $questions->skip(1)->first();
-                
-                // Get existing answers
-                $taskOneAnswer = $attempt->answers->where('question_id', $taskOneQuestion->id)->first();
-                $taskTwoAnswer = $attempt->answers->where('question_id', $taskTwoQuestion->id)->first();
-            @endphp
-
             <!-- Left Panel - Questions -->
             <div class="left-panel">
                 <!-- Task 1 Content -->
                 <div class="question-content" id="task-1-content" style="display: block;">
-                    <div class="task-info">
-                        <h3>Writing Task 1</h3>
-                        <p>Suggested time: {{ $taskOneQuestion->time_limit ?? 20 }} minutes | Minimum {{ $taskOneQuestion->word_limit ?? 150 }} words</p>
-                    </div>
                     
                     <div class="question-prompt">
                         <h4>Task</h4>
@@ -496,10 +550,6 @@
                 
                 <!-- Task 2 Content -->
                 <div class="question-content" id="task-2-content" style="display: none;">
-                    <div class="task-info">
-                        <h3>Writing Task 2</h3>
-                        <p>Suggested time: {{ $taskTwoQuestion->time_limit ?? 40 }} minutes | Minimum {{ $taskTwoQuestion->word_limit ?? 250 }} words</p>
-                    </div>
                     
                     <div class="question-prompt">
                         <h4>Essay Task</h4>
@@ -563,7 +613,7 @@
         </div>
 
         <!-- Bottom Navigation -->
-        <div class="bottom-nav">
+        <div class="bottom-nav" style="height: 60px;">
             <div class="nav-left">
                 <div class="task-nav">
                     <button type="button" class="task-btn active" onclick="switchTask(1)">Task 1</button>
@@ -571,6 +621,12 @@
                 </div>
             </div>
             <div class="nav-right">
+                <button type="button" class="btn-secondary" id="fullscreen-btn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                    Fullscreen
+                </button>
                 <button type="button" id="submit-test-btn" class="submit-btn">
                     Submit Test
                 </button>
@@ -616,6 +672,8 @@
     };
     
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize part header
+        updatePartHeader(1);
         const editor1 = document.getElementById('editor-task-1');
         const editor2 = document.getElementById('editor-task-2');
         const submitTestBtn = document.getElementById('submit-test-btn');
@@ -623,6 +681,7 @@
         const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
         const cancelSubmitBtn = document.getElementById('cancel-submit-btn');
         const submitButton = document.getElementById('submit-button');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
         
         // Initialize word counts
         updateWordCount(1, editor1.value);
@@ -637,6 +696,45 @@
         editor2.addEventListener('input', function() {
             updateWordCount(2, this.value);
             setupAutosave(2, this.value);
+        });
+        
+        // Fullscreen functionality
+        fullscreenBtn.addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+                // Update button text and icon
+                this.innerHTML = `
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V5m0 0h4m-4 0l5 5m-5 10v-4m0 4h4m-4 0l5-5m5-5v4m0-4h-4m4 0l-5 5m-5 5h4m0 0v4m0-4l-5-5"/>
+                    </svg>
+                    Exit Fullscreen
+                `;
+            } else {
+                // Exit fullscreen
+                document.exitFullscreen();
+                // Update button text and icon
+                this.innerHTML = `
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                    Fullscreen
+                `;
+            }
+        });
+        
+        // Update button when fullscreen changes (e.g., user presses ESC)
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement) {
+                fullscreenBtn.innerHTML = `
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                    Fullscreen
+                `;
+            }
         });
         
         // Submit handlers
@@ -670,6 +768,9 @@
             }
         });
         
+        // Update global part header
+        updatePartHeader(taskNumber);
+        
         // Update question content
         document.getElementById('task-1-content').style.display = taskNumber === 1 ? 'block' : 'none';
         document.getElementById('task-2-content').style.display = taskNumber === 2 ? 'block' : 'none';
@@ -682,6 +783,32 @@
         document.getElementById('current-word-count').textContent = wordCounts[taskNumber];
         document.getElementById('word-requirement').textContent = 
             'Minimum: ' + wordLimits[taskNumber] + ' words';
+    }
+    
+    function updatePartHeader(taskNumber) {
+        const partHeader = document.getElementById('global-part-header');
+        const taskData = {
+            1: {
+                title: 'Writing Task 1',
+                time: {{ $taskOneQuestion->time_limit ?? 20 }},
+                words: {{ $taskOneQuestion->word_limit ?? 150 }}
+            },
+            2: {
+                title: 'Writing Task 2', 
+                time: {{ $taskTwoQuestion->time_limit ?? 40 }},
+                words: {{ $taskTwoQuestion->word_limit ?? 250 }}
+            }
+        };
+        
+        const task = taskData[taskNumber];
+        partHeader.innerHTML = `
+            <div class="part-header-inner">
+                <div class="part-header-content">
+                    <div class="part-title">${task.title}</div>
+                    <div class="part-instruction">Suggested time: ${task.time} minutes | Minimum ${task.words} words</div>
+                </div>
+            </div>
+        `;
     }
     
     function updateWordCount(taskNumber, text) {

@@ -5,7 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? 'Dashboard' }} - RX Admin</title>
+    <title>{{ $title ?? 'Dashboard' }} - {{ \App\Models\WebsiteSetting::getSettings()->site_name }} Admin</title>
+
+    @php
+        $settings = \App\Models\WebsiteSetting::getSettings();
+    @endphp
+    
+    <!-- Favicon -->
+    @if($settings->favicon)
+        <link rel="icon" type="image/png" href="{{ $settings->favicon_url }}">
+    @endif
+    
+    <!-- Meta Tags -->
+    @if($settings->meta_tags)
+        @if($settings->meta_tags['description'] ?? null)
+            <meta name="description" content="{{ $settings->meta_tags['description'] }}">
+        @endif
+        @if($settings->meta_tags['keywords'] ?? null)
+            <meta name="keywords" content="{{ $settings->meta_tags['keywords'] }}">
+        @endif
+    @endif
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,6 +35,9 @@
     
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
         :root {
@@ -53,6 +75,18 @@
         }
         
         [x-cloak] { display: none !important; }
+        
+        /* Fix for sidebar scroll */
+        aside {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        aside nav {
+            flex: 1;
+            min-height: 0;
+        }
         
         .sidebar-link {
             position: relative;
@@ -139,20 +173,27 @@
 
         <!-- Sidebar -->
         <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-               class="fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width)] transform bg-white shadow-xl transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:shadow-none">
+               class="fixed inset-y-0 left-0 z-50 flex flex-col w-[var(--sidebar-width)] transform bg-white shadow-xl transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:shadow-none">
             
             <!-- Logo -->
             <div class="flex h-[var(--header-height)] items-center justify-between border-b border-gray-200 px-6">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg">
-                        <!-- Book Icon -->
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                        </svg>
-                    </div>
+                    @php
+                        $settings = \App\Models\WebsiteSetting::getSettings();
+                    @endphp
+                    @if($settings->site_logo)
+                        <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_name }}" class="h-10 w-auto">
+                    @else
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg">
+                            <!-- Book Icon -->
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
+                    @endif
                     <div>
-                        <h1 class="text-xl font-bold text-gray-900">RX Admin</h1>
-                        <p class="text-xs text-gray-500">Control Panel</p>
+                        <h1 class="text-xl font-bold text-gray-900">{{ $settings->site_name }}</h1>
+                        <p class="text-xs text-gray-500">Admin Panel</p>
                     </div>
                 </a>
                 <button @click="sidebarOpen = false" class="rounded-lg p-2 hover:bg-gray-100 lg:hidden">
@@ -164,7 +205,7 @@
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 overflow-y-auto px-4 py-6 pb-8">
+            <nav class="flex-1 overflow-y-auto px-4 py-6">
                 <!-- Main Menu -->
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Main Menu</h3>
@@ -249,34 +290,49 @@
                         </svg>
                         <span>Plans</span>
                     </a>
+                    
+                    <a href="{{ route('admin.coupons.index') }}" 
+                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.coupons.*') ? 'active' : 'text-gray-700' }}">
+                        <!-- Tag Icon -->
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                        </svg>
+                        <span>Coupons</span>
+                        @if($activeCoupons = \App\Models\Coupon::active()->valid()->count())
+                            <span class="ml-auto bg-green-500 text-white text-xs rounded-full px-2 py-0.5">{{ $activeCoupons }}</span>
+                        @endif
+                    </a>
+                </div>
+                
+                <!-- Marketing & Communication -->
+                <div class="mb-8">
+                    <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Marketing</h3>
+                    
+                    <a href="{{ route('admin.announcements.index') }}" 
+                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.announcements.*') ? 'active' : 'text-gray-700' }}">
+                        <!-- Megaphone Icon -->
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                        </svg>
+                        <span>Announcements</span>
+                        @if($activeAnnouncements = \App\Models\Announcement::active()->count())
+                            <span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-0.5">{{ $activeAnnouncements }}</span>
+                        @endif
                 </div>
 
-                {{-- Subscription Management section এ যোগ করুন --}}
-<a href="{{ route('admin.coupons.index') }}" 
-   class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.coupons.*') ? 'active' : 'text-gray-700' }}">
-    <!-- Tag Icon -->
-    <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-    </svg>
-    <span>Coupons</span>
-    @if($activeCoupons = \App\Models\Coupon::active()->valid()->count())
-        <span class="ml-auto bg-green-500 text-white text-xs rounded-full px-2 py-0.5">{{ $activeCoupons }}</span>
-    @endif
-</a>
-
                 <!-- Settings -->
-                <!-- Settings -->
-<div>
-    <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Settings</h3>
-    
-    <a href="#" class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700">
-        <!-- Settings Icon -->
-        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-        <span>General Settings</span>
-    </a>
+                <div class="mb-8">
+                    <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Settings</h3>
+                    
+                    <a href="{{ route('admin.settings.website') }}" 
+                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.settings.*') ? 'active' : 'text-gray-700' }}">
+                        <!-- Settings Icon -->
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Website Settings</span>
+                    </a>
     
     <a href="{{ route('admin.maintenance.index') }}" 
        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.maintenance.*') ? 'active' : 'text-gray-700' }}">
@@ -287,15 +343,39 @@
         <span>Maintenance Mode</span>
     </a>
     
-    <a href="#" class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700">
-        <!-- Shield Icon -->
-        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-        </svg>
-        <span>Security</span>
-    </a>
-</div>
+                    <a href="#" class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700">
+                        <!-- Shield Icon -->
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span>Security</span>
+                    </a>
+                </div>
             </nav>
+            
+            <!-- Footer Actions -->
+            <div class="p-4 border-t border-gray-200 mt-auto">
+                <div class="space-y-2">
+                    <a href="{{ route('profile.edit') }}" 
+                       class="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        My Profile
+                    </a>
+                    
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" 
+                                class="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -434,10 +514,40 @@
             </header>
 
             <!-- Main Content Area -->
-            <main class="flex-1 overflow-y-auto bg-gray-50 p-4 lg:p-8">
-                <div class="fade-in">
-                    {{ $slot }}
+            <main class="flex-1 overflow-y-auto bg-gray-50">
+                <div class="p-4 lg:p-8">
+                    <div class="fade-in">
+                        {{ $slot }}
+                    </div>
                 </div>
+                
+                <!-- Footer -->
+                <footer class="bg-white border-t border-gray-200 mt-12">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <div class="flex flex-col md:flex-row justify-between items-center">
+                            <div class="text-center md:text-left mb-4 md:mb-0">
+                                <p class="text-gray-500 text-sm">
+                                    {{ $settings->copyright_text ?? '© ' . date('Y') . ' ' . $settings->site_name . '. All rights reserved.' }}
+                                </p>
+                                @if($settings->footer_text)
+                                    <p class="text-gray-400 text-xs mt-1">{{ $settings->footer_text }}</p>
+                                @endif
+                            </div>
+                            @if($settings->hasSocialLinks())
+                                <div class="flex space-x-4">
+                                    @foreach($settings->social_links as $social)
+                                        <a href="{{ $social['url'] }}" 
+                                           target="_blank" 
+                                           rel="noopener noreferrer"
+                                           class="text-gray-400 hover:text-gray-600 transition-colors">
+                                            <i class="{{ $social['icon'] }}"></i>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </footer>
             </main>
         </div>
     </div>

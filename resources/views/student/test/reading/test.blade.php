@@ -12,32 +12,18 @@
  {{-- CSS Link --}}
 @vite(['resources/css/reading-test.css', 'resources/css/test-notepad.css'])
 
-    <!-- IELTS Header -->
-    <div class="ielts-header">
-        <div class="ielts-header-left">
-            <svg class="w-6 h-6 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"></path>
-            </svg>
-            <span class="text-red-600 font-bold text-lg">Computer-delivered IELTS</span>
-        </div>
-        <div>
-            <span class="text-red-600 font-bold text-lg">IELTS</span>
-        </div>
-    </div>
-
+  
     <!-- User Info Bar WITH Integrated Timer -->
-    <div class="user-bar">
+    <div class="user-bar" style="height: 50px;">
         <div class="user-info">
             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
             </svg>
             <span>{{ auth()->user()->name }} - BI {{ str_pad(auth()->id(), 6, '0', STR_PAD_LEFT) }}</span>
         </div>
-        <div class="user-controls">
-            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm help-button" id="help-button">Help ?</button>
-            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
-            
-            {{-- Integrated Timer Component --}}
+        
+        {{-- Integrated Timer Component - Center Position --}}
+        <div class="timer-center-wrapper">
             <x-test-timer 
                 :attempt="$attempt" 
                 auto-submit-form-id="reading-form"
@@ -46,13 +32,25 @@
                 :danger-time="300"
             />
         </div>
+        
+        <div class="user-controls">
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm help-button" id="help-button">Help ?</button>
+            <button class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm no-nav">Hide</button>
+        </div>
     </div>
 
 
-    <!-- Main Content -->
-    <div class="content-area">
+    <!-- Main Content Wrapper -->
+    <div class="main-content-wrapper">
+        <!-- Part Header Container -->
+        <div class="global-part-header" id="global-part-header">
+            <!-- Part header will be inserted here by JavaScript -->
+        </div>
+        
+        <!-- Content Area -->
+        <div class="content-area">
         <!-- Reading Passage(s) Section -->
-        <div class="passage-section">
+        <div class="passage-section" style="position: relative; z-index: 1;">
             @php
                 // Get all passages ordered by part and order
                 $passages = $testSet->questions
@@ -126,13 +124,13 @@
                                     @endif
                                     
                                     @if($passage->passage_text)
-    <div class="passage-content">
-        {!! $passage->passage_text !!}
-    </div>
+                                        <div class="passage-content">
+                                            {!! nl2br(e($passage->passage_text)) !!}
+                                        </div>
                                     @elseif($passage->content)
-    <div class="passage-content">
-        {!! $passage->content !!}
-    </div>
+                                        <div class="passage-content">
+                                            {!! $passage->content !!}
+                                        </div>
                                     @endif
                                     
                                     @if ($passage->media_path)
@@ -146,12 +144,14 @@
                             @endforeach
                         @else
                             {{-- Part has no passage - show message --}}
-                            <div class="no-passage-message">
-                                <svg class="w-12 h-12 mx-auto mb-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                </svg>
-                                <p>No reading passage available for Part {{ $partNumber }}.</p>
-                                <p class="text-sm mt-2">Questions are shown on the right side.</p>
+                            <div class="passage-content-wrapper">
+                                <div class="no-passage-message">
+                                    <svg class="w-12 h-12 mx-auto mb-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <p>No reading passage available for Part {{ $partNumber }}.</p>
+                                    <p class="text-sm mt-2">Questions are shown on the right side.</p>
+                                </div>
                             </div>
                         @endif
                     </div>
@@ -167,11 +167,13 @@
             @endif
         </div>
 
-         <!-- Split Divider ADD THIS -->
-    <div class="split-divider" id="split-divider"></div>
+         <!-- Split Divider - Minimal Line with Icon -->
+    <div class="split-divider" id="split-divider" title="Drag to resize | Double-click to reset" style="position: relative; z-index: 100;">
+        <span></span>
+    </div>
         
         <!-- Questions Section -->
-        <div class="questions-section">
+        <div class="questions-section" style="position: relative; z-index: 1;">
             <form id="reading-form" action="{{ route('student.reading.submit', $attempt) }}" method="POST">
                 @csrf
                 
@@ -183,11 +185,41 @@
                 
                 @foreach ($groupedQuestions as $partNumber => $partQuestions)
                     <div class="part-questions" data-part="{{ $partNumber }}" style="{{ !$loop->first ? 'display: none;' : '' }}">
-                        @if($partNumber)
-                            <div class="part-header">
-                                Part {{ $partNumber }}
-                            </div>
-                        @endif
+                        @php
+                            // Store question range info for JavaScript
+                            $startNumber = 1;
+                            $endNumber = 0;
+                            $currentCount = 0;
+                            
+                            foreach ($displayQuestions as $idx => $item) {
+                                if ($item['question']->part_number < $partNumber) {
+                                    if ($item['has_blanks']) {
+                                        $currentCount += count($item['blank_numbers']);
+                                    } else {
+                                        $currentCount++;
+                                    }
+                                } elseif ($item['question']->part_number == $partNumber) {
+                                    if ($startNumber == 1 && $currentCount > 0) {
+                                        $startNumber = $currentCount + 1;
+                                    }
+                                    if ($item['has_blanks']) {
+                                        $endNumber = $currentCount + count($item['blank_numbers']);
+                                        $currentCount = $endNumber;
+                                    } else {
+                                        $currentCount++;
+                                        $endNumber = $currentCount;
+                                    }
+                                }
+                            }
+                            
+                            if ($startNumber == 1 && $endNumber == 0) {
+                                $startNumber = 1;
+                                $endNumber = count($partQuestions);
+                            } elseif ($startNumber > 1 && $endNumber == 0) {
+                                $endNumber = $startNumber + count($partQuestions) - 1;
+                            }
+                        @endphp
+                        <div class="part-questions-inner" data-start-number="{{ $startNumber }}" data-end-number="{{ $endNumber }}" data-part-number="{{ $partNumber }}">
                         
                         @php
                             $questionGroups = $partQuestions->groupBy(function($item) {
@@ -218,7 +250,7 @@
                                     $hasBlanks = $item['has_blanks'];
                                 @endphp
                                 
-                                <div class="question-box" id="question-{{ $question->id }}">
+                                <div class="question-box {{ $hasBlanks ? 'has-blanks' : '' }}" id="question-{{ $question->id }}">
                                     @if($hasBlanks)
                                         {{-- Fill-in-the-blanks question with simple numbered blanks --}}
                                         @php
@@ -234,7 +266,6 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
     return '<span class="question-number-box">' . $displayNum . '</span><input type="text" 
             name="answers[' . $question->id . '][blank_' . $blankCounter . ']" 
             class="gap-input" 
-            placeholder="Type your answer"
             data-question-number="' . $displayNum . '"
             autocomplete="off">';
 }, $processedContent);
@@ -335,7 +366,7 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                                     <input type="text" 
                                                            name="answers[{{ $question->id }}]" 
                                                            class="text-input" 
-                                                           placeholder="Type your answer here"
+                                                           placeholder="Enter your answer"
                                                            maxlength="100"
                                                            data-question-number="{{ $item['display_number'] }}">
                                                     @break
@@ -345,16 +376,18 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                 </div>
                             @endforeach
                         @endforeach
+                        </div> <!-- End part-questions-inner -->
                     </div>
                 @endforeach
                 
                 <button type="submit" id="submit-button" class="hidden">Submit</button>
             </form>
         </div>
-    </div>
+        </div> <!-- End content-area -->
+    </div> <!-- End main-content-wrapper -->
 
     <!-- Bottom Navigation -->
-    <div class="bottom-nav">
+    <div class="bottom-nav" style="height: 60px;">
         <div class="nav-left">
             <div class="review-section">
     <input type="checkbox" id="review-checkbox" class="review-check">
