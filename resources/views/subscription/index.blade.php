@@ -11,7 +11,7 @@
                         <i class="fas fa-crown text-yellow-400 mr-3"></i>
                         My Subscription
                     </h1>
-                    <p class="text-gray-300 text-lg">Manage your subscription and billing</p>
+                    <p class="text-gray-300 text-lg">Manage your subscription, usage statistics and billing</p>
                 </div>
             </div>
         </div>
@@ -19,8 +19,57 @@
 
     <!-- Main Content -->
     <section class="px-4 sm:px-6 lg:px-8 pb-12 -mt-8">
-        <div class="max-w-6xl mx-auto">
-            <!-- Current Plan -->
+        <div class="max-w-7xl mx-auto">
+            
+            <!-- Quick Stats Overview -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-chart-line text-purple-400 mr-2"></i>
+                    Quick Overview
+                </h2>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Active Plan -->
+                    <div class="glass rounded-xl p-4 border border-white/10 hover:border-purple-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-400">Current Plan</span>
+                            <i class="fas fa-crown text-purple-400"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-white">
+                            {{ $activeSubscription ? $activeSubscription->plan->name : 'No Active Plan' }}
+                        </p>
+                    </div>
+                    
+                    <!-- Token Balance -->
+                    <div class="glass rounded-xl p-4 border border-white/10 hover:border-amber-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-400">Token Balance</span>
+                            <i class="fas fa-coins text-amber-400"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-white">{{ $tokenBalance }}</p>
+                    </div>
+                    
+                    <!-- Tests This Month -->
+                    <div class="glass rounded-xl p-4 border border-white/10 hover:border-blue-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-400">Tests This Month</span>
+                            <i class="fas fa-clipboard-check text-blue-400"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-white">{{ $user->tests_taken_this_month }}</p>
+                    </div>
+                    
+                    <!-- Referral Balance -->
+                    <div class="glass rounded-xl p-4 border border-white/10 hover:border-pink-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-400">Referral Earnings</span>
+                            <i class="fas fa-gift text-pink-400"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-white">৳{{ number_format($user->referral_balance, 0) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            @if($activeSubscription)
+            <!-- Current Subscription Details -->
             <div class="glass rounded-2xl p-8 mb-8 border border-purple-500/30 relative overflow-hidden">
                 <!-- Background Effects -->
                 <div class="absolute inset-0">
@@ -29,64 +78,84 @@
                 </div>
                 
                 <div class="relative">
-                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
-                        <i class="fas fa-star text-purple-400 mr-3"></i>
-                        Current Plan
-                    </h2>
-                    
-                    @if($activeSubscription)
-                        <div class="flex flex-col lg:flex-row justify-between gap-8">
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-3 mb-3">
-                                    <h3 class="text-3xl font-bold text-white">{{ $activeSubscription->plan->name }}</h3>
-                                    @if($activeSubscription->plan->is_featured)
-                                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                                            Most Popular
-                                        </span>
-                                    @endif
+                    <div class="flex flex-col lg:flex-row justify-between gap-8">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <h2 class="text-3xl font-bold text-white">{{ $activeSubscription->plan->name }} Plan</h2>
+                                @if($activeSubscription->plan->is_featured)
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                                        Most Popular
+                                    </span>
+                                @endif
+                                <span class="px-3 py-1 text-xs rounded-full font-medium
+                                    {{ $activeSubscription->isActive() 
+                                        ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
+                                        : 'bg-red-500/20 text-red-400 border border-red-500/50' }}">
+                                    {{ ucfirst($activeSubscription->status) }}
+                                </span>
+                            </div>
+                            
+                            <p class="text-gray-300 mb-6">{{ $activeSubscription->plan->description }}</p>
+                            
+                            <!-- Subscription Info Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <div class="glass rounded-lg p-4 border border-white/5">
+                                    <span class="text-sm text-gray-400">Valid Until</span>
+                                    <p class="text-white font-medium">{{ $activeSubscription->ends_at->format('d M Y') }}</p>
+                                    <p class="text-xs text-gray-500">{{ $activeSubscription->days_remaining }} days remaining</p>
                                 </div>
-                                <p class="text-gray-300 mb-6">{{ $activeSubscription->plan->description }}</p>
                                 
-                                <div class="space-y-3">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-gray-400">Status:</span>
-                                        <span class="px-3 py-1 text-xs rounded-full font-medium
-                                            {{ $activeSubscription->isActive() 
-                                                ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
-                                                : 'bg-red-500/20 text-red-400 border border-red-500/50' }}">
-                                            {{ ucfirst($activeSubscription->status) }}
-                                        </span>
-                                    </div>
-                                    
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-gray-400">Expires on:</span>
-                                        <span class="text-white font-medium">{{ $activeSubscription->ends_at->format('d M Y') }}</span>
-                                        <span class="text-gray-500">({{ $activeSubscription->days_remaining }} days remaining)</span>
-                                    </div>
-                                    
-                                    @if($activeSubscription->auto_renew)
-                                        <div class="flex items-center text-green-400">
-                                            <i class="fas fa-check-circle mr-2"></i>
-                                            <span>Auto-renewal is enabled</span>
+                                <div class="glass rounded-lg p-4 border border-white/5">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <span class="text-sm text-gray-400">Auto Renewal</span>
+                                            <p class="text-white font-medium flex items-center">
+                                                @if($activeSubscription->auto_renew)
+                                                    <i class="fas fa-check-circle text-green-400 mr-2"></i>Enabled
+                                                @else
+                                                    <i class="fas fa-times-circle text-yellow-400 mr-2"></i>Disabled
+                                                @endif
+                                            </p>
                                         </div>
-                                    @else
-                                        <div class="flex items-center text-yellow-400">
-                                            <i class="fas fa-exclamation-circle mr-2"></i>
-                                            <span>Auto-renewal is disabled</span>
-                                        </div>
-                                    @endif
+                                        @if($activeSubscription->auto_renew && !$activeSubscription->plan->is_free)
+                                            <form action="{{ route('subscription.toggle-auto-renew') }}" method="POST">
+                                                @csrf
+                                                <button type="submit" class="px-3 py-1 text-xs bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg hover:bg-red-500/30 transition-all">
+                                                    Turn Off
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="text-center lg:text-right">
-                                <div class="mb-6">
-                                    <p class="text-4xl font-bold text-white">৳{{ number_format($activeSubscription->plan->price, 0) }}</p>
-                                    <p class="text-gray-400">per month</p>
+                            <!-- Progress Bar -->
+                            <div class="mb-6">
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-gray-400">Subscription Progress</span>
+                                    <span class="text-gray-400">{{ $activeSubscription->days_remaining }} days left</span>
                                 </div>
+                                <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                                    @php
+                                        $totalDays = $activeSubscription->starts_at->diffInDays($activeSubscription->ends_at);
+                                        $daysUsed = $activeSubscription->starts_at->diffInDays(now());
+                                        $percentageUsed = ($daysUsed / $totalDays) * 100;
+                                    @endphp
+                                    <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500" 
+                                         style="width: {{ min($percentageUsed, 100) }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pricing and Actions -->
+                        <div class="lg:w-80">
+                            <div class="glass rounded-xl p-6 border border-white/10 text-center">
+                                <p class="text-sm text-gray-400 mb-2">Monthly Price</p>
+                                <p class="text-5xl font-bold text-white mb-6">৳{{ number_format($activeSubscription->plan->price, 0) }}</p>
                                 
                                 <div class="space-y-3">
                                     <a href="{{ route('subscription.plans') }}" 
-                                       class="block w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl neon-purple text-center">
+                                       class="block w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl neon-purple">
                                         <i class="fas fa-exchange-alt mr-2"></i>Change Plan
                                     </a>
                                     
@@ -102,130 +171,128 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Features Grid -->
-                        <div class="mt-8 pt-8 border-t border-white/10">
-                            <h4 class="font-medium text-white mb-4 flex items-center">
-                                <i class="fas fa-check-circle text-green-400 mr-2"></i>
-                                Included Features
-                            </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                @foreach($activeSubscription->plan->features as $feature)
-                                    <div class="glass rounded-lg p-3 border border-white/5 hover:border-purple-500/30 transition-all">
-                                        <div class="flex items-center">
-                                            <i class="fas fa-check text-green-400 mr-3"></i>
-                                            <span class="text-gray-300">{{ $feature->name }}</span>
-                                            @if($feature->pivot->value && $feature->pivot->value !== 'true')
-                                                <span class="ml-2 text-purple-400 font-medium">({{ $feature->pivot->value }})</span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
+                    </div>
+                    
+                    <!-- Features List -->
+                    <div class="mt-8 pt-8 border-t border-white/10">
+                        <h3 class="font-semibold text-white mb-4 flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-2"></i>
+                            Included Features
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            @foreach($activeSubscription->plan->features as $feature)
+                                <div class="flex items-center text-gray-300">
+                                    <i class="fas fa-check-circle text-green-400 mr-3 flex-shrink-0"></i>
+                                    <span>{{ $feature->name }}</span>
+                                    @if($feature->pivot->value && $feature->pivot->value !== 'true')
+                                        <span class="ml-2 text-purple-400 font-medium">({{ $feature->pivot->value }})</span>
+                                    @endif
+                                </div>
+                            @endforeach
                         </div>
-                    @else
-                        <div class="text-center py-12">
-                            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-6">
-                                <i class="fas fa-user-slash text-4xl text-gray-400"></i>
-                            </div>
-                            <p class="text-gray-400 mb-6">You don't have an active subscription</p>
-                            <a href="{{ route('subscription.plans') }}" 
-                               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl neon-purple">
-                                <i class="fas fa-rocket mr-2"></i>View Plans
-                            </a>
-                        </div>
-                    @endif
+                    </div>
                 </div>
             </div>
 
             <!-- Usage Statistics -->
-            @if($activeSubscription)
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <!-- Mock Tests Card -->
-                <div class="glass rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
-                            <i class="fas fa-clipboard-check text-blue-400 text-xl"></i>
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-chart-bar text-blue-400 mr-2"></i>
+                    Usage Statistics
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Mock Tests -->
+                    <div class="glass rounded-2xl p-6 border border-white/10 hover:border-blue-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-clipboard-check text-blue-400 text-2xl"></i>
+                            @php
+                                $testLimit = $user->getFeatureLimit('mock_tests_per_month');
+                                $percentage = $testLimit === 'unlimited' ? 0 : ($user->tests_taken_this_month / $testLimit) * 100;
+                            @endphp
                         </div>
-                        @php
-                            $testLimit = $user->getFeatureLimit('mock_tests_per_month');
-                            $percentage = $testLimit === 'unlimited' ? 0 : ($user->tests_taken_this_month / $testLimit) * 100;
-                        @endphp
-                    </div>
-                    <p class="text-sm text-gray-400 mb-2">Mock Tests Taken</p>
-                    <div class="flex items-baseline">
-                        <span class="text-3xl font-bold text-white">{{ $user->tests_taken_this_month }}</span>
+                        <p class="text-3xl font-bold text-white mb-1">{{ $user->tests_taken_this_month }}</p>
+                        <p class="text-sm text-gray-400">Mock Tests Taken</p>
                         @if($testLimit !== 'unlimited')
-                            <span class="text-gray-400 ml-1">/ {{ $testLimit }}</span>
+                            <p class="text-xs text-gray-500 mt-1">of {{ $testLimit }} monthly limit</p>
+                            <div class="mt-3 w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" 
+                                     style="width: {{ min($percentage, 100) }}%"></div>
+                            </div>
                         @else
-                            <span class="text-green-400 ml-2 text-sm">Unlimited</span>
+                            <p class="text-xs text-green-400 mt-1">Unlimited</p>
                         @endif
                     </div>
-                    @if($testLimit !== 'unlimited')
-                        <div class="mt-3 w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-500" 
-                                 style="width: {{ min($percentage, 100) }}%"></div>
+                    
+                    <!-- AI Evaluations -->
+                    <div class="glass rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-robot text-purple-400 text-2xl"></i>
                         </div>
-                    @endif
-                </div>
-                
-                <!-- AI Evaluations Card -->
-                <div class="glass rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                            <i class="fas fa-robot text-purple-400 text-xl"></i>
+                        <p class="text-3xl font-bold text-white mb-1">{{ $user->ai_evaluations_used }}</p>
+                        <p class="text-sm text-gray-400">AI Evaluations</p>
+                        <p class="text-xs mt-1
+                            {{ $user->hasFeature('ai_writing_evaluation') || $user->hasFeature('ai_speaking_evaluation') 
+                                ? 'text-green-400' 
+                                : 'text-gray-500' }}">
+                            {{ $user->hasFeature('ai_writing_evaluation') || $user->hasFeature('ai_speaking_evaluation') 
+                                ? 'Available in your plan' 
+                                : 'Not available' }}
+                        </p>
+                    </div>
+                    
+                    <!-- Human Evaluations -->
+                    <div class="glass rounded-2xl p-6 border border-white/10 hover:border-green-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-user-check text-green-400 text-2xl"></i>
                         </div>
-                    </div>
-                    <p class="text-sm text-gray-400 mb-2">AI Evaluations Used</p>
-                    <div class="flex items-baseline">
-                        <span class="text-3xl font-bold text-white">{{ $user->ai_evaluations_used }}</span>
-                        @if($user->hasFeature('ai_writing_evaluation') || $user->hasFeature('ai_speaking_evaluation'))
-                            <span class="text-green-400 ml-2 text-sm flex items-center">
-                                <i class="fas fa-check-circle mr-1"></i>Available
-                            </span>
-                        @else
-                            <span class="text-gray-500 ml-2 text-sm flex items-center">
-                                <i class="fas fa-lock mr-1"></i>Not available
-                            </span>
-                        @endif
-                    </div>
-                </div>
-                
-                <!-- Days Until Renewal Card -->
-                <div class="glass rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-                            <i class="fas fa-calendar-alt text-amber-400 text-xl"></i>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-400 mb-2">Days Until Renewal</p>
-                    <div class="flex items-baseline">
-                        <span class="text-3xl font-bold text-white">{{ $activeSubscription->days_remaining }}</span>
-                        <span class="text-gray-400 ml-2">days</span>
-                    </div>
-                    <div class="mt-3 w-full h-2 bg-white/10 rounded-full overflow-hidden">
                         @php
-                            $totalDays = $activeSubscription->starts_at->diffInDays($activeSubscription->ends_at);
-                            $daysUsed = $activeSubscription->starts_at->diffInDays(now());
-                            $percentageUsed = ($daysUsed / $totalDays) * 100;
+                            $humanEvaluations = \App\Models\HumanEvaluationRequest::where('student_id', $user->id)
+                                ->whereHas('humanEvaluation')
+                                ->count();
                         @endphp
-                        <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500" 
-                             style="width: {{ min($percentageUsed, 100) }}%"></div>
+                        <p class="text-3xl font-bold text-white mb-1">{{ $humanEvaluations }}</p>
+                        <p class="text-sm text-gray-400">Human Evaluations</p>
+                        <p class="text-xs text-gray-500 mt-1">Completed by teachers</p>
+                    </div>
+                    
+                    <!-- Tokens Available -->
+                    <div class="glass rounded-2xl p-6 border border-white/10 hover:border-amber-500/30 transition-all">
+                        <div class="flex items-center justify-between mb-4">
+                            <i class="fas fa-coins text-amber-400 text-2xl"></i>
+                        </div>
+                        <p class="text-3xl font-bold text-white mb-1">{{ $tokenBalance }}</p>
+                        <p class="text-sm text-gray-400">Evaluation Tokens</p>
+                        <a href="{{ route('student.tokens.purchase') }}" class="text-xs text-amber-400 hover:text-amber-300 mt-1 inline-block">
+                            <i class="fas fa-plus-circle mr-1"></i>Buy More
+                        </a>
                     </div>
                 </div>
             </div>
+            
+            @else
+            <!-- No Active Subscription -->
+            <div class="glass rounded-2xl p-12 mb-8 border border-white/10 text-center">
+                <div class="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-crown text-5xl text-gray-400"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-4">No Active Subscription</h2>
+                <p class="text-gray-400 mb-8 max-w-md mx-auto">
+                    Choose a subscription plan to unlock all features and start your IELTS preparation journey.
+                </p>
+                <a href="{{ route('subscription.plans') }}" 
+                   class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl neon-purple">
+                    <i class="fas fa-rocket mr-2"></i>View Available Plans
+                </a>
+            </div>
             @endif
 
-            <!-- Recent Transactions -->
-            <div class="glass rounded-2xl p-8 mb-8 border border-white/10">
+            <!-- Billing History -->
+            <div class="glass rounded-2xl p-6 border border-white/10">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-white flex items-center">
-                        <i class="fas fa-receipt text-green-400 mr-3"></i>
-                        Recent Transactions
+                    <h2 class="text-xl font-semibold text-white flex items-center">
+                        <i class="fas fa-file-invoice-dollar text-green-400 mr-2"></i>
+                        Billing History
                     </h2>
-                    <a href="#" class="text-purple-400 hover:text-purple-300 text-sm flex items-center">
-                        View All <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
                 </div>
                 
                 @if($transactions->count() > 0)
@@ -235,10 +302,10 @@
                                 <tr class="border-b border-white/10">
                                     <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Date</th>
                                     <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Description</th>
-                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Method</th>
+                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Payment Method</th>
                                     <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Amount</th>
                                     <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Status</th>
-                                    <th class="text-left py-3 px-4 text-sm font-medium text-gray-400">Invoice</th>
+                                    <th class="text-center py-3 px-4 text-sm font-medium text-gray-400">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -246,14 +313,34 @@
                                 <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
                                     <td class="py-4 px-4 text-sm text-gray-300">{{ $transaction->created_at->format('d M Y') }}</td>
                                     <td class="py-4 px-4 text-sm text-white font-medium">
-                                        @if($transaction->subscription)
-                                            {{ $transaction->subscription->plan->name }} Plan
-                                        @else
-                                            Subscription Payment
-                                        @endif
+                                        {{ $transaction->subscription && $transaction->subscription->plan 
+                                            ? $transaction->subscription->plan->name . ' Plan' 
+                                            : 'Subscription Payment' }}
                                     </td>
                                     <td class="py-4 px-4 text-sm text-gray-300">
-                                        <span class="capitalize">{{ str_replace('_', ' ', $transaction->payment_method) }}</span>
+                                        @if($transaction->payment_method === 'bkash')
+                                            <span class="inline-flex items-center">
+                                                <img src="/images/payment/bkash.png" alt="bKash" class="h-4 mr-1">
+                                                bKash
+                                            </span>
+                                        @elseif($transaction->payment_method === 'nagad')
+                                            <span class="inline-flex items-center">
+                                                <img src="/images/payment/nagad.png" alt="Nagad" class="h-4 mr-1">
+                                                Nagad
+                                            </span>
+                                        @elseif($transaction->payment_method === 'stripe')
+                                            <span class="inline-flex items-center">
+                                                <i class="fab fa-stripe text-purple-400 mr-1"></i>
+                                                Stripe
+                                            </span>
+                                        @elseif($transaction->payment_method === 'free')
+                                            <span class="text-green-400">
+                                                <i class="fas fa-gift mr-1"></i>
+                                                Free
+                                            </span>
+                                        @else
+                                            <span class="capitalize">{{ str_replace('_', ' ', $transaction->payment_method ?? 'N/A') }}</span>
+                                        @endif
                                     </td>
                                     <td class="py-4 px-4 text-sm font-bold text-white">৳{{ number_format($transaction->amount, 0) }}</td>
                                     <td class="py-4 px-4">
@@ -267,10 +354,21 @@
                                     </td>
                                     <td class="py-4 px-4">
                                         @if($transaction->isSuccessful())
-                                            <a href="{{ route('subscription.invoice', $transaction) }}" 
-                                               class="text-purple-400 hover:text-purple-300 text-sm flex items-center">
-                                                <i class="fas fa-download mr-2"></i>Download
-                                            </a>
+                                            <div class="flex items-center justify-center space-x-2">
+                                                <a href="{{ route('subscription.invoice.download', $transaction) }}" 
+                                                   class="text-purple-400 hover:text-purple-300 text-sm"
+                                                   title="Download Invoice">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <a href="{{ route('subscription.invoice', $transaction) }}" 
+                                                   target="_blank"
+                                                   class="text-blue-400 hover:text-blue-300 text-sm"
+                                                   title="View Invoice">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        @else
+                                            <span class="text-gray-500 text-xs">-</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -279,63 +377,9 @@
                         </table>
                     </div>
                 @else
-                    <div class="text-center py-12">
-                        <i class="fas fa-inbox text-4xl text-gray-600 mb-4"></i>
-                        <p class="text-gray-400">No transactions yet</p>
-                    </div>
-                @endif
-            </div>
-
-            <!-- Subscription History -->
-            <div class="glass rounded-2xl p-8 border border-white/10">
-                <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
-                    <i class="fas fa-history text-blue-400 mr-3"></i>
-                    Subscription History
-                </h2>
-                
-                @if($subscriptionHistory->count() > 0)
-                    <div class="space-y-4">
-                        @foreach($subscriptionHistory as $subscription)
-                        <div class="glass rounded-xl p-6 border {{ $subscription->isActive() ? 'border-purple-500/50 bg-purple-500/10' : 'border-white/10' }} hover:border-purple-500/30 transition-all">
-                            <div class="flex flex-col md:flex-row justify-between gap-4">
-                                <div>
-                                    <h3 class="font-semibold text-white text-lg">{{ $subscription->plan->name }} Plan</h3>
-                                    <p class="text-sm text-gray-400 mt-2">
-                                        <i class="far fa-calendar mr-2"></i>
-                                        {{ $subscription->starts_at->format('d M Y') }} - {{ $subscription->ends_at->format('d M Y') }}
-                                    </p>
-                                    <div class="flex items-center space-x-4 mt-3">
-                                        <span class="text-sm">Status:</span>
-                                        <span class="px-3 py-1 text-xs rounded-full font-medium
-                                            {{ $subscription->isActive() 
-                                                ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
-                                                : 'bg-gray-500/20 text-gray-400 border border-gray-500/50' }}">
-                                            {{ ucfirst($subscription->status) }}
-                                        </span>
-                                        @if($subscription->cancelled_at)
-                                            <span class="text-red-400 text-sm">
-                                                <i class="fas fa-times-circle mr-1"></i>
-                                                Cancelled on {{ $subscription->cancelled_at->format('d M Y') }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-white text-xl">৳{{ number_format($subscription->plan->price, 0) }}</p>
-                                    <p class="text-gray-400 text-sm">per month</p>
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                    
-                    <div class="mt-6">
-                        {{ $subscriptionHistory->links() }}
-                    </div>
-                @else
-                    <div class="text-center py-12">
-                        <i class="fas fa-history text-4xl text-gray-600 mb-4"></i>
-                        <p class="text-gray-400">No subscription history</p>
+                    <div class="text-center py-8">
+                        <i class="fas fa-inbox text-3xl text-gray-600 mb-3"></i>
+                        <p class="text-gray-400">No billing history yet</p>
                     </div>
                 @endif
             </div>

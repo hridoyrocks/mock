@@ -144,6 +144,26 @@
                                 
                             @endif
                         </div>
+                        
+                        {{-- Referral Code (if exists) --}}
+                        @if($referralCode)
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Referral Code</label>
+                            <div class="relative">
+                                <input type="text" 
+                                       name="referral_code" 
+                                       value="{{ $referralCode }}" 
+                                       readonly
+                                       class="w-full px-3 py-2 pr-10 text-sm border border-green-300 bg-green-50 rounded-lg">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="mt-0.5 text-xs text-green-600">You'll get bonus rewards after registration!</p>
+                        </div>
+                        @endif
 
                         {{-- Password & Confirm in one row --}}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

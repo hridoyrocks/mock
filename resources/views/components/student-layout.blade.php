@@ -372,6 +372,25 @@
                 <div class="px-4 mb-6">
                     <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Resources</h4>
                     
+                    <!-- Referral Program -->
+                    <a href="{{ route('student.referrals.index') }}" 
+                       class="group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mb-2
+                              {{ request()->routeIs('student.referrals.*') ? 'glass bg-gradient-to-r from-yellow-600/20 to-amber-600/20 border-yellow-500/50' : 'hover:glass' }}">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center
+                                    {{ request()->routeIs('student.referrals.*') ? 'neon-yellow' : '' }}">
+                            <i class="fas fa-gift text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <span class="text-white font-medium block">Referral Program</span>
+                            <span class="text-xs text-gray-400">Earn rewards</span>
+                        </div>
+                        @if(auth()->user()->referral_balance > 0)
+                            <span class="ml-auto text-xs px-2 py-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold">
+                                ৳{{ number_format(auth()->user()->referral_balance, 0) }}
+                            </span>
+                        @endif
+                    </a>
+                    
                     <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:glass transition-all duration-200 mb-2">
                         <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center">
                             <i class="fas fa-book-reader text-white"></i>
@@ -395,16 +414,12 @@
                         <span class="text-xs text-gray-400">Monthly Tests</span>
                         <span class="text-xs font-bold text-white">
                             {{ auth()->user()->tests_taken_this_month }} / 
-                            {{ auth()->user()->getFeatureLimit('mock_tests_per_month') === 'unlimited' ? '∞' : auth()->user()->getFeatureLimit('mock_tests_per_month') }}
+                            {{ auth()->user()->getMonthlyTestLimit() === 'unlimited' ? '∞' : auth()->user()->getMonthlyTestLimit() }}
                         </span>
                     </div>
                     <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                        @php
-                            $limit = auth()->user()->getFeatureLimit('mock_tests_per_month');
-                            $percentage = $limit === 'unlimited' ? 0 : (auth()->user()->tests_taken_this_month / $limit) * 100;
-                        @endphp
                         <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500" 
-                             style="width: {{ min($percentage, 100) }}%"></div>
+                             style="width: {{ auth()->user()->getTestUsagePercentage() }}%"></div>
                     </div>
                 </div>
                 

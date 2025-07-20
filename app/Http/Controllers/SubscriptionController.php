@@ -31,21 +31,36 @@ class SubscriptionController extends Controller
     {
         $user = auth()->user();
         $activeSubscription = $user->activeSubscription();
+        
+        // Load plan relationship if active subscription exists
+        if ($activeSubscription) {
+            $activeSubscription->load(['plan.features']);
+        }
+        
         $subscriptionHistory = $user->subscriptions()
             ->with('plan')
             ->latest()
             ->paginate(10);
         
         $transactions = $user->transactions()
+            ->with('subscription.plan')
             ->latest()
             ->take(5)
             ->get();
+        
+        // Get user tokens
+        $userTokens = \App\Models\UserEvaluationToken::firstOrCreate(
+            ['user_id' => $user->id],
+            ['balance' => 0]
+        );
+        $tokenBalance = $userTokens->balance;
 
         return view('subscription.index', compact(
             'user',
             'activeSubscription',
             'subscriptionHistory',
-            'transactions'
+            'transactions',
+            'tokenBalance'
         ));
     }
 
@@ -55,7 +70,10 @@ class SubscriptionController extends Controller
     public function plans()
     {
         $plans = SubscriptionPlan::active()
-            ->with('features')
+            ->with(['features' => function($query) {
+                $query->orderBy('subscription_features.id');
+            }])
+            ->orderBy('sort_order')
             ->get();
         
         $currentPlan = auth()->user()->activeSubscription()?->plan;
@@ -146,6 +164,37 @@ public function welcome()
     
     return view('subscription.welcome');
 }
+
+    /**
+     * Toggle auto renewal.
+     */
+    public function toggleAutoRenew(Request $request)
+    {
+        $user = auth()->user();
+        $subscription = $user->activeSubscription();
+
+        if (!$subscription) {
+            return redirect()->route('subscription.index')
+                ->with('error', 'No active subscription found.');
+        }
+
+        // Don't allow toggling for free plan
+        if ($subscription->plan->is_free) {
+            return redirect()->route('subscription.index')
+                ->with('error', 'Cannot change auto-renewal for free plan.');
+        }
+
+        // Toggle auto_renew
+        $subscription->auto_renew = !$subscription->auto_renew;
+        $subscription->save();
+
+        $message = $subscription->auto_renew 
+            ? 'Auto-renewal has been enabled.' 
+            : 'Auto-renewal has been disabled. Your subscription will expire on ' . $subscription->ends_at->format('d M Y');
+
+        return redirect()->route('subscription.index')
+            ->with('success', $message);
+    }
 
     /**
      * Cancel subscription.

@@ -6,6 +6,8 @@ use App\Models\SubscriptionPlan;
 use App\Models\PaymentTransaction;
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
+use App\Models\TokenPackage;
+use App\Models\UserEvaluationToken;
 use App\Services\Payment\PaymentGatewayFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,11 @@ class PaymentController extends Controller
     public function process(Request $request)
 {
     try {
+        // Check if it's a token package purchase
+        if ($request->type === 'token_package') {
+            return $this->processTokenPackagePurchase($request);
+        }
+        
         // Validate request
         $validated = $request->validate([
             'plan_id' => 'required|exists:subscription_plans,id',
@@ -163,6 +170,227 @@ class PaymentController extends Controller
         return back()->with('error', 'Payment processing failed. Please try again.');
     }
 }
+    
+/**
+     * Process token package purchase
+     */
+    protected function processTokenPackagePurchase(Request $request)
+    {
+        $validated = $request->validate([
+            'package_id' => 'required|exists:token_packages,id',
+            'payment_method' => 'required|in:stripe,bkash,nagad',
+            'payment_method_id' => 'required_if:payment_method,stripe',
+        ]);
+
+        $user = auth()->user();
+        $package = TokenPackage::findOrFail($request->package_id);
+        
+        if (!$package->is_active) {
+            return back()->with('error', 'This package is not available.');
+        }
+
+        // Process payment through gateway
+        $gateway = $this->gatewayFactory->make($request->payment_method);
+        
+        // Prepare payment data
+        $paymentData = [
+            'amount' => $package->price,
+            'currency' => $user->currency ?? 'BDT',
+            'customer' => [
+                'email' => $user->email,
+                'name' => $user->name,
+                'phone' => $user->phone_number,
+            ],
+            'metadata' => [
+                'user_id' => $user->id,
+                'package_id' => $package->id,
+                'type' => 'token_package',
+                'tokens' => $package->total_tokens,
+            ],
+            'description' => "Token Package: {$package->name} ({$package->total_tokens} tokens)",
+            'success_url' => route('payment.success') . '?type=token_package',
+            'cancel_url' => route('student.tokens.purchase'),
+        ];
+
+        // Handle different payment methods
+        switch ($request->payment_method) {
+            case 'stripe':
+                return $this->processStripeTokenPayment($request, $gateway, $paymentData, $package);
+                
+            case 'bkash':
+                return $this->processBkashTokenPayment($gateway, $paymentData, $package);
+                
+            case 'nagad':
+                return $this->processNagadTokenPayment($gateway, $paymentData, $package);
+                
+            default:
+                throw new \Exception('Invalid payment method');
+        }
+    }
+    
+    protected function processStripeTokenPayment($request, $gateway, $paymentData, $package)
+    {
+        try {
+            // Add Stripe specific data
+            $paymentData['payment_method_id'] = $request->payment_method_id;
+            
+            // Create payment intent
+            $result = $gateway->createPayment($paymentData);
+            
+            if ($result['status'] === 'requires_action' && isset($result['client_secret'])) {
+                // 3D Secure authentication required
+                return response()->json([
+                    'requires_action' => true,
+                    'client_secret' => $result['client_secret']
+                ]);
+            }
+            
+            if ($result['status'] === 'succeeded') {
+                // Payment successful, add tokens
+                return $this->handleSuccessfulTokenPayment($result, $package, 'stripe');
+            }
+            
+            // Payment failed
+            return back()->with('error', 'Payment failed. Please try again.');
+            
+        } catch (\Exception $e) {
+            Log::error('Stripe token payment failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            
+            return back()->with('error', 'Payment processing failed.');
+        }
+    }
+    
+    protected function processBkashTokenPayment($gateway, $paymentData, $package)
+    {
+        try {
+            // Create bKash payment
+            $result = $gateway->createPayment($paymentData);
+            
+            if (isset($result['payment_url'])) {
+                // Store payment info in session for callback
+                session([
+                    'token_payment' => [
+                        'payment_id' => $result['payment_id'],
+                        'package_id' => $package->id,
+                        'amount' => $paymentData['amount'],
+                        'payment_method' => 'bkash',
+                    ]
+                ]);
+                
+                // Redirect to bKash payment page
+                return redirect($result['payment_url']);
+            }
+            
+            return back()->with('error', 'Failed to initiate bKash payment.');
+            
+        } catch (\Exception $e) {
+            Log::error('bKash token payment failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            
+            return back()->with('error', 'Payment processing failed.');
+        }
+    }
+    
+    protected function processNagadTokenPayment($gateway, $paymentData, $package)
+    {
+        try {
+            // Create Nagad payment
+            $result = $gateway->createPayment($paymentData);
+            
+            if (isset($result['payment_url'])) {
+                // Store payment info in session for callback
+                session([
+                    'token_payment' => [
+                        'payment_id' => $result['payment_id'],
+                        'package_id' => $package->id,
+                        'amount' => $paymentData['amount'],
+                        'payment_method' => 'nagad',
+                    ]
+                ]);
+                
+                // Redirect to Nagad payment page
+                return redirect($result['payment_url']);
+            }
+            
+            return back()->with('error', 'Failed to initiate Nagad payment.');
+            
+        } catch (\Exception $e) {
+            Log::error('Nagad token payment failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            
+            return back()->with('error', 'Payment processing failed.');
+        }
+    }
+    
+    protected function handleSuccessfulTokenPayment($paymentResult, $package, $paymentMethod)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $user = auth()->user();
+            
+            // Create payment transaction for token purchase
+            $transaction = PaymentTransaction::create([
+                'user_id' => $user->id,
+                'subscription_id' => null,
+                'transaction_id' => $paymentResult['transaction_id'],
+                'amount' => $paymentResult['amount'],
+                'discount_amount' => 0,
+                'currency' => $paymentResult['currency'] ?? 'BDT',
+                'payment_method' => $paymentMethod,
+                'status' => 'completed',
+                'gateway_response' => $paymentResult,
+                'metadata' => [
+                    'type' => 'token_package',
+                    'package_id' => $package->id,
+                    'package_name' => $package->name,
+                    'tokens' => $package->total_tokens,
+                ],
+            ]);
+
+            // Add tokens to user account
+            $tokenBalance = UserEvaluationToken::getOrCreateForUser($user);
+            $tokenBalance->addTokens($package->total_tokens, 'purchase');
+            
+            // Log token transaction
+            DB::table('token_transactions')->insert([
+                'user_id' => $user->id,
+                'type' => 'purchase',
+                'amount' => $package->total_tokens,
+                'balance_after' => $tokenBalance->available_tokens,
+                'reason' => "Purchased {$package->name}",
+                'package_id' => $package->id,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            DB::commit();
+
+            // Clear sessions
+            session()->forget(['token_payment']);
+
+            return redirect()->route('student.tokens.purchase')
+                ->with('success', "Successfully purchased {$package->total_tokens} tokens!");
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Log::error('Failed to process successful token payment', [
+                'error' => $e->getMessage(),
+                'payment_result' => $paymentResult
+            ]);
+            
+            return redirect()->route('payment.failed')
+                ->with('error', 'Payment was successful but token activation failed. Please contact support.');
+        }
+    }
 
     protected function processStripePayment($request, $gateway, $paymentData, $plan, $coupon)
     {
@@ -329,8 +557,14 @@ class PaymentController extends Controller
     {
         // Handle payment success callback (for payment gateways that use callbacks)
         $paymentMethod = $request->input('payment_method');
+        $type = $request->input('type');
         
         try {
+            // Check if it's a token payment callback
+            if ($type === 'token_package') {
+                return $this->handleTokenPaymentCallback($request);
+            }
+            
             switch ($paymentMethod) {
                 case 'bkash':
                     return $this->handleBkashCallback($request);
@@ -349,6 +583,41 @@ class PaymentController extends Controller
             
             return redirect()->route('payment.failed');
         }
+    }
+    
+    protected function handleTokenPaymentCallback(Request $request)
+    {
+        $tokenPayment = session('token_payment');
+        
+        if (!$tokenPayment) {
+            return redirect()->route('student.tokens.purchase')
+                ->with('error', 'Payment session expired.');
+        }
+        
+        $paymentMethod = $tokenPayment['payment_method'] ?? $request->input('payment_method');
+        
+        // Verify payment based on method
+        switch ($paymentMethod) {
+            case 'bkash':
+                $gateway = $this->gatewayFactory->make('bkash');
+                $result = $gateway->verifyPayment($tokenPayment['payment_id']);
+                break;
+                
+            case 'nagad':
+                $gateway = $this->gatewayFactory->make('nagad');
+                $result = $gateway->verifyPayment($tokenPayment['payment_id']);
+                break;
+                
+            default:
+                return redirect()->route('payment.failed');
+        }
+        
+        if ($result['status'] === 'completed') {
+            $package = TokenPackage::find($tokenPayment['package_id']);
+            return $this->handleSuccessfulTokenPayment($result, $package, $paymentMethod);
+        }
+        
+        return redirect()->route('payment.failed');
     }
 
     public function failed(Request $request)

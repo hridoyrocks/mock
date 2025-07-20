@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\OtpVerification;
 use App\Services\LocationService;
+use App\Services\Referral\ReferralService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -14,10 +15,12 @@ use Illuminate\Validation\Rules\Password;
 class RegisterController extends Controller
 {
     protected $locationService;
+    protected $referralService;
 
-    public function __construct(LocationService $locationService)
+    public function __construct(LocationService $locationService, ReferralService $referralService)
     {
         $this->locationService = $locationService;
+        $this->referralService = $referralService;
     }
 
     public function showRegistrationForm(Request $request)
@@ -26,10 +29,14 @@ class RegisterController extends Controller
         
         // Simple country list instead of package
         $countries = $this->getCountryList();
+        
+        // Get referral code from session or query parameter
+        $referralCode = session('referral_code', $request->get('ref'));
 
         return view('auth.register', [
             'locationData' => $locationData,
             'countries' => $countries,
+            'referralCode' => $referralCode,
         ]);
     }
 
@@ -61,6 +68,12 @@ class RegisterController extends Controller
                 'timezone' => $locationData['timezone'] ?? null,
                 'currency' => $this->getCurrencyByCountry($request->country_code),
             ]);
+            
+            // Process referral if code exists
+            $referralCode = session('referral_code') ?? $request->get('referral_code');
+            if ($referralCode) {
+                $this->referralService->processReferralRegistration($user, $referralCode);
+            }
 
             // Create OTP
             $otp = OtpVerification::createForEmail($user->email);

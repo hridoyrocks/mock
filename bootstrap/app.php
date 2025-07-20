@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'maintenance.check' => \App\Http\Middleware\CheckMaintenanceMode::class,
             'install' => \App\Http\Middleware\RedirectIfInstalled::class,
             'installed' => \App\Http\Middleware\RedirectIfNotInstalled::class,
+            'teacher' => \App\Http\Middleware\IsTeacher::class,
         ]);
         
         // Web middleware group
@@ -54,6 +55,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ->monthlyOn(1, '00:01')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/monthly-reset.log'));
+        
+        // Grant monthly tokens to subscribers on the 1st of each month at 12:05 AM
+        $schedule->command('tokens:grant-monthly')
+            ->monthlyOn(1, '00:05')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/monthly-tokens.log'));
         
         // Send expiry reminders daily at 9 AM
         $schedule->command('subscriptions:send-expiry-reminders')

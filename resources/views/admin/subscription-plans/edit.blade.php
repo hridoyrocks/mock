@@ -100,13 +100,14 @@
                     
                     <div class="space-y-4">
                         @foreach($features as $feature)
-                        <div class="border rounded-lg p-4">
+                        <div class="border rounded-lg p-4" id="feature-container-{{ $feature->id }}">
                             <div class="flex items-start">
                                 <input type="checkbox" name="features[{{ $feature->id }}][enabled]" value="1"
                                        id="feature-{{ $feature->id }}"
                                        {{ isset($planFeatures[$feature->id]) ? 'checked' : '' }}
-                                       class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                <label for="feature-{{ $feature->id }}" class="ml-3 flex-1">
+                                       class="feature-checkbox mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                       data-feature-id="{{ $feature->id }}">
+                                <label for="feature-{{ $feature->id }}" class="ml-3 flex-1 cursor-pointer">
                                     <span class="font-medium text-gray-900">{{ $feature->name }}</span>
                                     @if($feature->description)
                                         <p class="text-sm text-gray-500">{{ $feature->description }}</p>
@@ -114,20 +115,24 @@
                                 </label>
                             </div>
                             
-                            <div class="ml-7 mt-3 grid grid-cols-2 gap-4">
+                            <div class="ml-7 mt-3 grid grid-cols-2 gap-4 feature-inputs" data-feature-id="{{ $feature->id }}">
                                 <div>
                                     <label class="block text-sm text-gray-700">Value</label>
                                     <input type="text" name="features[{{ $feature->id }}][value]"
+                                           id="feature-value-{{ $feature->id }}"
                                            value="{{ $planFeatures[$feature->id]['value'] ?? '' }}"
                                            class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                           placeholder="e.g., unlimited, true, 10">
+                                           placeholder="e.g., unlimited, true, 10"
+                                           {{ !isset($planFeatures[$feature->id]) ? 'disabled' : '' }}>
                                 </div>
                                 <div>
                                     <label class="block text-sm text-gray-700">Limit (optional)</label>
                                     <input type="number" name="features[{{ $feature->id }}][limit]"
+                                           id="feature-limit-{{ $feature->id }}"
                                            value="{{ $planFeatures[$feature->id]['limit'] ?? '' }}"
                                            class="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                           placeholder="Numeric limit">
+                                           placeholder="Numeric limit"
+                                           {{ !isset($planFeatures[$feature->id]) ? 'disabled' : '' }}>
                                 </div>
                             </div>
                             <input type="hidden" name="features[{{ $feature->id }}][id]" value="{{ $feature->id }}">
@@ -168,4 +173,41 @@
             </div>
         </form>
     </div>
+    
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle feature checkbox changes
+            const checkboxes = document.querySelectorAll('.feature-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const featureId = this.dataset.featureId;
+                    const valueInput = document.getElementById('feature-value-' + featureId);
+                    const limitInput = document.getElementById('feature-limit-' + featureId);
+                    const container = document.getElementById('feature-container-' + featureId);
+                    
+                    if (this.checked) {
+                        valueInput.disabled = false;
+                        limitInput.disabled = false;
+                        container.classList.remove('opacity-50');
+                    } else {
+                        valueInput.disabled = true;
+                        limitInput.disabled = true;
+                        valueInput.value = '';
+                        limitInput.value = '';
+                        container.classList.add('opacity-50');
+                    }
+                });
+                
+                // Initialize on page load
+                const featureId = checkbox.dataset.featureId;
+                const container = document.getElementById('feature-container-' + featureId);
+                if (!checkbox.checked) {
+                    container.classList.add('opacity-50');
+                }
+            });
+        });
+    </script>
+    @endpush
 </x-admin-layout>

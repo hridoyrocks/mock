@@ -250,16 +250,43 @@ class ReadingTestController extends Controller
                 'reading'
             );
             
+            // Log for debugging
+            \Log::info('Score calculation result', $scoreData);
+            
             // Store band score and additional data
-            $attempt->update([
-                'band_score' => $scoreData['band_score'],
-                'completion_rate' => $scoreData['completion_percentage'],
-                'confidence_level' => $scoreData['confidence'],
-                'is_complete_attempt' => $scoreData['is_reliable'],
+            $updateData = [
+                'band_score' => $scoreData['band_score'] ?? null,
                 'total_questions' => $totalQuestions,
                 'answered_questions' => $answeredCount,
                 'correct_answers' => $correctAnswers
-            ]);
+            ];
+            
+            // Only add optional fields if they exist in the score data
+            if (isset($scoreData['completion_percentage'])) {
+                $updateData['completion_rate'] = $scoreData['completion_percentage'];
+            }
+            if (isset($scoreData['confidence'])) {
+                $updateData['confidence_level'] = $scoreData['confidence'];
+            }
+            if (isset($scoreData['is_reliable'])) {
+                $updateData['is_complete_attempt'] = $scoreData['is_reliable'];
+            }
+            
+            try {
+                $attempt->update($updateData);
+            } catch (\Exception $e) {
+                \Log::error('Failed to update attempt', [
+                    'error' => $e->getMessage(),
+                    'data' => $updateData
+                ]);
+                // Continue with basic update
+                $attempt->update([
+                    'band_score' => $scoreData['band_score'] ?? null,
+                    'total_questions' => $totalQuestions,
+                    'answered_questions' => $answeredCount,
+                    'correct_answers' => $correctAnswers
+                ]);
+            }
             
             // Store score data in session for display
             session()->flash('score_details', $scoreData);

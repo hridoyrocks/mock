@@ -62,11 +62,28 @@ class SubscriptionPlanController extends Controller
         ]);
 
         // Attach features
-        foreach ($request->features as $feature) {
-            if (isset($feature['enabled']) && $feature['enabled']) {
-                $plan->features()->attach($feature['id'], [
-                    'value' => $feature['value'] ?? null,
-                    'limit' => $feature['limit'] ?? null
+        foreach ($request->features as $featureId => $featureData) {
+            // Skip if feature ID is not numeric
+            if (!is_numeric($featureId)) {
+                continue;
+            }
+            
+            // Check if feature is enabled
+            $isEnabled = false;
+            $value = null;
+            $limit = null;
+            
+            if (is_array($featureData)) {
+                // Check if enabled checkbox is checked
+                $isEnabled = isset($featureData['enabled']) && $featureData['enabled'] == '1';
+                $value = $featureData['value'] ?? null;
+                $limit = $featureData['limit'] ?? null;
+            }
+            
+            if ($isEnabled) {
+                $plan->features()->attach($featureId, [
+                    'value' => $value ?: null,
+                    'limit' => $limit ?: null
                 ]);
             }
         }
@@ -101,6 +118,8 @@ class SubscriptionPlanController extends Controller
      */
     public function update(Request $request, SubscriptionPlan $subscriptionPlan)
     {
+        \Log::info('Update request data:', $request->all());
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|unique:subscription_plans,slug,' . $subscriptionPlan->id,
@@ -126,16 +145,43 @@ class SubscriptionPlanController extends Controller
             'is_featured' => $request->boolean('is_featured', false),
         ]);
 
+        // Log features before processing
+        \Log::info('Features data:', $request->features);
+        
         // Sync features
         $subscriptionPlan->features()->detach();
-        foreach ($request->features as $feature) {
-            if (isset($feature['enabled']) && $feature['enabled']) {
-                $subscriptionPlan->features()->attach($feature['id'], [
-                    'value' => $feature['value'] ?? null,
-                    'limit' => $feature['limit'] ?? null
+        
+        foreach ($request->features as $featureId => $featureData) {
+            // Skip if feature ID is not numeric (might be array key)
+            if (!is_numeric($featureId)) {
+                continue;
+            }
+            
+            // Check if feature is enabled
+            $isEnabled = false;
+            $value = null;
+            $limit = null;
+            
+            if (is_array($featureData)) {
+                // Check if enabled checkbox is checked
+                $isEnabled = isset($featureData['enabled']) && $featureData['enabled'] == '1';
+                $value = $featureData['value'] ?? null;
+                $limit = $featureData['limit'] ?? null;
+            }
+            
+            if ($isEnabled) {
+                \Log::info("Attaching feature {$featureId} with value: {$value}, limit: {$limit}");
+                
+                $subscriptionPlan->features()->attach($featureId, [
+                    'value' => $value ?: null,
+                    'limit' => $limit ?: null
                 ]);
             }
         }
+        
+        // Log final attached features
+        $attachedFeatures = $subscriptionPlan->features()->get();
+        \Log::info('Attached features count: ' . $attachedFeatures->count());
 
         return redirect()->route('admin.subscription-plans.index')
             ->with('success', 'Subscription plan updated successfully.');

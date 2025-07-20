@@ -21,12 +21,31 @@
                             </p>
                         </div>
                         
-                        <div class="glass rounded-xl px-8 py-6 text-center border-purple-500/30">
-                            <p class="text-gray-400 text-sm mb-1">Overall Band Score</p>
-                            <p class="text-5xl font-bold text-white">
-                                {{ number_format($evaluation['overall_band'], 1) }}
-                            </p>
-                            <div class="mt-2 text-xs text-purple-400">AI Generated</div>
+                        <div class="flex items-start gap-4">
+                            <!-- AI Score -->
+                            <div class="glass rounded-xl px-8 py-6 text-center border-purple-500/30">
+                                <p class="text-gray-400 text-sm mb-1">Overall Band Score</p>
+                                <p class="text-5xl font-bold text-white">
+                                    {{ number_format($evaluation['overall_band'], 1) }}
+                                </p>
+                                <div class="mt-2 text-xs text-purple-400">AI Generated</div>
+                            </div>
+                            
+                            <!-- Human Evaluation Button -->
+                            <div class="flex items-center">
+                                <button onclick="openTeacherModal()" 
+                                        class="glass rounded-xl px-6 py-3 hover:border-blue-500/50 transition-all group">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-user-tie text-white"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="text-white font-semibold">Get Human Evaluation</p>
+                                            <p class="text-gray-400 text-xs">By certified IELTS teachers</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -295,6 +314,29 @@
         </div>
     </section>
 
+    <!-- Teacher Selection Modal -->
+    <div id="teacherModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white">
+                    <i class="fas fa-user-tie text-blue-400 mr-2"></i>
+                    Select a Teacher for Human Evaluation
+                </h2>
+                <button onclick="closeTeacherModal()" class="text-gray-400 hover:text-white transition">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div id="teacherList" class="space-y-4">
+                <!-- Teachers will be loaded here via AJAX -->
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-4xl text-purple-400"></i>
+                    <p class="text-gray-400 mt-4">Loading available teachers...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -303,6 +345,74 @@
         const chevron = document.getElementById(`chevron-${index}`);
         transcription.classList.toggle('hidden');
         chevron.classList.toggle('rotate-180');
+    }
+    
+    function openTeacherModal() {
+        document.getElementById('teacherModal').classList.remove('hidden');
+        loadTeachers();
+    }
+    
+    function closeTeacherModal() {
+        document.getElementById('teacherModal').classList.add('hidden');
+    }
+    
+    function loadTeachers() {
+        fetch(`/student/human-evaluation/{{ $attempt->id }}/teachers`)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const teacherCards = doc.querySelector('.teacher-cards');
+                
+                if (teacherCards) {
+                    document.getElementById('teacherList').innerHTML = teacherCards.innerHTML;
+                } else {
+                    document.getElementById('teacherList').innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
+                            <p class="text-gray-400">No teachers available at the moment.</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading teachers:', error);
+                document.getElementById('teacherList').innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
+                        <p class="text-gray-400">Failed to load teachers. Please try again.</p>
+                    </div>
+                `;
+            });
+    }
+    
+    function selectTeacher(teacherId, teacherName, priority = 'normal') {
+        if (confirm(`Request evaluation from ${teacherName} (${priority} priority)?`)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/student/human-evaluation/{{ $attempt->id }}/request`;
+            
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+            
+            const teacherInput = document.createElement('input');
+            teacherInput.type = 'hidden';
+            teacherInput.name = 'teacher_id';
+            teacherInput.value = teacherId;
+            form.appendChild(teacherInput);
+            
+            const priorityInput = document.createElement('input');
+            priorityInput.type = 'hidden';
+            priorityInput.name = 'priority';
+            priorityInput.value = priority;
+            form.appendChild(priorityInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
     }
 
     @if(isset($previousScores))

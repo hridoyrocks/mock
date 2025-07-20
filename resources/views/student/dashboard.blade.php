@@ -414,6 +414,43 @@
                         </div>
                     </div>
 
+                    <!-- Referral Rewards Widget -->
+                    <div class="glass rounded-2xl p-6 border-yellow-500/30 bg-gradient-to-br from-yellow-600/10 to-amber-600/10">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-white">
+                                <i class="fas fa-gift text-yellow-400 mr-2"></i>
+                                Earn Rewards
+                            </h3>
+                            <a href="{{ route('student.referrals.index') }}" class="text-yellow-400 hover:text-yellow-300">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        
+                        @if(auth()->user()->referral_balance > 0)
+                            <div class="text-center mb-4">
+                                <p class="text-3xl font-bold text-white">৳{{ number_format(auth()->user()->referral_balance, 0) }}</p>
+                                <p class="text-xs text-gray-400">Available Balance</p>
+                            </div>
+                        @endif
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">Total Referrals</span>
+                                <span class="text-white font-bold">{{ auth()->user()->total_referrals }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-300">Successful</span>
+                                <span class="text-white font-bold">{{ auth()->user()->successful_referrals }}</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="copyReferralCode()" class="w-full mt-4 px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-lg hover:from-yellow-600 hover:to-amber-600 transition-all text-sm font-medium">
+                            <i class="fas fa-copy mr-2"></i>Copy Referral Code
+                        </button>
+                        
+                        <input type="hidden" id="referral-code" value="{{ auth()->user()->referral_code }}">
+                    </div>
+
                     <!-- Study Tips -->
                     <div class="glass rounded-2xl p-6 border-purple-500/30 bg-gradient-to-br from-purple-600/10 to-pink-600/10">
                         <h3 class="text-lg font-bold text-white mb-3">
@@ -601,6 +638,58 @@
 
     @push('scripts')
     <script>
+        // Copy Referral Code Function
+        function copyReferralCode() {
+            const code = document.getElementById('referral-code').value;
+            const button = document.querySelector('button[onclick="copyReferralCode()"]');
+            const originalHTML = button.innerHTML;
+            
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(() => {
+                    // Success
+                    button.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+                    button.classList.add('from-green-500', 'to-emerald-500');
+                    button.classList.remove('from-yellow-500', 'to-amber-500');
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                        button.classList.remove('from-green-500', 'to-emerald-500');
+                        button.classList.add('from-yellow-500', 'to-amber-500');
+                    }, 2000);
+                }).catch(() => {
+                    // Fallback
+                    copyUsingFallback();
+                });
+            } else {
+                // Use fallback for older browsers
+                copyUsingFallback();
+            }
+            
+            function copyUsingFallback() {
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    button.innerHTML = '<i class="fas fa-check mr-2"></i>Copied!';
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                    alert('Referral code: ' + code);
+                }
+                
+                document.body.removeChild(textArea);
+            }
+        }
+        
         // Modal Functions
         function openGoalModal() {
             document.getElementById('goalModal').classList.remove('hidden');

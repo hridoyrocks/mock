@@ -33,6 +33,9 @@ use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 
+// Referral Controller
+use App\Http\Controllers\Student\ReferralController;
+
 // Home route
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -40,6 +43,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/payment/webhook/{provider}', [PaymentController::class, 'webhook'])
     ->name('payment.webhook')
     ->middleware(['verify.webhook:{provider}']);
+
+// Apply referral tracking middleware to all routes
+Route::middleware(['web', \App\Http\Middleware\TrackReferral::class])->group(function () {
 
 // AUTHENTICATION ROUTES (Guest only)
 Route::middleware(['guest'])->group(function () {
@@ -92,12 +98,6 @@ Route::middleware(['auth'])->group(function () {
 
 Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar')->middleware('auth');
 
-// Invoice routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/invoice/{transaction}/download', [SubscriptionController::class, 'downloadInvoice'])
-        ->name('invoice.download');
-});
-
 
 Route::middleware(['auth'])->group(function () {
     // Coupon routes
@@ -107,6 +107,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/remove', [App\Http\Controllers\CouponController::class, 'remove'])->name('remove');
     });
 });
+
+}); // End of referral tracking middleware
 
 
 
@@ -147,13 +149,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/plans', [SubscriptionController::class, 'plans'])->name('plans');
         Route::post('/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscribe');
         Route::post('/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
+        Route::post('/toggle-auto-renew', [SubscriptionController::class, 'toggleAutoRenew'])->name('toggle-auto-renew');
         Route::get('/invoice/{transaction}', [SubscriptionController::class, 'invoice'])->name('invoice');
+        Route::get('/invoice/{transaction}/download', [SubscriptionController::class, 'downloadInvoice'])->name('invoice.download');
         Route::get('/welcome', [SubscriptionController::class, 'welcome'])->name('welcome');
     });
 
     // Payment routes (inside auth - except webhook which is outside)
     Route::prefix('payment')->name('payment.')->group(function () {
-        Route::post('/process', [PaymentController::class, 'process'])->name('process');
+        Route::match(['get', 'post'], '/process', [PaymentController::class, 'process'])->name('process');
         Route::get('/success', [PaymentController::class, 'success'])->name('success');
         Route::get('/failed', [PaymentController::class, 'failed'])->name('failed');
     });
@@ -241,30 +245,67 @@ Route::middleware(['auth'])->group(function () {
                 });
                 
                 Route::post('/submit/{attempt}', [WritingTestController::class, 'submit'])->name('submit');
-            });
-            
-            // Speaking section - with feature check for AI evaluation
-            Route::prefix('speaking')->name('speaking.')->group(function () {
+                });
+                
+                // Speaking section - with feature check for AI evaluation
+                Route::prefix('speaking')->name('speaking.')->group(function () {
                 Route::get('/', [SpeakingTestController::class, 'index'])->name('index');
                 
                 Route::middleware(['usage.limit:mock_test'])->group(function () {
-                    Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                        Route::get('/{testSet}', [SpeakingTestController::class, 'confirmDetails'])->name('confirm-details');
-                        Route::get('/microphone-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('microphone-check');
-                        Route::get('/instructions/{testSet}', [SpeakingTestController::class, 'instructions'])->name('instructions');
-                    });
-                    
-                    Route::get('/start/{testSet}', [SpeakingTestController::class, 'start'])->name('start');
-                    Route::post('/record/{attempt}/{question}', [SpeakingTestController::class, 'record'])->name('record');
+                Route::prefix('onboarding')->name('onboarding.')->group(function () {
+                Route::get('/{testSet}', [SpeakingTestController::class, 'confirmDetails'])->name('confirm-details');
+                Route::get('/microphone-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('microphone-check');
+                Route::get('/instructions/{testSet}', [SpeakingTestController::class, 'instructions'])->name('instructions');
+                });
+                
+                Route::get('/start/{testSet}', [SpeakingTestController::class, 'start'])->name('start');
+                Route::post('/record/{attempt}/{question}', [SpeakingTestController::class, 'record'])->name('record');
                 });
                 
                 Route::post('/submit/{attempt}', [SpeakingTestController::class, 'submit'])->name('submit');
-            });
-            
-            // Results
-            Route::get('/results', [ResultController::class, 'index'])->name('results');
-            Route::get('/results/{attempt}', [ResultController::class, 'show'])->name('results.show');
-            Route::post('/results/{attempt}/retake', [ResultController::class, 'retake'])->name('results.retake');
+                });
+                
+                // Results
+                Route::get('/results', [ResultController::class, 'index'])->name('results');
+                Route::get('/results/{attempt}', [ResultController::class, 'show'])->name('results.show');
+                Route::post('/results/{attempt}/retake', [ResultController::class, 'retake'])->name('results.retake');
+                });
+                
+                // Human Evaluation
+                Route::prefix('human-evaluation')->name('evaluation.')->group(function () {
+                    Route::get('/{attempt}/teachers', [App\Http\Controllers\Student\HumanEvaluationController::class, 'showTeachers'])->name('teachers');
+                    Route::post('/{attempt}/request', [App\Http\Controllers\Student\HumanEvaluationController::class, 'requestEvaluation'])->name('request');
+                    Route::get('/{attempt}/status', [App\Http\Controllers\Student\HumanEvaluationController::class, 'status'])->name('status');
+                    Route::get('/{attempt}/result', [App\Http\Controllers\Student\HumanEvaluationController::class, 'viewResult'])->name('result');
+                });
+                
+                // Token Purchase
+                Route::prefix('tokens')->name('tokens.')->group(function () {
+                Route::get('/purchase', [App\Http\Controllers\Student\HumanEvaluationController::class, 'showTokenPurchase'])->name('purchase');
+                Route::post('/purchase', [App\Http\Controllers\Student\HumanEvaluationController::class, 'purchaseTokens'])->name('process');
+                });
+                
+                // Referral System
+                Route::prefix('referrals')->name('referrals.')->group(function () {
+                    Route::get('/', [ReferralController::class, 'index'])->name('index');
+                    Route::post('/redeem/tokens', [ReferralController::class, 'redeemTokens'])->name('redeem.tokens');
+                    Route::post('/redeem/subscription', [ReferralController::class, 'redeemSubscription'])->name('redeem.subscription');
+                    Route::get('/history', [ReferralController::class, 'getReferralHistory'])->name('history');
+                    Route::get('/redemption-history', [ReferralController::class, 'getRedemptionHistory'])->name('redemption-history');
+                    Route::get('/stats', [ReferralController::class, 'getStats'])->name('stats');
+                });
+});
+    
+    // Teacher routes
+    Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\Teacher\EvaluationController::class, 'dashboard'])->name('dashboard');
+        Route::patch('/toggle-availability', [App\Http\Controllers\Teacher\EvaluationController::class, 'toggleAvailability'])->name('toggle-availability');
+        
+        Route::prefix('evaluations')->name('evaluations.')->group(function () {
+            Route::get('/pending', [App\Http\Controllers\Teacher\EvaluationController::class, 'pending'])->name('pending');
+            Route::get('/completed', [App\Http\Controllers\Teacher\EvaluationController::class, 'completed'])->name('completed');
+            Route::get('/{evaluationRequest}', [App\Http\Controllers\Teacher\EvaluationController::class, 'show'])->name('show');
+            Route::post('/{evaluationRequest}/submit', [App\Http\Controllers\Teacher\EvaluationController::class, 'submit'])->name('submit');
         });
     });
     
@@ -367,6 +408,38 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{subscriptionFeature}/edit', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'edit'])->name('edit');
             Route::put('/{subscriptionFeature}', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'update'])->name('update');
             Route::delete('/{subscriptionFeature}', [App\Http\Controllers\Admin\SubscriptionFeatureController::class, 'destroy'])->name('destroy');
+        });
+        
+        // Teacher Management
+        Route::prefix('teachers')->name('teachers.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\TeacherController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Admin\TeacherController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\TeacherController::class, 'store'])->name('store');
+            Route::get('/{teacher}', [App\Http\Controllers\Admin\TeacherController::class, 'show'])->name('show');
+            Route::get('/{teacher}/edit', [App\Http\Controllers\Admin\TeacherController::class, 'edit'])->name('edit');
+            Route::put('/{teacher}', [App\Http\Controllers\Admin\TeacherController::class, 'update'])->name('update');
+            Route::delete('/{teacher}', [App\Http\Controllers\Admin\TeacherController::class, 'destroy'])->name('destroy');
+            Route::patch('/{teacher}/toggle-availability', [App\Http\Controllers\Admin\TeacherController::class, 'toggleAvailability'])->name('toggle-availability');
+        });
+        
+        // Token Packages Management
+        Route::prefix('token-packages')->name('token-packages.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\TokenPackageController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Admin\TokenPackageController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\TokenPackageController::class, 'store'])->name('store');
+            Route::get('/{tokenPackage}/edit', [App\Http\Controllers\Admin\TokenPackageController::class, 'edit'])->name('edit');
+            Route::put('/{tokenPackage}', [App\Http\Controllers\Admin\TokenPackageController::class, 'update'])->name('update');
+            Route::delete('/{tokenPackage}', [App\Http\Controllers\Admin\TokenPackageController::class, 'destroy'])->name('destroy');
+            Route::patch('/{tokenPackage}/toggle-status', [App\Http\Controllers\Admin\TokenPackageController::class, 'toggleStatus'])->name('toggle-status');
+        });
+        
+        // User Token Management
+        Route::prefix('user-tokens')->name('user-tokens.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\UserTokenController::class, 'index'])->name('index');
+            Route::get('/{user}/edit', [App\Http\Controllers\Admin\UserTokenController::class, 'edit'])->name('edit');
+            Route::post('/{user}/add', [App\Http\Controllers\Admin\UserTokenController::class, 'addTokens'])->name('add');
+            Route::post('/{user}/deduct', [App\Http\Controllers\Admin\UserTokenController::class, 'deductTokens'])->name('deduct');
+            Route::post('/{user}/set', [App\Http\Controllers\Admin\UserTokenController::class, 'setTokens'])->name('set');
         });
         
         // Maintenance Mode Management - FIXED PLACEMENT

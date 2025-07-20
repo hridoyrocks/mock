@@ -7,8 +7,6 @@
         <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-pink-600/20"></div>
         <div class="relative px-4 sm:px-6 lg:px-8 py-8">
             <div class="max-w-7xl mx-auto">
-               
-
                 <!-- Test Info Header -->
                 <div class="glass rounded-2xl p-6 lg:p-8">
                     <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -58,9 +56,6 @@
                                     @endif
                                 </div>
                             @endif
-                            
-                            <!-- Retake Button -->
-                            
                         </div>
                     </div>
                 </div>
@@ -158,75 +153,152 @@
                 </div>
             @endif
 
-            {{-- AI Evaluation Section for Writing/Speaking --}}
-            @if(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
-                <div class="glass rounded-2xl p-6 mb-8 border-purple-500/30">
-                    <h3 class="text-xl font-bold text-white mb-4">
-                        <i class="fas fa-robot text-purple-400 mr-2"></i>
-                        AI Evaluation
-                    </h3>
+            {{-- Evaluation Section for Writing/Speaking --}}
+            @if(isset($attempt->testSet) && isset($attempt->testSet->section) && in_array($attempt->testSet->section->name, ['writing', 'speaking']))
+                <!-- Evaluation Tabs -->
+                <div class="glass rounded-2xl p-6 mb-8">
+                    <div class="flex border-b border-white/10 mb-6">
+                        <button onclick="switchTab('ai')" id="ai-tab" class="px-6 py-3 text-white font-medium border-b-2 border-purple-500 transition-all">
+                            <i class="fas fa-robot mr-2"></i> AI Evaluation
+                        </button>
+                        <button onclick="switchTab('human')" id="human-tab" class="px-6 py-3 text-gray-400 font-medium border-b-2 border-transparent hover:text-white transition-all">
+                            <i class="fas fa-user-tie mr-2"></i> Human Evaluation
+                        </button>
+                    </div>
                     
-                    @if(auth()->user()->hasFeature('ai_' . $attempt->testSet->section->name . '_evaluation'))
-                        @if($attempt->completion_rate == 0)
-                            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                                <div class="flex items-start gap-3">
-                                    <i class="fas fa-exclamation-circle text-yellow-400 text-xl mt-1"></i>
-                                    <div class="flex-1">
-                                        <h4 class="font-semibold text-yellow-400">Test Not Completed</h4>
-                                        <p class="text-gray-300 text-sm mt-1">
-                                            You need to complete the {{ $attempt->testSet->section->name }} test before requesting AI evaluation.
-                                        </p>
-                                        <a href="{{ route('student.' . $attempt->testSet->section->name . '.start', $attempt->testSet) }}" 
-                                           class="inline-flex items-center mt-3 glass px-4 py-2 rounded-lg text-yellow-400 hover:border-yellow-500/50 transition-all text-sm">
-                                            <i class="fas fa-arrow-left mr-2"></i>
-                                            Go Back to Test
-                                        </a>
+                    <!-- AI Evaluation Tab Content -->
+                    <div id="ai-content" class="">
+                        <h3 class="text-xl font-bold text-white mb-4">
+                            <i class="fas fa-robot text-purple-400 mr-2"></i>
+                            AI Evaluation
+                        </h3>
+                        
+                        @if(auth()->user()->hasFeature('ai_' . $attempt->testSet->section->name . '_evaluation'))
+                            @if($attempt->completion_rate == 0)
+                                <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+                                    <div class="flex items-start gap-3">
+                                        <i class="fas fa-exclamation-circle text-yellow-400 text-xl mt-1"></i>
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-yellow-400">Test Not Completed</h4>
+                                            <p class="text-gray-300 text-sm mt-1">
+                                                You need to complete the {{ $attempt->testSet->section->name }} test before requesting AI evaluation.
+                                            </p>
+                                            <a href="{{ route('student.' . $attempt->testSet->section->name . '.start', $attempt->testSet) }}" 
+                                               class="inline-flex items-center mt-3 glass px-4 py-2 rounded-lg text-yellow-400 hover:border-yellow-500/50 transition-all text-sm">
+                                                <i class="fas fa-arrow-left mr-2"></i>
+                                                Go Back to Test
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        @elseif(!$attempt->ai_evaluated_at)
-                            <div class="text-center py-6">
-                                <i class="fas fa-robot text-6xl text-purple-400 mb-4"></i>
-                                <p class="text-gray-300 mb-4">Get instant feedback and band score prediction with our advanced AI evaluator.</p>
-                                
-                                @if($attempt->completion_rate > 0)
-                                    <div class="inline-flex items-center glass px-4 py-2 rounded-lg text-green-400 border-green-500/30 mb-4">
-                                        <i class="fas fa-check-circle mr-2"></i>
-                                        Test completed with {{ $attempt->completion_rate }}% completion rate
+                            @elseif(!$attempt->ai_evaluated_at)
+                                <div class="text-center py-6">
+                                    <i class="fas fa-robot text-6xl text-purple-400 mb-4"></i>
+                                    <p class="text-gray-300 mb-4">Get instant feedback and band score prediction with our advanced AI evaluator.</p>
+                                    
+                                    @if($attempt->completion_rate > 0)
+                                        <div class="inline-flex items-center glass px-4 py-2 rounded-lg text-green-400 border-green-500/30 mb-4">
+                                            <i class="fas fa-check-circle mr-2"></i>
+                                            Test completed with {{ $attempt->completion_rate }}% completion rate
+                                        </div>
+                                    @endif
+                                    
+                                    <button onclick="startAIEvaluation({{ $attempt->id }}, '{{ $attempt->testSet->section->name }}')" 
+                                            id="ai-eval-btn"
+                                            class="block w-full sm:w-auto mx-auto px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105">
+                                        <i class="fas fa-magic mr-2"></i>
+                                        Get Instant Evaluation
+                                    </button>
+                                </div>
+                            @else
+                                <div class="flex items-center justify-between glass rounded-xl p-4">
+                                    <div>
+                                        <p class="text-gray-400 text-sm">Band Score</p>
+                                        <p class="text-3xl font-bold text-white">{{ $attempt->ai_band_score ?? 'N/A' }}</p>
                                     </div>
-                                @endif
-                                
-                                <button onclick="startAIEvaluation({{ $attempt->id }}, '{{ $attempt->testSet->section->name }}')" 
-                                        id="ai-eval-btn"
-                                        class="block w-full sm:w-auto mx-auto px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105">
-                                    <i class="fas fa-magic mr-2"></i>
-                                    Get Instant Evaluation
-                                </button>
-                            </div>
+                                    <a href="{{ route('ai.evaluation.get', $attempt->id) }}" 
+                                       class="glass px-6 py-3 rounded-xl text-white hover:border-purple-500/50 transition-all">
+                                        <i class="fas fa-chart-line mr-2"></i>
+                                        View Detailed Analysis
+                                    </a>
+                                </div>
+                            @endif
                         @else
-                            <div class="flex items-center justify-between glass rounded-xl p-4">
-                                <div>
-                                    <p class="text-gray-400 text-sm">Band Score</p>
-                                    <p class="text-3xl font-bold text-white">{{ $attempt->ai_band_score ?? 'N/A' }}</p>
-                                </div>
-                                <a href="{{ route('ai.evaluation.get', $attempt->id) }}" 
-                                   class="glass px-6 py-3 rounded-xl text-white hover:border-purple-500/50 transition-all">
-                                    <i class="fas fa-chart-line mr-2"></i>
-                                    View Detailed Analysis
+                            <div class="text-center py-6">
+                                <i class="fas fa-crown text-6xl text-purple-400 mb-4"></i>
+                                <p class="text-gray-300 mb-4">Upgrade to Premium to unlock Instant evaluation for instant feedback.</p>
+                                <a href="{{ route('subscription.plans') }}" 
+                                   class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                    <i class="fas fa-rocket mr-2"></i>
+                                    Upgrade to Premium
                                 </a>
                             </div>
                         @endif
-                    @else
-                        <div class="text-center py-6">
-                            <i class="fas fa-crown text-6xl text-purple-400 mb-4"></i>
-                            <p class="text-gray-300 mb-4">Upgrade to Premium to unlock Instant evaluation for instant feedback.</p>
-                            <a href="{{ route('subscription.plans') }}" 
-                               class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
-                                <i class="fas fa-rocket mr-2"></i>
-                                Upgrade to Premium
-                            </a>
-                        </div>
-                    @endif
+                    </div>
+                    
+                    <!-- Human Evaluation Tab Content -->
+                    <div id="human-content" class="hidden">
+                        <h3 class="text-xl font-bold text-white mb-4">
+                            <i class="fas fa-user-tie text-purple-400 mr-2"></i>
+                            Human Evaluation
+                        </h3>
+                        
+                        @if(isset($humanEvaluationRequest) && $humanEvaluationRequest)
+                            @if($humanEvaluationRequest->status === 'completed')
+                                <!-- Completed Evaluation -->
+                                <div class="glass rounded-xl p-6">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div>
+                                            <p class="text-gray-400 text-sm">Evaluated by</p>
+                                            <p class="text-xl font-bold text-white">{{ $humanEvaluationRequest->teacher->user->name }}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-gray-400 text-sm">Band Score</p>
+                                            <p class="text-3xl font-bold text-white">{{ $humanEvaluationRequest->humanEvaluation->overall_band_score ?? 'N/A' }}</p>
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('student.evaluation.result', $attempt->id) }}" 
+                                       class="block w-full text-center py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                        <i class="fas fa-eye mr-2"></i> View Detailed Evaluation
+                                    </a>
+                                </div>
+                            @else
+                                <!-- Pending Evaluation -->
+                                <div class="glass rounded-xl p-6 bg-yellow-500/10 border-yellow-500/30">
+                                    <div class="flex items-start gap-4">
+                                        <i class="fas fa-clock text-yellow-400 text-2xl"></i>
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-yellow-400 mb-2">Evaluation In Progress</h4>
+                                            <p class="text-gray-300 mb-2">Your evaluation request has been assigned to <strong>{{ $humanEvaluationRequest->teacher->user->name }}</strong>.</p>
+                                            <p class="text-gray-400 text-sm">Status: <span class="text-yellow-400">{{ ucfirst($humanEvaluationRequest->status) }}</span></p>
+                                            <p class="text-gray-400 text-sm">Deadline: {{ $humanEvaluationRequest->deadline_at->format('M d, Y h:i A') }}</p>
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('student.evaluation.status', $attempt->id) }}" 
+                                       class="block w-full text-center mt-4 py-3 rounded-xl glass text-white hover:border-purple-500/50 transition-all">
+                                        <i class="fas fa-info-circle mr-2"></i> View Status Details
+                                    </a>
+                                </div>
+                            @endif
+                        @else
+                            <!-- No Evaluation Yet -->
+                            <div class="text-center py-8">
+                                <i class="fas fa-user-tie text-6xl text-purple-400 mb-4"></i>
+                                <p class="text-gray-300 mb-4">Get your {{ $attempt->testSet->section->name }} evaluated by certified IELTS teachers for detailed feedback and accurate band score.</p>
+                                
+                                <div class="glass rounded-xl p-4 inline-block mb-6">
+                                    <p class="text-gray-400 text-sm mb-1">Starting from</p>
+                                    <p class="text-2xl font-bold text-white">10 <span class="text-purple-400">tokens</span></p>
+                                </div>
+                                
+                                <a href="{{ route('student.evaluation.teachers', $attempt->id) }}" 
+                                   class="block w-full sm:w-auto mx-auto px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105">
+                                    <i class="fas fa-search mr-2"></i>
+                                    Choose Teacher
+                                </a>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             @endif
 
@@ -514,7 +586,7 @@
     {{-- AI Evaluation Modal --}}
     <div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="glass rounded-2xl max-w-md w-full p-8">
-            <h3 class="text-2xl font-bold text-white mb-6 text-center">Starting Insant Evaluation</h3>
+            <h3 class="text-2xl font-bold text-white mb-6 text-center">Starting Instant Evaluation</h3>
             <div class="flex items-center justify-center py-8">
                 <div class="relative">
                     <div class="w-20 h-20 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin"></div>
@@ -528,6 +600,23 @@
 
     @push('scripts')
     <script>
+    function switchTab(tab) {
+        // Update tab buttons
+        document.getElementById('ai-tab').classList.toggle('border-purple-500', tab === 'ai');
+        document.getElementById('ai-tab').classList.toggle('text-white', tab === 'ai');
+        document.getElementById('ai-tab').classList.toggle('text-gray-400', tab !== 'ai');
+        document.getElementById('ai-tab').classList.toggle('border-transparent', tab !== 'ai');
+        
+        document.getElementById('human-tab').classList.toggle('border-purple-500', tab === 'human');
+        document.getElementById('human-tab').classList.toggle('text-white', tab === 'human');
+        document.getElementById('human-tab').classList.toggle('text-gray-400', tab !== 'human');
+        document.getElementById('human-tab').classList.toggle('border-transparent', tab !== 'human');
+        
+        // Toggle content
+        document.getElementById('ai-content').classList.toggle('hidden', tab !== 'ai');
+        document.getElementById('human-content').classList.toggle('hidden', tab !== 'human');
+    }
+    
     function startAIEvaluation(attemptId, type) {
         document.getElementById('aiEvalModal').classList.remove('hidden');
         

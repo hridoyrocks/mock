@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\StudentAttempt;
 use App\Models\Question;
+use App\Models\HumanEvaluationRequest;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -118,8 +119,16 @@ class ResultController extends Controller
             ));
         }
         
+        // Check for human evaluation request
+        $humanEvaluationRequest = null;
+        if (in_array($attempt->testSet->section->name, ['writing', 'speaking'])) {
+            $humanEvaluationRequest = HumanEvaluationRequest::with(['teacher.user', 'humanEvaluation'])
+                ->where('student_attempt_id', $attempt->id)
+                ->first();
+        }
+        
         // For manually evaluated sections (Writing and Speaking)
-        return view('student.results.show', compact('attempt', 'passages'));
+        return view('student.results.show', compact('attempt', 'passages', 'humanEvaluationRequest'));
     }
     
     /**

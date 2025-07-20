@@ -42,6 +42,11 @@ class User extends Authenticatable
     'currency',
     'is_social_signup',
     'avatar_url',
+    'referral_code',
+    'referred_by',
+    'referral_balance',
+    'total_referrals',
+    'successful_referrals',
     ];
 
     protected $casts = [
@@ -54,6 +59,9 @@ class User extends Authenticatable
         'ai_evaluations_used' => 'integer',
         'phone_verified_at' => 'datetime',
     'is_social_signup' => 'boolean',
+    'referral_balance' => 'decimal:2',
+    'total_referrals' => 'integer',
+    'successful_referrals' => 'integer',
     ];
 
 
@@ -101,19 +109,25 @@ public function hasTrustedDevice(string $fingerprint): bool
 
 
     protected static function boot()
-{
-    parent::boot();
-    
-    // When user is created, give them free plan
-    static::created(function ($user) {
-        if (!$user->is_admin) {
-            $freePlan = SubscriptionPlan::where('slug', 'free')->first();
-            if ($freePlan) {
-                $user->subscribeTo($freePlan);
+    {
+        parent::boot();
+        
+        // When user is created, give them free plan and generate referral code
+        static::created(function ($user) {
+            // Generate unique referral code
+            if (empty($user->referral_code)) {
+                $user->referral_code = $user->generateUniqueReferralCode();
+                $user->saveQuietly(); // Use saveQuietly to avoid triggering events again
             }
-        }
-    });
-}
+            
+            if (!$user->is_admin) {
+                $freePlan = SubscriptionPlan::where('slug', 'free')->first();
+                if ($freePlan) {
+                    $user->subscribeTo($freePlan);
+                }
+            }
+        });
+    }
 
 
     /**
@@ -125,15 +139,22 @@ public function hasTrustedDevice(string $fingerprint): bool
     }
 
     /**
+     * Get user's active subscription relationship.
+     */
+    public function activeSubscriptionRelation()
+    {
+        return $this->hasOne(UserSubscription::class)
+            ->where('status', 'active')
+            ->where('ends_at', '>', now())
+            ->latest();
+    }
+    
+    /**
      * Get user's active subscription.
      */
     public function activeSubscription()
     {
-        return $this->subscriptions()
-            ->active()
-            ->with('plan', 'plan.features')
-            ->latest()
-            ->first();
+        return $this->activeSubscriptionRelation()->first();
     }
 
     /**
@@ -149,7 +170,7 @@ public function hasTrustedDevice(string $fingerprint): bool
      */
     public function hasActiveSubscription(): bool
     {
-        return $this->activeSubscription() !== null;
+        return $this->activeSubscriptionRelation()->exists();
     }
 
     /**
@@ -159,7 +180,7 @@ public function hasTrustedDevice(string $fingerprint): bool
     {
         $subscription = $this->activeSubscription();
         
-        return $subscription && $subscription->plan->slug === $planSlug;
+        return $subscription && $subscription->plan && $subscription->plan->slug === $planSlug;
     }
 
     /**
@@ -173,6 +194,11 @@ public function hasTrustedDevice(string $fingerprint): bool
             // Check free plan features
             $freePlan = SubscriptionPlan::where('slug', 'free')->first();
             return $freePlan ? $freePlan->hasFeature($featureKey) : false;
+        }
+        
+        // Load plan with features if not already loaded
+        if (!$subscription->relationLoaded('plan')) {
+            $subscription->load('plan.features');
         }
 
         return $subscription->plan->hasFeature($featureKey);
@@ -189,22 +215,55 @@ public function hasTrustedDevice(string $fingerprint): bool
             $freePlan = SubscriptionPlan::where('slug', 'free')->first();
             return $freePlan ? $freePlan->getFeatureValue($featureKey) : null;
         }
+        
+        // Load plan with features if not already loaded
+        if (!$subscription->relationLoaded('plan')) {
+            $subscription->load('plan.features');
+        }
 
         return $subscription->plan->getFeatureValue($featureKey);
     }
 
     /**
+     * Get monthly test limit as integer or string
+     */
+    public function getMonthlyTestLimit()
+    {
+        $limit = $this->getFeatureLimit('mock_tests_per_month');
+        
+        if ($limit === 'unlimited' || $limit === 'Unlimited' || !is_numeric($limit)) {
+            return 'unlimited';
+        }
+        
+        return intval($limit);
+    }
+    
+    /**
+     * Get test usage percentage
+     */
+    public function getTestUsagePercentage(): float
+    {
+        $limit = $this->getMonthlyTestLimit();
+        
+        if ($limit === 'unlimited' || $limit === 0) {
+            return 0;
+        }
+        
+        return min(100, ($this->tests_taken_this_month / $limit) * 100);
+    }
+    
+    /**
      * Check if user can take more tests this month.
      */
     public function canTakeMoreTests(): bool
     {
-        $limit = $this->getFeatureLimit('mock_tests_per_month');
+        $limit = $this->getMonthlyTestLimit();
         
         if ($limit === 'unlimited') {
             return true;
         }
         
-        return $this->tests_taken_this_month < (int) $limit;
+        return $this->tests_taken_this_month < $limit;
     }
 
     /**
@@ -286,5 +345,114 @@ public function activeGoal()
         ];
 
         return $badges[$this->subscription_status] ?? $badges['free'];
+    }
+    
+    /**
+     * Get user's evaluation tokens
+     */
+    public function evaluationTokens()
+    {
+        return $this->hasOne(UserEvaluationToken::class);
+    }
+    
+    /**
+     * Get active subscription data (not a relationship)
+     */
+    public function getActiveSubscriptionData()
+    {
+        $subscription = $this->activeSubscription();
+        if ($subscription && !$subscription->relationLoaded('plan')) {
+            $subscription->load('plan');
+        }
+        return $subscription;
+    }
+    
+    /**
+     * Referral relationships
+     */
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+    
+    public function referrals()
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+    
+    public function successfulReferrals()
+    {
+        return $this->referrals()->where('status', 'completed');
+    }
+    
+    public function referralRewards()
+    {
+        return $this->hasMany(ReferralReward::class);
+    }
+    
+    public function referralRedemptions()
+    {
+        return $this->hasMany(ReferralRedemption::class);
+    }
+    
+    /**
+     * Generate unique referral code
+     */
+    public function generateUniqueReferralCode(): string
+    {
+        do {
+            $code = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8));
+        } while (User::where('referral_code', $code)->exists());
+        
+        return $code;
+    }
+    
+    /**
+     * Get referral link
+     */
+    public function getReferralLinkAttribute(): string
+    {
+        return url('/register?ref=' . $this->referral_code);
+    }
+    
+    /**
+     * Add referral balance
+     */
+    public function addReferralBalance(float $amount): void
+    {
+        $this->increment('referral_balance', $amount);
+    }
+    
+    /**
+     * Deduct referral balance
+     */
+    public function deductReferralBalance(float $amount): void
+    {
+        $this->decrement('referral_balance', $amount);
+    }
+    
+    /**
+     * Check if user can redeem balance
+     */
+    public function canRedeemBalance(): bool
+    {
+        $minAmount = ReferralSetting::getValue('min_redemption_amount', 50);
+        return $this->referral_balance >= $minAmount;
+    }
+    
+    /**
+     * Get available referral balance
+     */
+    public function getAvailableReferralBalanceAttribute(): float
+    {
+        return $this->referral_balance;
+    }
+    
+    /**
+     * Get formatted referral balance
+     */
+    public function getFormattedReferralBalanceAttribute(): string
+    {
+        return '৳ ' . number_format($this->referral_balance, 2);
     }
 }
