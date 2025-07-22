@@ -1,0 +1,250 @@
+// CKEditor 5 implementation for IELTS Mock Platform
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+
+// Global CKEditor instances storage
+window.ckEditorInstances = {};
+
+// Initialize CKEditor
+window.initCKEditor = function(selector, options = {}) {
+    const element = document.querySelector(selector);
+    if (!element) {
+        console.error('CKEditor: Element not found:', selector);
+        return;
+    }
+
+    const defaultConfig = {
+        toolbar: {
+            items: [
+                'heading', '|',
+                'bold', 'italic', 'link', '|',
+                'bulletedList', 'numberedList', '|',
+                'outdent', 'indent', '|',
+                'uploadImage', 'blockQuote', 'insertTable', '|',
+                'undo', 'redo'
+            ]
+        },
+        image: {
+            toolbar: [
+                'imageTextAlternative',
+                'imageStyle:inline',
+                'imageStyle:block',
+                'imageStyle:side'
+            ]
+        },
+        table: {
+            contentToolbar: [
+                'tableColumn',
+                'tableRow',
+                'mergeTableCells'
+            ]
+        },
+        simpleUpload: {
+            // The URL that the images are uploaded to.
+            uploadUrl: '/admin/questions/upload-image',
+            // Headers sent along with the XMLHttpRequest to the upload server.
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+        }
+    };
+
+    const config = { ...defaultConfig, ...options };
+
+    ClassicEditor
+        .create(element, config)
+        .then(editor => {
+            // Store instance
+            window.ckEditorInstances[selector] = editor;
+            
+            // Handle fill-in-the-blanks functionality
+            if (options.fillBlanksMode) {
+                setupFillBlanksToolbar(editor);
+            }
+            
+            // Sync with textarea if provided
+            if (options.syncWith) {
+                const textarea = document.querySelector(options.syncWith);
+                if (textarea) {
+                    // Set initial value
+                    if (textarea.value) {
+                        try {
+                            // Check if value is JSON (from old EditorJS format)
+                            const parsedData = JSON.parse(textarea.value);
+                            if (parsedData.blocks) {
+                                // Convert EditorJS blocks to HTML
+                                editor.setData(convertEditorJSToHTML(parsedData));
+                            } else {
+                                editor.setData(textarea.value);
+                            }
+                        } catch (e) {
+                            // If not JSON, treat as HTML
+                            editor.setData(textarea.value);
+                        }
+                    }
+                    
+                    // Update textarea on change
+                    editor.model.document.on('change:data', () => {
+                        textarea.value = editor.getData();
+                        
+                        // Trigger change event
+                        const event = new Event('change', { bubbles: true });
+                        textarea.dispatchEvent(event);
+                    });
+                }
+            }
+            
+            // Call onReady callback if provided
+            if (options.onReady) {
+                options.onReady(editor);
+            }
+            
+            console.log('CKEditor initialized:', selector);
+        })
+        .catch(error => {
+            console.error('CKEditor initialization error:', error);
+        });
+};
+
+// Setup fill-in-the-blanks toolbar
+function setupFillBlanksToolbar(editor) {
+    let blankCounter = 0;
+    let dropdownCounter = 0;
+    
+    // Add custom buttons to toolbar
+    const toolbar = editor.ui.view.toolbar;
+    
+    // Insert Blank button
+    const insertBlankBtn = document.createElement('button');
+    insertBlankBtn.className = 'ck ck-button ck-off';
+    insertBlankBtn.innerHTML = '<span class="ck ck-button__label">Insert Blank</span>';
+    insertBlankBtn.onclick = () => {
+        blankCounter++;
+        const blankText = `[____${blankCounter}____]`;
+        
+        editor.model.change(writer => {
+            const insertPosition = editor.model.document.selection.getFirstPosition();
+            writer.insertText(blankText, insertPosition);
+        });
+        
+        // Trigger update event
+        if (window.updateBlanks) {
+            setTimeout(window.updateBlanks, 100);
+        }
+    };
+    
+    // Insert Dropdown button
+    const insertDropdownBtn = document.createElement('button');
+    insertDropdownBtn.className = 'ck ck-button ck-off';
+    insertDropdownBtn.innerHTML = '<span class="ck ck-button__label">Insert Dropdown</span>';
+    insertDropdownBtn.onclick = () => {
+        const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
+        if (options) {
+            dropdownCounter++;
+            const dropdownText = `[DROPDOWN_${dropdownCounter}:${options}]`;
+            
+            editor.model.change(writer => {
+                const insertPosition = editor.model.document.selection.getFirstPosition();
+                writer.insertText(dropdownText, insertPosition);
+            });
+            
+            // Trigger update event
+            if (window.updateBlanks) {
+                setTimeout(window.updateBlanks, 100);
+            }
+        }
+    };
+    
+    // Add buttons to toolbar (this is a simplified approach)
+    // In production, you'd create proper CKEditor plugins
+    toolbar.element.appendChild(insertBlankBtn);
+    toolbar.element.appendChild(insertDropdownBtn);
+}
+
+// Convert EditorJS format to HTML (for backward compatibility)
+function convertEditorJSToHTML(editorJSData) {
+    let html = '';
+    
+    if (!editorJSData.blocks) return '';
+    
+    editorJSData.blocks.forEach(block => {
+        switch (block.type) {
+            case 'header':
+                html += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
+                break;
+            case 'paragraph':
+                html += `<p>${block.data.text}</p>`;
+                break;
+            case 'list':
+                const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                html += `<${tag}>`;
+                block.data.items.forEach(item => {
+                    html += `<li>${item}</li>`;
+                });
+                html += `</${tag}>`;
+                break;
+            case 'image':
+                html += `<figure class="image">`;
+                html += `<img src="${block.data.file.url}" alt="${block.data.caption || ''}">`;
+                if (block.data.caption) {
+                    html += `<figcaption>${block.data.caption}</figcaption>`;
+                }
+                html += `</figure>`;
+                break;
+            case 'quote':
+                html += `<blockquote>`;
+                html += `<p>${block.data.text}</p>`;
+                if (block.data.caption) {
+                    html += `<cite>${block.data.caption}</cite>`;
+                }
+                html += `</blockquote>`;
+                break;
+            case 'delimiter':
+                html += `<hr>`;
+                break;
+            case 'table':
+                html += `<table>`;
+                if (block.data.content) {
+                    block.data.content.forEach((row, index) => {
+                        html += `<tr>`;
+                        row.forEach(cell => {
+                            const tag = index === 0 && block.data.withHeadings ? 'th' : 'td';
+                            html += `<${tag}>${cell}</${tag}>`;
+                        });
+                        html += `</tr>`;
+                    });
+                }
+                html += `</table>`;
+                break;
+            default:
+                // For any unknown block type, try to render as paragraph
+                if (block.data.text) {
+                    html += `<p>${block.data.text}</p>`;
+                }
+        }
+    });
+    
+    return html;
+}
+
+// Destroy CKEditor instance
+window.destroyCKEditor = function(selector) {
+    const editor = window.ckEditorInstances[selector];
+    if (editor) {
+        editor.destroy()
+            .then(() => {
+                delete window.ckEditorInstances[selector];
+                console.log('CKEditor destroyed:', selector);
+            })
+            .catch(error => {
+                console.error('Error destroying CKEditor:', error);
+            });
+    }
+};
+
+// Get CKEditor instance
+window.getCKEditor = function(selector) {
+    return window.ckEditorInstances[selector];
+};
+
+// Export for module usage
+export { initCKEditor, destroyCKEditor, getCKEditor };

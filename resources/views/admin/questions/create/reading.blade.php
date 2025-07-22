@@ -79,9 +79,7 @@
                                                 <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
                                             </span>
                                         </div>
-                                        <div class="border border-gray-300 rounded-md overflow-hidden" style="height: 400px;">
-                                            <textarea id="content" name="content" class="tinymce">{{ old('content') }}</textarea>
-                                        </div>
+                                        <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                                     </div>
                                     
                                     <!-- Blanks Manager -->
@@ -110,9 +108,7 @@
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                             Passage Content <span class="text-red-500">*</span>
                                         </label>
-                                        <div class="border border-gray-300 rounded-md overflow-hidden" style="height: 500px;">
-                                            <textarea id="passage_text" name="passage_text" class="tinymce-passage">{{ old('passage_text') }}</textarea>
-                                        </div>
+                                        <textarea id="passage_text" name="passage_text" class="tinymce-editor">{{ old('passage_text') }}</textarea>
                                     </div>
                                 </div>
                                 
@@ -251,31 +247,113 @@
             transform: translateY(0);
             opacity: 1;
         }
-        
-        /* Responsive improvements */
-        @media (max-width: 640px) {
-            .tox-tinymce {
-                height: 300px !important;
-            }
-        }
     </style>
     @endpush
     
     @push('scripts')
-    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
+    <!-- TinyMCE CDN -->
+    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    
     <script>
-    // All Reading specific functionality
-    let passageEditor = null;
+    // Global variables
     let contentEditor = null;
+    let passageEditor = null;
     let blankCounter = 0;
     let dropdownCounter = 0;
-
+    
+    // Initialize TinyMCE
+    function initTinyMCE(selector, fillBlanksMode = false) {
+        const config = {
+            selector: selector,
+            height: selector.includes('passage') ? 500 : 400,
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+            ],
+            toolbar: fillBlanksMode ? 
+                'undo redo | bold italic underline | alignleft aligncenter alignright | bullist numlist | removeformat code' :
+                'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
+            images_upload_url: '{{ route("admin.questions.upload.image") }}',
+            images_upload_base_path: '/',
+            images_upload_credentials: true,
+            automatic_uploads: true,
+            images_upload_handler: function (blobInfo, success, failure, progress) {
+                return new Promise(function(resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.withCredentials = false;
+                    xhr.open('POST', '{{ route("admin.questions.upload.image") }}');
+                    
+                    // Set the X-CSRF-TOKEN header
+                    xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+                    
+                    xhr.upload.onprogress = function (e) {
+                        progress(e.loaded / e.total * 100);
+                    };
+                    
+                    xhr.onload = function() {
+                        if (xhr.status < 200 || xhr.status >= 300) {
+                            reject('HTTP Error: ' + xhr.status);
+                            return;
+                        }
+                        
+                        try {
+                            const json = JSON.parse(xhr.responseText);
+                            console.log('Upload response:', json);
+                            
+                            if (!json || !json.success) {
+                                reject('Upload failed: ' + (json.message || 'Unknown error'));
+                                return;
+                            }
+                            
+                            // Return the URL directly
+                            resolve(json.url);
+                        } catch (e) {
+                            reject('Invalid JSON response: ' + xhr.responseText);
+                        }
+                    };
+                    
+                    xhr.onerror = function () {
+                        reject('Image upload failed due to a network error.');
+                    };
+                    
+                    const formData = new FormData();
+                    formData.append('image', blobInfo.blob(), blobInfo.filename());
+                    
+                    xhr.send(formData);
+                });
+            },
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                    
+                    // Check for fill blanks
+                    if (fillBlanksMode) {
+                        updateBlanks();
+                    }
+                });
+                
+                // Store editor reference
+                if (selector.includes('content')) {
+                    contentEditor = editor;
+                } else if (selector.includes('passage')) {
+                    passageEditor = editor;
+                }
+            }
+        };
+        
+        tinymce.init(config);
+    }
+    
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize TinyMCE
-        initializeTinyMCE();
+        // Initialize TinyMCE for content
+        const questionType = document.getElementById('question_type');
+        const isFillBlanks = questionType && questionType.value === 'fill_blanks';
+        
+        initTinyMCE('#content', isFillBlanks);
 
         // Setup question type handler
-        const questionType = document.getElementById('question_type');
         if (questionType) {
             questionType.addEventListener('change', handleReadingQuestionTypeChange);
             if (questionType.value) {
@@ -316,18 +394,22 @@
                     return false;
                 }
 
-                if (typeof tinymce !== 'undefined') {
-                    tinymce.triggerSave();
+                // Save TinyMCE content
+                if (contentEditor) {
+                    contentEditor.save();
+                }
+                
+                if (passageEditor) {
+                    passageEditor.save();
                 }
 
-                if (questionType === 'passage' && passageEditor) {
-                    const passageContent = passageEditor.getContent();
+                if (questionType === 'passage') {
+                    const passageContent = document.getElementById('passage_text').value;
                     if (!passageContent.trim()) {
                         e.preventDefault();
                         alert('Please enter passage content');
                         return false;
                     }
-                    document.getElementById('passage_text').value = passageContent;
                     document.getElementById('content').value = passageContent;
                 }
 
@@ -335,50 +417,6 @@
             });
         }
     });
-
-    // Initialize TinyMCE with professional settings
-    function initializeTinyMCE() {
-        const commonConfig = {
-            height: '100%',
-            menubar: true,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'table', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | table | code | fullscreen',
-            content_style: `
-                body { 
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-                    font-size: 14px; 
-                    line-height: 1.6; 
-                    color: #374151;
-                    padding: 12px;
-                }
-                p { margin: 0 0 10px 0; }
-            `,
-            toolbar_mode: 'sliding',
-            contextmenu: false,
-            branding: false,
-            resize: false,
-            elementpath: false
-        };
-
-        // Initialize content editor
-        tinymce.init({
-            ...commonConfig,
-            selector: '#content',
-            setup: function(editor) {
-                contentEditor = editor;
-                
-                editor.on('NodeChange KeyUp', function() {
-                    if (document.getElementById('question_type')?.value === 'fill_blanks') {
-                        updateBlanks();
-                    }
-                });
-            }
-        });
-    }
 
     // Handle question type changes
     function handleReadingQuestionTypeChange() {
@@ -438,67 +476,10 @@
             passageContentField?.classList.remove('hidden');
             passageTitleField?.classList.remove('hidden');
 
-            // Initialize passage editor with base64 image support
-            if (!passageEditor && typeof tinymce !== 'undefined') {
+            // Initialize passage editor with TinyMCE
+            if (!passageEditor) {
                 setTimeout(() => {
-                    tinymce.init({
-                        selector: '.tinymce-passage',
-                        height: 600,
-                        menubar: true,
-                        plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount paste',
-                        toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | image media | removeformat | code | fullscreen',
-                        
-                        // Base64 image support
-                        paste_data_images: true,
-                        
-                        // Simple file picker for images
-                        file_picker_callback: function(callback, value, meta) {
-                            if (meta.filetype === 'image') {
-                                const input = document.createElement('input');
-                                input.setAttribute('type', 'file');
-                                input.setAttribute('accept', 'image/*');
-                                
-                                input.onchange = function() {
-                                    const file = this.files[0];
-                                    const reader = new FileReader();
-                                    
-                                    reader.onload = function() {
-                                        callback(reader.result, {
-                                            title: file.name
-                                        });
-                                    };
-                                    
-                                    reader.readAsDataURL(file);
-                                };
-                                
-                                input.click();
-                            }
-                        },
-                        
-                        content_style: `
-                            body { 
-                                font-family: Georgia, 'Times New Roman', serif; 
-                                font-size: 16px; 
-                                line-height: 1.8; 
-                                color: #1F2937;
-                                padding: 20px;
-                            }
-                            h1, h2, h3 { 
-                                font-weight: bold;
-                                margin: 1em 0 0.5em 0;
-                            }
-                            img {
-                                max-width: 100%;
-                                height: auto;
-                                margin: 1em 0;
-                            }
-                        `,
-                        branding: false,
-                        resize: false,
-                        setup: function (editor) {
-                            passageEditor = editor;
-                        }
-                    });
+                    initTinyMCE('#passage_text', false);
                 }, 100);
             }
 
@@ -513,8 +494,28 @@
             if (blankButtons) blankButtons.style.display = 'flex';
             blanksManager?.classList.remove('hidden');
             
+            // Re-initialize editor for fill blanks mode
+            if (contentEditor) {
+                contentEditor.destroy();
+                setTimeout(() => {
+                    initTinyMCE('#content', true);
+                }, 100);
+            }
+            
             // Initial update
             setTimeout(updateBlanks, 500);
+        } else {
+            // Re-initialize normal editor if coming from fill blanks
+            if (contentEditor && blankButtons && blankButtons.style.display === 'flex') {
+                const content = contentEditor.getContent();
+                contentEditor.destroy();
+                setTimeout(() => {
+                    initTinyMCE('#content', false);
+                    if (contentEditor) {
+                        contentEditor.setContent(content);
+                    }
+                }, 100);
+            }
         }
     }
 
@@ -616,38 +617,36 @@
 
     // Insert blank function
     window.insertBlank = function() {
-        if (!contentEditor && typeof tinymce !== 'undefined') {
-            contentEditor = tinymce.get('content');
+        if (!contentEditor) {
+            return;
         }
         
-        if (contentEditor) {
-            blankCounter++;
-            const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[____${blankCounter}____]</span>&nbsp;`;
-            contentEditor.insertContent(blankHtml);
-            
-            showNotification(`Blank ${blankCounter} added`, 'success');
-            
-            setTimeout(updateBlanks, 100);
-        }
+        blankCounter++;
+        const blankText = `[____${blankCounter}____]`;
+        
+        contentEditor.insertContent(blankText);
+        
+        showNotification(`Blank ${blankCounter} added`, 'success');
+        
+        setTimeout(updateBlanks, 100);
     };
 
-    // Insert dropdown function
+    // Insert dropdown function  
     window.insertDropdown = function() {
-        if (!contentEditor && typeof tinymce !== 'undefined') {
-            contentEditor = tinymce.get('content');
+        if (!contentEditor) {
+            return;
         }
         
-        if (contentEditor) {
-            const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
-            if (options) {
-                dropdownCounter++;
-                const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${dropdownCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${dropdownCounter}]</span>&nbsp;`;
-                contentEditor.insertContent(dropdownHtml);
-                
-                showNotification(`Dropdown ${dropdownCounter} added`, 'success');
-                
-                setTimeout(updateBlanks, 100);
-            }
+        const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
+        if (options) {
+            dropdownCounter++;
+            const dropdownText = `[DROPDOWN_${dropdownCounter}:${options}]`;
+            
+            contentEditor.insertContent(dropdownText);
+            
+            showNotification(`Dropdown ${dropdownCounter} added`, 'success');
+            
+            setTimeout(updateBlanks, 100);
         }
     };
 
@@ -680,41 +679,31 @@
     };
 
     // Update blanks display
-    function updateBlanks() {
+    window.updateBlanks = function() {
         if (!contentEditor) {
-            contentEditor = tinymce.get('content');
+            return;
         }
-        
-        if (!contentEditor) return;
 
         saveCurrentBlankValues();
 
-        const content = contentEditor.getContent();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-
-        const blanks = tempDiv.querySelectorAll('[data-blank]');
-        const dropdowns = tempDiv.querySelectorAll('[data-dropdown]');
+        const content = contentEditor.getContent({ format: 'text' });
+        
+        // Find all blanks and dropdowns using regex
+        const blankMatches = content.match(/\[____\d+____\]/g) || [];
+        const dropdownMatches = content.match(/\[DROPDOWN_\d+:[^\]]+\]/g) || [];
         
         const blanksManager = document.getElementById('blanks-manager');
         const blanksList = document.getElementById('blanks-list');
 
         if (!blanksManager || !blanksList) return;
 
-        if (blanks.length > 0) {
-            blankCounter = Math.max(...Array.from(blanks).map(b => parseInt(b.getAttribute('data-blank'))));
-        }
-        if (dropdowns.length > 0) {
-            dropdownCounter = Math.max(...Array.from(dropdowns).map(d => parseInt(d.getAttribute('data-dropdown'))));
-        }
-
-        if (blanks.length > 0 || dropdowns.length > 0) {
+        if (blankMatches.length > 0 || dropdownMatches.length > 0) {
             blanksManager.classList.remove('hidden');
             blanksList.innerHTML = '';
 
-            // Add blanks
-            blanks.forEach((blank) => {
-                const num = blank.getAttribute('data-blank');
+            // Process blanks
+            blankMatches.forEach((match) => {
+                const num = match.match(/\d+/)[0];
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
                 
@@ -757,10 +746,11 @@
                 }
             });
 
-            // Add dropdowns
-            dropdowns.forEach((dropdown) => {
-                const num = dropdown.getAttribute('data-dropdown');
-                const options = dropdown.getAttribute('data-options');
+            // Process dropdowns
+            dropdownMatches.forEach((match) => {
+                const parts = match.match(/\[DROPDOWN_(\d+):([^\]]+)\]/);
+                const num = parts[1];
+                const options = parts[2];
 
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
@@ -810,9 +800,17 @@
 
             const counterBadge = document.getElementById('blank-counter');
             if (counterBadge) {
-                const total = blanks.length + dropdowns.length;
+                const total = blankMatches.length + dropdownMatches.length;
                 counterBadge.textContent = total;
                 counterBadge.style.display = total > 0 ? 'inline-flex' : 'none';
+            }
+            
+            // Update counters
+            if (blankMatches.length > 0) {
+                blankCounter = Math.max(...blankMatches.map(m => parseInt(m.match(/\d+/)[0])));
+            }
+            if (dropdownMatches.length > 0) {
+                dropdownCounter = Math.max(...dropdownMatches.map(m => parseInt(m.match(/DROPDOWN_(\d+)/)[1])));
             }
 
         } else {
@@ -822,7 +820,7 @@
                 counterBadge.style.display = 'none';
             }
         }
-    }
+    };
 
     // Save current blank values
     function saveCurrentBlankValues() {
@@ -867,7 +865,7 @@
             delete blankAnswersStore[num];
             
             let content = contentEditor.getContent();
-            const regex = new RegExp(`<span[^>]*data-blank="${num}"[^>]*>\\[____${num}____\\]</span>`, 'g');
+            const regex = new RegExp(`\\[____${num}____\\]`, 'g');
             content = content.replace(regex, '');
             contentEditor.setContent(content);
             
@@ -883,7 +881,7 @@
             delete dropdownStore.correct[num];
             
             let content = contentEditor.getContent();
-            const regex = new RegExp(`<span[^>]*data-dropdown="${num}"[^>]*>\\[DROPDOWN_${num}\\]</span>`, 'g');
+            const regex = new RegExp(`\\[DROPDOWN_${num}:[^\\]]+\\]`, 'g');
             content = content.replace(regex, '');
             contentEditor.setContent(content);
             
@@ -897,30 +895,29 @@
         if (!contentEditor) return;
         
         let content = contentEditor.getContent();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
         
-        const blanks = tempDiv.querySelectorAll('[data-blank]');
-        const newStore = {};
+        // Find all blank patterns
+        const blankRegex = /\[____\d+____\]/g;
+        const matches = content.match(blankRegex) || [];
         
-        blanks.forEach((blank, index) => {
-            const oldNum = blank.getAttribute('data-blank');
+        // Create a new mapping for renumbering
+        const newAnswersStore = {};
+        
+        // Renumber blanks
+        matches.forEach((match, index) => {
+            const oldNum = match.match(/\d+/)[0];
             const newNum = index + 1;
+            content = content.replace(match, `[____${newNum}____]`);
             
-            blank.setAttribute('data-blank', newNum);
-            blank.innerHTML = `[____${newNum}____]`;
-            
+            // Transfer answer data to new number
             if (blankAnswersStore[oldNum]) {
-                newStore[newNum] = blankAnswersStore[oldNum];
+                newAnswersStore[newNum] = blankAnswersStore[oldNum];
             }
         });
         
-        Object.keys(blankAnswersStore).forEach(key => delete blankAnswersStore[key]);
-        Object.assign(blankAnswersStore, newStore);
-        
-        blankCounter = blanks.length;
-        
-        contentEditor.setContent(tempDiv.innerHTML);
+        Object.assign(blankAnswersStore, newAnswersStore);
+        blankCounter = matches.length;
+        contentEditor.setContent(content);
         
         setTimeout(updateBlanks, 100);
     }
@@ -930,20 +927,24 @@
         if (!contentEditor) return;
         
         let content = contentEditor.getContent();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
         
-        const dropdowns = tempDiv.querySelectorAll('[data-dropdown]');
+        // Find all dropdown patterns
+        const dropdownRegex = /\[DROPDOWN_\d+:[^\]]+\]/g;
+        const matches = content.match(dropdownRegex) || [];
+        
         const newOptionsStore = {};
         const newCorrectStore = {};
         
-        dropdowns.forEach((dropdown, index) => {
-            const oldNum = dropdown.getAttribute('data-dropdown');
+        // Renumber dropdowns
+        matches.forEach((match, index) => {
+            const parts = match.match(/\[DROPDOWN_(\d+):([^\]]+)\]/);
+            const oldNum = parts[1];
+            const options = parts[2];
             const newNum = index + 1;
             
-            dropdown.setAttribute('data-dropdown', newNum);
-            dropdown.innerHTML = `[DROPDOWN_${newNum}]`;
+            content = content.replace(match, `[DROPDOWN_${newNum}:${options}]`);
             
+            // Transfer dropdown data to new number
             if (dropdownStore.options[oldNum]) {
                 newOptionsStore[newNum] = dropdownStore.options[oldNum];
             }
@@ -955,9 +956,8 @@
         dropdownStore.options = newOptionsStore;
         dropdownStore.correct = newCorrectStore;
         
-        dropdownCounter = dropdowns.length;
-        
-        contentEditor.setContent(tempDiv.innerHTML);
+        dropdownCounter = matches.length;
+        contentEditor.setContent(content);
         
         setTimeout(updateBlanks, 100);
     }

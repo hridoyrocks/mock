@@ -324,7 +324,11 @@ class ListeningTestController extends Controller
             // If part of full test, update full test attempt
             if ($isPartOfFullTest && $fullTestSectionAttempt) {
                 $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
-                $fullTestAttempt->updateSectionScore('listening', $scoreData['band_score']);
+                // Ensure we have a valid band score before updating
+                $bandScore = $scoreData['band_score'] ?? 0.0;
+                if (is_numeric($bandScore)) {
+                    $fullTestAttempt->updateSectionScore('listening', (float)$bandScore);
+                }
             }
         });
         

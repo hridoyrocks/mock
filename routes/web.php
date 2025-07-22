@@ -89,7 +89,10 @@ Route::get('/maintenance', [App\Http\Controllers\MaintenanceController::class, '
     ->name('maintenance')
     ->middleware('auth');
 
-// Profile routes (authenticated)
+// Audio streaming route
+Route::get('/audio/stream/{recording}', [App\Http\Controllers\AudioStreamController::class, 'stream'])
+    ->name('audio.stream')
+    ->middleware('auth');
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -311,6 +314,10 @@ Route::middleware(['auth'])->group(function () {
     
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        // Test TinyMCE route
+        Route::get('/test-tinymce', function() {
+            return view('admin.test-tinymce');
+        })->name('test-tinymce');
         // Admin Dashboard
         Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/quick-stats', [App\Http\Controllers\Admin\DashboardController::class, 'quickStats'])->name('dashboard.quick-stats');
@@ -362,9 +369,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/reading/{testSet}/passage', [QuestionController::class, 'createReadingPassage'])->name('reading.passage');
             Route::get('/reading/{testSet}/markers', [QuestionController::class, 'getPassageMarkers'])->name('reading.markers');
             
-            Route::post('/admin/upload/image', [ImageUploadController::class, 'upload'])
-                ->middleware(['auth', 'role:admin'])
-                ->name('admin.upload.image');
+            // Image upload route for TinyMCE
+            Route::post('/upload-image', [App\Http\Controllers\Admin\ImageUploadController::class, 'upload'])
+                ->name('upload.image');
 
             // Additional routes
             Route::post('/{question}/duplicate', [QuestionController::class, 'duplicate'])->name('duplicate');

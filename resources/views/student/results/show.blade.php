@@ -567,10 +567,51 @@
                                     </h4>
                                     
                                     @if($answer->speakingRecording)
-                                        <audio controls class="w-full">
-                                            <source src="{{ asset('storage/' . $answer->speakingRecording->file_path) }}" type="audio/mpeg">
-                                            Your browser does not support the audio element.
-                                        </audio>
+                                        @php
+                                            // Get proper audio URL
+                                            // Use proxy route for better compatibility
+                                            $audioUrl = route('audio.stream', $answer->speakingRecording->id);
+                                            $directUrl = $answer->speakingRecording->file_url;
+                                            
+                                            // Debug info
+                                            $debugInfo = [
+                                                'file_path' => $answer->speakingRecording->file_path,
+                                                'direct_url' => $directUrl,
+                                                'proxy_url' => $audioUrl,
+                                                'storage_disk' => $answer->speakingRecording->storage_disk,
+                                                'mime_type' => $answer->speakingRecording->mime_type,
+                                            ];
+                                        @endphp
+                                        
+                                        <div class="mb-3">
+                                            <audio controls class="w-full" preload="metadata" id="audio-{{ $answer->id }}">
+                                                <source src="{{ $audioUrl }}" type="{{ $answer->speakingRecording->mime_type ?? 'audio/webm' }}">
+                                                <source src="{{ $audioUrl }}" type="audio/webm">
+                                                <source src="{{ $audioUrl }}" type="audio/mpeg">
+                                                <source src="{{ $audioUrl }}" type="audio/ogg">
+                                                Your browser does not support the audio element.
+                                            </audio>
+                                            
+                                            <div class="mt-2 text-xs text-gray-500">
+                                                <p>Storage: {{ strtoupper($answer->speakingRecording->storage_disk) }}</p>
+                                                <p>Size: {{ $answer->speakingRecording->formatted_size }}</p>
+                                                @if(config('app.debug'))
+                                                    <details class="mt-1">
+                                                        <summary class="cursor-pointer text-purple-400">Debug Info</summary>
+                                                        <pre class="text-xs bg-black/20 p-2 rounded mt-1">{{ json_encode($debugInfo, JSON_PRETTY_PRINT) }}</pre>
+                                                    </details>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        
+                                        {{-- Add JavaScript to handle errors --}}
+                                        <script>
+                                            document.getElementById('audio-{{ $answer->id }}').addEventListener('error', function(e) {
+                                                console.error('Audio load error for answer {{ $answer->id }}:', e);
+                                                console.log('Audio URL:', '{{ $audioUrl }}');
+                                                console.log('Error details:', e.target.error);
+                                            });
+                                        </script>
                                     @else
                                         <p class="text-gray-500 italic">No recording available.</p>
                                     @endif

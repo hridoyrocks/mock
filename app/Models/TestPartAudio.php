@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class TestPartAudio extends Model
 {
@@ -14,6 +15,8 @@ class TestPartAudio extends Model
         'test_set_id',
         'part_number',
         'audio_path',
+        'audio_url',
+        'storage_disk',
         'audio_duration',
         'audio_size',
         'transcript'
@@ -26,6 +29,29 @@ class TestPartAudio extends Model
     public function testSet(): BelongsTo
     {
         return $this->belongsTo(TestSet::class);
+    }
+
+    /**
+     * Get the audio URL (CDN or local)
+     */
+    public function getAudioUrlAttribute(): string
+    {
+        // If CDN URL is stored, use it
+        if ($this->attributes['audio_url'] ?? null) {
+            return $this->attributes['audio_url'];
+        }
+        
+        // Otherwise generate from path
+        $disk = $this->storage_disk ?? 'public';
+        
+        if ($disk === 'r2') {
+            // Generate R2 URL
+            $baseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            return $baseUrl . '/' . ltrim($this->audio_path, '/');
+        }
+        
+        // Local storage URL
+        return Storage::disk($disk)->url($this->audio_path);
     }
 
     /**

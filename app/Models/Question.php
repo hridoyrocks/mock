@@ -15,6 +15,8 @@ class Question extends Model
     'question_type', 
     'content', 
     'media_path', 
+    'media_url',          // Add this for CDN URLs
+    'storage_disk',       // Add this for storage disk info
     'order_number',
     'part_number',
     'question_group',
@@ -48,6 +50,7 @@ class Question extends Model
     'auto_progress',
     'card_theme',
     'speaking_tips',
+    'use_part_audio',     // Add this
 ];
 
     protected $casts = [
@@ -612,6 +615,33 @@ public function getAudioPathAttribute(): ?string
 public function hasAudio(): bool
 {
     return !empty($this->audio_path);
+}
+
+/**
+ * Get the media URL (handles CDN URLs)
+ */
+public function getMediaUrlAttribute(): ?string
+{
+    if (!$this->media_path) {
+        return null;
+    }
+    
+    // Check if we have a stored CDN URL (for newer uploads)
+    if (isset($this->attributes['media_url'])) {
+        return $this->attributes['media_url'];
+    }
+    
+    // Check storage disk
+    $disk = $this->storage_disk ?? 'public';
+    
+    if ($disk === 'r2') {
+        // Generate R2 CDN URL
+        $baseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        return $baseUrl . '/' . ltrim($this->media_path, '/');
+    }
+    
+    // Local storage URL
+    return asset('storage/' . $this->media_path);
 }
  
 }

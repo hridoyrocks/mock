@@ -219,22 +219,39 @@ class AIEvaluationController extends Controller
                     continue;
                 }
 
-                $audioPath = $answer->speakingRecording->file_path;
-                $fullPath = storage_path('app/public/' . $audioPath);
+                // Get audio path or URL
+                $recording = $answer->speakingRecording;
+                $audioPathOrUrl = null;
                 
-                if (!file_exists($fullPath)) {
-                    Log::error('Audio file not found', [
-                        'path' => $audioPath,
-                        'full_path' => $fullPath
+                if ($recording->storage_disk === 'r2' || $recording->file_url) {
+                    // Use CDN URL
+                    $audioPathOrUrl = $recording->file_url;
+                    Log::info('Using CDN URL for audio', [
+                        'recording_id' => $recording->id,
+                        'url' => $audioPathOrUrl
                     ]);
-                    continue;
+                } else {
+                    // Use local file path
+                    $audioPath = $recording->file_path;
+                    $fullPath = storage_path('app/public/' . $audioPath);
+                    
+                    if (!file_exists($fullPath)) {
+                        Log::error('Audio file not found', [
+                            'path' => $audioPath,
+                            'full_path' => $fullPath
+                        ]);
+                        continue;
+                    }
+                    
+                    $audioPathOrUrl = $this->convertAudioIfNeeded($fullPath);
                 }
 
-                $processedAudioPath = $this->convertAudioIfNeeded($fullPath);
-
                 try {
-                    $evaluation = $this->aiService->evaluateSpeaking(
-                        $processedAudioPath,
+                    // Use CDN-compatible AI service
+                    $aiService = new \App\Services\AI\AIEvaluationServiceWithCDN();
+                    
+                    $evaluation = $aiService->evaluateSpeaking(
+                        $audioPathOrUrl,
                         $answer->question->content,
                         $answer->question->order_number
                     );

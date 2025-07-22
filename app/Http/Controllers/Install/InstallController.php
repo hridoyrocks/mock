@@ -152,6 +152,15 @@ class InstallController extends Controller
             
             // Run seeders for initial data
             $this->seedInitialData();
+            
+            // Now switch to database drivers after tables are created
+            $this->updateEnvFile([
+                'CACHE_STORE' => 'database',
+                'SESSION_DRIVER' => 'database',
+            ]);
+            
+            // Clear config to apply new settings
+            Artisan::call('config:clear');
 
             return response()->json(['success' => true]);
         } catch (Exception $e) {

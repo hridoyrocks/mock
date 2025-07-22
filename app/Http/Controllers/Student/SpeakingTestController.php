@@ -8,6 +8,7 @@ use App\Models\SpeakingRecording;
 use App\Models\StudentAttempt;
 use App\Models\StudentAnswer;
 use App\Models\TestSet;
+use App\Traits\HandlesFileUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 
 class SpeakingTestController extends Controller
 {
+    use HandlesFileUploads;
+    
     /**
      * Display a listing of the available speaking tests.
      */
@@ -155,20 +158,42 @@ class SpeakingTestController extends Controller
         // Check if there's an existing recording
         if ($answer->speakingRecording) {
             // Delete old recording
-            Storage::disk('public')->delete($answer->speakingRecording->file_path);
+            $this->deleteFile(
+                $answer->speakingRecording->file_path, 
+                $answer->speakingRecording->storage_disk
+            );
             $answer->speakingRecording->delete();
         }
         
-        // Store the recording
-        $filePath = $request->file('recording')->store('speaking_recordings', 'public');
+        // Upload recording using trait (to R2 if configured)
+        $result = $this->uploadFile(
+            $request->file('recording'),
+            'speaking-recordings/attempt-' . $attempt->id
+        );
         
-        // Create a new recording
+        if (!$result['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload recording'
+            ]);
+        }
+        
+        // Create a new recording with CDN URL
         SpeakingRecording::create([
             'answer_id' => $answer->id,
-            'file_path' => $filePath,
+            'file_path' => $result['path'],
+            'file_url' => $result['url'],
+            'storage_disk' => $result['disk'],
+            'file_size' => $result['size'],
+            'mime_type' => $result['mime_type']
         ]);
         
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Recording saved successfully',
+            'storage' => strtoupper($result['disk']),
+            'url' => $result['url']
+        ]);
     }
     
     /**

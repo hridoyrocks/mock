@@ -1,0 +1,323 @@
+<template>
+    <div>
+        <ckeditor 
+            :editor="editor" 
+            v-model="editorData" 
+            :config="editorConfig"
+            @ready="onReady"
+            @input="onChange"
+        ></ckeditor>
+        <textarea 
+            :id="textareaId" 
+            :name="name" 
+            style="display: none;"
+            :value="textareaValue"
+        ></textarea>
+    </div>
+</template>
+
+<script>
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import CKEditor from '@ckeditor/ckeditor5-vue';
+
+export default {
+    components: {
+        ckeditor: CKEditor.component
+    },
+    
+    props: {
+        editorId: {
+            type: String,
+            required: true
+        },
+        textareaId: {
+            type: String,
+            required: true
+        },
+        name: {
+            type: String,
+            required: true
+        },
+        value: {
+            type: String,
+            default: ''
+        },
+        placeholder: {
+            type: String,
+            default: 'Start typing...'
+        },
+        minHeight: {
+            type: Number,
+            default: 400
+        }
+    },
+    
+    data() {
+        return {
+            editor: ClassicEditor,
+            editorData: '',
+            textareaValue: '',
+            editorConfig: {
+                placeholder: this.placeholder,
+                toolbar: {
+                    items: [
+                        'heading', '|',
+                        'bold', 'italic', 'link', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', '|',
+                        'imageUpload', 'blockQuote', 'insertTable', '|',
+                        'undo', 'redo'
+                    ]
+                },
+                image: {
+                    toolbar: [
+                        'imageTextAlternative',
+                        'imageStyle:inline',
+                        'imageStyle:block',
+                        'imageStyle:side'
+                    ],
+                    upload: {
+                        // Custom upload adapter
+                        adapter: this.customUploadAdapter
+                    }
+                },
+                table: {
+                    contentToolbar: [
+                        'tableColumn',
+                        'tableRow',
+                        'mergeTableCells'
+                    ]
+                },
+                // Set minimum height
+                height: this.minHeight + 'px'
+            }
+        };
+    },
+    
+    mounted() {
+        // Initialize editor with existing value
+        if (this.value) {
+            try {
+                // Check if value is JSON (from old EditorJS format)
+                const parsedData = JSON.parse(this.value);
+                if (parsedData.blocks) {
+                    // Convert EditorJS blocks to HTML
+                    this.editorData = this.convertEditorJSToHTML(parsedData);
+                } else {
+                    this.editorData = this.value;
+                }
+            } catch (e) {
+                // If not JSON, treat as HTML
+                this.editorData = this.value;
+            }
+        }
+        this.updateTextarea();
+    },
+    
+    methods: {
+        onReady(editor) {
+            // Editor is ready
+            console.log('CKEditor is ready!', editor);
+        },
+        
+        onChange() {
+            this.updateTextarea();
+            this.$emit('change', this.editorData);
+        },
+        
+        updateTextarea() {
+            // Update hidden textarea with HTML content
+            this.textareaValue = this.editorData;
+            if (document.getElementById(this.textareaId)) {
+                document.getElementById(this.textareaId).value = this.editorData;
+            }
+        },
+        
+        // Custom upload adapter for image upload
+        customUploadAdapter(loader) {
+            class UploadAdapter {
+                constructor(loader) {
+                    this.loader = loader;
+                }
+                
+                upload() {
+                    return this.loader.file.then(file => new Promise((resolve, reject) => {
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+                        
+                        fetch('/admin/questions/upload-image', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                resolve({
+                                    default: result.url
+                                });
+                            } else {
+                                reject(result.message || 'Upload failed');
+                            }
+                        })
+                        .catch(error => {
+                            reject(error.message);
+                        });
+                    }));
+                }
+                
+                abort() {
+                    // Handle abort
+                }
+            }
+            
+            return new UploadAdapter(loader);
+        },
+        
+        // Convert EditorJS format to HTML (for backward compatibility)
+        convertEditorJSToHTML(editorJSData) {
+            let html = '';
+            
+            if (!editorJSData.blocks) return '';
+            
+            editorJSData.blocks.forEach(block => {
+                switch (block.type) {
+                    case 'header':
+                        html += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
+                        break;
+                    case 'paragraph':
+                        html += `<p>${block.data.text}</p>`;
+                        break;
+                    case 'list':
+                        const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                        html += `<${tag}>`;
+                        block.data.items.forEach(item => {
+                            html += `<li>${item}</li>`;
+                        });
+                        html += `</${tag}>`;
+                        break;
+                    case 'image':
+                        html += `<figure class="image">`;
+                        html += `<img src="${block.data.file.url}" alt="${block.data.caption || ''}">`;
+                        if (block.data.caption) {
+                            html += `<figcaption>${block.data.caption}</figcaption>`;
+                        }
+                        html += `</figure>`;
+                        break;
+                    case 'quote':
+                        html += `<blockquote>`;
+                        html += `<p>${block.data.text}</p>`;
+                        if (block.data.caption) {
+                            html += `<cite>${block.data.caption}</cite>`;
+                        }
+                        html += `</blockquote>`;
+                        break;
+                    case 'delimiter':
+                        html += `<hr>`;
+                        break;
+                    case 'table':
+                        html += `<table>`;
+                        if (block.data.content) {
+                            block.data.content.forEach((row, index) => {
+                                html += `<tr>`;
+                                row.forEach(cell => {
+                                    const tag = index === 0 && block.data.withHeadings ? 'th' : 'td';
+                                    html += `<${tag}>${cell}</${tag}>`;
+                                });
+                                html += `</tr>`;
+                            });
+                        }
+                        html += `</table>`;
+                        break;
+                    default:
+                        // For any unknown block type, try to render as paragraph
+                        if (block.data.text) {
+                            html += `<p>${block.data.text}</p>`;
+                        }
+                }
+            });
+            
+            return html;
+        },
+        
+        async save() {
+            // Return the current HTML content
+            return this.editorData;
+        }
+    }
+};
+</script>
+
+<style>
+/* CKEditor styles */
+:deep(.ck-editor__editable) {
+    min-height: v-bind('minHeight + "px"');
+}
+
+:deep(.ck-content) {
+    padding: 1rem;
+}
+
+:deep(.ck-content h1) {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+:deep(.ck-content h2) {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+:deep(.ck-content h3) {
+    font-size: 1.17em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+:deep(.ck-content h4) {
+    font-size: 1em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+:deep(.ck-content p) {
+    margin-bottom: 1em;
+}
+
+:deep(.ck-content ul),
+:deep(.ck-content ol) {
+    margin-left: 2em;
+    margin-bottom: 1em;
+}
+
+:deep(.ck-content blockquote) {
+    border-left: 4px solid #e5e7eb;
+    padding-left: 1em;
+    margin: 1em 0;
+    font-style: italic;
+}
+
+:deep(.ck-content img) {
+    max-width: 100%;
+    height: auto;
+}
+
+:deep(.ck-content table) {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+:deep(.ck-content table td),
+:deep(.ck-content table th) {
+    border: 1px solid #ddd;
+    padding: 0.5em;
+}
+
+:deep(.ck-content table th) {
+    background-color: #f3f4f6;
+    font-weight: bold;
+}
+</style>

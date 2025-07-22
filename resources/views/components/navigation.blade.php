@@ -11,20 +11,31 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    
                     @if(auth()->user() && !auth()->user()->is_admin)
-                        <x-nav-link :href="route('student.index')" :active="request()->routeIs('student.index')">
-                            {{ __('Tests') }}
+                        <x-nav-link :href="route('student.dashboard')" :active="request()->routeIs('student.dashboard')">
+                            {{ __('Dashboard') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('student.results')" :active="request()->routeIs('student.results')">
+                        <x-nav-link :href="route('student.listening.index')" :active="request()->routeIs('student.listening.*')">
+                            {{ __('Listening') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('student.reading.index')" :active="request()->routeIs('student.reading.*')">
+                            {{ __('Reading') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('student.writing.index')" :active="request()->routeIs('student.writing.*')">
+                            {{ __('Writing') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('student.speaking.index')" :active="request()->routeIs('student.speaking.*')">
+                            {{ __('Speaking') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('student.results')" :active="request()->routeIs('student.results*')">
                             {{ __('My Results') }}
                         </x-nav-link>
                     @endif
                     
                     @if(auth()->user() && auth()->user()->is_admin)
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('admin.sections.index')" :active="request()->routeIs('admin.sections.*')">
                             {{ __('Test Sections') }}
                         </x-nav-link>

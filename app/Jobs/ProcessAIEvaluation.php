@@ -6,6 +6,7 @@ namespace App\Jobs;
 use App\Models\StudentAttempt;
 use App\Models\AIEvaluationJob;
 use App\Services\AI\AIEvaluationService;
+use App\Services\AI\AIEvaluationServiceWithCDN;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -31,8 +32,11 @@ class ProcessAIEvaluation implements ShouldQueue
         $this->attempt = $evaluationJob->attempt;
     }
 
-    public function handle(AIEvaluationService $aiService)
+    public function handle()
     {
+        // Use CDN-compatible service
+        $aiService = new AIEvaluationServiceWithCDN();
+        
         try {
             Log::info('Starting AI evaluation job', [
                 'job_id' => $this->evaluationJob->id,
@@ -60,7 +64,7 @@ class ProcessAIEvaluation implements ShouldQueue
         }
     }
 
-    protected function processSpeakingEvaluation(AIEvaluationService $aiService)
+    protected function processSpeakingEvaluation($aiService)
     {
         $answers = $this->attempt->answers()
             ->with('question', 'speakingRecording')
@@ -87,21 +91,30 @@ class ProcessAIEvaluation implements ShouldQueue
                 continue;
             }
 
-            // Get audio file path
-            $audioPath = storage_path('app/public/' . $answer->speakingRecording->file_path);
+            // Get audio file path or URL
+            $recording = $answer->speakingRecording;
+            $audioPathOrUrl = null;
             
-            if (!file_exists($audioPath)) {
-                Log::warning('Audio file not found', ['path' => $audioPath]);
-                continue;
+            // Check if recording has CDN URL
+            if ($recording->file_url) {
+                $audioPathOrUrl = $recording->file_url;
+            } elseif ($recording->storage_disk === 'r2') {
+                // Generate CDN URL
+                $audioPathOrUrl = $recording->getFileUrlAttribute();
+            } else {
+                // Use local path
+                $audioPathOrUrl = storage_path('app/public/' . $recording->file_path);
+                
+                if (!file_exists($audioPathOrUrl)) {
+                    Log::warning('Audio file not found', ['path' => $audioPathOrUrl]);
+                    continue;
+                }
             }
 
-            // Convert audio format if needed
-            $processedPath = $this->convertAudioIfNeeded($audioPath);
-
             try {
-                // Call AI service
+                // Call AI service (now handles both local files and CDN URLs)
                 $evaluation = $aiService->evaluateSpeaking(
-                    $processedPath,
+                    $audioPathOrUrl,
                     $answer->question->content,
                     $answer->question->order_number
                 );
@@ -153,7 +166,7 @@ class ProcessAIEvaluation implements ShouldQueue
         $this->attempt->user->incrementAIEvaluationCount();
     }
 
-    protected function processWritingEvaluation(AIEvaluationService $aiService)
+    protected function processWritingEvaluation($aiService)
     {
         $answers = $this->attempt->answers()
             ->with('question')

@@ -71,7 +71,22 @@ class SocialAuthController extends Controller
         }
 
         $locationData = $this->locationService->getLocation($request->ip());
-        $countries = \Countries::all()->pluck('name.common', 'cca2');
+        $countries = collect([
+            'BD' => 'Bangladesh',
+            'US' => 'United States',
+            'GB' => 'United Kingdom',
+            'CA' => 'Canada',
+            'AU' => 'Australia',
+            'IN' => 'India',
+            'PK' => 'Pakistan',
+            'AE' => 'United Arab Emirates',
+            'SA' => 'Saudi Arabia',
+            'MY' => 'Malaysia',
+            'SG' => 'Singapore',
+            'QA' => 'Qatar',
+            'KW' => 'Kuwait',
+            'OM' => 'Oman'
+        ]);
 
         return view('auth.social-complete', [
             'socialData' => session('social_auth'),
@@ -83,7 +98,7 @@ class SocialAuthController extends Controller
     public function complete(Request $request)
     {
         $request->validate([
-            'phone_number' => 'required|phone:AUTO',
+            'phone_number' => 'required|phone:' . $request->country_code . ',mobile',
             'country_code' => 'required|string|size:2',
         ]);
 

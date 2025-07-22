@@ -121,7 +121,7 @@ class AIEvaluationService
     /**
      * Transcribe audio using Whisper API
      */
-    private function transcribeAudio(string $audioPath): string
+    protected function transcribeAudio(string $audioPath): string
     {
         try {
             $fullPath = $audioPath;
@@ -168,7 +168,7 @@ class AIEvaluationService
     }
 
     // Rest of the methods remain the same...
-    private function buildWritingPrompt(string $text, string $question, int $taskNumber): string
+    protected function buildWritingPrompt(string $text, string $question, int $taskNumber): string
     {
         $wordCount = str_word_count($text);
         $requiredWords = $taskNumber === 1 ? 150 : 250;
@@ -198,7 +198,7 @@ Please provide a detailed evaluation in JSON format with the following structure
 }";
     }
 
-    private function buildSpeakingPrompt(string $transcription, string $question, int $partNumber): string
+    protected function buildSpeakingPrompt(string $transcription, string $question, int $partNumber): string
     {
         $wordCount = str_word_count($transcription);
         $duration = $this->estimateSpeakingDuration($wordCount);
@@ -229,7 +229,7 @@ Please provide a detailed evaluation in JSON format with the following structure
 }";
     }
 
-    private function getWritingSystemPrompt(): string
+    protected function getWritingSystemPrompt(): string
     {
         return "You are an expert IELTS examiner evaluating Writing responses. 
         Evaluate based on the official IELTS criteria:
@@ -242,7 +242,7 @@ Please provide a detailed evaluation in JSON format with the following structure
         Return your evaluation as a valid JSON object only, with no additional text.";
     }
 
-    private function getSpeakingSystemPrompt(): string
+    protected function getSpeakingSystemPrompt(): string
     {
         return "You are an expert IELTS examiner evaluating Speaking responses.
         Evaluate based on the official IELTS criteria:
@@ -255,7 +255,7 @@ Please provide a detailed evaluation in JSON format with the following structure
         Return your evaluation as a valid JSON object only, with no additional text.";
     }
 
-    private function formatWritingEvaluation(array $evaluation, string $originalText): array
+    protected function formatWritingEvaluation(array $evaluation, string $originalText): array
     {
         return [
             'band_score' => $evaluation['overall_band_score'] ?? 0,
@@ -279,7 +279,7 @@ Please provide a detailed evaluation in JSON format with the following structure
         ];
     }
 
-    private function formatSpeakingEvaluation(array $evaluation, string $transcription): array
+    protected function formatSpeakingEvaluation(array $evaluation, string $transcription): array
     {
         return [
             'band_score' => $evaluation['overall_band_score'] ?? 0,
@@ -303,7 +303,7 @@ Please provide a detailed evaluation in JSON format with the following structure
         ];
     }
 
-    private function estimateSpeakingDuration(int $wordCount): string
+    protected function estimateSpeakingDuration(int $wordCount): string
     {
         $minutes = round($wordCount / 155, 1);
         

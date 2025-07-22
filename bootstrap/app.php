@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Load installer routes if not installed
             if (!file_exists(storage_path('installed')) && !env('APP_INSTALLED', false)) {
                 $router->middleware('web')
+                    ->prefix('install')
                     ->group(base_path('routes/installer.php'));
             }
         },

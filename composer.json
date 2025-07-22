@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "aws/aws-sdk-php": "^3.351",
         "barryvdh/laravel-dompdf": "^3.1",
         "doctrine/dbal": "^4.2",
         "endroid/qr-code": "^5.0",
@@ -20,6 +21,7 @@
         "laravel/sanctum": "^4.1",
         "laravel/socialite": "^5.21",
         "laravel/tinker": "^2.10.1",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "openai-php/laravel": "^0.13.0",
         "propaganistas/laravel-phone": "^6.0",
         "rappasoft/laravel-authentication-log": "^5.0",

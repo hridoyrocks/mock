@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TestSet;
 use App\Models\TestPartAudio;
+use App\Traits\HandlesFileUploads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 
 class TestPartAudioController extends Controller
 {
+    use HandlesFileUploads;
+    
     /**
      * Show part audios management page
      */
@@ -34,7 +37,7 @@ class TestPartAudioController extends Controller
     {
         $request->validate([
             'part_number' => 'required|integer|min:1|max:4',
-            'audio' => 'required|file|mimes:mp3,wav,ogg|max:51200', // 50MB max
+            'audio' => 'required|file|mimes:mp3,wav,ogg,webm|max:51200', // 50MB max
             'transcript' => 'nullable|string'
         ]);
         
@@ -45,16 +48,22 @@ class TestPartAudioController extends Controller
                 ->first();
             
             // Delete old audio if exists
-            if ($existingAudio && Storage::disk('public')->exists($existingAudio->audio_path)) {
-                Storage::disk('public')->delete($existingAudio->audio_path);
+            if ($existingAudio) {
+                $this->deleteFile($existingAudio->audio_path, $existingAudio->storage_disk);
             }
             
-            // Upload new audio
-            $audio = $request->file('audio');
-            $path = $audio->store('test-audios/set-' . $testSet->id, 'public');
+            // Upload new audio using trait
+            $result = $this->uploadFile(
+                $request->file('audio'), 
+                'test-audios/set-' . $testSet->id
+            );
+            
+            if (!$result['success']) {
+                throw new \Exception('Failed to upload audio file');
+            }
             
             // Get audio metadata (duration, size)
-            $audioInfo = $this->getAudioInfo(Storage::disk('public')->path($path));
+            $audioInfo = $this->getAudioInfo($request->file('audio'));
             
             // Create or update part audio record
             $partAudio = TestPartAudio::updateOrCreate(
@@ -63,22 +72,25 @@ class TestPartAudioController extends Controller
                     'part_number' => $request->part_number
                 ],
                 [
-                    'audio_path' => $path,
+                    'audio_path' => $result['path'],
+                    'audio_url' => $result['url'],
+                    'storage_disk' => $result['disk'],
                     'audio_duration' => $audioInfo['duration'] ?? null,
-                    'audio_size' => $audio->getSize(),
+                    'audio_size' => $result['size'],
                     'transcript' => $request->transcript
                 ]
             );
             
             return response()->json([
                 'success' => true,
-                'message' => 'Audio uploaded successfully',
+                'message' => 'Audio uploaded successfully to ' . strtoupper($result['disk']),
                 'audio' => [
                     'id' => $partAudio->id,
                     'part_number' => $partAudio->part_number,
-                    'path' => Storage::url($partAudio->audio_path),
+                    'url' => $result['url'],
                     'duration' => $partAudio->formatted_duration,
-                    'size' => $partAudio->formatted_size
+                    'size' => $this->humanFileSize($result['size']),
+                    'storage' => strtoupper($result['disk'])
                 ]
             ]);
             
@@ -120,9 +132,7 @@ class TestPartAudioController extends Controller
         }
         
         // Delete file
-        if (Storage::disk('public')->exists($partAudio->audio_path)) {
-            Storage::disk('public')->delete($partAudio->audio_path);
-        }
+        $this->deleteFile($partAudio->audio_path, $partAudio->storage_disk);
         
         // Delete record
         $partAudio->delete();
@@ -136,20 +146,23 @@ class TestPartAudioController extends Controller
     /**
      * Get audio information using getID3 or ffmpeg
      */
-    private function getAudioInfo($filePath): array
+    private function getAudioInfo($file): array
     {
         // You can use getID3 library or ffmpeg command
-        // For now, returning dummy data
-        // Install: composer require james-heinrich/getid3
+        // For now, returning basic info
         
         try {
-            // If using getID3
-            // $getID3 = new \getID3;
-            // $info = $getID3->analyze($filePath);
-            // return [
-            //     'duration' => $info['playtime_seconds'] ?? 0,
-            //     'bitrate' => $info['bitrate'] ?? 0
-            // ];
+            // If using getID3 (install: composer require james-heinrich/getid3)
+            if (class_exists('\getID3')) {
+                $getID3 = new \getID3;
+                $tempPath = $file->getRealPath();
+                $info = $getID3->analyze($tempPath);
+                
+                return [
+                    'duration' => $info['playtime_seconds'] ?? 0,
+                    'bitrate' => $info['bitrate'] ?? 0
+                ];
+            }
             
             // Simple implementation
             return [

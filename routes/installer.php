@@ -3,7 +3,7 @@
 use App\Http\Controllers\Install\InstallController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('install')->middleware(['web', 'install'])->name('installer.')->group(function () {
+Route::middleware(['web', 'install'])->name('installer.')->group(function () {
     Route::get('/', [InstallController::class, 'welcome'])->name('welcome');
     Route::get('/requirements', [InstallController::class, 'requirements'])->name('requirements');
     Route::get('/permissions', [InstallController::class, 'permissions'])->name('permissions');

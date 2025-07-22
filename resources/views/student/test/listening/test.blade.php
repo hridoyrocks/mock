@@ -1494,10 +1494,11 @@
     @php
         // First try to get part audio
         $partAudio = $testSet->getPartAudio($partNumber);
-        $audioPath = null;
+        $audioUrl = null;
         
         if ($partAudio) {
-            $audioPath = $partAudio->audio_path;
+            // Use the audio_url accessor which handles CDN URLs
+            $audioUrl = $partAudio->audio_url;
         } else {
             // Fallback: Find first question with audio in this part
             $firstQuestionWithAudio = $testSet->questions()
@@ -1507,16 +1508,26 @@
                 ->first();
                 
             if ($firstQuestionWithAudio) {
-                $audioPath = $firstQuestionWithAudio->media_path;
+                // Check if it has a CDN URL
+                if ($firstQuestionWithAudio->media_url) {
+                    $audioUrl = $firstQuestionWithAudio->media_url;
+                } elseif ($firstQuestionWithAudio->storage_disk === 'r2') {
+                    // Generate R2 URL
+                    $baseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+                    $audioUrl = $baseUrl . '/' . ltrim($firstQuestionWithAudio->media_path, '/');
+                } else {
+                    // Local storage URL
+                    $audioUrl = asset('storage/' . $firstQuestionWithAudio->media_path);
+                }
             }
         }
     @endphp
     
-    @if($audioPath)
+    @if($audioUrl)
         <audio id="test-audio-{{ $partNumber }}" preload="auto" style="display:none;">
-            <source src="{{ asset('storage/' . $audioPath) }}" type="audio/mpeg">
-            <source src="{{ asset('storage/' . $audioPath) }}" type="audio/ogg">
-            <source src="{{ asset('storage/' . $audioPath) }}" type="audio/wav">
+            <source src="{{ $audioUrl }}" type="audio/mpeg">
+            <source src="{{ $audioUrl }}" type="audio/ogg">
+            <source src="{{ $audioUrl }}" type="audio/wav">
             Your browser does not support the audio element.
         </audio>
     @else
@@ -1744,10 +1755,57 @@
                     audio.volume = volumeSlider.value / 100;
                 }
                 
-                // Play audio
-                audio.play().catch(e => {
-                    console.log('Audio autoplay blocked:', e);
+                // Add error handling
+                audio.addEventListener('error', function(e) {
+                    console.error('Audio error:', e);
+                    const target = e.target;
+                    let errorMsg = 'Audio playback error';
+                    
+                    // Determine error type
+                    if (target.error) {
+                        switch(target.error.code) {
+                            case target.error.MEDIA_ERR_ABORTED:
+                                errorMsg = 'Audio playback aborted';
+                                break;
+                            case target.error.MEDIA_ERR_NETWORK:
+                                errorMsg = 'Network error while loading audio';
+                                break;
+                            case target.error.MEDIA_ERR_DECODE:
+                                errorMsg = 'Audio decoding error';
+                                break;
+                            case target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                                errorMsg = 'Audio format not supported';
+                                break;
+                        }
+                    }
+                    
+                    // Check source URLs
+                    console.log('Audio sources:');
+                    const sources = audio.querySelectorAll('source');
+                    sources.forEach(source => {
+                        console.log('Source URL:', source.src);
+                    });
+                    
+                    alert(`${errorMsg}. Please refresh the page or contact support if the problem persists.`);
                 });
+                
+                // Add loadeddata event to confirm audio is ready
+                audio.addEventListener('loadeddata', function() {
+                    console.log(`Audio for Part ${partNumber} loaded successfully`);
+                });
+                
+                // Auto-play audio (like real IELTS test)
+                audio.play().catch(e => {
+                    console.error('Audio playback failed:', e);
+                    // In real IELTS, audio plays automatically, so we show a prominent message
+                    alert('Audio playback failed. The test audio should play automatically. Please refresh the page and ensure autoplay is enabled in your browser.');
+                });
+            } else {
+                // Check if no audio message exists
+                const noAudioMsg = document.getElementById(`no-audio-${partNumber}`);
+                if (noAudioMsg) {
+                    console.warn(noAudioMsg.dataset.message);
+                }
             }
         }
         

@@ -20,8 +20,60 @@ function initializeTinyMCE(selector = '.tinymce') {
                 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
                 'insertdatetime', 'media', 'table', 'help', 'wordcount'
             ],
-            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat | help',
             content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.6; }',
+            images_upload_url: '/admin/questions/upload-image',
+            images_upload_base_path: '/',
+            images_upload_credentials: true,
+            automatic_uploads: true,
+            images_upload_handler: function (blobInfo, success, failure, progress) {
+                return new Promise(function(resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.withCredentials = false;
+                    xhr.open('POST', '/admin/questions/upload-image');
+                    
+                    // Get CSRF token from meta tag
+                    const token = document.querySelector('meta[name="csrf-token"]');
+                    if (token) {
+                        xhr.setRequestHeader('X-CSRF-TOKEN', token.content);
+                    }
+                    
+                    xhr.upload.onprogress = function (e) {
+                        progress(e.loaded / e.total * 100);
+                    };
+                    
+                    xhr.onload = function() {
+                        if (xhr.status < 200 || xhr.status >= 300) {
+                            reject('HTTP Error: ' + xhr.status);
+                            return;
+                        }
+                        
+                        try {
+                            const json = JSON.parse(xhr.responseText);
+                            console.log('Upload response:', json);
+                            
+                            if (!json || !json.success) {
+                                reject('Upload failed: ' + (json.message || 'Unknown error'));
+                                return;
+                            }
+                            
+                            // Return the URL directly
+                            resolve(json.url);
+                        } catch (e) {
+                            reject('Invalid JSON response: ' + xhr.responseText);
+                        }
+                    };
+                    
+                    xhr.onerror = function () {
+                        reject('Image upload failed due to a network error.');
+                    };
+                    
+                    const formData = new FormData();
+                    formData.append('image', blobInfo.blob(), blobInfo.filename());
+                    
+                    xhr.send(formData);
+                });
+            },
             setup: function (ed) {
                 editor = ed;
             }
