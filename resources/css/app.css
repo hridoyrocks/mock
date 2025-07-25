@@ -9,6 +9,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* IELTS Test Specific Overrides */
+@layer base {
+    /* Reset for IELTS questions */
+    .ielts-question-item,
+    .ielts-question-item * {
+        all: revert;
+        box-sizing: border-box;
+    }
+    
+    /* Ensure radio buttons look normal */
+    .ielts-question-item input[type="radio"] {
+        -webkit-appearance: radio !important;
+        -moz-appearance: radio !important;
+        appearance: radio !important;
+        opacity: 1 !important;
+        position: static !important;
+        pointer-events: auto !important;
+        margin: 0 !important;
+        width: auto !important;
+        height: auto !important;
+    }
+}
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';

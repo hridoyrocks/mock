@@ -1,22 +1,23 @@
 <x-admin-layout>
     <x-slot:title>Questions Management</x-slot>
     
-    <!-- Main Container -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Header -->
-        <div class="bg-white shadow-sm">
-            <div class="px-4 sm:px-6 lg:px-8">
-                <div class="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <h1 class="text-2xl font-semibold text-gray-900">Question Bank</h1>
-                    <div class="mt-3 sm:mt-0 flex flex-col sm:flex-row gap-2">
-                        <button class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+    <div class="space-y-6">
+        <!-- Page Header -->
+        <div class="bg-white shadow-sm rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Question Bank</h2>
+                        <p class="mt-1 text-sm text-gray-600">Manage all IELTS questions across different test sets</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-file-import mr-2"></i>
                             Import Questions
                         </button>
                         <a href="{{ route('admin.questions.create') }}" 
-                           class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
+                           class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+                            <i class="fas fa-plus mr-2"></i>
                             New Question
                         </a>
                     </div>
@@ -25,105 +26,51 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="px-4 sm:px-6 lg:px-8 py-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                @php
-                    $stats = [
-                        'total' => \App\Models\Question::count(),
-                        'listening' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'listening'))->count(),
-                        'reading' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'reading'))->count(),
-                        'writing' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'writing'))->count(),
-                        'speaking' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'speaking'))->count(),
-                    ];
-                @endphp
-                
-                <div class="bg-white rounded-lg shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            @php
+                $stats = [
+                    'total' => ['count' => \App\Models\Question::count(), 'icon' => 'fas fa-question-circle', 'color' => 'indigo', 'label' => 'Total Questions'],
+                    'listening' => ['count' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'listening'))->count(), 'icon' => 'fas fa-headphones', 'color' => 'purple', 'label' => 'Listening'],
+                    'reading' => ['count' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'reading'))->count(), 'icon' => 'fas fa-book-open', 'color' => 'green', 'label' => 'Reading'],
+                    'writing' => ['count' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'writing'))->count(), 'icon' => 'fas fa-pen-fancy', 'color' => 'blue', 'label' => 'Writing'],
+                    'speaking' => ['count' => \App\Models\Question::whereHas('testSet.section', fn($q) => $q->where('name', 'speaking'))->count(), 'icon' => 'fas fa-microphone', 'color' => 'pink', 'label' => 'Speaking'],
+                ];
+            @endphp
+            
+            @foreach($stats as $key => $stat)
+                <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-200">
                     <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-indigo-500">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-{{ $stat['color'] }}-100 rounded-lg">
+                                <i class="{{ $stat['icon'] }} text-2xl text-{{ $stat['color'] }}-600"></i>
+                            </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Total Questions</p>
-                            <p class="text-2xl font-semibold text-gray-900">{{ $stats['total'] }}</p>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">
+                                    {{ $stat['label'] }}
+                                </dt>
+                                <dd class="text-2xl font-bold text-gray-900">
+                                    {{ number_format($stat['count']) }}
+                                </dd>
+                            </dl>
                         </div>
                     </div>
                 </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-blue-500">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Listening</p>
-                            <p class="text-2xl font-semibold text-gray-900">{{ $stats['listening'] }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-green-500">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Reading</p>
-                            <p class="text-2xl font-semibold text-gray-900">{{ $stats['reading'] }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-lg bg-purple-500">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Writing & Speaking</p>
-                            <p class="text-2xl font-semibold text-gray-900">{{ $stats['writing'] + $stats['speaking'] }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @endforeach
         </div>
 
-        <!-- Main Content Area -->
-        <div class="flex-1 flex overflow-hidden">
-            <!-- Mobile Menu Button -->
-            <button id="mobile-menu-button" class="lg:hidden fixed bottom-4 right-4 z-20 bg-indigo-600 text-white p-3 rounded-full shadow-lg">
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
-
-            <!-- Sidebar -->
-            <div id="sidebar" class="hidden lg:flex lg:flex-shrink-0 fixed lg:relative inset-y-0 left-0 z-30 lg:z-0 w-64 lg:w-80 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
-                <div class="flex flex-col w-full bg-white border-r border-gray-200 h-full">
-                    <!-- Sidebar Header -->
-                    <div class="flex items-center justify-between px-4 py-4 border-b lg:hidden">
-                        <h2 class="text-lg font-semibold">Test Sets</h2>
-                        <button id="close-sidebar" class="text-gray-400 hover:text-gray-600">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+        <!-- Main Content Area with Sidebar -->
+        <div class="flex gap-6">
+            <!-- Sidebar - Test Sets -->
+            <div class="w-80 flex-shrink-0">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-6">
+                    <div class="px-4 py-3 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Test Sets</h3>
+                        <p class="mt-1 text-sm text-gray-500">Select a test set to view questions</p>
                     </div>
 
-                    <!-- Test Sets List -->
-                    <div class="flex-1 overflow-y-auto">
-                        <div class="px-4 py-3 border-b">
-                            <h3 class="text-sm font-medium text-gray-900">Test Sets</h3>
-                            <p class="mt-1 text-xs text-gray-500">Click on a test set to view questions</p>
-                        </div>
-
+                    <div class="max-h-[calc(100vh-300px)] overflow-y-auto">
                         @php
                             $selectedTestSetId = request('test_set');
                             $groupedTestSets = $testSets->groupBy('section.name');
@@ -131,91 +78,154 @@
                         
                         @foreach(['listening', 'reading', 'writing', 'speaking'] as $section)
                             @if(isset($groupedTestSets[$section]) && $groupedTestSets[$section]->count() > 0)
-                                <div class="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    {{ ucfirst($section) }}
+                                <div class="px-4 py-2 bg-gray-50 border-b border-gray-200">
+                                    <div class="flex items-center">
+                                        @php
+                                            $sectionIcons = [
+                                                'listening' => 'fas fa-headphones',
+                                                'reading' => 'fas fa-book-open',
+                                                'writing' => 'fas fa-pen-fancy',
+                                                'speaking' => 'fas fa-microphone'
+                                            ];
+                                            $sectionColors = [
+                                                'listening' => 'purple',
+                                                'reading' => 'green',
+                                                'writing' => 'blue',
+                                                'speaking' => 'pink'
+                                            ];
+                                        @endphp
+                                        <i class="{{ $sectionIcons[$section] }} text-{{ $sectionColors[$section] }}-500 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-700 uppercase">{{ ucfirst($section) }}</span>
+                                    </div>
                                 </div>
                                 @foreach($groupedTestSets[$section] as $testSet)
                                     <a href="#" 
                                        onclick="loadTestSetQuestions({{ $testSet->id }}); return false;"
                                        data-test-set-id="{{ $testSet->id }}"
-                                       class="test-set-link block px-4 py-3 hover:bg-gray-50 {{ $selectedTestSetId == $testSet->id ? 'bg-indigo-50 border-l-4 border-indigo-400' : '' }}">
+                                       class="test-set-link block px-4 py-3 hover:bg-gray-50 transition-colors {{ $selectedTestSetId == $testSet->id ? 'bg-indigo-50 border-l-4 border-indigo-600' : 'border-l-4 border-transparent' }}">
                                         <div class="flex items-center justify-between">
                                             <div class="min-w-0 flex-1">
                                                 <p class="text-sm font-medium text-gray-900 truncate">
                                                     {{ $testSet->title }}
                                                 </p>
-                                                <p class="text-xs text-gray-500">
-                                                    {{ $testSet->questions_count }} questions
-                                                </p>
+                                                <div class="flex items-center mt-1">
+                                                    <span class="text-xs text-gray-500">
+                                                        <i class="fas fa-layer-group mr-1"></i>
+                                                        {{ $testSet->questions_count }} questions
+                                                    </span>
+                                                    @if($testSet->active)
+                                                        <span class="ml-2 w-2 h-2 bg-green-400 rounded-full"></span>
+                                                    @endif
+                                                </div>
                                             </div>
                                             @if($selectedTestSetId == $testSet->id)
-                                                <svg class="h-5 w-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                                </svg>
+                                                <i class="fas fa-chevron-right text-indigo-600"></i>
                                             @endif
                                         </div>
                                     </a>
                                 @endforeach
                             @endif
                         @endforeach
+                        
+                        @if($testSets->isEmpty())
+                            <div class="p-6 text-center">
+                                <i class="fas fa-folder-open text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-sm text-gray-500">No test sets available</p>
+                                <a href="{{ route('admin.test-sets.create') }}" class="text-sm text-indigo-600 hover:text-indigo-700 mt-2 inline-block">
+                                    Create Test Set
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
 
             <!-- Questions Display Area -->
-            <div class="flex-1 flex flex-col overflow-hidden">
-                <div id="questions-container" class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex-1">
+                <div id="questions-container" class="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[600px]">
                     @if($selectedTestSetId && $questions->count() > 0)
-                        <!-- Questions will be loaded here via AJAX -->
                         @include('admin.questions.partials.questions-list', [
                             'questions' => $questions,
                             'selectedTestSet' => $testSets->find($selectedTestSetId)
                         ])
                     @else
                         <!-- Empty State -->
-                        <div class="bg-white shadow rounded-lg h-full">
-                            <div class="px-4 py-12 text-center">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                </svg>
-                                <h3 class="mt-2 text-sm font-medium text-gray-900">Select a test set</h3>
-                                <p class="mt-1 text-sm text-gray-500">Choose a test set from the left panel to view and manage questions.</p>
+                        <div class="flex items-center justify-center h-[600px]">
+                            <div class="text-center">
+                                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                                    <i class="fas fa-clipboard-list text-2xl text-gray-400"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Select a test set</h3>
+                                <p class="text-sm text-gray-500 max-w-sm">Choose a test set from the left panel to view and manage questions.</p>
+                                <div class="mt-6">
+                                    <a href="{{ route('admin.questions.create') }}" 
+                                       class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                        <i class="fas fa-plus mr-2"></i>
+                                        Create New Question
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     @endif
                 </div>
             </div>
         </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <a href="{{ route('admin.questions.create') }}" 
+                   class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+                    <i class="fas fa-plus-circle text-2xl text-indigo-500 group-hover:text-indigo-600 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-gray-900">Create Question</h4>
+                        <p class="text-sm text-gray-500">Add new question</p>
+                    </div>
+                </a>
+                
+                <a href="#" 
+                   class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+                    <i class="fas fa-file-import text-2xl text-green-500 group-hover:text-green-600 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-gray-900">Bulk Import</h4>
+                        <p class="text-sm text-gray-500">Import from CSV</p>
+                    </div>
+                </a>
+                
+                <a href="#" 
+                   class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+                    <i class="fas fa-tags text-2xl text-purple-500 group-hover:text-purple-600 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-gray-900">Question Types</h4>
+                        <p class="text-sm text-gray-500">Manage types</p>
+                    </div>
+                </a>
+                
+                <a href="#" 
+                   class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
+                    <i class="fas fa-chart-bar text-2xl text-orange-500 group-hover:text-orange-600 mr-3"></i>
+                    <div>
+                        <h4 class="font-medium text-gray-900">Analytics</h4>
+                        <p class="text-sm text-gray-500">View statistics</p>
+                    </div>
+                </a>
+            </div>
+        </div>
     </div>
 
-    <!-- Loading Spinner -->
+    <!-- Loading Overlay -->
     <div id="loading-spinner" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-4">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div class="bg-white rounded-lg p-6 shadow-xl">
+            <div class="flex items-center">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                <span class="ml-3 text-gray-700">Loading questions...</span>
+            </div>
         </div>
     </div>
 
     @push('scripts')
     <script>
-        // Mobile menu toggle
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const sidebar = document.getElementById('sidebar');
-        const closeSidebar = document.getElementById('close-sidebar');
-
-        mobileMenuButton?.addEventListener('click', () => {
-            sidebar.classList.remove('hidden');
-            setTimeout(() => {
-                sidebar.classList.remove('-translate-x-full');
-            }, 10);
-        });
-
-        closeSidebar?.addEventListener('click', () => {
-            sidebar.classList.add('-translate-x-full');
-            setTimeout(() => {
-                sidebar.classList.add('hidden');
-            }, 300);
-        });
-
         // Load test set questions via AJAX
         function loadTestSetQuestions(testSetId) {
             // Show loading
@@ -223,9 +233,11 @@
             
             // Update active state
             document.querySelectorAll('.test-set-link').forEach(link => {
-                link.classList.remove('bg-indigo-50', 'border-l-4', 'border-indigo-400');
+                link.classList.remove('bg-indigo-50', 'border-indigo-600');
+                link.classList.add('border-transparent');
                 if (link.dataset.testSetId == testSetId) {
-                    link.classList.add('bg-indigo-50', 'border-l-4', 'border-indigo-400');
+                    link.classList.add('bg-indigo-50', 'border-indigo-600');
+                    link.classList.remove('border-transparent');
                 }
             });
 
@@ -242,19 +254,26 @@
                     
                     // Hide loading
                     document.getElementById('loading-spinner').classList.add('hidden');
-                    
-                    // Close mobile sidebar
-                    if (window.innerWidth < 1024) {
-                        sidebar.classList.add('-translate-x-full');
-                        setTimeout(() => {
-                            sidebar.classList.add('hidden');
-                        }, 300);
-                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     document.getElementById('loading-spinner').classList.add('hidden');
-                    alert('Error loading questions. Please try again.');
+                    
+                    // Show error message
+                    document.getElementById('questions-container').innerHTML = `
+                        <div class="flex items-center justify-center h-[600px]">
+                            <div class="text-center">
+                                <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+                                    <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Error loading questions</h3>
+                                <p class="text-sm text-gray-500">Please try again later.</p>
+                                <button onclick="loadTestSetQuestions(${testSetId})" class="mt-4 text-sm text-indigo-600 hover:text-indigo-700">
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 });
         }
 
@@ -268,14 +287,33 @@
                 location.reload();
             }
         });
+
+        // Initialize tooltips or other UI components if needed
+        document.addEventListener('DOMContentLoaded', function() {
+            // Any initialization code
+        });
     </script>
     @endpush
 
+    @push('styles')
     <style>
-        @media (max-width: 1023px) {
-            #sidebar.hidden {
-                display: flex !important;
-            }
+        /* Custom scrollbar for sidebar */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
         }
     </style>
+    @endpush
 </x-admin-layout>

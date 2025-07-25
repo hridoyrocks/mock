@@ -28,20 +28,20 @@ class SubscriptionExpiring extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
-        $mail = (new MailMessage)
+        return (new MailMessage)
             ->subject('Your subscription expires in ' . $this->daysRemaining . ' days')
-            ->greeting('Hello ' . $notifiable->name . '!');
-
-        if ($this->daysRemaining === 1) {
-            $mail->line('Your ' . $this->subscription->plan->name . ' subscription expires tomorrow!')
-                 ->line('Don\'t lose access to premium features. Renew now to continue your IELTS preparation without interruption.');
-        } else {
-            $mail->line('Your ' . $this->subscription->plan->name . ' subscription will expire in ' . $this->daysRemaining . ' days.')
-                 ->line('Renew your subscription to continue enjoying all premium features.');
-        }
-
-        return $mail->action('Renew Subscription', url('/subscription'))
-                   ->line('If you have any questions, please contact our support team.')
-                   ->salutation('Best regards, The IELTS Practice Team');
+            ->view('emails.subscription-expiring', [
+                'subscription' => $this->subscription->load('plan'),
+                'daysRemaining' => $this->daysRemaining,
+                'totalAchievements' => $notifiable->achievements()->count(),
+                'recentStreak' => $notifiable->activeGoal->current_streak ?? 0,
+                'leaderboardPosition' => $this->getLeaderboardPosition($notifiable)
+            ]);
+    }
+    
+    private function getLeaderboardPosition($user)
+    {
+        // Simple implementation - you can enhance this
+        return \App\Models\LeaderboardEntry::where('score', '>', $user->leaderboard_score ?? 0)->count() + 1;
     }
 }

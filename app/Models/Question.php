@@ -283,8 +283,9 @@ public function getProgressiveSettings()
     $content = $this->content;
     preg_match_all('/\[____\d+____\]/', $content, $blankMatches);
     preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
+    preg_match_all('/\[HEADING_DROPDOWN_\d+\]/', $content, $headingDropdownMatches);
     
-    return count($blankMatches[0]) + count($dropdownMatches[0]);
+    return count($blankMatches[0]) + count($dropdownMatches[0]) + count($headingDropdownMatches[0]);
 }
 
 public function getBlankAnswers(): array
@@ -642,6 +643,180 @@ public function getMediaUrlAttribute(): ?string
     
     // Local storage URL
     return asset('storage/' . $this->media_path);
+}
+
+/**
+ * Get matching headings data
+ */
+public function getMatchingHeadingsData(): array
+{
+    if ($this->question_type !== 'matching_headings') {
+        return [];
+    }
+    
+    $data = $this->section_specific_data ?? [];
+    
+    return [
+        'headings' => $data['headings'] ?? [],
+        'mappings' => $data['mappings'] ?? []
+    ];
+}
+
+/**
+ * Set matching headings data
+ */
+public function setMatchingHeadingsData(array $headings, array $mappings): void
+{
+    $data = $this->section_specific_data ?? [];
+    $data['headings'] = $headings;
+    $data['mappings'] = $mappings;
+    
+    $this->section_specific_data = $data;
+    $this->save();
+}
+
+/**
+ * Check if question has matching headings data
+ */
+public function hasMatchingHeadingsData(): bool
+{
+    if ($this->question_type !== 'matching_headings') {
+        return false;
+    }
+    
+    $data = $this->getMatchingHeadingsData();
+    
+    return !empty($data['headings']) && !empty($data['mappings']);
+}
+
+/**
+ * Check if this is a master matching headings question
+ */
+public function isMasterMatchingHeading(): bool
+{
+    return $this->question_type === 'matching_headings' && 
+           isset($this->section_specific_data['mappings']) && 
+           count($this->section_specific_data['mappings']) > 1;
+}
+
+/**
+ * Get individual question numbers from master
+ */
+public function getIndividualQuestionNumbers(): array
+{
+    if (!$this->isMasterMatchingHeading()) {
+        return [];
+    }
+    
+    $mappings = $this->section_specific_data['mappings'] ?? [];
+    return array_column($mappings, 'question');
+}
+
+/**
+ * Generate display for matching headings in test
+ */
+public function generateMatchingHeadingsDisplay(): array
+{
+    if (!$this->isMasterMatchingHeading()) {
+        return [];
+    }
+    
+    $data = $this->getMatchingHeadingsData();
+    $result = [];
+    
+    // Group data
+    $result['instructions'] = $this->instructions ?? 'Choose the correct heading for each paragraph from the list of headings below.';
+    $result['headings'] = [];
+    
+    // Format headings with letters
+    foreach ($this->options as $index => $option) {
+        $result['headings'][] = [
+            'letter' => chr(65 + $index),
+            'text' => $option->content
+        ];
+    }
+    
+    // Individual questions
+    $result['questions'] = [];
+    foreach ($data['mappings'] as $mapping) {
+        $result['questions'][] = [
+            'number' => $mapping['question'],
+            'paragraph' => $mapping['paragraph'],
+            'correct' => $mapping['correct']
+        ];
+    }
+    
+    return $result;
+}
+
+/**
+ * Get question range string for display (e.g., "14-18")
+ */
+public function getQuestionRangeAttribute(): string
+{
+    if (!$this->isMasterMatchingHeading()) {
+        return (string) $this->order_number;
+    }
+    
+    $numbers = $this->getIndividualQuestionNumbers();
+    if (empty($numbers)) {
+        return (string) $this->order_number;
+    }
+    
+    sort($numbers);
+    return $numbers[0] . '-' . end($numbers);
+}
+
+/**
+ * Count actual questions in master
+ */
+public function getActualQuestionCount(): int
+{
+    if (!$this->isMasterMatchingHeading()) {
+        return 1;
+    }
+    
+    return count($this->section_specific_data['mappings'] ?? []);
+}
+
+/**
+ * Get correct answer for display (handles all question types)
+ */
+public function getCorrectAnswerForDisplay(): string
+{
+    // Multiple choice types
+    if ($this->correctOption()) {
+        return $this->correctOption()->content;
+    }
+    
+    // Fill in the blanks
+    if ($this->section_specific_data && isset($this->section_specific_data['blank_answers'])) {
+        $blankAnswers = $this->section_specific_data['blank_answers'];
+        if (is_array($blankAnswers)) {
+            return implode(', ', $blankAnswers);
+        }
+    }
+    
+    // Single text answer
+    if ($this->section_specific_data && isset($this->section_specific_data['correct_answer'])) {
+        return $this->section_specific_data['correct_answer'];
+    }
+    
+    return 'See explanation';
+}
+
+/**
+ * Get blank answers as array
+ */
+public function getBlankAnswersArray(): array
+{
+    if ($this->section_specific_data && isset($this->section_specific_data['blank_answers'])) {
+        $answers = $this->section_specific_data['blank_answers'];
+        if (is_array($answers)) {
+            return $answers;
+        }
+    }
+    return [];
 }
  
 }

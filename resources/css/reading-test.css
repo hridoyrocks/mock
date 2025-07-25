@@ -304,24 +304,233 @@ body.dragging .split-divider::before {
     border-left: 3px solid #f59e0b;
 }
 
+/* ========== QUESTION INSTRUCTIONS - ENHANCED FOR TINYMCE OUTPUT ========== */
 .question-instructions {
-    background: #eff6ff;
-    padding: 12px 16px;
+    padding: 0 0 16px 0;
     margin-bottom: 16px;
-    border-radius: 6px;
-    border-left: 3px solid #3b82f6;
-    font-size: 13px;
-    color: #1e40af;
+    color: #374151;
+    line-height: 1.6;
+    border-bottom: 1px solid #e5e7eb;
+    /* Inherit font size from TinyMCE content */
 }
 
-/* ========== QUESTION STYLING - IMPROVED READABILITY ========== */
+/* Reset margins for all elements inside instructions */
+.question-instructions * {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.question-instructions *:last-child {
+    margin-bottom: 0;
+}
+
+/* Paragraphs */
+.question-instructions p {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+/* Headings */
+.question-instructions h1,
+.question-instructions h2,
+.question-instructions h3,
+.question-instructions h4,
+.question-instructions h5,
+.question-instructions h6 {
+    font-weight: 600;
+    color: #111827;
+    margin-top: 12px;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.question-instructions h1 { font-size: 24px; }
+.question-instructions h2 { font-size: 20px; }
+.question-instructions h3 { font-size: 18px; }
+.question-instructions h4 { font-size: 16px; }
+.question-instructions h5 { font-size: 14px; }
+.question-instructions h6 { font-size: 14px; }
+
+/* Font sizes from TinyMCE */
+.question-instructions span[style*="font-size"] {
+    /* Preserve inline font-size styles from TinyMCE */
+}
+
+/* Strong and bold */
+.question-instructions strong,
+.question-instructions b {
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Italic and emphasis */
+.question-instructions em,
+.question-instructions i {
+    font-style: italic;
+}
+
+/* Underline */
+.question-instructions u {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* Lists */
+.question-instructions ul,
+.question-instructions ol {
+    margin: 8px 0;
+    padding-left: 24px;
+    line-height: 1.6;
+}
+
+.question-instructions li {
+    margin-bottom: 4px;
+}
+
+.question-instructions ul ul,
+.question-instructions ol ol,
+.question-instructions ul ol,
+.question-instructions ol ul {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+/* Links */
+.question-instructions a {
+    color: #3b82f6;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.question-instructions a:hover {
+    color: #2563eb;
+}
+
+/* Tables */
+.question-instructions table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+}
+
+.question-instructions th,
+.question-instructions td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.question-instructions th {
+    background-color: #f3f4f6;
+    font-weight: 600;
+    color: #111827;
+}
+
+.question-instructions td {
+    background-color: white;
+}
+
+/* Blockquotes */
+.question-instructions blockquote {
+    margin: 12px 0;
+    padding: 12px 16px;
+    padding-left: 16px;
+    border-left: 4px solid #3b82f6;
+    background-color: #f8fafc;
+    color: #4b5563;
+    font-style: italic;
+}
+
+/* Code */
+.question-instructions code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    background-color: #f3f4f6;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: #1f2937;
+}
+
+.question-instructions pre {
+    margin: 12px 0;
+    padding: 12px;
+    background-color: #f3f4f6;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.question-instructions pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Horizontal rule */
+.question-instructions hr {
+    margin: 16px 0;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Images */
+.question-instructions img {
+    max-width: 100%;
+    height: auto;
+    margin: 8px 0;
+    border-radius: 4px;
+}
+
+/* Text alignment */
+.question-instructions .text-left,
+.question-instructions div[style*="text-align: left"] {
+    text-align: left !important;
+}
+
+.question-instructions .text-center,
+.question-instructions div[style*="text-align: center"] {
+    text-align: center !important;
+}
+
+.question-instructions .text-right,
+.question-instructions div[style*="text-align: right"] {
+    text-align: right !important;
+}
+
+.question-instructions .text-justify,
+.question-instructions div[style*="text-align: justify"] {
+    text-align: justify !important;
+}
+
+/* Special formatting for IELTS-style instructions */
+.question-instructions .instruction-nowrap {
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* Prevent line breaks in key phrases */
+.question-instructions strong:has-text("NO MORE THAN"),
+.question-instructions strong:has-text("ONE WORD ONLY"),
+.question-instructions strong:has-text("TRUE/FALSE/NOT GIVEN"),
+.question-instructions strong:has-text("YES/NO/NOT GIVEN") {
+    white-space: nowrap;
+}
+
+/* Highlighted text */
+.question-instructions mark {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+/* ========== QUESTION STYLING - OFFICIAL IELTS FORMAT ========== */
 .question-box {
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: 12px 0;
+    padding: 0 0 20px 0;
     margin-bottom: 20px;
-    font-size: 15px;
+    font-size: 14px;
     transition: all 0.2s ease;
 }
 
@@ -342,34 +551,89 @@ body.dragging .split-divider::before {
 }
 
 .question-number {
-    color: #111827;
-    font-weight: 600;
-    font-size: 15px;
-    margin-bottom: 14px;
-    line-height: 1.6;
+    color: #000000;
+    font-weight: 400;
+    font-size: 14px;
+    margin-bottom: 12px;
+    line-height: 1.5;
 }
 
-.question-number-box {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 32px;
-    height: 26px;
-    background: #ffffff;
-    color: #111827;
-    border: 1px solid #374151;
+/* Just the number styling */
+.q-number {
     font-weight: 700;
-    margin-right: 12px;
-    font-size: 14px;
-    border-radius: 0;
+    color: #000000;
+}
+
+.q-number::after {
+    content: ".";
+}
+
+/* IELTS Question Override Styles */
+.ielts-question-item {
+    margin-bottom: 24px !important;
+}
+
+.ielts-q-number {
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    color: #000000 !important;
+    line-height: 1.5 !important;
+    margin-bottom: 10px !important;
+    display: block !important;
+}
+
+.ielts-options {
+    margin-left: 24px !important;
+    margin-top: 8px !important;
+}
+
+.ielts-option {
+    margin-bottom: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.ielts-radio {
+    margin-right: 8px !important;
+    width: 14px !important;
+    height: 14px !important;
+    cursor: pointer !important;
+}
+
+.ielts-option label {
+    cursor: pointer !important;
+    font-size: 14px !important;
+    color: #000000 !important;
+    font-weight: normal !important;
+}
+
+/* Remove question number box completely - numbers are inside inputs now */
+.question-number-box {
+    display: none !important;
+}
+
+/* Question content .question-number-box also hidden */
+.question-content .question-number-box {
+    display: none !important;
 }
 
 /* Question content for fill-in-the-blanks - IELTS style */
 .question-box.has-blanks .question-content {
-    font-size: 15px;
-    line-height: 2;
-    color: #111827;
-    padding: 4px 0;
+    font-size: 14px; /* Smaller font to match official */
+    line-height: 1.8; /* Tighter line height */
+    color: #000000; /* Pure black */
+    padding: 2px 0;
+}
+
+/* Remove bullet points for fill-in-blanks */
+.question-box.has-blanks {
+    position: relative;
+    padding-left: 0; /* Remove left padding */
+}
+
+/* Remove bullet point */
+.question-box.has-blanks::before {
+    display: none; /* Hide bullet point */
 }
 
 /* Regular question content */
@@ -381,21 +645,6 @@ body.dragging .split-divider::before {
     flex: 1;
 }
 
-/* List style dots for fill-in-blanks */
-.question-box.has-blanks {
-    position: relative;
-    padding-left: 20px;
-}
-
-.question-box.has-blanks::before {
-    content: '•';
-    position: absolute;
-    left: 0;
-    top: 12px;
-    font-size: 20px;
-    color: #374151;
-}
-
 /* Ensure proper spacing for blanks */
 .question-content .gap-input {
     display: inline-block;
@@ -403,95 +652,92 @@ body.dragging .split-divider::before {
     margin: 0 6px;
 }
 
-/* Question number box - IELTS style (larger, black) */
-.question-content .question-number-box {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 32px;
-    height: 26px;
-    background: #ffffff;
-    color: #111827;
-    border: 1px solid #374151;
-    border-radius: 0;
-    font-weight: 700;
-    font-size: 14px;
-    margin-right: 12px;
-    vertical-align: middle;
-}
 
-/* ========== FILL-IN-THE-BLANK STYLING - IELTS OFFICIAL STYLE ========== */
+
+/* ========== FILL-IN-THE-BLANK STYLING - FULL BOX WITH ROUNDED CORNERS ========== */
 .gap-input {
     all: unset;
     display: inline-block;
-    min-width: 80px;
-    max-width: 200px;
-    padding: 4px 12px;
-    margin: 0 4px;
-    border: 1px solid #374151;
-    border-radius: 0;
+    min-width: 50px; /* Smaller width */
+    max-width: 200px; /* Increased for longer answers */
+    width: auto; /* Allow dynamic width */
+    padding: 3px 10px; /* Compact padding */
+    margin: 0 3px;
+    border: 1px solid #000000; /* Full border */
+    border-radius: 4px; /* Rounded corners */
     background: #ffffff;
-    font-size: 15px;
+    font-size: 13px; /* Small font */
     font-family: inherit;
-    color: #111827;
+    color: #000000;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: width 0.2s ease; /* Smooth width transition */
     vertical-align: baseline;
-    line-height: inherit;
+    line-height: 1.4;
+    height: 22px; /* Fixed height for consistency */
     box-sizing: border-box;
 }
 
 .gap-input:hover {
-    border-color: #6b7280;
-    background: #f9fafb;
+    border-color: #000000;
+    background: #ffffff;
 }
 
 .gap-input:focus {
     outline: none;
-    border-color: #3b82f6;
-    background: #eff6ff;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    border-color: #000000;
+    background: #ffffff;
+    box-shadow: none;
 }
 
 .gap-input:not(:placeholder-shown) {
-    border-color: #10b981;
-    background: #f0fdf4;
-    font-weight: 500;
+    border-color: #000000;
+    background: #ffffff;
+    font-weight: normal;
 }
 
 .gap-input::placeholder {
-    color: transparent;
+    color: #000000; /* Black color for number */
+    font-weight: 700; /* Bold */
+    font-size: 12px;
+    opacity: 1; /* Full opacity */
 }
 
-/* ========== DROPDOWN STYLING - SMALLER ========== */
+/* ========== DROPDOWN STYLING - FULL BOX WITH ROUNDED CORNERS ========== */
 .gap-dropdown {
     all: unset;
     display: inline-block;
-    min-width: 120px;
-    padding: 6px 12px;
-    padding-right: 28px;
-    margin: 0 4px;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    background: #fafafa url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236B7280' d='M5 7L1 3h8z'/%3E%3C/svg%3E") no-repeat right 10px center;
-    font-size: 14px;
-    /* Smaller text size */
-    color: #2d3748;
+    min-width: 100px; /* Increased default width */
+    padding: 3px 8px;
+    padding-right: 24px; /* Space for arrow */
+    margin: 0 3px;
+    border: 1px solid #000000; /* Full border */
+    border-radius: 4px; /* Rounded corners */
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23000000' d='M4 5L1 2h6z'/%3E%3C/svg%3E") no-repeat right 8px center;
+    font-size: 13px; /* Small text */
+    color: #000000;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: none;
     vertical-align: middle;
+    height: 28px; /* Fixed height */
+    line-height: 1.4;
 }
 
 .gap-dropdown:hover {
-    border-color: #cbd5e0;
-    background-color: white;
+    border-color: #000000;
+    background-color: #ffffff;
 }
 
 .gap-dropdown:focus {
     outline: none;
-    border-color: #3b82f6;
-    background-color: white;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    border-color: #000000;
+    background-color: #ffffff;
+    box-shadow: none;
+}
+
+/* For dropdown - show number in first option bold */
+.gap-dropdown option:first-child {
+    color: #000000;
+    font-weight: 700;
 }
 
 /* ========== PASSAGE STYLING - SMALLER TEXT WITH PROPER SPACING ========== */
@@ -1009,36 +1255,224 @@ body.dragging .split-divider::before {
     }
 }
 
-/* Complete remaining styles from the original design */
+/* ========== SIMPLE MATCHING HEADINGS ========== */
+/* Keep it minimal - styles handled inline */
 
-/* ========== OPTIONS STYLING ========== */
+
+
+/* ========== IELTS MATCHING DROPDOWN - OFFICIAL STYLE ========== */
+.ielts-matching-dropdown {
+    position: relative;
+    margin-top: 8px;
+}
+
+.ielts-select {
+    width: 100%;
+    max-width: 380px;
+    padding: 10px 14px;
+    padding-right: 40px;
+    border: 2px solid #4B9BFF;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    background-color: #FFFFFF;
+    color: #000000;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%234B9BFF' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px;
+    transition: all 0.3s ease;
+    line-height: 1.5;
+    font-weight: 400;
+}
+
+.ielts-select:hover {
+    border-color: #2E7FDB;
+    box-shadow: 0 2px 8px rgba(75, 155, 255, 0.2);
+}
+
+.ielts-select:focus {
+    outline: none;
+    border-color: #2E7FDB;
+    box-shadow: 0 0 0 3px rgba(75, 155, 255, 0.15);
+}
+
+/* Dropdown opened state */
+.ielts-select:focus,
+.ielts-select:active {
+    background-color: #F0F7FF;
+}
+
+/* Option styles - styled like official IELTS */
+.ielts-select option {
+    padding: 12px 14px;
+    color: #000000;
+    background-color: #FFFFFF;
+    font-size: 14px;
+    line-height: 1.6;
+    font-weight: 400;
+}
+
+.ielts-select option:hover,
+.ielts-select option:focus {
+    background-color: #F0F7FF;
+    color: #000000;
+}
+
+/* First option (placeholder) */
+.ielts-select option:first-child {
+    color: #6B7280;
+    font-style: normal;
+}
+
+.ielts-select option[selected] {
+    background-color: #4B9BFF;
+    color: #FFFFFF;
+}
+
+/* For better dropdown appearance on different browsers */
+@supports (-webkit-appearance: none) {
+    .ielts-select {
+        background-position: right 12px center;
+    }
+}
+
+/* Custom dropdown arrow on hover */
+.ielts-select:hover {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%232E7FDB' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+}
+
+/* Make the dropdown look more like the official test */
+.ielts-matching-dropdown::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 40px;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 20%);
+    pointer-events: none;
+    border-radius: 0 8px 8px 0;
+}
+
+/* Selected state styling */
+.ielts-select.answered {
+    background-color: #E8F4FF;
+    border-color: #2E7FDB;
+}
+
+/* Focus state for parent container */
+.ielts-matching-dropdown.focused::after {
+    display: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .ielts-select {
+        max-width: 100%;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .ielts-select {
+        border-width: 3px;
+    }
+    
+    .ielts-select:focus {
+        outline: 3px solid #000;
+        outline-offset: 2px;
+    }
+}
+
+/* Reduce motion support */
+@media (prefers-reduced-motion: reduce) {
+    .ielts-select {
+        transition: none;
+    }
+}
+
+/* ========== LEGACY DROPDOWN STYLING (for backwards compatibility) ========== */
+.ielts-options select {
+    width: 100% !important;
+    max-width: 300px !important;
+    padding: 8px 12px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    background-color: white !important;
+    color: #000000 !important;
+    cursor: pointer !important;
+    appearance: auto !important;
+    -webkit-appearance: menulist !important;
+    -moz-appearance: menulist !important;
+    background-image: none !important;
+    line-height: 1.5 !important;
+    height: auto !important;
+}
+
+.ielts-options select:hover {
+    border-color: #9ca3af !important;
+}
+
+.ielts-options select:focus {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 1px !important;
+    border-color: #3b82f6 !important;
+}
+
+/* Option styles */
+.ielts-options select option {
+    padding: 4px 8px !important;
+    color: #000000 !important;
+    background-color: white !important;
+}
+
+.ielts-options select option:first-child {
+    color: #6b7280 !important;
+    font-style: italic !important;
+}
+
+/* ========== OPTIONS STYLING - OFFICIAL IELTS STYLE ========== */
 .options-list {
-    margin-left: 0;
-    margin-top: 12px;
+    margin-left: 24px;
+    margin-top: 10px;
 }
 
 .option-item {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     display: flex;
-    align-items: flex-start;
-    padding: 8px 12px;
-    border-radius: 6px;
+    align-items: center;
+    padding: 4px 0;
+    border-radius: 0;
     transition: all 0.2s ease;
     cursor: pointer;
     font-size: 14px;
-    /* Smaller text size */
 }
 
 .option-item:hover {
-    background: #f8f9fa;
+    background: transparent;
 }
 
 .option-radio {
-    margin-right: 10px;
-    margin-top: 2px;
-    width: 16px;
-    height: 16px;
+    margin-right: 8px;
+    margin-top: 0;
+    width: 14px;
+    height: 14px;
     cursor: pointer;
+    accent-color: #000000;
+}
+
+.option-item label {
+    cursor: pointer;
+    color: #000000;
+    line-height: 1.4;
+    font-weight: 400;
 }
 
 /* ========== TEXT INPUT STYLING ========== */

@@ -28,7 +28,7 @@ class ResultController extends Controller
     /**
      * Display the specified result.
      */
-    public function show(StudentAttempt $attempt): View
+    public function show(Request $request, StudentAttempt $attempt): View
     {
         // Ensure the attempt belongs to the authenticated user
         if ($attempt->user_id !== auth()->id()) {
@@ -81,27 +81,79 @@ class ResultController extends Controller
             $correctAnswers = 0;
             $totalQuestions = 0;
             
-            foreach ($attempt->answers as $answer) {
-                // Skip passage type questions
-                if ($answer->question->question_type === 'passage') {
-                    continue;
+            // First, count actual questions (not individual answers)
+            $questions = $attempt->testSet->questions()
+                ->where('question_type', '!=', 'passage')
+                ->get();
+            
+            // Calculate total question count INCLUDING blanks and master questions
+            $totalQuestions = 0;
+            foreach ($questions as $question) {
+                if ($question->isMasterMatchingHeading()) {
+                    // Count individual sub-questions
+                    $totalQuestions += $question->getActualQuestionCount();
+                } else {
+                    $blankCount = $question->countBlanks();
+                    if ($blankCount > 0) {
+                        $totalQuestions += $blankCount;
+                    } else {
+                        $totalQuestions += 1;
+                    }
                 }
+            }
+            
+            // Group answers by question for master matching headings
+            $answersByQuestion = $attempt->answers->groupBy('question_id');
+            
+            foreach ($questions as $question) {
+                $questionAnswers = $answersByQuestion->get($question->id, collect());
                 
-                // Load options for this question
-                $answer->question->load('options');
-                
-                $totalQuestions++;
-                
-                // Check different answer types
-                if ($answer->question->options->count() > 0) {
-                    // Multiple choice type questions
-                    if ($answer->selectedOption && $answer->selectedOption->is_correct) {
-                        $correctAnswers++;
+                if ($question->isMasterMatchingHeading()) {
+                    // Handle master matching headings
+                    foreach ($questionAnswers as $answer) {
+                        if ($answer->answer) {
+                            $answerData = json_decode($answer->answer, true);
+                            if (isset($answerData['sub_question']) && isset($answerData['selected_letter'])) {
+                                // Check if correct based on mappings
+                                $mappings = $question->section_specific_data['mappings'] ?? [];
+                                foreach ($mappings as $mapping) {
+                                    if ($mapping['question'] == $answerData['sub_question'] && 
+                                        $mapping['correct'] == $answerData['selected_letter']) {
+                                        $correctAnswers++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } elseif ($question->countBlanks() > 0) {
+                    // Handle fill-in-the-blanks
+                    $answer = $questionAnswers->first();
+                    if ($answer && $this->checkTextAnswer($answer)) {
+                        // For multi-blank questions, count each correct blank
+                        if ($this->isJson($answer->answer)) {
+                            $studentAnswers = json_decode($answer->answer, true);
+                            $results = $question->checkMultipleBlanks($studentAnswers);
+                            $correctAnswers += $results['correct'];
+                        } else {
+                            $correctAnswers++;
+                        }
                     }
                 } else {
-                    // Text-based answers (fill in the blanks, short answer)
-                    if ($this->checkTextAnswer($answer)) {
-                        $correctAnswers++;
+                    // Regular questions
+                    $answer = $questionAnswers->first();
+                    if ($answer) {
+                        if ($answer->question->options->count() > 0) {
+                            // Multiple choice type questions
+                            if ($answer->selectedOption && $answer->selectedOption->is_correct) {
+                                $correctAnswers++;
+                            }
+                        } else {
+                            // Text-based answers
+                            if ($this->checkTextAnswer($answer)) {
+                                $correctAnswers++;
+                            }
+                        }
                     }
                 }
             }
@@ -109,13 +161,19 @@ class ResultController extends Controller
             // Calculate accuracy percentage
             $accuracy = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
             
+            // Get current page from request
+            $currentPage = $request->get('page', 1);
+            $perPage = 10;
+            
             return view('student.results.show', compact(
                 'attempt', 
                 'correctAnswers', 
                 'totalQuestions', 
                 'accuracy',
                 'passages',
-                'questionsWithMarkers'
+                'questionsWithMarkers',
+                'currentPage',
+                'perPage'
             ));
         }
         
@@ -128,7 +186,10 @@ class ResultController extends Controller
         }
         
         // For manually evaluated sections (Writing and Speaking)
-        return view('student.results.show', compact('attempt', 'passages', 'humanEvaluationRequest'));
+        $currentPage = $request->get('page', 1);
+        $perPage = 10;
+        
+        return view('student.results.show', compact('attempt', 'passages', 'humanEvaluationRequest', 'currentPage', 'perPage'));
     }
     
     /**

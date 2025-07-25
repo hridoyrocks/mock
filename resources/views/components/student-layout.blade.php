@@ -208,19 +208,21 @@
             <!-- Logo Section -->
             <div class="p-6 border-b border-white/10">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
+                    <a href="{{ route('student.dashboard') }}" class="flex items-center">
                         @if($settings->site_logo)
-                            <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_name }}" class="h-12 w-auto">
+                            <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_title }}" class="h-12 w-auto">
                         @else
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center neon-purple">
-                                <i class="fas fa-graduation-cap text-white text-xl"></i>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center neon-purple">
+                                    <i class="fas fa-graduation-cap text-white text-xl"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-white">{{ $settings->site_title }}</h2>
+                                    <p class="text-xs text-gray-400">Master Your Journey</p>
+                                </div>
                             </div>
                         @endif
-                        <div>
-                            <h2 class="text-xl font-bold text-white">{{ $settings->site_name }}</h2>
-                            <p class="text-xs text-gray-400">Master Your Journey</p>
-                        </div>
-                    </div>
+                    </a>
                     <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white">
                         <i class="fas fa-times"></i>
                     </button>
@@ -568,7 +570,6 @@
                 </div>
             </header>
 
-            <!-- Main Content -->
             <!-- Main Content -->
             <main class="flex-1 overflow-y-auto overflow-x-hidden">
                 <div class="min-h-full flex flex-col">

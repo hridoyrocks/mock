@@ -46,9 +46,7 @@
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                             Instructions / Notes
                                         </label>
-                                        <textarea id="instructions" name="instructions" rows="2" 
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-                                                  placeholder="e.g., 'Questions 1-5: Choose the correct letter'">{{ old('instructions') }}</textarea>
+                                        <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions') }}</textarea>
                                     </div>
                                     
                                     <!-- Passage Title Field (for passages only) -->
@@ -70,15 +68,12 @@
                                             <button type="button" onclick="insertBlank()" class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors">
                                                 Insert Blank
                                             </button>
-                                            <button type="button" onclick="insertDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
-                                                Insert Dropdown
-                                            </button>
                                             <span class="text-xs text-gray-500 flex items-center">
                                                 <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
-                                                <span class="mx-1">or</span>
-                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
                                             </span>
                                         </div>
+                                        
+                                        
                                         <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                                     </div>
                                     
@@ -150,6 +145,9 @@
                     <!-- Options Manager -->
                     @include('admin.questions.partials.options-manager')
                     
+                    <!-- Enhanced Matching Headings Manager -->
+                    @include('admin.questions.partials.matching-headings-enhanced')
+                    
                     <!-- Action Buttons -->
                     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky bottom-0 z-10 border-t sm:border-t-0 sm:relative">
                         <div class="flex flex-col sm:flex-row gap-3">
@@ -173,6 +171,30 @@
     
     @push('styles')
     <style>
+        /* Matching Headings Styles */
+        #matching-headings-card {
+            transition: all 0.3s ease;
+        }
+        
+        #matching-headings-container .heading-input:focus,
+        #question-mappings-container .question-select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .heading-input {
+            transition: all 0.2s ease;
+        }
+        
+        .question-select {
+            cursor: pointer;
+        }
+        
+        #matching-headings-container > div:hover,
+        #question-mappings-container > div:hover {
+            transform: translateX(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
         /* Professional styles */
         .blank-placeholder {
             background-color: #FEF3C7;
@@ -254,12 +276,48 @@
     <!-- TinyMCE CDN -->
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     
+    <!-- Matching Headings Fix -->
+    <script src="{{ asset('js/admin/matching-headings-fix.js') }}" defer></script>
+    <script src="{{ asset('js/admin/matching-headings-enhanced-fix.js') }}" defer></script>
+    
     <script>
+    // Pass next question number to JavaScript
+    window.nextQuestionNumber = {{ $nextQuestionNumber ?? 1 }};
+    console.log('Next question number:', window.nextQuestionNumber);
+    
     // Global variables
     let contentEditor = null;
     let passageEditor = null;
+    let instructionEditor = null;
     let blankCounter = 0;
     let dropdownCounter = 0;
+
+    
+    // Initialize simple TinyMCE for instructions
+    function initSimpleTinyMCE(selector) {
+        const config = {
+            selector: selector,
+            height: 150,
+            menubar: false,
+            plugins: [
+                'lists', 'link', 'charmap', 'code'
+            ],
+            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link | removeformat code',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+            content_css: '//www.tiny.cloud/css/codepen.min.css',
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                });
+                
+                if (selector.includes('instructions')) {
+                    instructionEditor = editor;
+                }
+            }
+        };
+        
+        tinymce.init(config);
+    }
     
     // Initialize TinyMCE
     function initTinyMCE(selector, fillBlanksMode = false) {
@@ -273,8 +331,9 @@
                 'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
             ],
             toolbar: fillBlanksMode ? 
-                'undo redo | bold italic underline | alignleft aligncenter alignright | bullist numlist | removeformat code' :
-                'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
+                'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | removeformat code' :
+                'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
             images_upload_url: '{{ route("admin.questions.upload.image") }}',
             images_upload_base_path: '/',
             images_upload_credentials: true,
@@ -352,6 +411,9 @@
         const isFillBlanks = questionType && questionType.value === 'fill_blanks';
         
         initTinyMCE('#content', isFillBlanks);
+        
+        // Initialize simple editor for instructions
+        initSimpleTinyMCE('#instructions');
 
         // Setup question type handler
         if (questionType) {
@@ -359,6 +421,13 @@
             if (questionType.value) {
                 handleReadingQuestionTypeChange.call(questionType);
             }
+        }
+        
+        // Auto-set order number for non-matching-headings questions
+        const orderNumberInput = document.querySelector('input[name="order_number"]');
+        if (orderNumberInput && window.nextQuestionNumber) {
+            orderNumberInput.value = window.nextQuestionNumber;
+            console.log('Order number auto-set to:', window.nextQuestionNumber);
         }
 
         // Add option button handler
@@ -371,13 +440,12 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            if (e.altKey && document.getElementById('question_type')?.value === 'fill_blanks') {
-                if (e.key === 'b' || e.key === 'B') {
+            if (e.altKey) {
+                const questionType = document.getElementById('question_type')?.value;
+                
+                if (questionType === 'fill_blanks' && (e.key === 'b' || e.key === 'B')) {
                     e.preventDefault();
                     insertBlank();
-                } else if (e.key === 'd' || e.key === 'D') {
-                    e.preventDefault();
-                    insertDropdown();
                 }
             }
         });
@@ -402,6 +470,10 @@
                 if (passageEditor) {
                     passageEditor.save();
                 }
+                
+                if (instructionEditor) {
+                    instructionEditor.save();
+                }
 
                 if (questionType === 'passage') {
                     const passageContent = document.getElementById('passage_text').value;
@@ -411,6 +483,97 @@
                         return false;
                     }
                     document.getElementById('content').value = passageContent;
+                }
+                
+                // Handle matching headings data
+                if (questionType === 'matching_headings') {
+                    const dataInput = document.getElementById('matching_headings_data');
+                    if (dataInput) {
+                        const data = JSON.parse(dataInput.value || '{}');
+                        
+                        // Validate headings
+                        if (!data.headings || data.headings.length < 2) {
+                            e.preventDefault();
+                            alert('Please add at least 2 headings');
+                            return false;
+                        }
+                        
+                        // Validate mappings
+                        if (!data.mappings || data.mappings.length === 0) {
+                            e.preventDefault();
+                            alert('Please map all questions to headings');
+                            return false;
+                        }
+                        
+                        // Check if all headings have text
+                        const emptyHeadings = data.headings.filter(h => !h.text.trim());
+                        if (emptyHeadings.length > 0) {
+                            e.preventDefault();
+                            alert('Please fill in all heading texts');
+                            return false;
+                        }
+                        
+                        // Check if all mappings have correct answers
+                        const incompleteMappings = data.mappings.filter(m => !m.correct);
+                        if (incompleteMappings.length > 0) {
+                            e.preventDefault();
+                            alert('Please select correct heading for all questions');
+                            return false;
+                        }
+                        
+                        // Store headings in options format for backward compatibility
+                        data.headings.forEach((heading, index) => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = `options[${index}][content]`;
+                            input.value = heading.text;
+                            form.appendChild(input);
+                        });
+                        
+                        // Store the complete JSON data
+                        const jsonInput = document.createElement('input');
+                        jsonInput.type = 'hidden';
+                        jsonInput.name = 'matching_headings_json';
+                        jsonInput.value = JSON.stringify(data);
+                        form.appendChild(jsonInput);
+                        
+                        // Add a dummy correct_option to satisfy validation (not used for matching_headings)
+                        const dummyCorrectOption = document.createElement('input');
+                        dummyCorrectOption.type = 'hidden';
+                        dummyCorrectOption.name = 'correct_option';
+                        dummyCorrectOption.value = '0';
+                        form.appendChild(dummyCorrectOption);
+                        
+                        // Set marks based on number of questions
+                        const marksInput = document.querySelector('input[name="marks"]');
+                        if (marksInput) {
+                            marksInput.value = data.mappings.length;
+                        }
+                        
+                        // IMPORTANT: Set content field if empty
+                        const contentField = document.getElementById('content');
+                        if (contentField) {
+                            const startNum = parseInt(document.getElementById('mh_start_number')?.value) || 1;
+                            const count = data.mappings.length || 5;
+                            const endNum = startNum + count - 1;
+                            const defaultContent = `Questions ${startNum}-${endNum}\n\nChoose the correct heading for each paragraph from the list of headings below.`;
+                            
+                            // Set content in TinyMCE if exists
+                            if (contentEditor) {
+                                contentEditor.setContent(defaultContent);
+                                contentEditor.save();
+                                console.log('Content set via TinyMCE');
+                            } else {
+                                contentField.value = defaultContent;
+                                console.log('Content set directly');
+                            }
+                            
+                            console.log('Content field set to:', defaultContent);
+                        }
+                        
+                        console.log('Matching Headings submission data:', data);
+                        console.log('Form data being submitted:', new FormData(form));
+                    }
                 }
 
                 return true;
@@ -426,7 +589,9 @@
         const passageTitleField = document.getElementById('passage-title-field');
         const blanksManager = document.getElementById('blanks-manager');
         const blankButtons = document.getElementById('blank-buttons');
+
         const optionsCard = document.getElementById('options-card');
+        const matchingHeadingsCard = document.getElementById('matching-headings-card');
         
         // Find order number wrapper correctly
         const orderNumberInput = document.querySelector('input[name="order_number"]');
@@ -438,7 +603,9 @@
         passageTitleField?.classList.add('hidden');
         blanksManager?.classList.add('hidden');
         if (blankButtons) blankButtons.style.display = 'none';
+
         if (orderNumberWrapper) orderNumberWrapper.style.display = 'block';
+        if (matchingHeadingsCard) matchingHeadingsCard.style.display = 'none';
 
         // Add/remove passage class to form
         const form = document.getElementById('questionForm');
@@ -454,7 +621,7 @@
 
         // Define option types that need the options card
         const optionTypes = ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching',
-            'matching_headings', 'matching_information', 'matching_features'];
+            'matching_information', 'matching_features'];
 
         // Handle options card visibility
         if (optionsCard) {
@@ -463,6 +630,95 @@
                 setupDefaultOptions(type);
             } else {
                 optionsCard.classList.add('hidden');
+            }
+        }
+        
+        // Special handling for matching_headings
+        if (type === 'matching_headings') {
+            console.log('=== Matching Headings Selected ===');
+            
+            if (optionsCard) {
+                optionsCard.classList.add('hidden');
+                console.log('Options card hidden');
+            }
+            
+            // Hide order number, marks and question content fields for matching headings
+            const orderNumberWrapper = document.querySelector('input[name="order_number"]')?.closest('div');
+            const marksWrapper = document.querySelector('input[name="marks"]')?.closest('div');
+            
+            if (orderNumberWrapper) {
+                orderNumberWrapper.style.display = 'none';
+                console.log('Order number field hidden');
+            }
+            if (marksWrapper) {
+                marksWrapper.style.display = 'none';
+                console.log('Marks field hidden');
+            }
+            if (questionContentField) {
+                questionContentField.style.display = 'none';
+                console.log('Question content field hidden');
+            }
+            
+            if (matchingHeadingsCard) {
+                console.log('Matching headings card found, showing...');
+                matchingHeadingsCard.style.display = 'block';
+                
+                // Small delay to ensure DOM is ready
+                setTimeout(() => {
+                    // Initialize matching headings manager
+                    if (window.MatchingHeadingsEnhanced) {
+                        console.log('Initializing MatchingHeadingsEnhanced...');
+                        window.MatchingHeadingsEnhanced.init();
+                        console.log('MatchingHeadingsEnhanced initialized successfully');
+                    } else if (window.MatchingHeadingsManager) {
+                        console.log('Initializing MatchingHeadingsManager (fallback)...');
+                        
+                        // Reset before init to prevent duplicates
+                        window.MatchingHeadingsManager.headingCount = 0;
+                        window.MatchingHeadingsManager.questionCount = 0;
+                        window.MatchingHeadingsManager.headings = [];
+                        window.MatchingHeadingsManager.mappings = [];
+                        
+                        // Clear containers
+                        const headingsContainer = document.getElementById('matching-headings-container');
+                        const mappingsContainer = document.getElementById('question-mappings-container');
+                        if (headingsContainer) headingsContainer.innerHTML = '';
+                        if (mappingsContainer) mappingsContainer.innerHTML = '';
+                        
+                        window.MatchingHeadingsManager.init();
+                        console.log('MatchingHeadingsManager initialized successfully');
+                        
+                        // Hide fallback button if shown
+                        const fallbackBtn = document.getElementById('matching-headings-init-fallback');
+                        if (fallbackBtn) {
+                            fallbackBtn.style.display = 'none';
+                        }
+                    } else {
+                        console.error('No matching headings manager found in window!');
+                        
+                        // Show fallback button
+                        const fallbackBtn = document.getElementById('matching-headings-init-fallback');
+                        if (fallbackBtn) {
+                            fallbackBtn.style.display = 'block';
+                        }
+                    }
+                }, 100);
+            } else {
+                console.error('Matching headings card element not found!');
+            }
+        } else {
+            // Show order number and marks fields for other question types
+            const orderNumberWrapper = document.querySelector('input[name="order_number"]')?.closest('div');
+            const marksWrapper = document.querySelector('input[name="marks"]')?.closest('div');
+            
+            if (orderNumberWrapper && type !== 'passage') {
+                orderNumberWrapper.style.display = 'block';
+            }
+            if (marksWrapper) {
+                marksWrapper.style.display = 'block';
+            }
+            if (questionContentField && type !== 'passage') {
+                questionContentField.style.display = 'block';
             }
         }
 
@@ -631,25 +887,6 @@
         setTimeout(updateBlanks, 100);
     };
 
-    // Insert dropdown function  
-    window.insertDropdown = function() {
-        if (!contentEditor) {
-            return;
-        }
-        
-        const options = prompt('Enter dropdown options separated by comma:\n(e.g., option1, option2, option3)');
-        if (options) {
-            dropdownCounter++;
-            const dropdownText = `[DROPDOWN_${dropdownCounter}:${options}]`;
-            
-            contentEditor.insertContent(dropdownText);
-            
-            showNotification(`Dropdown ${dropdownCounter} added`, 'success');
-            
-            setTimeout(updateBlanks, 100);
-        }
-    };
-
     // Professional notification function
     function showNotification(message, type = 'info') {
         const existing = document.querySelector('.success-notification');
@@ -688,7 +925,7 @@
 
         const content = contentEditor.getContent({ format: 'text' });
         
-        // Find all blanks and dropdowns using regex
+        // Find all blanks, dropdowns, and heading dropdowns using regex
         const blankMatches = content.match(/\[____\d+____\]/g) || [];
         const dropdownMatches = content.match(/\[DROPDOWN_\d+:[^\]]+\]/g) || [];
         
@@ -746,7 +983,7 @@
                 }
             });
 
-            // Process dropdowns
+            // Process dropdowns (keeping for backward compatibility)
             dropdownMatches.forEach((match) => {
                 const parts = match.match(/\[DROPDOWN_(\d+):([^\]]+)\]/);
                 const num = parts[1];
@@ -890,6 +1127,7 @@
         }
     };
 
+
     // Renumber blanks after deletion
     function renumberBlanks() {
         if (!contentEditor) return;
@@ -962,6 +1200,7 @@
         setTimeout(updateBlanks, 100);
     }
 
+
     // Refresh blanks
     window.refreshBlanks = function() {
         updateBlanks();
@@ -970,6 +1209,348 @@
 
     // Make add option available globally
     window.addOption = addOption;
+    
+    // Enhanced Matching Headings Implementation
+    const MatchingHeadingsManager = {
+        headingCount: 0,
+        questionCount: 0,
+        headings: [],
+        mappings: [],
+        
+        init() {
+            console.log('MatchingHeadingsManager.init() called');
+            
+            // Clear any existing event listeners
+            const addHeadingBtn = document.getElementById('add-heading-btn');
+            const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+            
+            if (addHeadingBtn) {
+                // Remove existing listeners
+                const newBtn = addHeadingBtn.cloneNode(true);
+                addHeadingBtn.parentNode.replaceChild(newBtn, addHeadingBtn);
+                
+                // Add new listener
+                document.getElementById('add-heading-btn').addEventListener('click', () => {
+                    console.log('Add heading button clicked');
+                    this.addHeading();
+                });
+            } else {
+                console.error('Add heading button not found!');
+            }
+            
+            if (addQuestionBtn) {
+                // Remove existing listeners
+                const newBtn = addQuestionBtn.cloneNode(true);
+                addQuestionBtn.parentNode.replaceChild(newBtn, addQuestionBtn);
+                
+                // Add new listener
+                document.getElementById('add-question-mapping-btn').addEventListener('click', () => {
+                    console.log('Add question mapping button clicked');
+                    this.addQuestionMapping();
+                });
+            } else {
+                console.error('Add question mapping button not found!');
+            }
+            
+            // Add default items only if containers are empty
+            const headingsContainer = document.getElementById('matching-headings-container');
+            const mappingsContainer = document.getElementById('question-mappings-container');
+            
+            if (headingsContainer && headingsContainer.children.length === 0) {
+                console.log('Adding default headings...');
+                // Add 5 headings by default
+                for (let i = 0; i < 5; i++) {
+                    this.addHeading();
+                }
+            }
+            
+            if (mappingsContainer && mappingsContainer.children.length === 0) {
+                console.log('Adding default question mappings...');
+                // Add 3 question mappings by default
+                for (let i = 0; i < 3; i++) {
+                    this.addQuestionMapping();
+                }
+            }
+            
+            console.log('MatchingHeadingsManager.init() completed');
+        },
+        
+        addHeading(content = '') {
+            const container = document.getElementById('matching-headings-container');
+            if (!container) return;
+            
+            const index = this.headingCount;
+            const letter = String.fromCharCode(65 + index);
+            
+            const headingDiv = document.createElement('div');
+            headingDiv.className = 'flex items-center gap-2 p-3 bg-white rounded border border-gray-200';
+            headingDiv.setAttribute('data-heading-index', index);
+            headingDiv.innerHTML = `
+                <span class="font-semibold text-gray-700 min-w-[30px]">${letter}.</span>
+                <input type="text" 
+                       data-heading-id="${letter}"
+                       value="${content}" 
+                       class="heading-input flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                       placeholder="Enter heading text..." 
+                       onkeyup="MatchingHeadingsManager.updateDropdowns()"
+                       required>
+                <button type="button" onclick="MatchingHeadingsManager.removeHeading(${index})" 
+                        class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(headingDiv);
+            this.headingCount++;
+            
+            // Update counter
+            document.getElementById('heading-count').textContent = `${this.headingCount} headings`;
+            
+            // Enable question mapping button
+            const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+            if (addQuestionBtn && this.headingCount >= 2) {
+                addQuestionBtn.disabled = false;
+            }
+            
+            // Update all dropdowns
+            this.updateDropdowns();
+        },
+        
+        removeHeading(index) {
+            if (this.headingCount <= 2) {
+                alert('You must have at least 2 headings.');
+                return;
+            }
+            
+            const container = document.getElementById('matching-headings-container');
+            const headingDiv = container.querySelector(`[data-heading-index="${index}"]`);
+            if (headingDiv) {
+                headingDiv.remove();
+                this.reindexHeadings();
+            }
+        },
+        
+        reindexHeadings() {
+            const container = document.getElementById('matching-headings-container');
+            const headings = container.querySelectorAll('div');
+            this.headingCount = 0;
+            
+            headings.forEach((heading, index) => {
+                const letter = String.fromCharCode(65 + index);
+                heading.setAttribute('data-heading-index', index);
+                heading.querySelector('span').textContent = letter + '.';
+                heading.querySelector('.heading-input').setAttribute('data-heading-id', letter);
+                
+                const btn = heading.querySelector('button');
+                btn.setAttribute('onclick', `MatchingHeadingsManager.removeHeading(${index})`);
+                
+                this.headingCount++;
+            });
+            
+            // Update counter
+            document.getElementById('heading-count').textContent = `${this.headingCount} headings`;
+            
+            // Update all dropdowns
+            this.updateDropdowns();
+            
+            // Disable add question button if less than 2 headings
+            const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+            if (addQuestionBtn && this.headingCount < 2) {
+                addQuestionBtn.disabled = true;
+            }
+        },
+        
+        addQuestionMapping() {
+            const container = document.getElementById('question-mappings-container');
+            if (!container) return;
+            
+            const index = this.questionCount;
+            const paragraphLetter = String.fromCharCode(65 + index);
+            
+            const mappingDiv = document.createElement('div');
+            mappingDiv.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+            mappingDiv.setAttribute('data-question-index', index);
+            mappingDiv.innerHTML = `
+                <span class="font-medium text-gray-700 min-w-[140px]">
+                    Question ${index + 1} - Paragraph ${paragraphLetter}:
+                </span>
+                <select class="question-select flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        data-question-index="${index}"
+                        onchange="MatchingHeadingsManager.updateMappingData()">
+                    <option value="">Select correct heading</option>
+                    ${this.getHeadingOptions()}
+                </select>
+                <button type="button" onclick="MatchingHeadingsManager.removeQuestionMapping(${index})" 
+                        class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(mappingDiv);
+            this.questionCount++;
+            
+            // Update counter
+            document.getElementById('question-count').textContent = `${this.questionCount} questions`;
+            
+            // Update mapping data
+            this.updateMappingData();
+            
+            // Auto-generate content for matching headings
+            const dataInput = document.getElementById('matching_headings_data');
+            if (dataInput) {
+                const data = JSON.parse(dataInput.value || '{}');
+                if (data.mappings && data.mappings.length > 0) {
+                    // Generate content based on mappings
+                    const questionNumbers = data.mappings.map(m => m.question).join('-');
+                    const paragraphs = data.mappings.map(m => `Paragraph ${m.paragraph}`).join(', ');
+                    
+                    const content = `Questions ${questionNumbers}\n\nChoose the correct heading for ${paragraphs} from the list of headings below.`;
+                    
+                    // Update content field
+                    if (window.contentEditor) {
+                        window.contentEditor.setContent(content);
+                    } else {
+                        const contentField = document.getElementById('content');
+                        if (contentField) {
+                            contentField.value = content;
+                        }
+                    }
+                }
+            }
+        },
+        
+        removeQuestionMapping(index) {
+            const container = document.getElementById('question-mappings-container');
+            const mappingDiv = container.querySelector(`[data-question-index="${index}"]`);
+            if (mappingDiv) {
+                mappingDiv.remove();
+                this.reindexQuestions();
+            }
+        },
+        
+        reindexQuestions() {
+            const container = document.getElementById('question-mappings-container');
+            const questions = container.querySelectorAll('div');
+            this.questionCount = 0;
+            
+            questions.forEach((question, index) => {
+                const paragraphLetter = String.fromCharCode(65 + index);
+                question.setAttribute('data-question-index', index);
+                question.querySelector('span').textContent = `Question ${index + 1} - Paragraph ${paragraphLetter}:`;
+                question.querySelector('.question-select').setAttribute('data-question-index', index);
+                
+                const btn = question.querySelector('button');
+                btn.setAttribute('onclick', `MatchingHeadingsManager.removeQuestionMapping(${index})`);
+                
+                this.questionCount++;
+            });
+            
+            // Update counter
+            document.getElementById('question-count').textContent = `${this.questionCount} questions`;
+            
+            // Update mapping data
+            this.updateMappingData();
+        },
+        
+        getHeadingOptions() {
+            const headings = document.querySelectorAll('.heading-input');
+            let options = '';
+            
+            headings.forEach((heading, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const text = heading.value || `Heading ${letter}`;
+                options += `<option value="${letter}">${letter}. ${text}</option>`;
+            });
+            
+            return options;
+        },
+        
+        updateDropdowns() {
+            const selects = document.querySelectorAll('.question-select');
+            const newOptions = '<option value="">Select correct heading</option>' + this.getHeadingOptions();
+            
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = newOptions;
+                select.value = currentValue; // Restore previous selection
+            });
+            
+            // Update mapping data
+            this.updateMappingData();
+        },
+        
+        updateMappingData() {
+            // Collect all headings
+            this.headings = [];
+            document.querySelectorAll('.heading-input').forEach((input, index) => {
+                const letter = String.fromCharCode(65 + index);
+                this.headings.push({
+                    id: letter,
+                    text: input.value || ''
+                });
+            });
+            
+            // Collect all mappings
+            this.mappings = [];
+            document.querySelectorAll('.question-select').forEach((select, index) => {
+                const paragraphLetter = String.fromCharCode(65 + index);
+                if (select.value) {
+                    this.mappings.push({
+                        question: index + 1,
+                        paragraph: paragraphLetter,
+                        correct: select.value
+                    });
+                }
+            });
+            
+            // Update hidden input with JSON data
+            const dataInput = document.getElementById('matching_headings_data');
+            if (dataInput) {
+                dataInput.value = JSON.stringify({
+                    headings: this.headings,
+                    mappings: this.mappings
+                });
+            }
+            
+            console.log('Updated matching headings data:', {
+                headings: this.headings,
+                mappings: this.mappings
+            });
+        }
+    };
+    
+    // Make it globally available
+    window.MatchingHeadingsManager = MatchingHeadingsManager;
+    
+    // Fix initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add debug logging
+        console.log('DOMContentLoaded - Checking for matching headings...');
+        
+        const questionType = document.getElementById('question_type');
+        if (questionType) {
+            console.log('Current question type:', questionType.value);
+            
+            // Check if matching_headings is already selected
+            if (questionType.value === 'matching_headings') {
+                console.log('Matching headings is selected, initializing...');
+                setTimeout(() => {
+                    const card = document.getElementById('matching-headings-card');
+                    if (card) {
+                        card.style.display = 'block';
+                        window.MatchingHeadingsManager.init();
+                        console.log('MatchingHeadingsManager initialized on load');
+                    } else {
+                        console.error('Matching headings card not found!');
+                    }
+                }, 100);
+            }
+        }
+    });
     </script>
     @endpush
 </x-layout>

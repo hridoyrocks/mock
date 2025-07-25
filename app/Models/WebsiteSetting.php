@@ -11,7 +11,7 @@ class WebsiteSetting extends Model
     use HasFactory;
 
     protected $fillable = [
-        'site_name',
+        'site_title',
         'site_logo',
         'favicon',
         'contact_email',
@@ -59,7 +59,7 @@ class WebsiteSetting extends Model
     {
         return Cache::remember('website_settings', 60, function () {
             return self::first() ?? self::create([
-                'site_name' => 'IELTS Mock Platform',
+                'site_title' => 'IELTS Mock Platform',
                 'copyright_text' => '© ' . date('Y') . ' IELTS Mock Platform. All rights reserved.'
             ]);
         });
@@ -88,6 +88,14 @@ class WebsiteSetting extends Model
     {
         return $this->facebook_url || $this->twitter_url || $this->instagram_url || 
                $this->youtube_url || $this->linkedin_url;
+    }
+
+    /**
+     * Get site name for backward compatibility
+     */
+    public function getSiteNameAttribute()
+    {
+        return $this->site_title;
     }
 
     /**

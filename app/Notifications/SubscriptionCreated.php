@@ -28,14 +28,10 @@ class SubscriptionCreated extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Welcome to ' . $this->subscription->plan->name . ' Plan!')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Thank you for subscribing to our ' . $this->subscription->plan->name . ' plan.')
-            ->line('Your subscription is now active and will be valid until ' . $this->subscription->ends_at->format('F j, Y') . '.')
-            ->line('Here\'s what you get with your plan:')
-            ->lines($this->getPlanFeatures())
-            ->action('Start Practicing', url('/student/dashboard'))
-            ->line('If you have any questions, feel free to contact our support team.')
-            ->salutation('Best regards, The IELTS Practice Team');
+            ->view('emails.subscription-created', [
+                'user' => $notifiable,
+                'subscription' => $this->subscription->load('plan.features')
+            ]);
     }
 
     private function getPlanFeatures()

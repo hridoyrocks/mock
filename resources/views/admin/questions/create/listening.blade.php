@@ -49,9 +49,7 @@
                                                 Use Template
                                             </button>
                                         </div>
-                                        <textarea id="instructions" name="instructions" rows="3" 
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
-                                                  placeholder="e.g., Questions 1-5: Complete the form below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.">{{ old('instructions') }}</textarea>
+                                        <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions') }}</textarea>
                                     </div>
                                     
                                     <!-- Question Content -->
@@ -64,9 +62,7 @@
                                                 Insert Blank
                                             </button>
                                         </div>
-                                        <div class="border border-gray-300 rounded-md overflow-hidden" style="height: 350px;">
-                                            <textarea id="content" name="content" class="tinymce">{{ old('content') }}</textarea>
-                                        </div>
+                                        <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                                     </div>
                                 </div>
                                 
@@ -496,13 +492,42 @@ function clearAllOptions() {
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize TinyMCE
+    // Initialize TinyMCE for instructions (simple editor)
     tinymce.init({
-        selector: '.tinymce',
-        plugins: 'lists link table code',
-        toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link | code',
+        selector: '.tinymce-editor-simple',
+        height: 150,
+        menubar: false,
+        plugins: [
+            'lists', 'link', 'charmap', 'code'
+        ],
+        toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link | removeformat code',
+        font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+        content_css: '//www.tiny.cloud/css/codepen.min.css',
+        setup: function(editor) {
+            editor.on('change', function() {
+                editor.save();
+            });
+        }
+    });
+    
+    // Initialize TinyMCE for main content
+    tinymce.init({
+        selector: '.tinymce-editor',
         height: 350,
         menubar: false,
-        branding: false
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+            'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
+        font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+        content_css: '//www.tiny.cloud/css/codepen.min.css',
+        setup: function(editor) {
+            editor.on('change', function() {
+                editor.save();
+            });
+        }
     });
     
     // Question type change handler

@@ -35,30 +35,11 @@ class PaymentSuccessful extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $isTokenPurchase = isset($this->transaction->metadata['type']) && 
-                          $this->transaction->metadata['type'] === 'token_package';
-        
-        if ($isTokenPurchase) {
-            return (new MailMessage)
-                ->subject('Payment Successful - Token Purchase')
-                ->greeting('Hello ' . $notifiable->name . '!')
-                ->line('Your payment has been processed successfully.')
-                ->line('Amount: ৳' . number_format($this->transaction->amount, 2))
-                ->line('Payment Method: ' . ucfirst($this->transaction->payment_method))
-                ->line('Transaction ID: ' . $this->transaction->transaction_id)
-                ->action('View Details', url('/student/tokens/purchase'))
-                ->line('Thank you for your purchase!');
-        } else {
-            return (new MailMessage)
-                ->subject('Payment Successful - Subscription')
-                ->greeting('Hello ' . $notifiable->name . '!')
-                ->line('Your subscription payment has been processed successfully.')
-                ->line('Amount: ৳' . number_format($this->transaction->amount, 2))
-                ->line('Payment Method: ' . ucfirst($this->transaction->payment_method))
-                ->line('Transaction ID: ' . $this->transaction->transaction_id)
-                ->action('View Subscription', url('/subscription'))
-                ->line('Thank you for subscribing!');
-        }
+        return (new MailMessage)
+            ->subject('Payment Successful')
+            ->view('emails.payment-successful', [
+                'transaction' => $this->transaction->load('subscriptionPlan')
+            ]);
     }
 
     /**

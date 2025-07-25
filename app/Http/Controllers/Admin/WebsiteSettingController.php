@@ -26,8 +26,9 @@ class WebsiteSettingController extends Controller
     public function update(Request $request)
     {
         Log::info('Website settings update request', ['request' => $request->all()]);
+        
         $validated = $request->validate([
-            'site_name' => 'required|string|max:255',
+            'site_title' => 'required|string|max:255',
             'site_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'favicon' => 'nullable|image|mimes:ico,png|max:512',
             'contact_email' => 'nullable|email|max:255',
@@ -50,22 +51,32 @@ class WebsiteSettingController extends Controller
         if ($request->hasFile('site_logo')) {
             // Delete old logo if exists
             if ($settings->site_logo) {
-                Storage::delete('public/' . $settings->site_logo);
+                // Check if file exists before deleting
+                if (Storage::disk('public')->exists($settings->site_logo)) {
+                    Storage::disk('public')->delete($settings->site_logo);
+                }
             }
             
             $logoPath = $request->file('site_logo')->store('logos', 'public');
             $validated['site_logo'] = $logoPath;
+            
+            Log::info('Logo uploaded', ['path' => $logoPath]);
         }
 
         // Handle favicon upload
         if ($request->hasFile('favicon')) {
             // Delete old favicon if exists
             if ($settings->favicon) {
-                Storage::delete('public/' . $settings->favicon);
+                // Check if file exists before deleting
+                if (Storage::disk('public')->exists($settings->favicon)) {
+                    Storage::disk('public')->delete($settings->favicon);
+                }
             }
             
             $faviconPath = $request->file('favicon')->store('favicons', 'public');
             $validated['favicon'] = $faviconPath;
+            
+            Log::info('Favicon uploaded', ['path' => $faviconPath]);
         }
 
         // Handle meta tags
@@ -95,9 +106,15 @@ class WebsiteSettingController extends Controller
         $settings = WebsiteSetting::getSettings();
         
         if ($settings->site_logo) {
-            Storage::delete('public/' . $settings->site_logo);
+            // Check if file exists before deleting
+            if (Storage::disk('public')->exists($settings->site_logo)) {
+                Storage::disk('public')->delete($settings->site_logo);
+            }
+            
             $settings->update(['site_logo' => null]);
             Cache::forget('website_settings');
+            
+            Log::info('Logo removed successfully');
         }
 
         return redirect()->route('admin.settings.website')
@@ -112,9 +129,15 @@ class WebsiteSettingController extends Controller
         $settings = WebsiteSetting::getSettings();
         
         if ($settings->favicon) {
-            Storage::delete('public/' . $settings->favicon);
+            // Check if file exists before deleting
+            if (Storage::disk('public')->exists($settings->favicon)) {
+                Storage::disk('public')->delete($settings->favicon);
+            }
+            
             $settings->update(['favicon' => null]);
             Cache::forget('website_settings');
+            
+            Log::info('Favicon removed successfully');
         }
 
         return redirect()->route('admin.settings.website')

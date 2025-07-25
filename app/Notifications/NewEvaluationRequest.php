@@ -38,17 +38,22 @@ class NewEvaluationRequest extends Notification implements ShouldQueue
         $section = ucfirst($this->evaluationRequest->studentAttempt->testSet->section->name);
         $priority = $this->evaluationRequest->priority === 'urgent' ? 'URGENT - ' : '';
         
+        // Get teacher stats
+        $pendingCount = $notifiable->teacher->evaluationRequests()->where('status', 'pending')->count();
+        $completedThisMonth = $notifiable->teacher->evaluationRequests()
+            ->where('status', 'completed')
+            ->whereMonth('updated_at', now()->month)
+            ->count();
+        $averageRating = $notifiable->teacher->average_rating ?? 0;
+        
         return (new MailMessage)
             ->subject($priority . 'New ' . $section . ' Evaluation Request')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('You have received a new evaluation request.')
-            ->line('Student: ' . $this->evaluationRequest->student->name)
-            ->line('Section: ' . $section)
-            ->line('Priority: ' . ucfirst($this->evaluationRequest->priority))
-            ->line('Deadline: ' . $this->evaluationRequest->deadline_at->format('M d, Y h:i A'))
-            ->line('Tokens: ' . $this->evaluationRequest->tokens_used)
-            ->action('View Evaluation', url('/teacher/evaluations/' . $this->evaluationRequest->id))
-            ->line('Please complete the evaluation before the deadline.');
+            ->view('emails.teacher-evaluation-request', [
+                'evaluationRequest' => $this->evaluationRequest->load('studentAttempt.testSet.section', 'studentAttempt.user'),
+                'pendingCount' => $pendingCount,
+                'completedThisMonth' => $completedThisMonth,
+                'averageRating' => $averageRating
+            ]);
     }
 
     /**

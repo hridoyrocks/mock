@@ -54,7 +54,8 @@ class Teacher extends Model
     {
         $basePrice = $this->evaluation_price_tokens;
         
-        // Section multiplier
+        // Section multiplier (case-insensitive)
+        $sectionLower = strtolower($section);
         $sectionMultipliers = [
             'writing' => 1.2,
             'speaking' => 1.1,
@@ -62,7 +63,7 @@ class Teacher extends Model
             'listening' => 1.0
         ];
         
-        $sectionMultiplier = $sectionMultipliers[$section] ?? 1.0;
+        $sectionMultiplier = $sectionMultipliers[$sectionLower] ?? 1.0;
         $price = round($basePrice * $sectionMultiplier);
         
         // Add priority fee

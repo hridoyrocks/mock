@@ -177,24 +177,26 @@
             
             <!-- Logo -->
             <div class="flex h-[var(--header-height)] items-center justify-between border-b border-gray-200 px-6">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-3">
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center">
                     @php
                         $settings = \App\Models\WebsiteSetting::getSettings();
                     @endphp
                     @if($settings->site_logo)
-                        <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_name }}" class="h-10 w-auto">
+                        <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_title }}" class="h-10 w-auto">
                     @else
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg">
-                            <!-- Book Icon -->
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        <div class="flex items-center space-x-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg">
+                                <!-- Book Icon -->
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                             </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-xl font-bold text-gray-900">{{ $settings->site_title }}</h1>
+                                <p class="text-xs text-gray-500">Admin Panel</p>
+                            </div>
                         </div>
                     @endif
-                    <div>
-                        <h1 class="text-xl font-bold text-gray-900">{{ $settings->site_name }}</h1>
-                        <p class="text-xs text-gray-500">Admin Panel</p>
-                    </div>
                 </a>
                 <button @click="sidebarOpen = false" class="rounded-lg p-2 hover:bg-gray-100 lg:hidden">
                     <!-- X Icon -->
@@ -364,6 +366,23 @@
                     </a>
                 </div>
                 
+                <!-- User Management -->
+                <div class="mb-8">
+                    <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">User Management</h3>
+                    
+                    <a href="{{ route('admin.users.index') }}" 
+                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.users.*') ? 'active' : 'text-gray-700' }}">
+                        <!-- Users Icon -->
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <span>All Users</span>
+                        @if($totalUsers = \App\Models\User::count())
+                            <span class="ml-auto bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">{{ $totalUsers }}</span>
+                        @endif
+                    </a>
+                </div>
+                
                 <!-- Marketing & Communication -->
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Marketing</h3>
@@ -378,6 +397,7 @@
                         @if($activeAnnouncements = \App\Models\Announcement::active()->count())
                             <span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-0.5">{{ $activeAnnouncements }}</span>
                         @endif
+                    </a>
                 </div>
 
                 <!-- Settings -->
@@ -574,18 +594,21 @@
             </header>
 
             <!-- Main Content Area -->
-            <main class="flex-1 overflow-y-auto bg-gray-50">
-                <div class="p-4 lg:p-8">
-                    <div class="fade-in">
-                        {{ $slot }}
+            <main class="flex-1 flex flex-col overflow-hidden">
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto bg-gray-50">
+                    <div class="p-4 lg:p-8">
+                        <div class="fade-in">
+                            {{ $slot }}
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Footer -->
-                <footer class="bg-white border-t border-gray-200 mt-12">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <!-- Fixed Footer -->
+                <footer class="bg-white border-t border-gray-200">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                         <div class="flex flex-col md:flex-row justify-between items-center">
-                            <div class="text-center md:text-left mb-4 md:mb-0">
+                            <div class="text-center md:text-left mb-2 md:mb-0">
                                 <p class="text-gray-500 text-sm">
                                     {{ $settings->copyright_text ?? '© ' . date('Y') . ' ' . $settings->site_name . '. All rights reserved.' }}
                                 </p>

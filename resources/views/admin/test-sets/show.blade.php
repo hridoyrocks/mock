@@ -247,7 +247,11 @@
                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:border-gray-300 transition-colors">
                                 <div class="flex items-center space-x-4 flex-1">
                                     <div class="flex items-center justify-center w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg text-sm font-semibold">
-                                        {{ $question->order_number }}
+                                        @if($question->question_type === 'matching_headings' && $question->isMasterMatchingHeading())
+                                            {{ $question->question_range }}
+                                        @else
+                                            {{ $question->order_number }}
+                                        @endif
                                     </div>
                                     <div class="flex-1">
                                         <div class="text-sm font-medium text-gray-900">
@@ -257,6 +261,11 @@
                                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
                                                 {{ ucfirst(str_replace('_', ' ', $question->question_type)) }}
                                             </span>
+                                            @if($question->question_type === 'matching_headings' && $question->isMasterMatchingHeading())
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                                    Master ({{ $question->getActualQuestionCount() }} questions)
+                                                </span>
+                                            @endif
                                             @if($question->options->count() > 0)
                                                 <span class="text-xs text-gray-500">
                                                     {{ $question->options->count() }} options

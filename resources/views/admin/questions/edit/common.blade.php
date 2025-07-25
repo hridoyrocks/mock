@@ -40,8 +40,7 @@
                             <!-- Instructions -->
                             <div class="mb-6">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
-                                <textarea name="instructions" rows="3" 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">{{ old('instructions', $question->instructions) }}</textarea>
+                                <textarea name="instructions" class="tinymce-editor-simple">{{ old('instructions', $question->instructions) }}</textarea>
                             </div>
                             
                             <!-- Question Content -->
@@ -49,7 +48,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Question <span class="text-red-500">*</span>
                                 </label>
-                                <textarea id="content" name="content" class="tinymce" required>{{ old('content', $question->content) }}</textarea>
+                                <textarea id="content" name="content" class="tinymce-editor" required>{{ old('content', $question->content) }}</textarea>
                             </div>
                             
                             <!-- Settings -->
@@ -129,5 +128,47 @@
     @push('scripts')
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script src="{{ asset('js/admin/question-common.js') }}"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize TinyMCE for instructions (simple editor)
+        tinymce.init({
+            selector: '.tinymce-editor-simple',
+            height: 150,
+            menubar: false,
+            plugins: [
+                'lists', 'link', 'charmap', 'code'
+            ],
+            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link | removeformat code',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+            content_css: '//www.tiny.cloud/css/codepen.min.css',
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                });
+            }
+        });
+        
+        // Initialize TinyMCE for main content
+        tinymce.init({
+            selector: '.tinymce-editor',
+            height: 350,
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+            content_css: '//www.tiny.cloud/css/codepen.min.css',
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                });
+            }
+        });
+    });
+    </script>
     @endpush
 </x-layout>

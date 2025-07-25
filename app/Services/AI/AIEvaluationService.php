@@ -12,6 +12,7 @@ class AIEvaluationService
     private $model = 'gpt-4';
     private $temperature = 0.3;
     private $timeout = 120; // 2 minutes timeout
+    private $currentTaskNumber = null; // Track current task number
 
     /**
      * Evaluate IELTS Writing
@@ -170,6 +171,9 @@ class AIEvaluationService
     // Rest of the methods remain the same...
     protected function buildWritingPrompt(string $text, string $question, int $taskNumber): string
     {
+        // Set current task number for system prompt
+        $this->currentTaskNumber = $taskNumber;
+        
         $wordCount = str_word_count($text);
         $requiredWords = $taskNumber === 1 ? 150 : 250;
 
@@ -231,28 +235,47 @@ Please provide a detailed evaluation in JSON format with the following structure
 
     protected function getWritingSystemPrompt(): string
     {
-        return "You are an expert IELTS examiner evaluating Writing responses. 
-        Evaluate based on the official IELTS criteria:
-        1. Task Achievement/Response (25%)
-        2. Coherence and Cohesion (25%)
-        3. Lexical Resource (25%)
-        4. Grammatical Range and Accuracy (25%)
+        // Determine which writing task prompt to use based on task number
+        $taskType = ($this->currentTaskNumber === 1) ? 'writing_task1' : 'writing_task2';
         
-        Provide band scores from 0-9 with 0.5 increments. Be fair but strict.
-        Return your evaluation as a valid JSON object only, with no additional text.";
+        // Get prompt from config
+        $prompt = config("ai-prompts.{$taskType}");
+        
+        // Fallback to default if config not found
+        if (!$prompt) {
+            return "You are an expert IELTS examiner evaluating Writing responses. 
+            Evaluate based on the official IELTS criteria:
+            1. Task Achievement/Response (25%)
+            2. Coherence and Cohesion (25%)
+            3. Lexical Resource (25%)
+            4. Grammatical Range and Accuracy (25%)
+            
+            Provide band scores from 0-9 with 0.5 increments. Be fair but strict.
+            Return your evaluation as a valid JSON object only, with no additional text.";
+        }
+        
+        return $prompt;
     }
 
     protected function getSpeakingSystemPrompt(): string
     {
-        return "You are an expert IELTS examiner evaluating Speaking responses.
-        Evaluate based on the official IELTS criteria:
-        1. Fluency and Coherence (25%)
-        2. Lexical Resource (25%)
-        3. Grammatical Range and Accuracy (25%)
-        4. Pronunciation (25%)
+        // Get prompt from config
+        $prompt = config('ai-prompts.speaking');
         
-        Provide band scores from 0-9 with 0.5 increments. Be fair but strict.
-        Return your evaluation as a valid JSON object only, with no additional text.";
+        // Fallback to default if config not found
+        if (!$prompt) {
+            return "You are an expert IELTS examiner evaluating Speaking responses.
+            Evaluate based on the official IELTS criteria:
+            1. Fluency and Coherence (25%)
+            2. Lexical Resource (25%)
+            3. Grammatical Range and Accuracy (25%)
+            4. Pronunciation (25%)
+            
+            Provide band scores from 0-9 with 0.5 increments. Be fair but strict.
+            Return your evaluation as a valid JSON object only, with no additional text.";
+        }
+        
+        return $prompt;
     }
 
     protected function formatWritingEvaluation(array $evaluation, string $originalText): array

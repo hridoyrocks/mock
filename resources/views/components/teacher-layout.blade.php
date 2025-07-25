@@ -115,19 +115,21 @@
             <!-- Logo Section -->
             <div class="p-6 border-b border-white/10">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
+                    <a href="{{ route('teacher.dashboard') }}" class="flex items-center">
                         @if($settings->site_logo)
-                            <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_name }}" class="h-12 w-auto">
+                            <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_title }}" class="h-12 w-auto">
                         @else
-                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center neon-emerald">
-                                <i class="fas fa-chalkboard-teacher text-white text-xl"></i>
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center neon-emerald">
+                                    <i class="fas fa-chalkboard-teacher text-white text-xl"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-bold text-white">Teacher Portal</h2>
+                                    <p class="text-xs text-gray-400">{{ $settings->site_title }}</p>
+                                </div>
                             </div>
                         @endif
-                        <div>
-                            <h2 class="text-xl font-bold text-white">Teacher Portal</h2>
-                            <p class="text-xs text-gray-400">{{ $settings->site_name }}</p>
-                        </div>
-                    </div>
+                    </a>
                     <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white">
                         <i class="fas fa-times"></i>
                     </button>

@@ -316,23 +316,36 @@
 
     <!-- Teacher Selection Modal -->
     <div id="teacherModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="glass rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-white">
-                    <i class="fas fa-user-tie text-blue-400 mr-2"></i>
-                    Select a Teacher for Human Evaluation
-                </h2>
-                <button onclick="closeTeacherModal()" class="text-gray-400 hover:text-white transition">
-                    <i class="fas fa-times text-2xl"></i>
+        <div class="glass rounded-2xl p-6 max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
+                <div>
+                    <h2 class="text-xl font-bold text-white">
+                        <i class="fas fa-user-tie text-blue-400 mr-2"></i>
+                        Select a Teacher for Human Evaluation
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Choose a certified IELTS teacher to evaluate your {{ $attempt->testSet->section->name }} test</p>
+                </div>
+                <button onclick="closeTeacherModal()" class="text-gray-400 hover:text-white transition p-2">
+                    <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
             
-            <div id="teacherList" class="space-y-4">
+            <!-- Scrollable Content -->
+            <div id="teacherList" class="flex-1 overflow-y-auto pr-2">
                 <!-- Teachers will be loaded here via AJAX -->
-                <div class="text-center py-8">
+                <div class="text-center py-12">
                     <i class="fas fa-spinner fa-spin text-4xl text-purple-400"></i>
                     <p class="text-gray-400 mt-4">Loading available teachers...</p>
                 </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="mt-4 pt-4 border-t border-white/10 text-center">
+                <p class="text-xs text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Teachers will evaluate your response within the specified timeframe
+                </p>
             </div>
         </div>
     </div>
@@ -357,30 +370,44 @@
     }
     
     function loadTeachers() {
-        fetch(`/student/human-evaluation/{{ $attempt->id }}/teachers`)
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const teacherCards = doc.querySelector('.teacher-cards');
+        fetch(`/student/human-evaluation/{{ $attempt->id }}/teachers`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html, application/json'
+            }
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
                 
-                if (teacherCards) {
-                    document.getElementById('teacherList').innerHTML = teacherCards.innerHTML;
-                } else {
-                    document.getElementById('teacherList').innerHTML = `
-                        <div class="text-center py-8">
-                            <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
-                            <p class="text-gray-400">No teachers available at the moment.</p>
-                        </div>
-                    `;
+                if (!response.ok) {
+                    // Try to get JSON error response
+                    return response.json().then(errorData => {
+                        if (errorData.redirect) {
+                            window.location.href = errorData.redirect;
+                            return;
+                        }
+                        throw new Error(errorData.error || 'Network response was not ok');
+                    }).catch(() => {
+                        throw new Error('Network response was not ok');
+                    });
                 }
+                return response.text();
+            })
+            .then(html => {
+                if (!html) return;
+                
+                // Direct HTML insertion since we're getting the partial view
+                document.getElementById('teacherList').innerHTML = html;
             })
             .catch(error => {
                 console.error('Error loading teachers:', error);
                 document.getElementById('teacherList').innerHTML = `
-                    <div class="text-center py-8">
+                    <div class="text-center py-12">
                         <i class="fas fa-exclamation-circle text-red-400 text-4xl mb-4"></i>
-                        <p class="text-gray-400">Failed to load teachers. Please try again.</p>
+                        <p class="text-gray-400">${error.message || 'Failed to load teachers. Please try again.'}</p>
+                        <button onclick="loadTeachers()" class="mt-4 px-4 py-2 glass rounded-lg hover:border-purple-500/50 transition">
+                            <i class="fas fa-redo mr-2"></i>Try Again
+                        </button>
                     </div>
                 `;
             });

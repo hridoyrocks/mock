@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\SubscriptionPlan;
 use App\Models\UserSubscription;
 use App\Models\PaymentTransaction;
 use App\Models\StudentAttempt;
+use Illuminate\Support\Facades\Schema;
 
 
 
@@ -30,23 +32,25 @@ class User extends Authenticatable
         'ai_evaluations_used',
         'last_subscription_check',
         'phone_number',
-    'phone_verified_at',
-    'google_id',
-    'facebook_id',
-    'avatar_url',
-    'login_method',
-    'country_code',
-    'country_name',
-    'city',
-    'timezone',
-    'currency',
-    'is_social_signup',
-    'avatar_url',
-    'referral_code',
-    'referred_by',
-    'referral_balance',
-    'total_referrals',
-    'successful_referrals',
+        'phone_verified_at',
+        'google_id',
+        'facebook_id',
+        'avatar_url',
+        'login_method',
+        'country_code',
+        'country_name',
+        'city',
+        'timezone',
+        'currency',
+        'is_social_signup',
+        'avatar_url',
+        'referral_code',
+        'referred_by',
+        'referral_balance',
+        'total_referrals',
+        'successful_referrals',
+        'banned_at',
+        'ban_reason',
     ];
 
     protected $casts = [
@@ -58,10 +62,11 @@ class User extends Authenticatable
         'tests_taken_this_month' => 'integer',
         'ai_evaluations_used' => 'integer',
         'phone_verified_at' => 'datetime',
-    'is_social_signup' => 'boolean',
-    'referral_balance' => 'decimal:2',
-    'total_referrals' => 'integer',
-    'successful_referrals' => 'integer',
+        'is_social_signup' => 'boolean',
+        'referral_balance' => 'decimal:2',
+        'total_referrals' => 'integer',
+        'successful_referrals' => 'integer',
+        'banned_at' => 'datetime',
     ];
 
 
@@ -454,5 +459,102 @@ public function activeGoal()
     public function getFormattedReferralBalanceAttribute(): string
     {
         return '৳ ' . number_format($this->referral_balance, 2);
+    }
+    
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\CustomResetPassword($token));
+    }
+    
+    /**
+     * Teacher relationship
+     */
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
+    
+    /**
+     * Student attempts relationship
+     */
+    public function studentAttempts()
+    {
+        return $this->hasMany(StudentAttempt::class);
+    }
+    
+    /**
+     * Authentication logs relationship
+     */
+    public function authenticationLogs()
+    {
+        if (Schema::hasTable('authentication_log')) {
+            return $this->hasMany(\Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog::class, 'authenticatable_id');
+        }
+        return $this->hasMany(\stdClass::class, 'id'); // Return empty relationship if table doesn't exist
+    }
+    
+    /**
+     * Get the user who referred this user
+     */
+    public function referredBy()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+    
+    /**
+     * Get current subscription
+     */
+    public function currentSubscription()
+    {
+        return $this->hasOne(UserSubscription::class)
+            ->where('status', 'active')
+            ->where('ends_at', '>', now())
+            ->latest();
+    }
+    
+    /**
+     * Check if user is banned
+     */
+    public function isBanned(): bool
+    {
+        return !is_null($this->banned_at);
+    }
+    
+    /**
+     * Get role display name
+     */
+    public function getRoleAttribute(): string
+    {
+        if ($this->is_admin) {
+            return 'Admin';
+        }
+        
+        if ($this->teacher) {
+            return 'Teacher';
+        }
+        
+        return 'Student';
+    }
+    
+    /**
+     * Get role badge color
+     */
+    public function getRoleBadgeColorAttribute(): string
+    {
+        if ($this->is_admin) {
+            return 'bg-red-100 text-red-800';
+        }
+        
+        if ($this->teacher) {
+            return 'bg-purple-100 text-purple-800';
+        }
+        
+        return 'bg-blue-100 text-blue-800';
     }
 }

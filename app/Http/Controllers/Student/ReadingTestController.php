@@ -110,6 +110,27 @@ class ReadingTestController extends Controller
      */
     public function submit(Request $request, StudentAttempt $attempt): RedirectResponse
     {
+        // Log all incoming data
+        \Log::info('=== READING TEST SUBMISSION START ===', [
+            'attempt_id' => $attempt->id,
+            'user_id' => auth()->id(),
+            'request_method' => $request->method(),
+            'has_answers' => $request->has('answers'),
+            'all_input_keys' => array_keys($request->all()),
+            'answers_count' => is_array($request->input('answers')) ? count($request->input('answers')) : 0
+        ]);
+        
+        // Log each answer
+        if ($request->has('answers')) {
+            foreach ($request->input('answers', []) as $key => $value) {
+                \Log::info('Answer received', [
+                    'key' => $key,
+                    'value' => $value,
+                    'type' => gettype($value)
+                ]);
+            }
+        }
+        
         // Verify the attempt belongs to the current user and is not already completed
         if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
             return redirect()->route('student.reading.index')
@@ -127,6 +148,11 @@ class ReadingTestController extends Controller
                 ->where('question_type', '!=', 'passage')
                 ->get();
             
+            \Log::info('Questions in test', [
+                'total_questions' => $questions->count(),
+                'matching_headings_count' => $questions->where('question_type', 'matching_headings')->count()
+            ]);
+            
             // Calculate total question count INCLUDING blanks
             $totalQuestions = 0;
             foreach ($questions as $question) {
@@ -141,9 +167,113 @@ class ReadingTestController extends Controller
             // Track answered questions and correct answers
             $answeredCount = 0;
             $correctAnswers = 0;
+            $matchingHeadingSaved = 0;
             
             // Save answers
             foreach ($request->answers as $questionId => $answer) {
+                // Handle master matching headings with sub-questions (e.g., 123_q14)
+                if (str_contains($questionId, '_q')) {
+                    // Extract master question ID and sub-question number
+                    [$masterQuestionId, $subQuestionNum] = explode('_q', $questionId);
+                    $subQuestionNum = (int) $subQuestionNum;
+                    
+                    \Log::info('MASTER MATCHING HEADING DETECTED', [
+                        'original_key' => $questionId,
+                        'master_question_id' => $masterQuestionId,
+                        'sub_question_num' => $subQuestionNum,
+                        'value' => $answer
+                    ]);
+                    
+                    if (!empty($answer)) {
+                        $masterQuestion = $questions->find($masterQuestionId);
+                        if ($masterQuestion && $masterQuestion->question_type === 'matching_headings' && $masterQuestion->isMasterMatchingHeading()) {
+                            // Find the correct option based on letter (A, B, C, etc.)
+                            $optionIndex = ord($answer) - ord('A');
+                            $option = $masterQuestion->options->sortBy('order')->values()->get($optionIndex);
+                            
+                            if ($option) {
+                                $saved = StudentAnswer::create([
+                                    'attempt_id' => $attempt->id,
+                                    'question_id' => $masterQuestionId,
+                                    'selected_option_id' => $option->id,
+                                    'answer' => json_encode([
+                                        'sub_question' => $subQuestionNum,
+                                        'selected_letter' => $answer,
+                                        'option_id' => $option->id
+                                    ]),
+                                ]);
+                                
+                                if ($saved && $saved->exists) {
+                                    $matchingHeadingSaved++;
+                                    \Log::info('MASTER MATCHING HEADING SAVED SUCCESSFULLY', [
+                                        'student_answer_id' => $saved->id,
+                                        'master_question_id' => $masterQuestionId,
+                                        'sub_question' => $subQuestionNum,
+                                        'selected_letter' => $answer,
+                                        'selected_option_id' => $option->id
+                                    ]);
+                                }
+                                
+                                $answeredCount++;
+                                
+                                // Check if correct based on mappings
+                                $mappings = $masterQuestion->section_specific_data['mappings'] ?? [];
+                                foreach ($mappings as $mapping) {
+                                    if ($mapping['question'] == $subQuestionNum && $mapping['correct'] == $answer) {
+                                        $correctAnswers++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    continue; // Skip to next iteration
+                }
+                
+                // Check if this is a matching headings paragraph answer (legacy format)
+                if (str_contains($questionId, '_para_')) {
+                    // Extract actual question ID and paragraph index
+                    [$actualQuestionId, $paraIndex] = explode('_para_', $questionId);
+                    
+                    \Log::info('MATCHING HEADING DETECTED (LEGACY)', [
+                        'original_key' => $questionId,
+                        'question_id' => $actualQuestionId,
+                        'para_index' => $paraIndex,
+                        'value' => $answer
+                    ]);
+                    
+                    if (!empty($answer) && is_numeric($answer)) {
+                        $question = $questions->find($actualQuestionId);
+                        if ($question && $question->question_type === 'matching_headings') {
+                            $saved = StudentAnswer::create([
+                                'attempt_id' => $attempt->id,
+                                'question_id' => $actualQuestionId,
+                                'selected_option_id' => $answer,
+                                'answer' => json_encode(['paragraph' => $paraIndex, 'option_id' => $answer]),
+                            ]);
+                            
+                            if ($saved && $saved->exists) {
+                                $matchingHeadingSaved++;
+                                \Log::info('MATCHING HEADING SAVED SUCCESSFULLY (LEGACY)', [
+                                    'student_answer_id' => $saved->id,
+                                    'question_id' => $actualQuestionId,
+                                    'paragraph' => $paraIndex,
+                                    'selected_option_id' => $answer
+                                ]);
+                            }
+                            
+                            $answeredCount++;
+                            
+                            // Check if correct
+                            $option = $question->options->find($answer);
+                            if ($option && $option->is_correct) {
+                                $correctAnswers++;
+                            }
+                        }
+                    }
+                    continue; // Skip to next iteration
+                }
+                
                 // Skip if no answer provided
                 if (empty($answer) && $answer !== '0') {
                     continue;
@@ -154,7 +284,22 @@ class ReadingTestController extends Controller
                     continue;
                 }
                 
+                // Log the answer being processed
+                \Log::info('Processing regular answer', [
+                    'question_id' => $questionId,
+                    'question_type' => $question->question_type,
+                    'answer' => $answer,
+                    'is_array' => is_array($answer)
+                ]);
+                
                 if (is_array($answer)) {
+                    // Log array answers for debugging
+                    \Log::info('Processing array answer for question', [
+                        'question_id' => $questionId,
+                        'answer_array' => $answer,
+                        'question_type' => $question->question_type ?? 'unknown'
+                    ]);
+                    
                     // Handle array answers (blanks or multiple selections)
                     if (isset($answer['blank_1']) || isset($answer['dropdown_1'])) {
                         // Fill-in-the-blanks with multiple blanks
@@ -175,17 +320,53 @@ class ReadingTestController extends Controller
                         $answeredCount += $blankResults['answered'];
                         $correctAnswers += $blankResults['correct'];
                     } else {
-                        // Multiple selection question
-                        foreach ($answer as $value) {
+                        // Multiple selection question (including matching headings)
+                        \Log::info('Processing multiple selection answer', [
+                            'question_id' => $questionId,
+                            'answer_values' => $answer,
+                            'question_type' => $question->question_type
+                        ]);
+                        
+                        // Check if this is actually saving to database
+                        $savedCount = 0;
+                        
+                        foreach ($answer as $key => $value) {
+                            \Log::info('Individual selection', [
+                                'key' => $key,
+                                'value' => $value,
+                                'is_numeric' => is_numeric($value)
+                            ]);
+                            
                             if (is_numeric($value)) {
-                                StudentAnswer::create([
+                                $saved = StudentAnswer::create([
                                     'attempt_id' => $attempt->id,
                                     'question_id' => $questionId,
                                     'selected_option_id' => $value,
                                     'answer' => null,
                                 ]);
+                                
+                                if ($saved && $saved->id) {
+                                    $savedCount++;
+                                    \Log::info('SAVED TO DATABASE', [
+                                        'student_answer_id' => $saved->id,
+                                        'question_id' => $questionId,
+                                        'selected_option_id' => $value
+                                    ]);
+                                } else {
+                                    \Log::error('FAILED TO SAVE TO DATABASE', [
+                                        'question_id' => $questionId,
+                                        'value' => $value
+                                    ]);
+                                }
                             }
                         }
+                        
+                        \Log::info('Total saved for this question', [
+                            'question_id' => $questionId,
+                            'saved_count' => $savedCount,
+                            'total_answers' => count($answer)
+                        ]);
+                        
                         $answeredCount++;
                     }
                 } else {
@@ -232,6 +413,13 @@ class ReadingTestController extends Controller
                     $answeredCount++;
                 }
             }
+            
+            \Log::info('SUBMISSION SUMMARY', [
+                'total_questions' => $totalQuestions,
+                'answered_count' => $answeredCount,
+                'correct_answers' => $correctAnswers,
+                'matching_headings_saved' => $matchingHeadingSaved
+            ]);
             
             // Mark attempt as completed
             $attempt->update([
@@ -290,6 +478,8 @@ class ReadingTestController extends Controller
             
             // Store score data in session for display
             session()->flash('score_details', $scoreData);
+            
+            \Log::info('=== READING TEST SUBMISSION COMPLETE ===');
         });
         
         return redirect()->route('student.results.show', $attempt)
@@ -330,6 +520,22 @@ class ReadingTestController extends Controller
                         if ($this->compareAnswers($studentDropdownAnswer, $correctOption)) {
                             $correctCount++;
                         }
+                    }
+                }
+            }
+        }
+        
+        // Check heading dropdowns
+        foreach ($studentAnswers as $key => $value) {
+            if (strpos($key, 'heading_') === 0 && !empty($value)) {
+                $answeredCount++;
+                
+                // For heading dropdowns, the value is the option ID
+                // Check if it's the correct option
+                if (is_numeric($value)) {
+                    $option = \App\Models\QuestionOption::find($value);
+                    if ($option && $option->is_correct) {
+                        $correctCount++;
                     }
                 }
             }

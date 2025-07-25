@@ -28,14 +28,15 @@
                     </h2>
 
                     <div class="grid grid-cols-1 gap-6">
-                        <!-- Site Name -->
+                        <!-- Site Title -->
                         <div>
-                            <label for="site_name" class="block text-sm font-medium text-gray-700">Site Name</label>
-                            <input type="text" name="site_name" id="site_name" 
-                                   value="{{ old('site_name', $settings->site_name) }}" 
+                            <label for="site_title" class="block text-sm font-medium text-gray-700">Site Title</label>
+                            <input type="text" name="site_title" id="site_title" 
+                                   value="{{ old('site_title', $settings->site_title) }}" 
                                    required
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('site_name')
+                            <p class="mt-1 text-xs text-gray-500">This will be used as the website title in browser tabs and SEO</p>
+                            @error('site_title')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
@@ -45,17 +46,15 @@
                             <label class="block text-sm font-medium text-gray-700">Site Logo</label>
                             <div class="mt-2 flex items-center space-x-6">
                                 @if($settings->site_logo)
-                                    <div class="relative">
+                                    <div class="relative group">
                                         <img src="{{ $settings->logo_url }}" alt="Site Logo" class="h-20 w-auto rounded-lg shadow-sm">
-                                        <form action="{{ route('admin.settings.website.remove-logo') }}" method="POST" class="absolute -top-2 -right-2">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <button type="button" 
+                                                onclick="if(confirm('Are you sure you want to remove the logo?')) { document.getElementById('remove-logo-form').submit(); }"
+                                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
                                     </div>
                                 @else
                                     <div class="h-20 w-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
@@ -66,8 +65,13 @@
                                 @endif
                                 <div>
                                     <input type="file" name="site_logo" id="site_logo" accept="image/*" 
+                                           onchange="previewImage(this, 'logo-preview')"
                                            class="block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                                     <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                                    <div id="logo-preview" class="mt-2 hidden">
+                                        <p class="text-xs text-gray-500 mb-1">Preview:</p>
+                                        <img src="" alt="Logo Preview" class="h-16 w-auto rounded shadow">
+                                    </div>
                                 </div>
                             </div>
                             @error('site_logo')
@@ -80,17 +84,15 @@
                             <label class="block text-sm font-medium text-gray-700">Favicon</label>
                             <div class="mt-2 flex items-center space-x-6">
                                 @if($settings->favicon)
-                                    <div class="relative">
+                                    <div class="relative group">
                                         <img src="{{ $settings->favicon_url }}" alt="Favicon" class="h-12 w-12 rounded shadow-sm">
-                                        <form action="{{ route('admin.settings.website.remove-favicon') }}" method="POST" class="absolute -top-2 -right-2">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <button type="button" 
+                                                onclick="if(confirm('Are you sure you want to remove the favicon?')) { document.getElementById('remove-favicon-form').submit(); }"
+                                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
                                     </div>
                                 @else
                                     <div class="h-12 w-12 rounded border-2 border-dashed border-gray-300 flex items-center justify-center">
@@ -101,8 +103,13 @@
                                 @endif
                                 <div>
                                     <input type="file" name="favicon" id="favicon" accept=".ico,.png" 
+                                           onchange="previewImage(this, 'favicon-preview')"
                                            class="block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                                     <p class="mt-1 text-xs text-gray-500">ICO or PNG, 16x16 or 32x32 pixels</p>
+                                    <div id="favicon-preview" class="mt-2 hidden">
+                                        <p class="text-xs text-gray-500 mb-1">Preview:</p>
+                                        <img src="" alt="Favicon Preview" class="h-8 w-8 rounded shadow">
+                                    </div>
                                 </div>
                             </div>
                             @error('favicon')
@@ -307,15 +314,127 @@
                     </button>
                 </div>
             </form>
+            
+            {{-- Hidden forms for delete actions --}}
+            <form id="remove-logo-form" action="{{ route('admin.settings.website.remove-logo') }}" method="POST" class="hidden">
+                @csrf
+                @method('DELETE')
+            </form>
+            
+            <form id="remove-favicon-form" action="{{ route('admin.settings.website.remove-favicon') }}" method="POST" class="hidden">
+                @csrf
+                @method('DELETE')
+            </form>
         </div>
     </div>
 
     @push('styles')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Success notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background: #10B981;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
     @endpush
     
     @push('scripts')
     <script>
+        // Image preview function
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const previewImg = preview.querySelector('img');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    preview.classList.remove('hidden');
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.classList.add('hidden');
+            }
+        }
+        
+        // Show loading overlay
+        function showLoading() {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = '<div class="loading-spinner"></div>';
+            document.body.appendChild(overlay);
+        }
+        
+        // Show success notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('settingsForm');
             const submitBtn = document.getElementById('submitBtn');
@@ -337,24 +456,77 @@
             logoInput.addEventListener('change', function(e) {
                 if (!validateFileSize(e.target.files[0], 2)) {
                     e.target.value = '';
+                    document.getElementById('logo-preview').classList.add('hidden');
                 }
             });
             
             faviconInput.addEventListener('change', function(e) {
                 if (!validateFileSize(e.target.files[0], 0.5)) {
                     e.target.value = '';
+                    document.getElementById('favicon-preview').classList.add('hidden');
                 }
             });
             
-            // Form submission
+            // Form submission with AJAX
             form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
                 // Show loading state
                 submitBtn.disabled = true;
                 submitText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                showLoading();
                 
-                // Let form submit normally
-                // e.preventDefault() removed to allow normal form submission
+                // Create FormData
+                const formData = new FormData(form);
+                
+                // Submit form via AJAX
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove loading overlay
+                    document.querySelector('.loading-overlay').remove();
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitText.innerHTML = '<svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Save Settings';
+                    
+                    if (data.success) {
+                        showNotification(data.message || 'Settings saved successfully!');
+                        
+                        // Reload page after a short delay to show updated images
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        alert('Error saving settings. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    
+                    // Remove loading overlay
+                    const overlay = document.querySelector('.loading-overlay');
+                    if (overlay) overlay.remove();
+                    
+                    // Reset button
+                    submitBtn.disabled = false;
+                    submitText.innerHTML = '<svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Save Settings';
+                    
+                    alert('Error saving settings. Please try again.');
+                });
             });
+            
+            // Check for success message from server
+            @if(session('success'))
+                showNotification('{{ session('success') }}');
+            @endif
         });
     </script>
     @endpush

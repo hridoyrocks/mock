@@ -1,0 +1,154 @@
+            $sectionData = $question->section_specific_data ?? [];
+            $sectionData['blank_answers'] = $cleanBlanks;
+            $question->section_specific_data = $sectionData;
+            $question->save();
+        }
+
+        return redirect()->route('admin.test-sets.show', $question->test_set_id)
+            ->with('success', 'Question updated successfully.');
+    }
+
+    /**
+     * Remove the specified question from storage.
+     */
+    public function destroy(Question $question): RedirectResponse
+    {
+        // Delete media if exists
+        if ($question->media_path) {
+            Storage::disk('public')->delete($question->media_path);
+        }
+        
+        $testSetId = $question->test_set_id;
+        $question->delete();
+        
+        return redirect()->route('admin.test-sets.show', $testSetId)
+            ->with('success', 'Question deleted successfully.');
+    }
+
+    /**
+     * Check if question type requires options (old method - kept for compatibility)
+     */
+    private function requiresOptions($questionType): bool
+    {
+        return in_array($questionType, [
+            'multiple_choice', 
+            'true_false', 
+            'yes_no',
+            'matching',
+            'matching_headings',
+            'matching_information',
+            'matching_features'
+        ]);
+    }
+
+    /**
+     * Check if question type needs options (excluding special types)
+     */
+    private function needsOptions($questionType): bool
+    {
+        // Special types that don't need traditional options
+        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram', 'matching_headings'];
+        
+        // Text input types that don't need options
+        $textTypes = ['short_answer', 'sentence_completion', 'note_completion', 'summary_completion', 'fill_blanks'];
+        
+        // If it's a special type or text type, no options needed
+        if (in_array($questionType, $specialTypes) || in_array($questionType, $textTypes)) {
+            return false;
+        }
+        
+        // Option-based types that require correct_option validation
+        $optionTypes = ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features'];
+        
+        return in_array($questionType, $optionTypes);
+    }
+
+    /**
+     * Get questions by part (AJAX)
+     */
+    public function getByPart(TestSet $testSet, $part): JsonResponse
+    {
+        $questions = Question::where('test_set_id', $testSet->id)
+                            ->where('part_number', $part)
+                            ->orderBy('order_number')
+                            ->with('options')
+                            ->get();
+
+        return response()->json($questions);
+    }
+    
+    /**
+     * Calculate next question number for a test set
+     */
+    private function calculateNextQuestionNumber(TestSet $testSet): int
+    {
+        $lastQuestion = $testSet->questions()
+            ->orderBy('order_number', 'desc')
+            ->first();
+            
+        if (!$lastQuestion) {
+            return 1;
+        }
+        
+        return $lastQuestion->order_number + 1;
+    }
+    
+    /**
+     * Get questions for a test set via AJAX
+     */
+    public function ajaxTestSet($testSetId)
+    {
+        $questions = Question::with(['testSet', 'testSet.section', 'options'])
+                            ->where('test_set_id', $testSetId)
+                            ->orderBy('part_number')
+                            ->orderBy('order_number')
+                            ->get();
+        
+        $selectedTestSet = TestSet::with('section')->find($testSetId);
+        
+        if (!$selectedTestSet) {
+            return response()->json(['error' => 'Test set not found'], 404);
+        }
+        
+        return view('admin.questions.partials.questions-list', compact('questions', 'selectedTestSet'));
+    }
+    
+    /**
+     * Get default read time based on question type
+     */
+    private function getDefaultReadTime($questionType): int
+    {
+        return match($questionType) {
+            'part1_personal' => 5,
+            'part2_cue_card' => 60, // This is preparation time
+            'part3_discussion' => 8,
+            default => 5
+        };
+    }
+
+    /**
+     * Get default minimum response time based on question type
+     */
+    private function getDefaultMinResponse($questionType): int
+    {
+        return match($questionType) {
+            'part1_personal' => 15,
+            'part2_cue_card' => 60,
+            'part3_discussion' => 30,
+            default => 15
+        };
+    }
+
+    /**
+     * Get default maximum response time based on question type
+     */
+    private function getDefaultMaxResponse($questionType): int
+    {
+        return match($questionType) {
+            'part1_personal' => 45,
+            'part2_cue_card' => 120,
+            'part3_discussion' => 90,
+            default => 45
+        };
+    }
+}

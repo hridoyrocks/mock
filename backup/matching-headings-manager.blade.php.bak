@@ -1,0 +1,558 @@
+{{-- Matching Headings Options Manager --}}
+<div id="matching-headings-card" class="bg-white rounded-lg shadow-sm overflow-hidden" style="display: none;">
+    <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
+        <h3 class="text-lg font-medium text-gray-900">
+            <svg class="w-5 h-5 inline mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+            </svg>
+            Matching Headings Smart Builder
+        </h3>
+        <p class="text-sm text-gray-600 mt-1">
+            Create headings and map them to questions with live preview
+        </p>
+    </div>
+    
+    <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {{-- LEFT SIDE: CREATE MODE --}}
+            <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Headings Bank
+                    </h4>
+                    <div id="matching-headings-container" class="space-y-2 max-h-64 overflow-y-auto">
+                        {{-- Headings will be dynamically added here --}}
+                    </div>
+                    
+                    <div class="mt-3 flex gap-2">
+                        <button type="button" id="add-heading-btn" 
+                                class="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all text-sm font-medium flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add Heading
+                        </button>
+                        
+                        <button type="button" id="add-bulk-headings-btn" 
+                                class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all text-sm font-medium flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Bulk Add
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-3 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Question Builder
+                    </h4>
+                    <div id="question-heading-mapper" class="space-y-2">
+                        <p class="text-sm text-gray-500 italic">Add headings first, then map them to questions here</p>
+                    </div>
+                    
+                    <button type="button" id="add-question-mapping-btn" 
+                            class="mt-3 px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-all text-sm font-medium flex items-center w-full justify-center"
+                            disabled>
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add Question
+                    </button>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                    <p class="text-sm text-yellow-800">
+                        <strong>Tip:</strong> Add 2-3 more headings than questions for better difficulty.
+                    </p>
+                </div>
+            </div>
+            
+            {{-- RIGHT SIDE: PREVIEW MODE --}}
+            <div class="bg-gray-100 rounded-lg p-4">
+                <h4 class="font-medium text-gray-900 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    Live Preview
+                </h4>
+                
+                <div id="matching-headings-preview" class="bg-white rounded-md p-4 min-h-[300px]">
+                    <div id="preview-headings-list" class="mb-4">
+                        <p class="text-gray-400 text-center py-8">Preview will appear here as you create headings</p>
+                    </div>
+                    <div id="preview-questions-list">
+                        <!-- Questions preview will appear here -->
+                    </div>
+                </div>
+                
+                <div class="mt-3 flex items-center justify-between text-sm">
+                    <span class="text-gray-600">
+                        <span id="used-headings-count">0</span> / <span id="total-headings-count">0</span> headings used
+                    </span>
+                    <span id="validation-status" class="text-green-600 font-medium hidden">
+                        ✓ Valid configuration
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Bulk Headings Modal --}}
+<div id="bulk-headings-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900">Add Bulk Headings</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500 mb-3">
+                    Enter headings, one per line:
+                </p>
+                <textarea id="bulk-headings-input" 
+                          rows="10" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                          placeholder="The history of aviation
+Modern aircraft technology
+Environmental impact of flying
+Future of air travel"></textarea>
+            </div>
+            <div class="items-center px-4 py-3">
+                <button id="process-bulk-headings" 
+                        class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Add Headings
+                </button>
+                <button id="cancel-bulk-headings" 
+                        class="mt-3 px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full shadow border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Matching Headings Smart Builder
+const MatchingHeadingsManager = {
+    headingCount: 0,
+    questionMappings: [],
+    
+    init() {
+        const addBtn = document.getElementById('add-heading-btn');
+        const addBulkBtn = document.getElementById('add-bulk-headings-btn');
+        const processBulkBtn = document.getElementById('process-bulk-headings');
+        const cancelBulkBtn = document.getElementById('cancel-bulk-headings');
+        const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+        
+        if (addBtn) {
+            addBtn.addEventListener('click', () => this.addHeading());
+        }
+        
+        if (addBulkBtn) {
+            addBulkBtn.addEventListener('click', () => this.showBulkModal());
+        }
+        
+        if (processBulkBtn) {
+            processBulkBtn.addEventListener('click', () => this.processBulkHeadings());
+        }
+        
+        if (cancelBulkBtn) {
+            cancelBulkBtn.addEventListener('click', () => this.hideBulkModal());
+        }
+        
+        if (addQuestionBtn) {
+            addQuestionBtn.addEventListener('click', () => this.addQuestionMapping());
+        }
+        
+        // Add some default headings if empty
+        if (this.headingCount === 0) {
+            this.addDefaultHeadings();
+        }
+        
+        // Enable question mapping button when there are headings
+        this.updateUI();
+    },
+    
+    addDefaultHeadings() {
+        // Add 4 empty headings by default
+        for (let i = 0; i < 4; i++) {
+            this.addHeading();
+        }
+    },
+    
+    addHeading(content = '') {
+        const container = document.getElementById('matching-headings-container');
+        if (!container) return;
+        
+        const index = this.headingCount;
+        const letter = String.fromCharCode(65 + index); // A, B, C...
+        
+        const headingDiv = document.createElement('div');
+        headingDiv.className = 'heading-item flex items-center gap-2 p-2 bg-white rounded border border-gray-200 transition-all hover:border-blue-300';
+        headingDiv.dataset.index = index;
+        headingDiv.innerHTML = `
+            <span class="font-semibold text-gray-700 text-sm min-w-[20px]">${letter}.</span>
+            <input type="text" 
+                   name="options[${index}][content]" 
+                   value="${content}" 
+                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Enter heading text..." 
+                   onkeyup="MatchingHeadingsManager.updatePreview()"
+                   required>
+            <input type="hidden" name="options[${index}][is_correct]" value="0">
+            <button type="button" onclick="MatchingHeadingsManager.removeHeading(this)" 
+                    class="text-red-500 hover:text-red-700 p-1 transition-colors">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+        
+        container.appendChild(headingDiv);
+        this.headingCount++;
+        
+        // Focus on the new input
+        const newInput = headingDiv.querySelector('input[type="text"]');
+        if (newInput && !content) {
+            newInput.focus();
+        }
+        
+        this.updateUI();
+        this.updatePreview();
+    },
+    
+    removeHeading(button) {
+        if (this.headingCount <= 2) {
+            alert('You must have at least 2 headings for matching questions.');
+            return;
+        }
+        
+        const headingItem = button.closest('.heading-item');
+        const index = parseInt(headingItem.dataset.index);
+        
+        // Check if this heading is used in any question
+        const isUsed = this.questionMappings.some(mapping => mapping.selectedHeading === index);
+        if (isUsed) {
+            alert('Cannot remove this heading as it is used in a question mapping.');
+            return;
+        }
+        
+        headingItem.remove();
+        this.reindexHeadings();
+        this.updateUI();
+        this.updatePreview();
+    },
+    
+    reindexHeadings() {
+        const headings = document.querySelectorAll('#matching-headings-container .heading-item');
+        this.headingCount = 0;
+        
+        headings.forEach((heading, index) => {
+            const letter = String.fromCharCode(65 + index);
+            heading.querySelector('span').textContent = letter + '.';
+            heading.querySelector('input[type="text"]').name = `options[${index}][content]`;
+            heading.querySelector('input[type="hidden"]').name = `options[${index}][is_correct]`;
+            heading.dataset.index = index;
+            this.headingCount++;
+        });
+        
+        // Update question mappings if needed
+        this.updateQuestionMappings();
+    },
+    
+    addQuestionMapping() {
+        const mapper = document.getElementById('question-heading-mapper');
+        if (!mapper) return;
+        
+        const questionIndex = this.questionMappings.length + 1;
+        const mappingId = Date.now();
+        
+        const mappingDiv = document.createElement('div');
+        mappingDiv.className = 'question-mapping-item flex items-center gap-2 p-2 bg-white rounded border border-gray-200';
+        mappingDiv.dataset.mappingId = mappingId;
+        
+        let optionsHtml = '<option value="">Select heading</option>';
+        const headings = document.querySelectorAll('#matching-headings-container .heading-item');
+        headings.forEach((heading, index) => {
+            const letter = String.fromCharCode(65 + index);
+            const text = heading.querySelector('input[type="text"]').value || `Heading ${letter}`;
+            optionsHtml += `<option value="${index}">${letter}. ${text.substring(0, 30)}${text.length > 30 ? '...' : ''}</option>`;
+        });
+        
+        mappingDiv.innerHTML = `
+            <span class="text-sm font-medium text-gray-700 min-w-[60px]">Para ${questionIndex}:</span>
+            <select class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                    onchange="MatchingHeadingsManager.updateQuestionMapping(${mappingId}, this.value)">
+                ${optionsHtml}
+            </select>
+            <button type="button" onclick="MatchingHeadingsManager.removeQuestionMapping(${mappingId})" 
+                    class="text-red-500 hover:text-red-700 p-1 transition-colors">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+        
+        // Clear the placeholder text if it exists
+        const placeholder = mapper.querySelector('.text-gray-500');
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        mapper.appendChild(mappingDiv);
+        
+        this.questionMappings.push({
+            id: mappingId,
+            index: questionIndex,
+            selectedHeading: null
+        });
+        
+        this.updatePreview();
+    },
+    
+    updateQuestionMapping(mappingId, headingIndex) {
+        const mapping = this.questionMappings.find(m => m.id === mappingId);
+        if (mapping) {
+            // Update the correct answer for the selected heading
+            // First, reset all headings' correct status
+            document.querySelectorAll('#matching-headings-container input[type="hidden"]').forEach(input => {
+                input.value = '0';
+            });
+            
+            // Set the selected heading as correct for this question
+            if (headingIndex !== '') {
+                mapping.selectedHeading = parseInt(headingIndex);
+                const correctInput = document.querySelector(`#matching-headings-container .heading-item[data-index="${headingIndex}"] input[type="hidden"]`);
+                if (correctInput) {
+                    correctInput.value = '1';
+                }
+            } else {
+                mapping.selectedHeading = null;
+            }
+        }
+        
+        this.updateUI();
+        this.updatePreview();
+    },
+    
+    removeQuestionMapping(mappingId) {
+        const mappingDiv = document.querySelector(`.question-mapping-item[data-mapping-id="${mappingId}"]`);
+        if (mappingDiv) {
+            mappingDiv.remove();
+        }
+        
+        // Remove from array
+        this.questionMappings = this.questionMappings.filter(m => m.id !== mappingId);
+        
+        // Re-index questions
+        this.reindexQuestions();
+        this.updatePreview();
+    },
+    
+    reindexQuestions() {
+        const mappings = document.querySelectorAll('.question-mapping-item');
+        mappings.forEach((mapping, index) => {
+            mapping.querySelector('span').textContent = `Para ${index + 1}:`;
+        });
+        
+        // Update the internal array
+        this.questionMappings.forEach((mapping, index) => {
+            mapping.index = index + 1;
+        });
+    },
+    
+    updateQuestionMappings() {
+        // Update all select options when headings change
+        const mappings = document.querySelectorAll('.question-mapping-item select');
+        mappings.forEach(select => {
+            const currentValue = select.value;
+            let optionsHtml = '<option value="">Select heading</option>';
+            
+            const headings = document.querySelectorAll('#matching-headings-container .heading-item');
+            headings.forEach((heading, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const text = heading.querySelector('input[type="text"]').value || `Heading ${letter}`;
+                optionsHtml += `<option value="${index}"${currentValue == index ? ' selected' : ''}>${letter}. ${text.substring(0, 30)}${text.length > 30 ? '...' : ''}</option>`;
+            });
+            
+            select.innerHTML = optionsHtml;
+        });
+    },
+    
+    updateUI() {
+        // Enable/disable add question button
+        const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+        if (addQuestionBtn) {
+            addQuestionBtn.disabled = this.headingCount < 2;
+        }
+        
+        // Update counts
+        const usedCount = this.questionMappings.filter(m => m.selectedHeading !== null).length;
+        const totalCount = this.headingCount;
+        
+        document.getElementById('used-headings-count').textContent = usedCount;
+        document.getElementById('total-headings-count').textContent = totalCount;
+        
+        // Update validation status
+        const validationStatus = document.getElementById('validation-status');
+        if (validationStatus) {
+            if (usedCount > 0 && usedCount < totalCount) {
+                validationStatus.classList.remove('hidden');
+                validationStatus.classList.remove('text-red-600');
+                validationStatus.classList.add('text-green-600');
+                validationStatus.innerHTML = '✓ Valid configuration';
+            } else if (usedCount === totalCount && totalCount > 0) {
+                validationStatus.classList.remove('hidden');
+                validationStatus.classList.remove('text-green-600');
+                validationStatus.classList.add('text-red-600');
+                validationStatus.innerHTML = '⚠ Add more unused headings';
+            } else {
+                validationStatus.classList.add('hidden');
+            }
+        }
+    },
+    
+    updatePreview() {
+        // Update headings preview
+        const headingsPreview = document.getElementById('preview-headings-list');
+        const questionsPreview = document.getElementById('preview-questions-list');
+        
+        if (!headingsPreview || !questionsPreview) return;
+        
+        // Build headings list
+        const headings = document.querySelectorAll('#matching-headings-container .heading-item');
+        if (headings.length > 0) {
+            let headingsHtml = '<div class="bg-gray-50 p-3 rounded border border-gray-200 mb-4">';
+            headingsHtml += '<div class="font-semibold text-sm mb-2">List of Headings</div>';
+            
+            headings.forEach((heading, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const text = heading.querySelector('input[type="text"]').value || `[Heading ${letter}]`;
+                const isUsed = this.questionMappings.some(m => m.selectedHeading === index);
+                
+                headingsHtml += `<div class="text-sm mb-1 ${isUsed ? 'text-gray-400' : 'text-gray-700'}">`;
+                headingsHtml += `<strong>${letter}.</strong> ${text}`;
+                if (isUsed) {
+                    headingsHtml += ' <span class="text-xs text-gray-400">(used)</span>';
+                }
+                headingsHtml += '</div>';
+            });
+            
+            headingsHtml += '</div>';
+            headingsPreview.innerHTML = headingsHtml;
+        } else {
+            headingsPreview.innerHTML = '<p class="text-gray-400 text-center py-8">No headings added yet</p>';
+        }
+        
+        // Build questions preview
+        if (this.questionMappings.length > 0) {
+            let questionsHtml = '<div class="space-y-2">';
+            
+            this.questionMappings.forEach(mapping => {
+                const selectedLetter = mapping.selectedHeading !== null ? String.fromCharCode(65 + mapping.selectedHeading) : '';
+                questionsHtml += `
+                    <div class="flex items-center gap-2 text-sm">
+                        <div class="border border-gray-300 rounded px-2 py-1 min-w-[40px] text-center bg-white">
+                            ${selectedLetter || '?'}
+                        </div>
+                        <span class="text-gray-700">Paragraph ${mapping.index}</span>
+                    </div>
+                `;
+            });
+            
+            questionsHtml += '</div>';
+            questionsPreview.innerHTML = questionsHtml;
+        } else {
+            questionsPreview.innerHTML = '<p class="text-gray-400 text-center py-4 text-sm">No questions mapped yet</p>';
+        }
+        
+        this.updateUI();
+    },
+    
+    showBulkModal() {
+        const modal = document.getElementById('bulk-headings-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.getElementById('bulk-headings-input').focus();
+        }
+    },
+    
+    hideBulkModal() {
+        const modal = document.getElementById('bulk-headings-modal');
+        const input = document.getElementById('bulk-headings-input');
+        
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        
+        if (input) {
+            input.value = '';
+        }
+    },
+    
+    processBulkHeadings() {
+        const input = document.getElementById('bulk-headings-input');
+        if (!input) return;
+        
+        const headings = input.value.split('\n').filter(line => line.trim());
+        
+        if (headings.length === 0) {
+            alert('Please enter at least one heading.');
+            return;
+        }
+        
+        // Clear existing headings
+        const container = document.getElementById('matching-headings-container');
+        if (container) {
+            container.innerHTML = '';
+            this.headingCount = 0;
+            this.questionMappings = [];
+            document.getElementById('question-heading-mapper').innerHTML = '<p class="text-sm text-gray-500 italic">Add headings first, then map them to questions here</p>';
+        }
+        
+        // Add new headings
+        headings.forEach(heading => {
+            this.addHeading(heading.trim());
+        });
+        
+        this.hideBulkModal();
+        
+        // Show success notification
+        this.showNotification(`${headings.length} headings added successfully!`);
+    },
+    
+    showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all transform translate-y-20';
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.transform = 'translateY(0)';
+        }, 10);
+        
+        setTimeout(() => {
+            notification.style.transform = 'translateY(20px)';
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+};
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => MatchingHeadingsManager.init());
+} else {
+    MatchingHeadingsManager.init();
+}
+
+// Make it globally available
+window.MatchingHeadingsManager = MatchingHeadingsManager;
+</script>

@@ -87,6 +87,7 @@ class QuestionController extends Controller
         
         // Common data for all sections
         $existingQuestions = $testSet->questions()
+            ->where('question_type', '!=', 'passage')
             ->orderBy('part_number')
             ->orderBy('order_number')
             ->get();
@@ -137,6 +138,9 @@ class QuestionController extends Controller
             $rules['passage_text'] = 'nullable|string';
         } else if ($request->question_type === 'plan_map_diagram') {
             // For diagram questions, content can be auto-generated
+            $rules['content'] = 'nullable|string';
+        } else if ($request->question_type === 'matching_headings') {
+            // For matching headings, content will be auto-generated
             $rules['content'] = 'nullable|string';
         } else {
             $rules['content'] = 'required|string';
@@ -201,6 +205,16 @@ class QuestionController extends Controller
             $rules['matching_pairs'] = 'required|array|min:2';
             $rules['matching_pairs.*.left'] = 'required|string';
             $rules['matching_pairs.*.right'] = 'required|string';
+        }
+        
+        // Add matching headings validation
+        if ($request->question_type === 'matching_headings') {
+            // Check for JSON data first
+            if ($request->has('matching_headings_json')) {
+                $rules['matching_headings_json'] = 'required|json';
+            }
+            // Don't require traditional options for matching_headings
+            // Options will be extracted from the JSON data
         }
 
         if ($request->question_type === 'form_completion' && !$request->has('form_structure_json')) {
@@ -291,6 +305,20 @@ class QuestionController extends Controller
                 }
                 $typeSpecificData['form_structure'] = $formStructure;
                 \Log::info('Form structure from form:', $formStructure);
+            }
+        }
+        
+        // Handle matching headings JSON data
+        if ($request->question_type === 'matching_headings' && $request->has('matching_headings_json')) {
+            $matchingHeadingsData = json_decode($request->matching_headings_json, true);
+            if ($matchingHeadingsData) {
+                $typeSpecificData['matching_headings'] = $matchingHeadingsData;
+                
+                // Store mappings in section specific data
+                $sectionSpecificData['headings'] = $matchingHeadingsData['headings'] ?? [];
+                $sectionSpecificData['mappings'] = $matchingHeadingsData['mappings'] ?? [];
+                
+                \Log::info('Matching headings data from JSON:', $matchingHeadingsData);
             }
         }
         
@@ -417,6 +445,18 @@ class QuestionController extends Controller
                           ", next to questions $startNum-$endNum.";
             }
             
+            // Generate content for matching headings if not provided
+            if ($request->question_type === 'matching_headings' && empty($content)) {
+                $startNum = $request->order_number ?? 1;
+                if (isset($typeSpecificData['matching_headings']['mappings'])) {
+                    $count = count($typeSpecificData['matching_headings']['mappings']);
+                } else {
+                    $count = 5; // default
+                }
+                $endNum = $startNum + $count - 1;
+                $content = "Questions {$startNum}-{$endNum}\n\nChoose the correct heading for each paragraph from the list of headings below.";
+            }
+            
             // Prepare question data
             $questionData = [
                 'test_set_id' => $request->test_set_id,
@@ -432,6 +472,11 @@ class QuestionController extends Controller
                 'word_limit' => $request->word_limit ?? null,
                 'time_limit' => $request->time_limit ?? null,
             ];
+            
+            // Set marks based on question type
+            if ($request->question_type === 'matching_headings' && isset($typeSpecificData['matching_headings']['mappings'])) {
+                $questionData['marks'] = $request->marks ?? count($typeSpecificData['matching_headings']['mappings']);
+            }
             
             // Add progressive card fields for speaking section
             if ($section === 'speaking') {
@@ -547,10 +592,33 @@ class QuestionController extends Controller
             if ($this->needsOptions($request->question_type) && isset($request->options)) {
                 foreach ($request->options as $index => $option) {
                     if (!empty($option['content'])) {
+                        // For matching_headings, check if it's a correct heading based on mappings
+                        $isCorrect = false;
+                        if ($request->question_type === 'matching_headings') {
+                            // For matching headings, we'll mark options as correct based on JSON data
+                            // This is handled differently as mappings determine correctness
+                            $isCorrect = false; // Default to false, actual mapping is in section_specific_data
+                        } else {
+                            $isCorrect = ($request->correct_option == $index);
+                        }
+                        
                         QuestionOption::create([
                             'question_id' => $question->id,
                             'content' => $option['content'],
-                            'is_correct' => ($request->correct_option == $index),
+                            'is_correct' => $isCorrect,
+                        ]);
+                    }
+                }
+            }
+            
+            // Handle matching_headings options separately
+            if ($request->question_type === 'matching_headings' && isset($request->options)) {
+                foreach ($request->options as $index => $option) {
+                    if (!empty($option['content'])) {
+                        QuestionOption::create([
+                            'question_id' => $question->id,
+                            'content' => $option['content'],
+                            'is_correct' => false, // For matching headings, correctness is determined by mappings
                         ]);
                     }
                 }
@@ -686,6 +754,13 @@ class QuestionController extends Controller
             $rules['card_theme'] = 'nullable|string|in:blue,purple,green,red';
             $rules['speaking_tips'] = 'nullable|string|max:500';
         }
+        
+        // Add matching headings validation
+        if ($request->question_type === 'matching_headings') {
+            if ($request->has('matching_headings_json')) {
+                $rules['matching_headings_json'] = 'required|json';
+            }
+        }
 
         $request->validate($rules);
 
@@ -713,6 +788,32 @@ class QuestionController extends Controller
             // Handle cue card structure
             if ($request->question_type === 'part2_cue_card' && $request->has('form_structure_json')) {
                 $updateData['form_structure'] = json_decode($request->form_structure_json, true);
+            }
+        }
+        
+        // Handle matching headings data
+        if ($request->question_type === 'matching_headings' && $request->has('matching_headings_json')) {
+            $matchingHeadingsData = json_decode($request->matching_headings_json, true);
+            if ($matchingHeadingsData) {
+                // Get existing section specific data
+                $sectionSpecificData = $question->section_specific_data ?? [];
+                
+                // Update with new data
+                $sectionSpecificData['headings'] = $matchingHeadingsData['headings'] ?? [];
+                $sectionSpecificData['mappings'] = $matchingHeadingsData['mappings'] ?? [];
+                
+                $updateData['section_specific_data'] = $sectionSpecificData;
+                
+                // Update marks based on mappings count
+                if (isset($matchingHeadingsData['mappings'])) {
+                    $updateData['marks'] = $request->marks ?? count($matchingHeadingsData['mappings']);
+                }
+                
+                \Log::info('Updating matching headings data for question #' . $question->id, [
+                    'headings_count' => count($matchingHeadingsData['headings'] ?? []),
+                    'mappings_count' => count($matchingHeadingsData['mappings'] ?? []),
+                    'data' => $matchingHeadingsData
+                ]);
             }
         }
 
@@ -771,6 +872,23 @@ class QuestionController extends Controller
             $question->save();
         }
 
+        // Handle options update for matching headings
+        if ($question->question_type === 'matching_headings' && isset($request->options)) {
+            // Delete existing options
+            $question->options()->delete();
+            
+            // Create new options
+            foreach ($request->options as $index => $option) {
+                if (!empty($option['content'])) {
+                    QuestionOption::create([
+                        'question_id' => $question->id,
+                        'content' => $option['content'],
+                        'is_correct' => false, // For matching headings, correctness is in mappings
+                    ]);
+                }
+            }
+        }
+        
         return redirect()->route('admin.test-sets.show', $question->test_set_id)
             ->with('success', 'Question updated successfully.');
     }
@@ -814,18 +932,18 @@ class QuestionController extends Controller
     private function needsOptions($questionType): bool
     {
         // Special types that don't need traditional options
-        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram'];
+        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram', 'matching_headings'];
         
         // Text input types that don't need options
-        $textTypes = ['short_answer', 'sentence_completion', 'note_completion'];
+        $textTypes = ['short_answer', 'sentence_completion', 'note_completion', 'summary_completion', 'fill_blanks'];
         
         // If it's a special type or text type, no options needed
         if (in_array($questionType, $specialTypes) || in_array($questionType, $textTypes)) {
             return false;
         }
         
-        // Option-based types
-        $optionTypes = ['multiple_choice', 'true_false', 'yes_no'];
+        // Option-based types that require correct_option validation
+        $optionTypes = ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features'];
         
         return in_array($questionType, $optionTypes);
     }
@@ -849,15 +967,39 @@ class QuestionController extends Controller
      */
     private function calculateNextQuestionNumber(TestSet $testSet): int
     {
-        $lastQuestion = $testSet->questions()
-            ->orderBy('order_number', 'desc')
-            ->first();
+        // Get all questions (excluding passages) ordered by part and order number
+        $questions = $testSet->questions()
+            ->where('question_type', '!=', 'passage')
+            ->orderBy('part_number')
+            ->orderBy('order_number')
+            ->get();
             
-        if (!$lastQuestion) {
+        if ($questions->isEmpty()) {
             return 1;
         }
         
-        return $lastQuestion->order_number + 1;
+        // Calculate total question count including blanks and master questions
+        $totalCount = 0;
+        
+        foreach ($questions as $question) {
+            // Check if it's a master matching headings
+            if ($question->question_type === 'matching_headings' && $question->isMasterMatchingHeading()) {
+                // Add the count of actual questions in the master
+                $actualCount = $question->getActualQuestionCount();
+                $totalCount += $actualCount;
+            }
+            // Check if question has blanks
+            elseif ($blankCount = $question->countBlanks()) {
+                $totalCount += $blankCount;
+            }
+            // Regular question
+            else {
+                $totalCount += 1;
+            }
+        }
+        
+        // Next question number is total count + 1
+        return $totalCount + 1;
     }
     
     /**

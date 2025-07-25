@@ -58,10 +58,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Question / Topic <span class="text-red-500">*</span>
                                 </label>
-                                <textarea id="content" name="content" rows="4" 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 text-sm"
-                                          placeholder="Enter the speaking question or topic..."
-                                          required>{{ old('content') }}</textarea>
+                                <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                             </div>
                             
                             <!-- Cue Card Points (Part 2 only) -->
@@ -132,11 +129,32 @@
     @include('admin.questions.partials.modals')
     
     @push('scripts')
+    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script src="{{ asset('js/admin/question-common.js') }}"></script>
     <script src="{{ asset('js/admin/question-speaking.js') }}"></script>
     
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize TinyMCE for main content
+        tinymce.init({
+            selector: '.tinymce-editor',
+            height: 250,
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'charmap',
+                'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'table', 'code', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link | removeformat code',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+            content_css: '//www.tiny.cloud/css/codepen.min.css',
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                });
+            }
+        });
+        
         const questionType = document.getElementById('question_type');
         const cueCardSection = document.getElementById('cue-card-section');
         

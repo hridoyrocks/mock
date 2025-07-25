@@ -26,13 +26,10 @@ class OtpNotification extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-            ->subject('Your IELTS Mock Test Verification Code')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Your verification code is:')
-            ->line('# ' . $this->otp->otp_code)
-            ->line('This code will expire in 5 minutes.')
-            ->line('If you didn\'t request this code, please ignore this email.')
-            ->action('Open IELTS Mock Test', url('/'))
-            ->salutation('Best regards, IELTS Mock Test Team');
+            ->subject('Verify Your Email Address')
+            ->view('emails.otp-verification', [
+                'user' => $notifiable,
+                'otp' => $this->otp->otp_code
+            ]);
     }
 }

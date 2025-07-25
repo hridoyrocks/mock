@@ -40,12 +40,12 @@ class ReferralCompleted extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Congratulations! Your referral earned you a reward')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Great news! Your referral has completed their first test.')
-            ->line('You have earned ' . $this->reward->formatted_amount . ' as a referral reward!')
-            ->line('Your current referral balance is: ৳ ' . number_format($notifiable->referral_balance, 2))
-            ->action('View Your Referrals', url('/dashboard/referrals'))
-            ->line('Keep sharing and earning more rewards!');
+            ->view('emails.referral-completed', [
+                'referral' => $this->referral->load('referrer', 'referee'),
+                'totalReferrals' => $notifiable->total_referrals,
+                'successfulReferrals' => $notifiable->successful_referrals,
+                'totalBalance' => $notifiable->referral_balance
+            ]);
     }
 
     /**

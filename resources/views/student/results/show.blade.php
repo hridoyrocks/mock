@@ -315,7 +315,7 @@
                             <p class="text-gray-400 text-sm mb-2">Questions Attempted</p>
                             <p class="text-2xl font-bold text-white">
                                 {{ $attempt->answered_questions ?? count($attempt->answers) }}
-                                <span class="text-lg text-gray-400">/ {{ $totalQuestions ?? $attempt->testSet->questions()->where('question_type', '!=', 'passage')->count() }}</span>
+                                <span class="text-lg text-gray-400">/ {{ $attempt->total_questions ?? $totalQuestions ?? $attempt->testSet->questions()->where('question_type', '!=', 'passage')->count() }}</span>
                             </p>
                         </div>
                         
@@ -366,7 +366,7 @@
                 </div>
 
                 {{-- Question Analysis --}}
-                <div class="glass rounded-2xl p-6 relative">
+                <div id="question-analysis" class="glass rounded-2xl p-6 relative">
                     <h3 class="text-xl font-bold text-white mb-6">
                         <i class="fas fa-microscope text-purple-400 mr-2"></i>
                         Question Analysis
@@ -398,22 +398,93 @@
                             @php
                                 $allQuestions = $attempt->testSet->questions()
                                     ->where('question_type', '!=', 'passage')
+                                    ->orderBy('part_number')
                                     ->orderBy('order_number')
                                     ->get();
-                                $answeredQuestions = $attempt->answers->pluck('question_id')->toArray();
+                                
+                                // Build display questions with proper numbering
+                                $displayQuestions = [];
+                                $currentNumber = 1;
+                                $masterQuestionIds = []; // Track master questions already processed
+                                
+                                foreach ($allQuestions as $question) {
+                                    if ($question->isMasterMatchingHeading()) {
+                                        if (!in_array($question->id, $masterQuestionIds)) {
+                                            $masterQuestionIds[] = $question->id;
+                                            $mappings = $question->section_specific_data['mappings'] ?? [];
+                                            
+                                            // Get all answers for this master question
+                                            $masterAnswers = $attempt->answers->filter(function($answer) use ($question) {
+                                                return $answer->question_id == $question->id;
+                                            });
+                                            
+                                            // Create display for each sub-question
+                                            foreach ($mappings as $mapping) {
+                                                $subQuestionNum = $mapping['question'] ?? $mapping['number'] ?? $currentNumber;
+                                                $paragraphLabel = $mapping['paragraph'] ?? chr(65 + array_search($mapping, $mappings));
+                                                
+                                                // Find the specific answer for this sub-question
+                                                $specificAnswer = $masterAnswers->first(function($answer) use ($subQuestionNum) {
+                                                    if ($answer->answer) {
+                                                        $decoded = json_decode($answer->answer, true);
+                                                        return isset($decoded['sub_question']) && $decoded['sub_question'] == $subQuestionNum;
+                                                    }
+                                                    return false;
+                                                });
+                                                
+                                                $displayQuestions[] = [
+                                                    'number' => $currentNumber,
+                                                    'question' => $question,
+                                                    'content' => "Choose the correct heading for Paragraph {$paragraphLabel}",
+                                                    'answer' => $specificAnswer,
+                                                    'is_master_sub' => true,
+                                                    'sub_question' => $subQuestionNum,
+                                                    'correct_letter' => $mapping['correct'] ?? null
+                                                ];
+                                                $currentNumber++;
+                                            }
+                                        }
+                                    } else {
+                                        // Regular question
+                                        $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                        $displayQuestions[] = [
+                                            'number' => $currentNumber,
+                                            'question' => $question,
+                                            'content' => $question->content,
+                                            'answer' => $answer,
+                                            'is_master_sub' => false
+                                        ];
+                                        
+                                        // Count blanks for numbering
+                                        $blankCount = $question->countBlanks();
+                                        $currentNumber += $blankCount > 0 ? $blankCount : 1;
+                                    }
+                                }
                             @endphp
                             
-                            @foreach($allQuestions->take(10) as $question)
+                            @php
+                                $startIndex = ($currentPage - 1) * $perPage;
+                                $questionsToShow = collect($displayQuestions)->slice($startIndex, $perPage);
+                            @endphp
+                            
+                            @foreach($questionsToShow as $item)
                                 @php
-                                    $answer = $attempt->answers->where('question_id', $question->id)->first();
-                                    $isAnswered = in_array($question->id, $answeredQuestions);
+                                    $question = $item['question'];
+                                    $answer = $item['answer'];
+                                    $isAnswered = !empty($answer);
                                     
                                     // Check if answer is correct
                                     $isCorrect = false;
                                     $displayAnswer = 'No answer';
                                     
                                     if ($isAnswered && $answer) {
-                                        if ($answer->selectedOption) {
+                                        if ($item['is_master_sub']) {
+                                            // Master matching heading sub-question
+                                            $decoded = json_decode($answer->answer, true);
+                                            $selectedLetter = $decoded['selected_letter'] ?? null;
+                                            $displayAnswer = $selectedLetter ? "Option {$selectedLetter}" : 'No answer';
+                                            $isCorrect = $selectedLetter && $selectedLetter === $item['correct_letter'];
+                                        } elseif ($answer->selectedOption) {
                                             $displayAnswer = $answer->selectedOption->content;
                                             $isCorrect = $answer->selectedOption->is_correct;
                                         } elseif ($answer->answer) {
@@ -452,10 +523,10 @@
                                         <div class="flex-1">
                                             <div class="flex items-center gap-3 mb-2">
                                                 <span class="glass px-3 py-1 rounded-lg text-sm font-medium text-white">
-                                                    Q{{ $question->order_number }}
+                                                    Q{{ $item['number'] }}
                                                 </span>
                                                 <p class="text-gray-300 text-sm flex-1">
-                                                    {!! Str::limit(strip_tags($question->content), 100) !!}
+                                                    {!! Str::limit(strip_tags($item['content']), 100) !!}
                                                 </p>
                                             </div>
                                             
@@ -476,7 +547,9 @@
                                                     <p class="text-gray-400 mt-1">
                                                         Correct answer: 
                                                         <span class="text-green-400">
-                                                            @if($question->correctOption())
+                                                            @if($item['is_master_sub'])
+                                                                Option {{ $item['correct_letter'] }}
+                                                            @elseif($question->correctOption())
                                                                 {{ $question->correctOption()->content }}
                                                             @elseif($question->section_specific_data && isset($question->section_specific_data['blank_answers']))
                                                                 @php
@@ -516,10 +589,99 @@
                             @endforeach
                         </div>
                         
-                        @if($allQuestions->count() > 10)
-                            <p class="text-center text-gray-400 text-sm mt-4">
-                                Showing 10 of {{ $allQuestions->count() }} questions
-                            </p>
+                        {{-- Pagination Controls --}}
+                        @if(count($displayQuestions) > $perPage)
+                            @php
+                                $totalPages = ceil(count($displayQuestions) / $perPage);
+                                $startIndex = ($currentPage - 1) * $perPage;
+                                $endIndex = min($startIndex + $perPage, count($displayQuestions));
+                            @endphp
+                            
+                            <div class="mt-6 border-t border-white/10 pt-6">
+                                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <p class="text-gray-400 text-sm text-center sm:text-left">
+                                        Showing {{ $startIndex + 1 }} to {{ $endIndex }} of {{ count($displayQuestions) }} questions
+                                    </p>
+                                    
+                                    <div class="flex items-center gap-2">
+                                        {{-- Previous Button --}}
+                                        @if($currentPage > 1)
+                                            <a href="?page={{ $currentPage - 1 }}" 
+                                               class="glass px-4 py-2 rounded-lg text-white hover:border-purple-500/50 transition-all flex items-center gap-2">
+                                                <i class="fas fa-chevron-left"></i>
+                                                Previous
+                                            </a>
+                                        @else
+                                            <button disabled 
+                                                    class="glass px-4 py-2 rounded-lg text-gray-500 opacity-50 cursor-not-allowed flex items-center gap-2">
+                                                <i class="fas fa-chevron-left"></i>
+                                                Previous
+                                            </button>
+                                        @endif
+                                        
+                                        {{-- Page Numbers (Limited for mobile) --}}
+                                        <div class="hidden sm:flex items-center gap-1">
+                                            @php
+                                                $showPages = [];
+                                                // Always show first page
+                                                $showPages[] = 1;
+                                                
+                                                // Show current page and nearby pages
+                                                for($i = max(2, $currentPage - 1); $i <= min($totalPages - 1, $currentPage + 1); $i++) {
+                                                    $showPages[] = $i;
+                                                }
+                                                
+                                                // Always show last page if more than 1 page
+                                                if($totalPages > 1) {
+                                                    $showPages[] = $totalPages;
+                                                }
+                                                
+                                                $showPages = array_unique($showPages);
+                                                sort($showPages);
+                                            @endphp
+                                            
+                                            @foreach($showPages as $index => $pageNum)
+                                                @if($index > 0 && $showPages[$index] - $showPages[$index-1] > 1)
+                                                    <span class="text-gray-500">...</span>
+                                                @endif
+                                                
+                                                @if($pageNum == $currentPage)
+                                                    <span class="glass px-3 py-2 rounded-lg bg-purple-600/30 text-white font-medium">
+                                                        {{ $pageNum }}
+                                                    </span>
+                                                @else
+                                                    <a href="?page={{ $pageNum }}" 
+                                                       class="glass px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:border-purple-500/50 transition-all">
+                                                        {{ $pageNum }}
+                                                    </a>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                        
+                                        {{-- Mobile Page Indicator --}}
+                                        <div class="flex sm:hidden items-center gap-2">
+                                            <span class="glass px-3 py-2 rounded-lg text-white">
+                                                {{ $currentPage }} / {{ $totalPages }}
+                                            </span>
+                                        </div>
+                                        
+                                        {{-- Next Button --}}
+                                        @if($currentPage < $totalPages)
+                                            <a href="?page={{ $currentPage + 1 }}" 
+                                               class="glass px-4 py-2 rounded-lg text-white hover:border-purple-500/50 transition-all flex items-center gap-2">
+                                                Next
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        @else
+                                            <button disabled 
+                                                    class="glass px-4 py-2 rounded-lg text-gray-500 opacity-50 cursor-not-allowed flex items-center gap-2">
+                                                Next
+                                                <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -641,6 +803,25 @@
 
     @push('scripts')
     <script>
+    // Scroll to question analysis section on page change
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page');
+        
+        if (page && page !== '1') {
+            // Find the question analysis section
+            const analysisSection = document.getElementById('question-analysis');
+            if (analysisSection) {
+                // Scroll to the section with some offset
+                const offsetTop = analysisSection.offsetTop - 100;
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    });
+    
     function switchTab(tab) {
         // Update tab buttons
         document.getElementById('ai-tab').classList.toggle('border-purple-500', tab === 'ai');

@@ -5,6 +5,31 @@ if (file_exists(base_path('routes/test.php'))) {
     require base_path('routes/test.php');
 }
 
+// Include test config route for checking AI prompts
+if (file_exists(base_path('routes/test-config.php'))) {
+    require base_path('routes/test-config.php');
+}
+
+// Include debug routes
+if (file_exists(base_path('routes/debug-teachers.php'))) {
+    require base_path('routes/debug-teachers.php');
+}
+
+// Include debug routes for reading
+if (file_exists(base_path('routes/debug-reading.php'))) {
+    require base_path('routes/debug-reading.php');
+}
+
+// Include debug routes for matching headings
+if (file_exists(base_path('routes/debug-matching-headings.php'))) {
+    require base_path('routes/debug-matching-headings.php');
+}
+
+// Include test matching display route
+if (file_exists(base_path('routes/test-matching-display.php'))) {
+    require base_path('routes/test-matching-display.php');
+}
+
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\StudentAttemptController;
 use App\Http\Controllers\Admin\TestSectionController;
@@ -318,6 +343,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/test-tinymce', function() {
             return view('admin.test-tinymce');
         })->name('test-tinymce');
+        
+        // Debug TinyMCE Config
+        Route::get('/tinymce-debug', function() {
+            return view('admin.tinymce-debug');
+        })->name('tinymce-debug');
         // Admin Dashboard
         Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/quick-stats', [App\Http\Controllers\Admin\DashboardController::class, 'quickStats'])->name('dashboard.quick-stats');
@@ -486,6 +516,19 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/website', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'update'])->name('website.update');
             Route::delete('/website/logo', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'removeLogo'])->name('website.remove-logo');
             Route::delete('/website/favicon', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'removeFavicon'])->name('website.remove-favicon');
+        });
+        
+        // User Management
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Admin\UserController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\UserController::class, 'store'])->name('store');
+            Route::get('/{user}', [App\Http\Controllers\Admin\UserController::class, 'show'])->name('show');
+            Route::get('/{user}/edit', [App\Http\Controllers\Admin\UserController::class, 'edit'])->name('edit');
+            Route::put('/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('update');
+            Route::delete('/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('destroy');
+            Route::post('/{user}/toggle-ban', [App\Http\Controllers\Admin\UserController::class, 'toggleBan'])->name('toggle-ban');
+            Route::post('/{user}/verify-email', [App\Http\Controllers\Admin\UserController::class, 'verifyEmail'])->name('verify-email');
         });
 
     });

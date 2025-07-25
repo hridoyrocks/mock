@@ -354,11 +354,13 @@ const AnswerManager = {
             input.addEventListener('change', () => this.trackAnswer(input));
             input.addEventListener('blur', () => this.trackAnswer(input));
 
-            // Auto-width for blanks
+            // Auto-width for blanks based on content
             if (input.classList.contains('gap-input')) {
+                // Set initial width based on placeholder
+                this.adjustInputWidth(input);
+                
                 input.addEventListener('input', function () {
-                    const length = this.value.length;
-                    this.style.width = length > 8 ? (length * 9) + 'px' : '100px';
+                    AnswerManager.adjustInputWidth(this);
                 });
             }
 
@@ -393,9 +395,45 @@ const AnswerManager = {
         document.querySelectorAll('input[type="radio"], input[type="text"]:not(.gap-input), select:not(.gap-dropdown)').forEach(input => {
             input.addEventListener('change', () => this.trackAnswer(input));
         });
+        
+        // IMPORTANT FIX: Track ALL select dropdowns including matching headings
+        // This includes regular selects and those for matching headings with array notation
+        document.querySelectorAll('select').forEach(select => {
+            // Add change event listener to all selects
+            select.addEventListener('change', () => {
+                console.log('Select changed:', select.name, select.value);
+                this.trackAnswer(select);
+                this.saveAllAnswers(); // Force save
+            });
+            
+            // Also add blur event for extra safety
+            select.addEventListener('blur', () => {
+                if (select.value) {
+                    this.trackAnswer(select);
+                }
+            });
+        });
+        
+        // Special handling for matching headings with array notation
+        document.querySelectorAll('select[name*="["][name*="]"]').forEach(select => {
+            console.log('Found array notation select:', select.name);
+            
+            // Ensure this select is properly tracked
+            if (!select.hasAttribute('data-tracking-initialized')) {
+                select.setAttribute('data-tracking-initialized', 'true');
+                
+                select.addEventListener('change', (e) => {
+                    console.log('Array notation select changed:', e.target.name, e.target.value);
+                    this.trackAnswer(e.target);
+                    this.saveAllAnswers();
+                });
+            }
+        });
     },
 
     trackAnswer(input) {
+        console.log('Tracking answer for:', input.name || input.id, 'Value:', input.value);
+        
         const questionNumber = input.dataset.questionNumber;
         if (questionNumber) {
             const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
@@ -407,6 +445,35 @@ const AnswerManager = {
                 }
             }
         }
+        
+        // For matching headings, check all related selects
+        if (input.name && input.name.includes('[') && input.name.includes(']')) {
+            // Extract question ID from name like answers[123][0]
+            const match = input.name.match(/answers\[(\d+)\]/);
+            if (match) {
+                const questionId = match[1];
+                // Check all selects for this question
+                const relatedSelects = document.querySelectorAll(`select[name^="answers[${questionId}]"]`);
+                let hasAnyAnswer = false;
+                
+                relatedSelects.forEach(select => {
+                    if (select.value && select.value.trim()) {
+                        hasAnyAnswer = true;
+                    }
+                });
+                
+                // Update the navigation button based on any answers
+                const navButton = document.querySelector(`.number-btn[data-question="${questionId}"]`);
+                if (navButton) {
+                    if (hasAnyAnswer) {
+                        navButton.classList.add('answered');
+                    } else {
+                        navButton.classList.remove('answered');
+                    }
+                }
+            }
+        }
+        
         this.saveAllAnswers();
         this.updateAnswerCount();
     },
@@ -421,18 +488,59 @@ const AnswerManager = {
         }
     },
 
+    adjustInputWidth(input) {
+        // Create a temporary span to measure text width
+        const span = document.createElement('span');
+        span.style.position = 'absolute';
+        span.style.visibility = 'hidden';
+        span.style.whiteSpace = 'pre';
+        span.style.font = window.getComputedStyle(input).font;
+        span.style.fontSize = '13px'; // Match input font size
+        span.style.fontFamily = window.getComputedStyle(input).fontFamily;
+        
+        // Use input value or placeholder for measurement
+        const textToMeasure = input.value || input.placeholder || '';
+        span.textContent = textToMeasure;
+        
+        document.body.appendChild(span);
+        const textWidth = span.offsetWidth;
+        document.body.removeChild(span);
+        
+        // Calculate new width with padding
+        const padding = 24; // Account for padding (10px * 2) + extra space
+        const minWidth = 80; // Increased minimum width
+        const maxWidth = 200; // Increased max width for longer answers
+        
+        let newWidth = textWidth + padding;
+        
+        // Apply constraints
+        if (newWidth < minWidth) {
+            newWidth = minWidth;
+        } else if (newWidth > maxWidth) {
+            newWidth = maxWidth;
+        }
+        
+        // Apply the new width
+        input.style.width = newWidth + 'px';
+    },
+
     saveAllAnswers() {
         const formData = new FormData(document.getElementById('reading-form'));
         const answers = {};
 
+        // Debug: Log all form entries
+        console.log('Saving all answers...');
+        
         for (let [key, value] of formData.entries()) {
             if (key.startsWith('answers[') && value) {
                 answers[key] = value;
+                console.log('Saved:', key, '=', value);
             }
         }
 
         try {
             localStorage.setItem(`testAnswers_${this.attemptId}`, JSON.stringify(answers));
+            console.log('Total answers saved:', Object.keys(answers).length);
         } catch (e) {
             console.warn('Could not save answers:', e);
         }
@@ -459,6 +567,11 @@ const AnswerManager = {
                         } else {
                             input.value = value;
                             this.trackAnswer(input);
+                            
+                            // Adjust width for gap inputs
+                            if (input.classList.contains('gap-input')) {
+                                this.adjustInputWidth(input);
+                            }
                         }
                     }
                 });
@@ -478,6 +591,46 @@ const SubmitHandler = {
     init() {
         this.setupSubmitModal();
         this.setupWarnings();
+        this.debugFormSubmission();
+    },
+    
+    debugFormSubmission() {
+        const form = document.getElementById('reading-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                console.log('=== FORM SUBMISSION DEBUG ===');
+                console.log('Form is submitting...');
+                
+                // Check all form data
+                const formData = new FormData(form);
+                let hasAnswers = false;
+                
+                console.log('All form data:');
+                for (let [key, value] of formData.entries()) {
+                    if (key.startsWith('answers[')) {
+                        console.log(key, ':', value);
+                        if (value) hasAnswers = true;
+                    }
+                }
+                
+                if (!hasAnswers) {
+                    console.error('WARNING: No answers found in form data!');
+                }
+                
+                // Check for any required fields
+                const requiredFields = form.querySelectorAll('[required]');
+                if (requiredFields.length > 0) {
+                    console.log('Required fields found:', requiredFields.length);
+                    requiredFields.forEach(field => {
+                        if (!field.value) {
+                            console.error('Empty required field:', field.name);
+                        }
+                    });
+                }
+                
+                console.log('=== END DEBUG ===');
+            });
+        }
     },
 
     setupSubmitModal() {
@@ -1668,6 +1821,47 @@ const SimpleAnnotationSystem = {
 // ========== Initialize Everything ==========
 document.addEventListener('DOMContentLoaded', function () {
     console.log('🚀 Initializing Simplified Reading Test System...');
+    console.log('Attempt ID:', window.testConfig?.attemptId);
+    
+    // Log all select elements for debugging
+    console.log('Total select elements found:', document.querySelectorAll('select').length);
+    document.querySelectorAll('select[name^="answers["]').forEach(select => {
+        console.log('Select found:', select.name, 'Options:', select.options.length);
+    });
+    
+    // Force IELTS styles
+    const forceIELTSStyles = () => {
+        // Fix all radio buttons
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.style.cssText = '-webkit-appearance: radio !important; -moz-appearance: radio !important; appearance: radio !important; margin: 0 !important; margin-right: 8px !important; width: 14px !important; height: 14px !important; cursor: pointer !important; padding: 0 !important;';
+        });
+        
+        // Fix all question numbers
+        document.querySelectorAll('.ielts-q-number').forEach(el => {
+            el.style.cssText = 'font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;';
+        });
+        
+        // Fix all options
+        document.querySelectorAll('.ielts-option').forEach(el => {
+            el.style.cssText = 'margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important; border: none !important;';
+        });
+        
+        // Fix all labels
+        document.querySelectorAll('.ielts-option label').forEach(el => {
+            el.style.cssText = 'cursor: pointer !important; font-size: 14px !important; color: #000000 !important; font-weight: normal !important; margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;';
+        });
+        
+        // Fix all dropdowns
+        document.querySelectorAll('.ielts-options select').forEach(select => {
+            select.style.cssText = 'width: 100% !important; max-width: 300px !important; padding: 8px 12px !important; border: 1px solid #d1d5db !important; border-radius: 4px !important; font-size: 14px !important; background-color: white !important; color: #000000 !important; cursor: pointer !important; appearance: auto !important; -webkit-appearance: menulist !important; -moz-appearance: menulist !important; background-image: none !important; line-height: 1.5 !important; height: auto !important;';
+        });
+    };
+    
+    // Apply immediately and after delay
+    forceIELTSStyles();
+    setTimeout(forceIELTSStyles, 100);
+    setTimeout(forceIELTSStyles, 500);
+    setTimeout(forceIELTSStyles, 1000);
 
     try {
         // Initialize all modules

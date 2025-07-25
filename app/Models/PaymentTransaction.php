@@ -10,18 +10,26 @@ class PaymentTransaction extends Model
     protected $fillable = [
         'user_id',
         'subscription_id',
+        'subscription_plan_id',
         'transaction_id',
         'payment_method',
         'amount',
         'currency',
         'status',
         'gateway_response',
-        'notes'
+        'notes',
+        'metadata',
+        'coupon_id',
+        'discount_amount',
+        'original_amount'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'original_amount' => 'decimal:2',
         'gateway_response' => 'array',
+        'metadata' => 'array',
     ];
 
     /**
@@ -38,6 +46,14 @@ class PaymentTransaction extends Model
     public function subscription(): BelongsTo
     {
         return $this->belongsTo(UserSubscription::class, 'subscription_id');
+    }
+
+    /**
+     * Get the subscription plan for this transaction.
+     */
+    public function subscriptionPlan(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPlan::class, 'subscription_plan_id');
     }
 
     /**

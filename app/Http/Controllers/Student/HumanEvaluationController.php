@@ -27,51 +27,84 @@ class HumanEvaluationController extends Controller
      */
     public function showTeachers(StudentAttempt $attempt)
     {
-        // Check if attempt belongs to user
-        if ($attempt->user_id !== auth()->id()) {
-            abort(403);
-        }
-        
-        // Check if human evaluation already requested
-        $existingRequest = HumanEvaluationRequest::where('student_attempt_id', $attempt->id)->first();
-        if ($existingRequest) {
-            return redirect()->route('student.evaluation.status', $attempt->id);
-        }
-        
-        // Get section name
-        $section = $attempt->testSet->section->name;
-        
-        // Get available teachers for this section
-        $teachers = Teacher::with('user')
-            ->where('is_available', true)
-            ->whereJsonContains('specialization', $section)
-            ->orderByDesc('rating')
-            ->orderBy('evaluation_price_tokens')
-            ->get()
-            ->map(function ($teacher) use ($section) {
-                $teacher->token_price = $teacher->calculateTokenPrice($section);
-                $teacher->urgent_price = $teacher->calculateTokenPrice($section, true);
-                return $teacher;
-            });
-        
-        // Get user's token balance
-        $tokenBalance = UserEvaluationToken::getOrCreateForUser(auth()->user());
-        
-        // If AJAX request, return only the teacher cards
-        if (request()->ajax()) {
-            return view('student.evaluation.partials.teacher-cards', compact(
+        try {
+            // Check if attempt belongs to user
+            if ($attempt->user_id !== auth()->id()) {
+                if (request()->ajax()) {
+                    return response()->json(['error' => 'Unauthorized'], 403);
+                }
+                abort(403);
+            }
+            
+            // Check if human evaluation already requested
+            $existingRequest = HumanEvaluationRequest::where('student_attempt_id', $attempt->id)->first();
+            if ($existingRequest) {
+                if (request()->ajax()) {
+                    return response()->json(['error' => 'Evaluation already requested', 'redirect' => route('student.evaluation.status', $attempt->id)], 400);
+                }
+                return redirect()->route('student.evaluation.status', $attempt->id);
+            }
+            
+            // Get section name
+            $section = $attempt->testSet->section->name;
+            
+            // Get available teachers for this section
+            $teachers = Teacher::with('user')
+                ->where('is_available', true)
+                ->get()
+                ->filter(function ($teacher) use ($section) {
+                    // Case-insensitive check for specialization
+                    $specializations = $teacher->specialization ?? [];
+                    return collect($specializations)->contains(function ($spec) use ($section) {
+                        return strcasecmp($spec, $section) === 0;
+                    });
+                })
+                ->map(function ($teacher) use ($section) {
+                    $teacher->token_price = $teacher->calculateTokenPrice($section);
+                    $teacher->urgent_price = $teacher->calculateTokenPrice($section, true);
+                    return $teacher;
+                })
+                ->values();
+            
+            // Get user's token balance
+            $tokenBalance = UserEvaluationToken::getOrCreateForUser(auth()->user());
+            
+            // Log for debugging
+            Log::info('Teachers loaded for evaluation', [
+                'attempt_id' => $attempt->id,
+                'section' => $section,
+                'teachers_count' => $teachers->count(),
+                'ajax_request' => request()->ajax()
+            ]);
+            
+            // If AJAX request, return only the teacher cards
+            if (request()->ajax()) {
+                return view('student.evaluation.partials.teacher-cards', compact(
+                    'teachers',
+                    'tokenBalance',
+                    'section'
+                ));
+            }
+            
+            return view('student.evaluation.select-teacher', compact(
+                'attempt',
                 'teachers',
                 'tokenBalance',
                 'section'
             ));
+        } catch (\Exception $e) {
+            Log::error('Error loading teachers', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'attempt_id' => $attempt->id ?? null
+            ]);
+            
+            if (request()->ajax()) {
+                return response()->json(['error' => 'Failed to load teachers'], 500);
+            }
+            
+            return back()->with('error', 'Failed to load teachers. Please try again.');
         }
-        
-        return view('student.evaluation.select-teacher', compact(
-            'attempt',
-            'teachers',
-            'tokenBalance',
-            'section'
-        ));
     }
     
     /**
