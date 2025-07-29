@@ -10,14 +10,6 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        then: function ($router) {
-            // Load installer routes if not installed
-            if (!file_exists(storage_path('installed')) && !env('APP_INSTALLED', false)) {
-                $router->middleware('web')
-                    ->prefix('install')
-                    ->group(base_path('routes/installer.php'));
-            }
-        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         // Register middleware aliases
@@ -28,15 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'usage.limit' => \App\Http\Middleware\TrackUsageLimit::class,
             'verify.webhook' => \App\Http\Middleware\VerifyWebhookSignature::class,
             'maintenance.check' => \App\Http\Middleware\CheckMaintenanceMode::class,
-            'install' => \App\Http\Middleware\RedirectIfInstalled::class,
-            'installed' => \App\Http\Middleware\RedirectIfNotInstalled::class,
             'teacher' => \App\Http\Middleware\IsTeacher::class,
         ]);
         
         // Web middleware group
         $middleware->web(append: [
             \App\Http\Middleware\CheckMaintenanceMode::class,
-            \App\Http\Middleware\RedirectIfNotInstalled::class,
             \App\Http\Middleware\CheckBanned::class,
         ]);
         
