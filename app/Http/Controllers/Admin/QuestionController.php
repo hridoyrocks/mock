@@ -207,6 +207,13 @@ class QuestionController extends Controller
             $rules['matching_pairs.*.right'] = 'required|string';
         }
         
+        // Add sentence completion validation
+        if ($request->question_type === 'sentence_completion') {
+            if ($request->has('sentence_completion_json')) {
+                $rules['sentence_completion_json'] = 'required|json';
+            }
+        }
+        
         // Add matching headings validation
         if ($request->question_type === 'matching_headings') {
             // Check for JSON data first
@@ -319,6 +326,40 @@ class QuestionController extends Controller
                 $sectionSpecificData['mappings'] = $matchingHeadingsData['mappings'] ?? [];
                 
                 \Log::info('Matching headings data from JSON:', $matchingHeadingsData);
+            }
+        }
+        
+        // Handle sentence completion JSON data
+        if ($request->question_type === 'sentence_completion' && $request->has('sentence_completion_json')) {
+            $sentenceCompletionData = json_decode($request->sentence_completion_json, true);
+            if ($sentenceCompletionData) {
+                // Store the sentence completion data
+                $sectionSpecificData['sentence_completion'] = $sentenceCompletionData;
+                
+                // Store dropdown options in expected format
+                if (isset($sentenceCompletionData['options'])) {
+                    $dropdownOptions = [];
+                    foreach ($sentenceCompletionData['sentences'] as $index => $sentence) {
+                        $questionNum = $sentence['questionNumber'];
+                        // Create options string from available options
+                        $optionsArray = array_column($sentenceCompletionData['options'], 'text');
+                        $dropdownOptions[$questionNum] = implode(',', $optionsArray);
+                    }
+                    $sectionSpecificData['dropdown_options'] = $dropdownOptions;
+                    
+                    // Store correct answers
+                    $dropdownCorrect = [];
+                    foreach ($sentenceCompletionData['sentences'] as $index => $sentence) {
+                        $questionNum = $sentence['questionNumber'];
+                        // Find index of correct answer
+                        $correctLetter = $sentence['correctAnswer'];
+                        $correctIndex = ord($correctLetter) - ord('A');
+                        $dropdownCorrect[$questionNum] = $correctIndex;
+                    }
+                    $sectionSpecificData['dropdown_correct'] = $dropdownCorrect;
+                }
+                
+                \Log::info('Sentence completion data from JSON:', $sentenceCompletionData);
             }
         }
         
@@ -761,6 +802,13 @@ class QuestionController extends Controller
                 $rules['matching_headings_json'] = 'required|json';
             }
         }
+        
+        // Add sentence completion validation
+        if ($request->question_type === 'sentence_completion') {
+            if ($request->has('sentence_completion_json')) {
+                $rules['sentence_completion_json'] = 'required|json';
+            }
+        }
 
         $request->validate($rules);
 
@@ -813,6 +861,53 @@ class QuestionController extends Controller
                     'headings_count' => count($matchingHeadingsData['headings'] ?? []),
                     'mappings_count' => count($matchingHeadingsData['mappings'] ?? []),
                     'data' => $matchingHeadingsData
+                ]);
+            }
+        }
+        
+        // Handle sentence completion data
+        if ($request->question_type === 'sentence_completion' && $request->has('sentence_completion_json')) {
+            $sentenceCompletionData = json_decode($request->sentence_completion_json, true);
+            if ($sentenceCompletionData) {
+                // Get existing section specific data
+                $sectionSpecificData = $question->section_specific_data ?? [];
+                
+                // Store the sentence completion data
+                $sectionSpecificData['sentence_completion'] = $sentenceCompletionData;
+                
+                // Store dropdown options in expected format
+                if (isset($sentenceCompletionData['options'])) {
+                    $dropdownOptions = [];
+                    foreach ($sentenceCompletionData['sentences'] as $index => $sentence) {
+                        $questionNum = $sentence['questionNumber'];
+                        // Create options string from available options
+                        $optionsArray = array_column($sentenceCompletionData['options'], 'text');
+                        $dropdownOptions[$questionNum] = implode(',', $optionsArray);
+                    }
+                    $sectionSpecificData['dropdown_options'] = $dropdownOptions;
+                    
+                    // Store correct answers
+                    $dropdownCorrect = [];
+                    foreach ($sentenceCompletionData['sentences'] as $index => $sentence) {
+                        $questionNum = $sentence['questionNumber'];
+                        // Find index of correct answer
+                        $correctLetter = $sentence['correctAnswer'];
+                        $correctIndex = ord($correctLetter) - ord('A');
+                        $dropdownCorrect[$questionNum] = $correctIndex;
+                    }
+                    $sectionSpecificData['dropdown_correct'] = $dropdownCorrect;
+                }
+                
+                $updateData['section_specific_data'] = $sectionSpecificData;
+                
+                // Update marks based on sentences count
+                if (isset($sentenceCompletionData['sentences'])) {
+                    $updateData['marks'] = $request->marks ?? count($sentenceCompletionData['sentences']);
+                }
+                
+                \Log::info('Updating sentence completion data for question #' . $question->id, [
+                    'sentences_count' => count($sentenceCompletionData['sentences'] ?? []),
+                    'options_count' => count($sentenceCompletionData['options'] ?? [])
                 ]);
             }
         }

@@ -171,6 +171,60 @@ class ReadingTestController extends Controller
             
             // Save answers
             foreach ($request->answers as $questionId => $answer) {
+                // Check if this is a sentence completion answer (e.g., 123_q14)
+                if (str_contains($questionId, '_q')) {
+                    // Extract question ID and sub-question number
+                    [$actualQuestionId, $subQuestionNum] = explode('_q', $questionId);
+                    $subQuestionNum = (int) $subQuestionNum;
+                    
+                    \Log::info('SENTENCE COMPLETION ANSWER DETECTED', [
+                        'original_key' => $questionId,
+                        'question_id' => $actualQuestionId,
+                        'sub_question_num' => $subQuestionNum,
+                        'value' => $answer
+                    ]);
+                    
+                    if (!empty($answer)) {
+                        $question = $questions->find($actualQuestionId);
+                        if ($question && $question->question_type === 'sentence_completion') {
+                            // Save the answer
+                            $saved = StudentAnswer::create([
+                                'attempt_id' => $attempt->id,
+                                'question_id' => $actualQuestionId,
+                                'selected_option_id' => null,
+                                'answer' => json_encode([
+                                    'sub_question' => $subQuestionNum,
+                                    'selected_answer' => $answer
+                                ]),
+                            ]);
+                            
+                            if ($saved && $saved->exists) {
+                                \Log::info('SENTENCE COMPLETION SAVED SUCCESSFULLY', [
+                                    'student_answer_id' => $saved->id,
+                                    'question_id' => $actualQuestionId,
+                                    'sub_question' => $subQuestionNum,
+                                    'selected_answer' => $answer
+                                ]);
+                            }
+                            
+                            $answeredCount++;
+                            
+                            // Check if correct based on sentence completion data
+                            $sectionData = $question->section_specific_data;
+                            if (isset($sectionData['sentence_completion']['sentences'])) {
+                                foreach ($sectionData['sentence_completion']['sentences'] as $sentence) {
+                                    if ($sentence['questionNumber'] == $subQuestionNum && 
+                                        $sentence['correctAnswer'] == $answer) {
+                                        $correctAnswers++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    continue; // Skip to next iteration
+                }
+                
                 // Handle master matching headings with sub-questions (e.g., 123_q14)
                 if (str_contains($questionId, '_q')) {
                     // Extract master question ID and sub-question number

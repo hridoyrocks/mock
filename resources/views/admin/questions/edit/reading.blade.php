@@ -63,6 +63,11 @@
                                         </div>
                                         @endif
                     
+                    <!-- Enhanced Sentence Completion Manager -->
+                    @if($question->question_type === 'sentence_completion')
+                    @include('admin.questions.partials.sentence-completion-enhanced')
+                    @endif
+                    
                     <!-- Blank Answers Display (for fill-in-the-blank questions) -->
                     @if(in_array($question->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion']))
                     <div class="bg-white rounded-lg shadow-sm" id="blank-answers-section">
@@ -383,6 +388,7 @@
     @push('scripts')
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script src="{{ asset('js/admin/question-common.js') }}"></script>
+    <script src="{{ asset('js/admin/sentence-completion-enhanced.js') }}"></script>
     <script>
         // Initialize TinyMCE
         document.addEventListener('DOMContentLoaded', function() {
@@ -469,6 +475,49 @@
                     }
                 });
             }
+            @endif
+            
+            @if($question->question_type === 'sentence_completion')
+            // Initialize sentence completion manager
+            setTimeout(function() {
+                if (window.SentenceCompletionManager) {
+                    // Load existing data
+                    const existingData = @json($question->section_specific_data['sentence_completion'] ?? null);
+                    if (existingData) {
+                        window.SentenceCompletionManager.init();
+                        
+                        // Clear default data
+                        document.getElementById('answer-options-container').innerHTML = '';
+                        document.getElementById('sentences-container').innerHTML = '';
+                        window.SentenceCompletionManager.optionCount = 0;
+                        window.SentenceCompletionManager.sentenceCount = 0;
+                        
+                        // Load options
+                        if (existingData.options) {
+                            existingData.options.forEach(option => {
+                                window.SentenceCompletionManager.addOption(option.text);
+                            });
+                        }
+                        
+                        // Load sentences
+                        if (existingData.sentences) {
+                            existingData.sentences.forEach(sentence => {
+                                window.SentenceCompletionManager.addSentence(sentence.text, sentence.correctAnswer);
+                            });
+                        }
+                        
+                        // Set start number
+                        const startNumInput = document.getElementById('sc_start_number');
+                        if (startNumInput && existingData.startNumber) {
+                            startNumInput.value = existingData.startNumber;
+                        }
+                        
+                        window.SentenceCompletionManager.updatePreview();
+                    } else {
+                        window.SentenceCompletionManager.init();
+                    }
+                }
+            }, 100);
             @endif
         });
         

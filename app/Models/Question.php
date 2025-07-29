@@ -818,5 +818,63 @@ public function getBlankAnswersArray(): array
     }
     return [];
 }
+
+/**
+ * Check if this is an enhanced sentence completion question
+ */
+public function isEnhancedSentenceCompletion(): bool
+{
+    return $this->question_type === 'sentence_completion' && 
+           isset($this->section_specific_data['sentence_completion']) &&
+           is_array($this->section_specific_data['sentence_completion']);
+}
+
+/**
+ * Get sentence completion data
+ */
+public function getSentenceCompletionData(): array
+{
+    if (!$this->isEnhancedSentenceCompletion()) {
+        return [];
+    }
+    
+    return $this->section_specific_data['sentence_completion'];
+}
+
+/**
+ * Get sentence completion question count
+ */
+public function getSentenceCompletionCount(): int
+{
+    if (!$this->isEnhancedSentenceCompletion()) {
+        return 1;
+    }
+    
+    $data = $this->getSentenceCompletionData();
+    return isset($data['sentences']) ? count($data['sentences']) : 0;
+}
+
+/**
+ * Get sentence completion question numbers
+ */
+public function getSentenceCompletionQuestionNumbers(): array
+{
+    if (!$this->isEnhancedSentenceCompletion()) {
+        return [$this->order_number];
+    }
+    
+    $data = $this->getSentenceCompletionData();
+    $numbers = [];
+    
+    if (isset($data['sentences'])) {
+        foreach ($data['sentences'] as $sentence) {
+            if (isset($sentence['questionNumber'])) {
+                $numbers[] = $sentence['questionNumber'];
+            }
+        }
+    }
+    
+    return $numbers;
+}
  
 }

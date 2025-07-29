@@ -92,6 +92,11 @@ class ResultController extends Controller
                 if ($question->isMasterMatchingHeading()) {
                     // Count individual sub-questions
                     $totalQuestions += $question->getActualQuestionCount();
+                } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
+                    // Handle sentence completion questions
+                    $scData = $question->section_specific_data['sentence_completion'];
+                    $sentenceCount = isset($scData['sentences']) ? count($scData['sentences']) : 0;
+                    $totalQuestions += $sentenceCount > 0 ? $sentenceCount : 1;
                 } else {
                     $blankCount = $question->countBlanks();
                     if ($blankCount > 0) {
@@ -122,6 +127,45 @@ class ResultController extends Controller
                                         $correctAnswers++;
                                         break;
                                     }
+                                }
+                            }
+                        }
+                    }
+                } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
+                    // Handle sentence completion questions
+                    $scData = $question->section_specific_data['sentence_completion'];
+                    $sentences = $scData['sentences'] ?? [];
+                    $options = $scData['options'] ?? [];
+                    
+                    // Count correct answers for each sentence
+                    foreach ($sentences as $sentenceIndex => $sentence) {
+                        // Look for answer with this sentence index
+                        $sentenceAnswer = $questionAnswers->first(function($ans) use ($sentenceIndex) {
+                            $answerData = json_decode($ans->answer, true);
+                            if (is_array($answerData) && isset($answerData['sub_question'])) {
+                                return (int)$answerData['sub_question'] === ($sentenceIndex + 1);
+                            }
+                            return false;
+                        });
+                        
+                        if ($sentenceAnswer && $sentenceAnswer->answer) {
+                            $answerData = json_decode($sentenceAnswer->answer, true);
+                            
+                            if (is_array($answerData) && isset($answerData['selected_answer'])) {
+                                $studentAnswer = $answerData['selected_answer'];
+                                
+                                // Check both formats for correct answer
+                                $correctAnswer = null;
+                                if (isset($sentence['correctAnswer'])) {
+                                    $correctAnswer = $sentence['correctAnswer'];
+                                } elseif (isset($sentence['correct_answer'])) {
+                                    $correctAnswer = $sentence['correct_answer'];
+                                } elseif (isset($sentence['correct'])) {
+                                    $correctAnswer = $sentence['correct'];
+                                }
+                                
+                                if ($correctAnswer && $studentAnswer === $correctAnswer) {
+                                    $correctAnswers++;
                                 }
                             }
                         }

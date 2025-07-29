@@ -847,32 +847,103 @@ body.dragging .split-divider::before {
     font-size: 18px;
 }
 
-.passage-content table {
+/* Global table styling for IELTS test - Apply to ALL tables */
+table {
+    border-collapse: collapse !important;
+    border: 1px solid #000000 !important;
+}
+
+td, th {
+    border: 1px solid #000000 !important;
+    padding: 8px !important;
+}
+
+/* Tables in passages and instructions - Enhanced visibility with borders */
+.passage-content table,
+.question-instructions table,
+.question-content table {
     width: 100%;
     border-collapse: collapse;
     margin: 20px 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
+    border: 2px solid #000000 !important;
+    display: table !important;
+    visibility: visible !important;
 }
 
 .passage-content th,
-.passage-content td {
-    border: 1px solid #e5e7eb;
-    padding: 12px;
+.passage-content td,
+.question-instructions th,
+.question-instructions td,
+.question-content th,
+.question-content td {
+    border: 1px solid #000000 !important;
+    padding: 8px 12px;
     text-align: left;
-    font-size: 15px;
+    font-size: 14px;
 }
 
-.passage-content th {
+.passage-content th,
+.question-instructions th,
+.question-content th {
     background-color: #f3f4f6;
     font-weight: 600;
     color: #111827;
+    border: 1px solid #000000 !important;
 }
 
-.passage-content td {
+.passage-content td,
+.question-instructions td,
+.question-content td {
     background-color: white;
     color: #374151;
+    border: 1px solid #000000 !important;
+}
+
+/* Ensure table elements are visible */
+.passage-content table *,
+.question-instructions table *,
+.question-content table * {
+    visibility: visible !important;
+}
+
+.passage-content tbody,
+.question-instructions tbody,
+.question-content tbody {
+    display: table-row-group !important;
+}
+
+.passage-content tr,
+.question-instructions tr,
+.question-content tr {
+    display: table-row !important;
+}
+
+.passage-content thead,
+.question-instructions thead,
+.question-content thead {
+    display: table-header-group !important;
+}
+
+.passage-content tfoot,
+.question-instructions tfoot,
+.question-content tfoot {
+    display: table-footer-group !important;
+}
+
+/* Override any inline styles that might hide borders */
+.passage-content table[border="0"],
+.question-instructions table[border="0"],
+.question-content table[border="0"] {
+    border: 1px solid #000000 !important;
+}
+
+.passage-content table[border="0"] td,
+.passage-content table[border="0"] th,
+.question-instructions table[border="0"] td,
+.question-instructions table[border="0"] th,
+.question-content table[border="0"] td,
+.question-content table[border="0"] th {
+    border: 1px solid #000000 !important;
 }
 
 /* ========== PASSAGE HIGHLIGHT STYLES ========== */

@@ -314,26 +314,22 @@
                         <div class="text-center">
                             <p class="text-gray-400 text-sm mb-2">Questions Attempted</p>
                             <p class="text-2xl font-bold text-white">
-                                {{ $attempt->answered_questions ?? count($attempt->answers) }}
-                                <span class="text-lg text-gray-400">/ {{ $attempt->total_questions ?? $totalQuestions ?? $attempt->testSet->questions()->where('question_type', '!=', 'passage')->count() }}</span>
+                                {{ $correctAnswers + ($totalQuestions - $correctAnswers) }}
+                                <span class="text-lg text-gray-400">/ {{ $totalQuestions }}</span>
                             </p>
                         </div>
                         
                         <div class="text-center">
                             <p class="text-gray-400 text-sm mb-2">Correct Answers</p>
                             <p class="text-2xl font-bold text-green-400">
-                                {{ $correctAnswers ?? $attempt->correct_answers }}
+                                {{ $correctAnswers }}
                             </p>
                         </div>
                         
                         <div class="text-center">
                             <p class="text-gray-400 text-sm mb-2">Accuracy</p>
                             <p class="text-2xl font-bold text-blue-400">
-                                @if($attempt->answered_questions > 0)
-                                    {{ number_format(($attempt->correct_answers / $attempt->answered_questions) * 100, 1) }}%
-                                @else
-                                    0%
-                                @endif
+                                {{ number_format($accuracy, 1) }}%
                             </p>
                         </div>
                         
@@ -444,6 +440,37 @@
                                                 $currentNumber++;
                                             }
                                         }
+                                    } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
+                                    // Handle sentence completion questions
+                                    $scData = $question->section_specific_data['sentence_completion'];
+                                    $sentences = $scData['sentences'] ?? [];
+                                    
+                                    foreach ($sentences as $sentenceIndex => $sentence) {
+                                        // Find answer for this specific sentence based on questionNumber
+                                        $questionNumber = $sentence['questionNumber'] ?? ($sentenceIndex + 1);
+                                        
+                                        $specificAnswer = $attempt->answers->first(function($ans) use ($question, $questionNumber) {
+                                            if ($ans->question_id != $question->id) return false;
+                                            
+                                            $answerData = json_decode($ans->answer, true);
+                                            if (is_array($answerData) && isset($answerData['sub_question'])) {
+                                                return (int)$answerData['sub_question'] === $questionNumber;
+                                            }
+                                            return false;
+                                        });
+                                        
+                                        $displayQuestions[] = [
+                                            'number' => $currentNumber,
+                                            'question' => $question,
+                                            'content' => $sentence['text'] ?? "Sentence " . ($sentenceIndex + 1),
+                                            'answer' => $specificAnswer,
+                                            'is_sentence_completion' => true,
+                                            'sentence_index' => $sentenceIndex,
+                                            'question_number' => $questionNumber,
+                                            'correct_answer' => $sentence['correctAnswer'] ?? $sentence['correct_answer'] ?? null
+                                        ];
+                                        $currentNumber++;
+                                    }
                                     } else {
                                         // Regular question
                                         $answer = $attempt->answers->where('question_id', $question->id)->first();
@@ -478,7 +505,7 @@
                                     $displayAnswer = 'No answer';
                                     
                                     if ($isAnswered && $answer) {
-                                        if ($item['is_master_sub']) {
+                                        if (isset($item['is_master_sub']) && $item['is_master_sub']) {
                                             // Master matching heading sub-question
                                             $decoded = json_decode($answer->answer, true);
                                             $selectedLetter = $decoded['selected_letter'] ?? null;
@@ -487,6 +514,19 @@
                                         } elseif ($answer->selectedOption) {
                                             $displayAnswer = $answer->selectedOption->content;
                                             $isCorrect = $answer->selectedOption->is_correct;
+                                        } elseif (isset($item['is_sentence_completion']) && $item['is_sentence_completion']) {
+                                            // Sentence completion answer
+                                            if ($answer && $answer->answer) {
+                                                $answerData = json_decode($answer->answer, true);
+                                                if (is_array($answerData) && isset($answerData['sub_question']) && isset($answerData['selected_answer'])) {
+                                                    $questionNum = (int)$answerData['sub_question'];
+                                                    $questionNumber = $item['question_number'] ?? $item['number'];
+                                                    if ($questionNum == $questionNumber) {
+                                                        $displayAnswer = $answerData['selected_answer'] ? "Option {$answerData['selected_answer']}" : 'No answer';
+                                                        $isCorrect = $answerData['selected_answer'] && $answerData['selected_answer'] === $item['correct_answer'];
+                                                    }
+                                                }
+                                            }
                                         } elseif ($answer->answer) {
                                             // Check if it's JSON (fill-in-the-blank)
                                             $answerData = @json_decode($answer->answer, true);
@@ -547,8 +587,10 @@
                                                     <p class="text-gray-400 mt-1">
                                                         Correct answer: 
                                                         <span class="text-green-400">
-                                                            @if($item['is_master_sub'])
-                                                                Option {{ $item['correct_letter'] }}
+                                                            @if(isset($item['is_master_sub']) && $item['is_master_sub'])
+                                                            Option {{ $item['correct_letter'] }}
+                                                            @elseif(isset($item['is_sentence_completion']) && $item['is_sentence_completion'])
+                                                            Option {{ $item['correct_answer'] }}
                                                             @elseif($question->correctOption())
                                                                 {{ $question->correctOption()->content }}
                                                             @elseif($question->section_specific_data && isset($question->section_specific_data['blank_answers']))

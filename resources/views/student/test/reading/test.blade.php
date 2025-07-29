@@ -1,4 +1,3 @@
-{{-- resources/views/student/test/reading/test.blade.php --}}
 @php
     use Illuminate\Support\Str;
 @endphp
@@ -106,6 +105,37 @@
                             ];
                             $currentQuestionNumber++;
                         }
+                    } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
+                        // Handle sentence completion with multiple sentences
+                        $scData = $question->section_specific_data['sentence_completion'];
+                        $sentenceCount = isset($scData['sentences']) ? count($scData['sentences']) : 0;
+                        
+                        if ($sentenceCount > 0) {
+                            // Store all question numbers for this sentence completion
+                            $questionNumbers = [];
+                            for ($i = 0; $i < $sentenceCount; $i++) {
+                                $questionNumbers[$i] = $currentQuestionNumber + $i;
+                            }
+                            
+                            $displayQuestions[] = [
+                                'question' => $question,
+                                'has_blanks' => false,
+                                'is_sentence_completion' => true,
+                                'display_number' => $currentQuestionNumber,
+                                'question_numbers' => $questionNumbers,
+                                'count' => $sentenceCount
+                            ];
+                            
+                            $currentQuestionNumber += $sentenceCount;
+                        } else {
+                            // Fallback for sentence completion without data
+                            $displayQuestions[] = [
+                                'question' => $question,
+                                'has_blanks' => false,
+                                'display_number' => $currentQuestionNumber
+                            ];
+                            $currentQuestionNumber++;
+                        }
                     } else {
                         // Count blanks in this question
                         preg_match_all('/\[BLANK_\d+\]|\[____\d+____\]/', $question->content, $blankMatches);
@@ -155,14 +185,14 @@
                             @foreach($passagesByPart[$partNumber] as $passage)
                                 <div class="passage-content-wrapper">
                                     @if($passage->instructions)
-                                        <h2 class="passage-title">{{ $passage->instructions }}</h2>
+                                        <h2 class="passage-title">{!! $passage->instructions !!}</h2>
                                     @else
                                         <h2 class="passage-title">Reading Passage {{ $partNumber }}</h2>
                                     @endif
                                     
                                     @if($passage->passage_text)
                                         <div class="passage-content">
-                                            {!! nl2br(e($passage->passage_text)) !!}
+                                            {!! $passage->passage_text !!}
                                         </div>
                                     @elseif($passage->content)
                                         <div class="passage-content">
@@ -260,43 +290,78 @@
                         
                         @php
                         $questionGroups = $partQuestions->groupBy(function($item) {
-                        return $item['question']->question_group;
+                            return $item['question']->question_group;
                         });
-                            $shownInstructions = [];
+                        $shownInstructions = [];
+                        $processedQuestions = [];
                         @endphp
                         
                         @foreach ($questionGroups as $groupName => $questions)
-                        @if($groupName)
-                        <div class="question-group-header">
-                            {{ $groupName }}
-                            </div>
-                        @endif
-                        
-                        @php
-                            $instructions = $questions->pluck('question.instructions')->filter()->unique();
-                        @endphp
-                        
-                        @foreach($instructions as $instruction)
-                        @php
-                            $instructionKey = md5($instruction);
-                            @endphp
-                                    @if(!in_array($instructionKey, $shownInstructions))
-                                        <div class="question-instructions">
-                                            {!! strip_tags($instruction, '<br><strong><em><u>') !!}
-                                        </div>
-                                        @php
-                                            $shownInstructions[] = $instructionKey;
-                                        @endphp
-                                    @endif
-                                @endforeach
+                            @if($groupName)
+                                @php
+                                    // Check if this group contains sentence completion questions
+                                    $groupHasSentenceCompletion = false;
+                                    foreach($questions as $item) {
+                                        if($item['question']->question_type === 'sentence_completion') {
+                                            $groupHasSentenceCompletion = true;
+                                            break;
+                                        }
+                                    }
+                                @endphp
+                                
+                                @if(!$groupHasSentenceCompletion)
+                                    <div class="question-group-header">
+                                        {{ $groupName }}
+                                    </div>
+                                @endif
+                            @endif
                             
-                            @foreach ($questions as $item)
+                            @php
+                                // Group questions by instruction
+                                $questionsByInstruction = $questions->groupBy(function($item) {
+                                    // Skip instruction grouping for sentence completion
+                                    if($item['question']->question_type === 'sentence_completion') {
+                                        return 'no-instruction';
+                                    }
+                                    return $item['question']->instructions ?: 'no-instruction';
+                                });
+                            @endphp
+                            
+                            @foreach($questionsByInstruction as $instruction => $instructionQuestions)
+                                @if($instruction !== 'no-instruction')
+                                    @php
+                                        // Skip showing instruction here for sentence completion as it has custom display
+                                        $skipInstructionTypes = ['sentence_completion'];
+                                        $shouldShowInstruction = true;
+                                        foreach($instructionQuestions as $q) {
+                                            if(in_array($q['question']->question_type, $skipInstructionTypes)) {
+                                                $shouldShowInstruction = false;
+                                                break;
+                                            }
+                                        }
+                                    @endphp
+                                    @if($shouldShowInstruction)
+                                        <div class="question-instructions">
+                                            {!! $instruction !!}
+                                        </div>
+                                    @endif
+                                @endif
+                                
+                                @foreach ($instructionQuestions as $item)
                                 @php
                                     $question = $item['question'];
                                     $hasBlanks = $item['has_blanks'];
                                 @endphp
                                 
                                 <div class="ielts-question-item" id="question-{{ $question->id }}" style="margin-bottom: 24px;">
+                                    {{-- Question Title/Instructions - Skip default handling for sentence completion --}}
+                                    @if($question->instructions && !isset($shownInstructions[$question->instructions]) && $question->question_type !== 'sentence_completion')
+                                        <div class="question-instructions" style="margin-bottom: 12px; font-weight: 600; color: #1f2937;">
+                                            {!! $question->instructions !!}
+                                        </div>
+                                        @php $shownInstructions[$question->instructions] = true; @endphp
+                                    @endif
+                                    
                                     @if($hasBlanks)
                                         {{-- Check if this is a heading dropdown question --}}
                                         @php
@@ -423,9 +488,11 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                         </div>
                                     @else
                                         {{-- Regular question --}}
-                                        <div class="ielts-q-number" style="font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;">
-                                            <span style="font-weight: 700 !important;">{{ $item['display_number'] }}.</span> {!! strip_tags($question->content) !!}
-                                        </div>
+                                        @if($question->question_type !== 'sentence_completion')
+                                            <div class="ielts-q-number" style="font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;">
+                                                <span style="font-weight: 700 !important;">{{ $item['display_number'] }}.</span> {!! strip_tags($question->content) !!}
+                                            </div>
+                                        @endif
                                             
                                             @if ($question->media_path)
                                                 <div class="mb-3">
@@ -435,6 +502,7 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                             
                                         <div class="ielts-options" style="margin-left: 24px; margin-top: 8px;">
                                             @switch($question->question_type)
+                                                @case('single_choice')
                                                 @case('multiple_choice')
                                                     @foreach ($question->options as $optionIndex => $option)
                                                         <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
@@ -529,6 +597,37 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                                         @endforeach
                                                         
                                                     @else
+                                                        {{-- EMERGENCY DEBUG - Show why sentence completion is not rendering --}}
+                                                        @php
+                                                            \Log::emergency('=== SENTENCE COMPLETION NOT RENDERING ===', [
+                                                                'question_id' => $question->id,
+                                                                'question_type' => $question->question_type,
+                                                                'has_section_specific_data' => isset($question->section_specific_data),
+                                                                'section_specific_data' => $question->section_specific_data ?? 'null',
+                                                                'has_sentence_completion_key' => isset($question->section_specific_data['sentence_completion']),
+                                                                'sectionData' => $sectionData ?? 'null',
+                                                                'hasSentenceCompletionData_value' => $hasSentenceCompletionData
+                                                            ]);
+                                                            
+                                                            // Debug for browser console
+                                                            echo '<script>console.error("SENTENCE COMPLETION NOT RENDERING:", ' . json_encode([
+                                                                'question_id' => $question->id,
+                                                                'question_type' => $question->question_type,
+                                                                'has_section_data' => isset($sectionData),
+                                                                'hasSentenceCompletionData' => $hasSentenceCompletionData,
+                                                                'section_specific_data' => $question->section_specific_data
+                                                            ]) . ');</script>';
+                                                        @endphp
+                                                        
+                                                        {{-- Show debug info on page --}}
+                                                        <div style="background: #ffcccc; border: 2px solid #ff0000; padding: 10px; margin: 10px 0;">
+                                                            <strong>DEBUG: Sentence Completion Not Rendering</strong><br>
+                                                            Question ID: {{ $question->id }}<br>
+                                                            Question Type: {{ $question->question_type }}<br>
+                                                            Has Section Data: {{ isset($sectionData) ? 'Yes' : 'No' }}<br>
+                                                            Has Sentence Completion Data: {{ $hasSentenceCompletionData ? 'Yes' : 'No' }}<br>
+                                                            Section Data Keys: {{ $sectionData ? implode(', ', array_keys($sectionData)) : 'None' }}
+                                                        </div>
                                                         {{-- Fallback to old implementation --}}
                                                         @php
                                                             $showHeadingsList = true;
@@ -584,6 +683,172 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                                 
                                                 @case('fill_blanks')
                                                 @case('sentence_completion')
+                                                    {{-- Enhanced Sentence Completion Display --}}
+                                                    @php
+                                                        $sectionData = $question->section_specific_data;
+                                                        $hasSentenceCompletionData = isset($sectionData['sentence_completion']);
+                                                    @endphp
+                                                    
+                                                    {{-- Skip question title display for sentence completion - it has its own format --}}
+                                                    
+                                                    @if($hasSentenceCompletionData)
+                                                        @php
+                                                            $scData = $sectionData['sentence_completion'];
+                                                            
+                                                            // EMERGENCY DEBUG - Log everything
+                                                            \Log::emergency('=== SENTENCE COMPLETION DEBUG ===', [
+                                                                'question_id' => $question->id,
+                                                                'question_type' => $question->question_type,
+                                                                'has_section_data' => isset($sectionData),
+                                                                'section_data_keys' => $sectionData ? array_keys($sectionData) : 'null',
+                                                                'has_sc_data' => isset($sectionData['sentence_completion']),
+                                                                'sc_data' => $scData ?? 'No SC data',
+                                                                'has_sentences' => isset($scData['sentences']),
+                                                                'sentence_count' => isset($scData['sentences']) ? count($scData['sentences']) : 0,
+                                                                'has_options' => isset($scData['options']),
+                                                                'option_count' => isset($scData['options']) ? count($scData['options']) : 0
+                                                            ]);
+                                                            
+                                                            // Debug log for browser console - EXPANDED
+                                                            echo '<script>console.log("SENTENCE COMPLETION EXPANDED DEBUG:", ' . json_encode([
+                                                                'question_id' => $question->id,
+                                                                'has_sc_data' => isset($scData),
+                                                                'sc_data_full' => $scData ?? null,
+                                                                'sentences_count' => isset($scData['sentences']) ? count($scData['sentences']) : 0,
+                                                                'sentences_data' => $scData['sentences'] ?? null,
+                                                                'options_count' => isset($scData['options']) ? count($scData['options']) : 0,
+                                                                'options_data' => $scData['options'] ?? null,
+                                                                'item_question_numbers' => $item['question_numbers'] ?? null,
+                                                                'item_display_number' => $item['display_number'] ?? null
+                                                            ]) . ');</script>';
+                                                            
+                                                            $showWordList = true;
+                                                            
+                                                            // Check if word list already shown in this group
+                                                            if ($question->question_group && isset($shownInstructions[$question->question_group . '_sc_wordlist'])) {
+                                                                $showWordList = false;
+                                                            } elseif ($question->question_group) {
+                                                                $shownInstructions[$question->question_group . '_sc_wordlist'] = true;
+                                                            }
+                                                            
+                                                            // Get question range for title
+                                                            $startNum = $item['display_number'];
+                                                            $sentenceCount = isset($scData['sentences']) ? count($scData['sentences']) : 0;
+                                                            $endNum = $startNum + $sentenceCount - 1;
+                                                        @endphp
+                                                        
+                                                        {{-- Question Title with Range --}}
+                                                        <div style="margin-bottom: 16px; font-weight: 700; font-size: 15px; color: #111827;">
+                                                            Questions {{ $startNum }}-{{ $endNum }}
+                                                        </div>
+                                                        
+                                                        {{-- Display instruction from question or default --}}
+                                                        <div style="margin-bottom: 16px; font-size: 14px; color: #374151;">
+                                                            @if($question->instructions)
+                                                                {!! $question->instructions !!}
+                                                            @else
+                                                                Complete the sentences below. Choose NO MORE THAN ONE WORD from the list for each answer.
+                                                            @endif
+                                                        </div>
+                                                        
+                                                        @if($showWordList)
+                                                            {{-- Word List Box - Simple Black-White Design --}}
+                                                            @if(isset($scData['options']) && count($scData['options']) > 0)
+                                                                <div class="word-list-box">
+                                                                    <div style="font-weight: 600; margin-bottom: 12px; font-size: 15px; color: #000000; display: flex; align-items: center;">
+                                                                        <svg style="width: 18px; height: 18px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                                                        </svg>
+                                                                        Word List
+                                                                    </div>
+                                                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;">
+                                                                        @foreach($scData['options'] as $option)
+                                                                            <div class="word-list-item">
+                                                                                <strong style="color: #000000; font-size: 15px;">{{ $option['id'] }}</strong>
+                                                                                <span style="color: #333333; margin-left: 6px;">{{ $option['text'] }}</span>
+                                                                            </div>
+                                                                        @endforeach
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        @endif
+                                                        
+                                                        {{-- Sentences --}}
+                                                        @if(isset($scData['sentences']))
+                                                            <script>console.log('PROCESSING SENTENCES:', @json($scData['sentences']));</script>
+                                                            <div style="margin-top: 15px;">
+                                                                @foreach($scData['sentences'] as $sentenceIndex => $sentence)
+                                                                    @php
+                                                                        // Get the display number from the item's question_numbers array
+                                                                        $displayNum = isset($item['question_numbers'][$sentenceIndex]) ? $item['question_numbers'][$sentenceIndex] : ($item['display_number'] + $sentenceIndex);
+                                                                        $sentenceText = $sentence['text'];
+                                                                        
+                                                                        echo '<script>console.log("PROCESSING SENTENCE ' . $sentenceIndex . ':", ' . json_encode([
+                                                                            'sentenceIndex' => $sentenceIndex,
+                                                                            'sentence' => $sentence,
+                                                                            'displayNum' => $displayNum,
+                                                                            'sentenceText' => $sentenceText,
+                                                                            'hasGap' => strpos($sentenceText, '[GAP]') !== false
+                                                                        ]) . ');</script>';
+                                                                        
+                                                                        // Replace [GAP] with dropdown - ULTRA COMPACT WITH PROPER ALIGNMENT
+                                                                        $dropdownHtml = '<select name="answers[' . $question->id . '_q' . $displayNum . ']" '
+                                                                                      . 'class="sc-dropdown visible-dropdown" '
+                                                                                      . 'data-question-number="' . $displayNum . '" '
+                                                                                      . 'data-question-id="' . $question->id . '" '
+                                                                                      . 'style="display: inline-block; margin: 0 4px; padding: 2px 6px; border: 1px solid #666666; border-radius: 2px; font-size: 12px; font-weight: 500; min-width: 40px; max-width: 50px; background: #ffffff; color: #000000; cursor: pointer; vertical-align: baseline; line-height: normal;">';
+                                                                        $dropdownHtml .= '<option value="" style="color: #666666;">Select</option>';
+                                                                        
+                                                                        foreach($scData['options'] as $option) {
+                                                                            $dropdownHtml .= '<option value="' . $option['id'] . '">' . $option['id'] . '</option>';
+                                                                        }
+                                                                        
+                                                                        $dropdownHtml .= '</select>';
+                                                                        
+                                                                        echo '<script>console.log("DROPDOWN HTML CREATED:", ' . json_encode($dropdownHtml) . ');</script>';
+                                                                        
+                                                                        $processedText = str_replace('[GAP]', $dropdownHtml, $sentenceText);
+                                                                        
+                                                                        // SMART FALLBACK: Handle cases where [GAP] might be missing or malformed
+                                                                        if (strpos($processedText, '<select') === false) {
+                                                                            // No dropdown found in processed text, add it intelligently
+                                                                            if (trim($sentenceText)) {
+                                                                                // If sentence ends with punctuation, add dropdown before it
+                                                                                if (preg_match('/[.!?]\s*$/', $sentenceText)) {
+                                                                                    $processedText = preg_replace('/([.!?]\s*)$/', ' ' . $dropdownHtml . '$1', $sentenceText);
+                                                                                } else {
+                                                                                    // Add dropdown at the end
+                                                                                    $processedText = trim($sentenceText) . ' ' . $dropdownHtml;
+                                                                                }
+                                                                                echo '<script>console.log("SMART FALLBACK: Added dropdown intelligently");</script>';
+                                                                            } else {
+                                                                                // Empty sentence, just show dropdown
+                                                                                $processedText = $dropdownHtml;
+                                                                            }
+                                                                        } else {
+                                                                            echo '<script>console.log("SUCCESS: [GAP] replacement worked");</script>';
+                                                                        }
+                                                                        
+                                                                        echo '<script>console.log("PROCESSED TEXT:", ' . json_encode($processedText) . ');</script>';
+                                                                    @endphp
+                                                                    
+                                                                    <div style="margin-bottom: 10px; display: flex; align-items: baseline;">
+                                                                        <span style="font-weight: 700; min-width: 35px; margin-right: 8px; font-size: 14px; color: #1f2937;">{{ $displayNum }}.</span>
+                                                                        <div style="flex: 1; font-size: 14px; line-height: 1.6; color: #374151;">{!! $processedText !!}</div>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @endif
+                                                    @else
+                                                        {{-- Fallback to old display --}}
+                                                        <input type="text" 
+                                                               name="answers[{{ $question->id }}]" 
+                                                               style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;"
+                                                               placeholder="Enter your answer"
+                                                               maxlength="100"
+                                                               data-question-number="{{ $item['display_number'] }}">
+                                                    @endif
+                                                    @break
                                                 @case('summary_completion')
                                                 @case('short_answer')
                                                 @default
@@ -598,6 +863,7 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                         </div>
                                     @endif
                                 </div>
+                            @endforeach
                             @endforeach
                         @endforeach
                         </div> <!-- End part-questions-inner -->
@@ -646,6 +912,17 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                             @endforeach
                         @elseif(isset($item['is_master']) && $item['is_master'])
                             {{-- Master matching heading buttons --}}
+                            @foreach($item['question_numbers'] as $subIndex => $number)
+                                <div class="number-btn {{ $loop->parent->first && $loop->first ? 'active' : '' }}" 
+                                     data-question="{{ $item['question']->id }}"
+                                     data-sub-question="{{ $subIndex }}"
+                                     data-display-number="{{ $number }}"
+                                     data-part="{{ $item['question']->part_number }}">
+                                    {{ $number }}
+                                </div>
+                            @endforeach
+                        @elseif(isset($item['is_sentence_completion']) && $item['is_sentence_completion'])
+                            {{-- Sentence completion buttons --}}
                             @foreach($item['question_numbers'] as $subIndex => $number)
                                 <div class="number-btn {{ $loop->parent->first && $loop->first ? 'active' : '' }}" 
                                      data-question="{{ $item['question']->id }}"
@@ -778,9 +1055,123 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
     });
 </script>
 
-
 @vite('resources/js/reading-test.js')
-<script src="{{ asset('js/matching-headings-fix-v4.js') }}"></script>
+<script src="{{ asset('js/matching-headings-enhanced-fix.js') }}"></script>
+<script src="{{ asset('js/sentence-completion-handler.js') }}"></script>
+
+<!-- CLEAN MINIMAL DROPDOWN STYLING -->
+<style>
+.sc-dropdown, .visible-dropdown {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 999 !important;
+    margin: 0 4px !important;
+    padding: 2px 6px !important;
+    border: 1px solid #666666 !important;
+    border-radius: 2px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    min-width: 40px !important;
+    max-width: 50px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    cursor: pointer !important;
+    appearance: auto !important;
+    -webkit-appearance: menulist !important;
+    -moz-appearance: menulist !important;
+    vertical-align: baseline !important;
+    line-height: normal !important;
+}
+
+.sc-dropdown:hover, .visible-dropdown:hover {
+    background: #f5f5f5 !important;
+    border-color: #333333 !important;
+}
+
+.sc-dropdown:focus, .visible-dropdown:focus {
+    outline: none !important;
+    border-color: #000000 !important;
+    background: #ffffff !important;
+}
+
+.sc-dropdown[data-answered="true"], .visible-dropdown[data-answered="true"] {
+    background: #f0f0f0 !important;
+    border-color: #333333 !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
+}
+
+.sc-dropdown option, .visible-dropdown option {
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    background-color: white !important;
+    color: #000000 !important;
+}
+
+.sc-dropdown option:first-child, .visible-dropdown option:first-child {
+    color: #666666 !important;
+    font-style: italic !important;
+}
+
+/* Force all parent containers to show dropdowns */
+.ielts-question-item, .sentence-preview, div[style*="display: flex"] {
+    overflow: visible !important;
+}
+
+/* Make sure dropdowns are always on top */
+select[name*="_q"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 999 !important;
+    margin: 0 4px !important;
+    padding: 2px 6px !important;
+    border: 1px solid #666666 !important;
+    background: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #000000 !important;
+    border-radius: 2px !important;
+    cursor: pointer !important;
+    min-width: 40px !important;
+    max-width: 50px !important;
+    vertical-align: baseline !important;
+    line-height: normal !important;
+}
+
+/* Simple navigation button styles */
+.number-btn.answered {
+    background: #333333 !important;
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+/* Simple black-white word list styling */
+.word-list-box {
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.word-list-item {
+    background: #ffffff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #cccccc;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.word-list-item:hover {
+    background: #f5f5f5;
+    border-color: #999999;
+}
+</style>
     @endpush
     
 </x-test-layout>

@@ -258,7 +258,11 @@
                     </div>
                     
                     <!-- Trust Indicators -->
-                    <div class="flex items-center space-x-6 pt-4">
+                    <div class="flex items-center space-x-6 mt-4 md:mt-0">
+                        <a href="#" class="text-gray-400 hover:text-indigo-400 text-sm transition-colors">Privacy</a>
+                        <a href="#" class="text-gray-400 hover:text-indigo-400 text-sm transition-colors">Terms</a>
+                        <a href="#" class="text-gray-400 hover:text-indigo-400 text-sm transition-colors">Sitemap</a>
+                    </div>x-6 pt-4">
                         <div class="flex -space-x-2">
                             @for($i = 1; $i <= 5; $i++)
                                 <img class="w-10 h-10 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img={{ $i }}" alt="User">
@@ -750,7 +754,112 @@
         </div>
     </footer>
 
-    <!-- Mobile Menu -->
+    <script>
+        // Counter Animation
+        function animateCounters() {
+            const counters = document.querySelectorAll('.counter');
+            const speed = 200;
+            
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const increment = target / speed;
+                
+                const updateCount = () => {
+                    const count = +counter.innerText;
+                    
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + increment);
+                        setTimeout(updateCount, 1);
+                    } else {
+                        if (target === 2000000) {
+                            counter.innerText = '2M+';
+                        } else if (target === 50000) {
+                            counter.innerText = '50K+';
+                        } else {
+                            counter.innerText = target + (target === 95 ? '%' : '');
+                        }
+                    }
+                };
+                
+                updateCount();
+            });
+        }
+        
+        // Scroll Reveal Animation
+        function handleScrollReveal() {
+            const reveals = document.querySelectorAll('.scroll-reveal');
+            
+            reveals.forEach(element => {
+                const windowHeight = window.innerHeight;
+                const elementTop = element.getBoundingClientRect().top;
+                const elementVisible = 150;
+                
+                if (elementTop < windowHeight - elementVisible) {
+                    element.classList.add('revealed');
+                }
+            });
+        }
+        
+        // FAQ Toggle
+        function toggleFAQ(button) {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector('i');
+            
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+        
+        // Navbar Scroll Effect
+        function handleNavbarScroll() {
+            const navbar = document.getElementById('navbar');
+            
+            if (window.scrollY > 50) {
+                navbar.classList.add('shadow-lg');
+            } else {
+                navbar.classList.remove('shadow-lg');
+            }
+        }
+        
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', () => {
+            // Start counter animation when stats section is visible
+            const statsSection = document.querySelector('.counter').parentElement.parentElement.parentElement;
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateCounters();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            });
+            
+            observer.observe(statsSection);
+            
+            // Handle scroll reveal
+            handleScrollReveal();
+            window.addEventListener('scroll', handleScrollReveal);
+            
+            // Handle navbar scroll
+            window.addEventListener('scroll', handleNavbarScroll);
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
     <div id="mobile-menu" class="fixed inset-0 bg-black/50 z-50 hidden">
         <div class="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl">
             <div class="p-6">

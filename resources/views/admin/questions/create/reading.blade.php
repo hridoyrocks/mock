@@ -147,6 +147,9 @@
                     
                     <!-- Enhanced Matching Headings Manager -->
                     @include('admin.questions.partials.matching-headings-enhanced')
+    
+    <!-- Enhanced Sentence Completion Manager -->
+    @include('admin.questions.partials.sentence-completion-enhanced')
                     
                     <!-- Action Buttons -->
                     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky bottom-0 z-10 border-t sm:border-t-0 sm:relative">
@@ -280,6 +283,9 @@
     <script src="{{ asset('js/admin/matching-headings-fix.js') }}" defer></script>
     <script src="{{ asset('js/admin/matching-headings-enhanced-fix.js') }}" defer></script>
     
+    <!-- Sentence Completion Enhanced - FIXED VERSION -->
+    <script src="{{ asset('js/admin/sentence-completion-enhanced.js') }}" defer></script>
+    
     <script>
     // Pass next question number to JavaScript
     window.nextQuestionNumber = {{ $nextQuestionNumber ?? 1 }};
@@ -300,9 +306,25 @@
             height: 150,
             menubar: false,
             plugins: [
-                'lists', 'link', 'charmap', 'code'
+                'lists', 'link', 'charmap', 'code', 'table'
             ],
-            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link | removeformat code',
+            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | table tableprops tabledelete | link | removeformat code',
+            table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+            table_appearance_options: true,
+            table_grid: true,
+            table_default_styles: {
+                'width': '100%',
+                'borderCollapse': 'collapse',
+                'border': '1px solid #000000'
+            },
+            table_default_attributes: {
+                'border': '1'
+            },
+            table_class_list: [
+                {title: 'None', value: ''},
+                {title: 'With Border', value: 'table-bordered'}
+            ],
+            extended_valid_elements: 'table[border|cellpadding|cellspacing|width|style|class],td[style|class],th[style|class],tr[style|class]',
             font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
             content_css: '//www.tiny.cloud/css/codepen.min.css',
             setup: function(editor) {
@@ -331,8 +353,24 @@
                 'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
             ],
             toolbar: fillBlanksMode ? 
-                'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | removeformat code' :
-                'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
+                'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table tableprops tabledelete | removeformat code' :
+                'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tableprops tabledelete | link image | removeformat code',
+            table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+            table_appearance_options: true,
+            table_grid: true,
+            table_default_styles: {
+                'width': '100%',
+                'borderCollapse': 'collapse',
+                'border': '1px solid #000000'
+            },
+            table_default_attributes: {
+                'border': '1'
+            },
+            table_class_list: [
+                {title: 'None', value: ''},
+                {title: 'With Border', value: 'table-bordered'}
+            ],
+            extended_valid_elements: 'table[border|cellpadding|cellspacing|width|style|class],td[style|class],th[style|class],tr[style|class]',
             font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
             images_upload_url: '{{ route("admin.questions.upload.image") }}',
             images_upload_base_path: '/',
@@ -443,7 +481,7 @@
             if (e.altKey) {
                 const questionType = document.getElementById('question_type')?.value;
                 
-                if (questionType === 'fill_blanks' && (e.key === 'b' || e.key === 'B')) {
+                if ((questionType === 'fill_blanks' || questionType === 'sentence_completion') && (e.key === 'b' || e.key === 'B')) {
                     e.preventDefault();
                     insertBlank();
                 }
@@ -573,8 +611,82 @@
                         
                         console.log('Matching Headings submission data:', data);
                         console.log('Form data being submitted:', new FormData(form));
-                    }
+                        }
+                        }
+        
+        // Handle sentence completion data
+        if (questionType === 'sentence_completion') {
+            const dataInput = document.getElementById('sentence_completion_data');
+            if (dataInput) {
+                const data = JSON.parse(dataInput.value || '{}');
+                
+                // Validate options
+                if (!data.options || data.options.length < 2) {
+                    e.preventDefault();
+                    alert('Please add at least 2 answer options');
+                    return false;
                 }
+                
+                // Validate sentences
+                if (!data.sentences || data.sentences.length === 0) {
+                    e.preventDefault();
+                    alert('Please add at least one sentence');
+                    return false;
+                }
+                
+                // Check if all sentences have correct answers
+                const incompleteSentences = data.sentences.filter(s => !s.correctAnswer);
+                if (incompleteSentences.length > 0) {
+                    e.preventDefault();
+                    alert('Please select correct answer for all sentences');
+                    return false;
+                }
+                
+                // Generate question content
+                const content = SentenceCompletionManager.generateQuestionContent();
+                
+                // Set content field
+                if (contentEditor) {
+                    contentEditor.setContent(content);
+                    contentEditor.save();
+                } else {
+                    document.getElementById('content').value = content;
+                }
+                
+                // Store options in the format expected by backend
+                data.options.forEach((option, index) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = `options[${index}][content]`;
+                    input.value = option.text;
+                    form.appendChild(input);
+                });
+                
+                // Store correct answers as blank_answers
+                data.sentences.forEach((sentence, index) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = `blank_answers[]`;
+                    input.value = sentence.correctAnswer;
+                    form.appendChild(input);
+                });
+                
+                // Set marks based on number of sentences
+                const marksInput = document.querySelector('input[name="marks"]');
+                if (marksInput) {
+                    marksInput.value = data.sentences.length;
+                }
+                
+                // Add dummy correct_option
+                const dummyCorrectOption = document.createElement('input');
+                dummyCorrectOption.type = 'hidden';
+                dummyCorrectOption.name = 'correct_option';
+                dummyCorrectOption.value = '0';
+                form.appendChild(dummyCorrectOption);
+                
+                console.log('Sentence Completion submission data:', data);
+            }
+        }
 
                 return true;
             });
@@ -592,6 +704,7 @@
 
         const optionsCard = document.getElementById('options-card');
         const matchingHeadingsCard = document.getElementById('matching-headings-card');
+        const sentenceCompletionCard = document.getElementById('sentence-completion-card');
         
         // Find order number wrapper correctly
         const orderNumberInput = document.querySelector('input[name="order_number"]');
@@ -606,6 +719,7 @@
 
         if (orderNumberWrapper) orderNumberWrapper.style.display = 'block';
         if (matchingHeadingsCard) matchingHeadingsCard.style.display = 'none';
+        if (sentenceCompletionCard) sentenceCompletionCard.style.display = 'none';
 
         // Add/remove passage class to form
         const form = document.getElementById('questionForm');
@@ -760,6 +874,57 @@
             
             // Initial update
             setTimeout(updateBlanks, 500);
+        } else if (type === 'sentence_completion') {
+            console.log('=== Sentence Completion Selected ===');
+            
+            // Hide regular options card
+            if (optionsCard) {
+                optionsCard.classList.add('hidden');
+            }
+            
+            // Hide order number, marks and question content fields
+            const orderNumberWrapper = document.querySelector('input[name="order_number"]')?.closest('div');
+            const marksWrapper = document.querySelector('input[name="marks"]')?.closest('div');
+            
+            if (orderNumberWrapper) {
+                orderNumberWrapper.style.display = 'none';
+            }
+            if (marksWrapper) {
+                marksWrapper.style.display = 'none';
+            }
+            if (questionContentField) {
+                questionContentField.style.display = 'none';
+            }
+            
+            // Set default instruction for sentence completion if empty
+            if (instructionEditor) {
+                const currentContent = instructionEditor.getContent();
+                if (!currentContent || currentContent.trim() === '') {
+                    instructionEditor.setContent('Complete the sentences below. Choose NO MORE THAN ONE WORD from the list for each answer.');
+                }
+            } else {
+                const instructionField = document.getElementById('instructions');
+                if (instructionField && (!instructionField.value || instructionField.value.trim() === '')) {
+                    instructionField.value = 'Complete the sentences below. Choose NO MORE THAN ONE WORD from the list for each answer.';
+                }
+            }
+            
+            // Show sentence completion card
+            if (sentenceCompletionCard) {
+                console.log('Sentence completion card found, showing...');
+                sentenceCompletionCard.style.display = 'block';
+                
+                // Initialize sentence completion manager
+                setTimeout(() => {
+                    if (window.SentenceCompletionManager) {
+                        console.log('Initializing SentenceCompletionManager...');
+                        window.SentenceCompletionManager.init();
+                        console.log('SentenceCompletionManager initialized successfully');
+                    } else {
+                        console.error('SentenceCompletionManager not found!');
+                    }
+                }, 100);
+            }
         } else {
             // Re-initialize normal editor if coming from fill blanks
             if (contentEditor && blankButtons && blankButtons.style.display === 'flex') {
@@ -794,6 +959,17 @@
             addOption('NOT GIVEN', false);
             const addBtn = document.getElementById('add-option-btn');
             if (addBtn) addBtn.style.display = 'none';
+        } else if (type === 'sentence_completion') {
+            // Add default options for sentence completion
+            // These will be the choices available in dropdowns
+            for (let i = 0; i < 8; i++) {
+                addOption('', false);
+            }
+            const addBtn = document.getElementById('add-option-btn');
+            if (addBtn) {
+                addBtn.style.display = 'inline-block';
+                addBtn.textContent = 'Add Option';
+            }
         } else {
             // Default to 4 empty options
             for (let i = 0; i < 4; i++) {
@@ -883,6 +1059,22 @@
         contentEditor.insertContent(blankText);
         
         showNotification(`Blank ${blankCounter} added`, 'success');
+        
+        setTimeout(updateBlanks, 100);
+    };
+
+    // Insert dropdown function (kept for future use, not used for sentence completion)
+    window.insertDropdown = function() {
+        if (!contentEditor) {
+            return;
+        }
+        
+        dropdownCounter++;
+        const dropdownText = `[DROPDOWN_${dropdownCounter}:Option1,Option2,Option3]`;
+        
+        contentEditor.insertContent(dropdownText);
+        
+        showNotification(`Dropdown ${dropdownCounter} added`, 'success');
         
         setTimeout(updateBlanks, 100);
     };
