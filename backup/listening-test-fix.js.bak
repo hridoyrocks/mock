@@ -1,0 +1,106 @@
+// Fix for multiple choice questions in listening test
+// This ensures only one option can be selected at a time
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all multiple choice question containers
+    const multipleChoiceQuestions = document.querySelectorAll('.question-item');
+    
+    multipleChoiceQuestions.forEach(questionItem => {
+        // Check if this is a multiple choice question
+        const optionsList = questionItem.querySelector('.options-list');
+        if (!optionsList) return;
+        
+        // Get all radio inputs within this question
+        const radioInputs = optionsList.querySelectorAll('input[type="radio"]');
+        
+        if (radioInputs.length > 0) {
+            // Ensure all radio buttons have the same name for this question
+            const questionId = questionItem.id.replace('question-', '');
+            const radioName = `answers[${questionId}]`;
+            
+            radioInputs.forEach(radio => {
+                // Set the name attribute to ensure only one can be selected
+                radio.name = radioName;
+                
+                // Add click event listener for visual feedback
+                radio.addEventListener('click', function() {
+                    // Remove checked state from all other radios in this question
+                    radioInputs.forEach(otherRadio => {
+                        if (otherRadio !== this) {
+                            otherRadio.checked = false;
+                            // Update visual state of parent label
+                            const parentLabel = otherRadio.closest('.option-item');
+                            if (parentLabel) {
+                                parentLabel.classList.remove('selected');
+                            }
+                        }
+                    });
+                    
+                    // Add selected class to current option
+                    const currentLabel = this.closest('.option-item');
+                    if (currentLabel) {
+                        currentLabel.classList.add('selected');
+                    }
+                });
+            });
+        }
+        
+        // Also handle any checkboxes that should be radio buttons
+        const checkboxInputs = optionsList.querySelectorAll('input[type="checkbox"]');
+        
+        if (checkboxInputs.length > 0) {
+            console.warn('Found checkboxes in multiple choice question:', questionItem.id);
+            
+            // Convert checkboxes to radio behavior
+            checkboxInputs.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        // Uncheck all other checkboxes in this question
+                        checkboxInputs.forEach(otherCheckbox => {
+                            if (otherCheckbox !== this) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    });
+    
+    // Additional safety check for form submission
+    const form = document.getElementById('listening-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Validate that each multiple choice question has only one answer
+            multipleChoiceQuestions.forEach(questionItem => {
+                const optionsList = questionItem.querySelector('.options-list');
+                if (!optionsList) return;
+                
+                const checkedInputs = optionsList.querySelectorAll('input:checked');
+                if (checkedInputs.length > 1) {
+                    console.error('Multiple options selected for question:', questionItem.id);
+                    // Force only the first selection
+                    checkedInputs.forEach((input, index) => {
+                        if (index > 0) input.checked = false;
+                    });
+                }
+            });
+        });
+    }
+});
+
+// Add CSS for selected state
+const style = document.createElement('style');
+style.textContent = `
+    .option-item.selected {
+        background-color: rgba(59, 130, 246, 0.1);
+        border-left: 3px solid #3b82f6;
+        padding-left: 5px;
+    }
+    
+    .option-item input[type="radio"]:checked + .option-label {
+        font-weight: 600;
+        color: #1e40af;
+    }
+`;
+document.head.appendChild(style);

@@ -30,6 +30,7 @@ class WebsiteSettingController extends Controller
         $validated = $request->validate([
             'site_title' => 'required|string|max:255',
             'site_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'dark_mode_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'favicon' => 'nullable|image|mimes:ico,png|max:512',
             'contact_email' => 'nullable|email|max:255',
             'contact_phone' => 'nullable|string|max:50',
@@ -61,6 +62,22 @@ class WebsiteSettingController extends Controller
             $validated['site_logo'] = $logoPath;
             
             Log::info('Logo uploaded', ['path' => $logoPath]);
+        }
+
+        // Handle dark mode logo upload
+        if ($request->hasFile('dark_mode_logo')) {
+            // Delete old dark mode logo if exists
+            if ($settings->dark_mode_logo) {
+                // Check if file exists before deleting
+                if (Storage::disk('public')->exists($settings->dark_mode_logo)) {
+                    Storage::disk('public')->delete($settings->dark_mode_logo);
+                }
+            }
+            
+            $darkLogoPath = $request->file('dark_mode_logo')->store('logos', 'public');
+            $validated['dark_mode_logo'] = $darkLogoPath;
+            
+            Log::info('Dark mode logo uploaded', ['path' => $darkLogoPath]);
         }
 
         // Handle favicon upload
@@ -119,6 +136,29 @@ class WebsiteSettingController extends Controller
 
         return redirect()->route('admin.settings.website')
             ->with('success', 'Logo removed successfully!');
+    }
+
+    /**
+     * Remove dark mode logo
+     */
+    public function removeDarkModeLogo()
+    {
+        $settings = WebsiteSetting::getSettings();
+        
+        if ($settings->dark_mode_logo) {
+            // Check if file exists before deleting
+            if (Storage::disk('public')->exists($settings->dark_mode_logo)) {
+                Storage::disk('public')->delete($settings->dark_mode_logo);
+            }
+            
+            $settings->update(['dark_mode_logo' => null]);
+            Cache::forget('website_settings');
+            
+            Log::info('Dark mode logo removed successfully');
+        }
+
+        return redirect()->route('admin.settings.website')
+            ->with('success', 'Dark mode logo removed successfully!');
     }
 
     /**

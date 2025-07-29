@@ -515,6 +515,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/website', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'index'])->name('website');
             Route::post('/website', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'update'])->name('website.update');
             Route::delete('/website/logo', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'removeLogo'])->name('website.remove-logo');
+            Route::delete('/website/dark-logo', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'removeDarkModeLogo'])->name('website.remove-dark-logo');
             Route::delete('/website/favicon', [App\Http\Controllers\Admin\WebsiteSettingController::class, 'removeFavicon'])->name('website.remove-favicon');
         });
         

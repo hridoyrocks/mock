@@ -13,6 +13,7 @@ class WebsiteSetting extends Model
     protected $fillable = [
         'site_title',
         'site_logo',
+        'dark_mode_logo',
         'favicon',
         'contact_email',
         'contact_phone',
@@ -71,6 +72,14 @@ class WebsiteSetting extends Model
     public function getLogoUrlAttribute()
     {
         return $this->site_logo ? asset('storage/' . $this->site_logo) : null;
+    }
+
+    /**
+     * Get dark mode logo URL
+     */
+    public function getDarkModeLogoUrlAttribute()
+    {
+        return $this->dark_mode_logo ? asset('storage/' . $this->dark_mode_logo) : null;
     }
 
     /**

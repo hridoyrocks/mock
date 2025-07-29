@@ -147,7 +147,7 @@
             
             {{-- Actions --}}
             <div class="mt-8 flex justify-center space-x-4">
-                <a href="{{ route('invoice.download', $transaction) }}" class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all neon-purple">
+                <a href="{{ route('subscription.invoice.download', $transaction) }}" class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all neon-purple">
                     <i class="fas fa-download mr-2"></i>
                     Download PDF
                 </a>

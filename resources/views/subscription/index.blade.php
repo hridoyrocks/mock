@@ -207,19 +207,24 @@
                             <i class="fas fa-clipboard-check text-blue-400 text-2xl"></i>
                             @php
                                 $testLimit = $user->getFeatureLimit('mock_tests_per_month');
-                                $percentage = $testLimit === 'unlimited' ? 0 : ($user->tests_taken_this_month / $testLimit) * 100;
+                                $percentage = 0;
+                                if ($testLimit !== 'unlimited' && $testLimit > 0) {
+                                    $percentage = ($user->tests_taken_this_month / $testLimit) * 100;
+                                }
                             @endphp
                         </div>
                         <p class="text-3xl font-bold text-white mb-1">{{ $user->tests_taken_this_month }}</p>
                         <p class="text-sm text-gray-400">Mock Tests Taken</p>
-                        @if($testLimit !== 'unlimited')
+                        @if($testLimit !== 'unlimited' && $testLimit > 0)
                             <p class="text-xs text-gray-500 mt-1">of {{ $testLimit }} monthly limit</p>
                             <div class="mt-3 w-full h-2 bg-white/10 rounded-full overflow-hidden">
                                 <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" 
                                      style="width: {{ min($percentage, 100) }}%"></div>
                             </div>
-                        @else
+                        @elseif($testLimit === 'unlimited')
                             <p class="text-xs text-green-400 mt-1">Unlimited</p>
+                        @else
+                            <p class="text-xs text-gray-500 mt-1">No tests available</p>
                         @endif
                     </div>
                     

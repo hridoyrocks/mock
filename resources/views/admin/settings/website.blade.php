@@ -79,6 +79,46 @@
                             @enderror
                         </div>
 
+                        <!-- Dark Mode Logo -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Dark Mode Logo</label>
+                            <div class="mt-2 flex items-center space-x-6">
+                                @if($settings->dark_mode_logo)
+                                    <div class="relative group bg-gray-900 p-2 rounded-lg">
+                                        <img src="{{ $settings->dark_mode_logo_url }}" alt="Dark Mode Logo" class="h-16 w-auto rounded">
+                                        <button type="button" 
+                                                onclick="if(confirm('Are you sure you want to remove the dark mode logo?')) { document.getElementById('remove-dark-logo-form').submit(); }"
+                                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="h-20 w-20 rounded-lg border-2 border-dashed border-gray-300 bg-gray-900 flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                                        </svg>
+                                    </div>
+                                @endif
+                                <div>
+                                    <input type="file" name="dark_mode_logo" id="dark_mode_logo" accept="image/*" 
+                                           onchange="previewImage(this, 'dark-logo-preview')"
+                                           class="block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                    <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 2MB (for dark backgrounds)</p>
+                                    <div id="dark-logo-preview" class="mt-2 hidden">
+                                        <p class="text-xs text-gray-500 mb-1">Preview:</p>
+                                        <div class="bg-gray-900 p-2 rounded inline-block">
+                                            <img src="" alt="Dark Logo Preview" class="h-16 w-auto rounded">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @error('dark_mode_logo')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         <!-- Favicon -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Favicon</label>
@@ -321,6 +361,11 @@
                 @method('DELETE')
             </form>
             
+            <form id="remove-dark-logo-form" action="{{ route('admin.settings.website.remove-dark-logo') }}" method="POST" class="hidden">
+                @csrf
+                @method('DELETE')
+            </form>
+            
             <form id="remove-favicon-form" action="{{ route('admin.settings.website.remove-favicon') }}" method="POST" class="hidden">
                 @csrf
                 @method('DELETE')
@@ -442,6 +487,7 @@
             
             // File size validation
             const logoInput = document.getElementById('site_logo');
+            const darkLogoInput = document.getElementById('dark_mode_logo');
             const faviconInput = document.getElementById('favicon');
             
             function validateFileSize(file, maxSizeMB) {
@@ -457,6 +503,13 @@
                 if (!validateFileSize(e.target.files[0], 2)) {
                     e.target.value = '';
                     document.getElementById('logo-preview').classList.add('hidden');
+                }
+            });
+            
+            darkLogoInput.addEventListener('change', function(e) {
+                if (!validateFileSize(e.target.files[0], 2)) {
+                    e.target.value = '';
+                    document.getElementById('dark-logo-preview').classList.add('hidden');
                 }
             });
             
