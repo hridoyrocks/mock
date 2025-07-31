@@ -248,6 +248,7 @@
                     $groupedQuestions = collect($displayQuestions)->groupBy(function($item) {
                         return $item['question']->part_number;
                     });
+                    $globalShownInstructions = [];
                 @endphp
                 
                 @foreach ($groupedQuestions as $partNumber => $partQuestions)
@@ -339,11 +340,17 @@
                                                 break;
                                             }
                                         }
+                                        
+                                        // Check if this instruction has already been shown globally
+                                        if($shouldShowInstruction && isset($globalShownInstructions[$instruction])) {
+                                            $shouldShowInstruction = false;
+                                        }
                                     @endphp
                                     @if($shouldShowInstruction)
                                         <div class="question-instructions">
                                             {!! $instruction !!}
                                         </div>
+                                        @php $globalShownInstructions[$instruction] = true; @endphp
                                     @endif
                                 @endif
                                 
@@ -355,11 +362,14 @@
                                 
                                 <div class="ielts-question-item" id="question-{{ $question->id }}" style="margin-bottom: 24px;">
                                     {{-- Question Title/Instructions - Skip default handling for sentence completion --}}
-                                    @if($question->instructions && !isset($shownInstructions[$question->instructions]) && $question->question_type !== 'sentence_completion')
+                                    @if($question->instructions && !isset($shownInstructions[$question->instructions]) && !isset($globalShownInstructions[$question->instructions]) && $question->question_type !== 'sentence_completion')
                                         <div class="question-instructions" style="margin-bottom: 12px; font-weight: 600; color: #1f2937;">
                                             {!! $question->instructions !!}
                                         </div>
-                                        @php $shownInstructions[$question->instructions] = true; @endphp
+                                        @php 
+                                            $shownInstructions[$question->instructions] = true;
+                                            $globalShownInstructions[$question->instructions] = true;
+                                        @endphp
                                     @endif
                                     
                                     @if($hasBlanks)
