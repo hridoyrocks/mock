@@ -19,6 +19,25 @@
                         </svg>
                         Edit
                     </a>
+                    
+                    @if($user->isBanned())
+                        <form action="{{ route('admin.users.unban', $user) }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Unban User
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('admin.users.ban-form', $user) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                            Ban User
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -137,9 +156,32 @@
                             @if($user->isBanned())
                             <div class="sm:col-span-2">
                                 <dt class="text-sm font-medium text-gray-500">Ban Details</dt>
-                                <dd class="mt-1 text-sm text-gray-900">
-                                    <p class="text-red-600">Banned on {{ $user->banned_at->format('M d, Y h:i A') }}</p>
-                                    <p class="mt-1">Reason: {{ $user->ban_reason }}</p>
+                                <dd class="mt-1">
+                                    <div class="bg-red-50 p-4 rounded-lg">
+                                        <p class="text-sm font-medium text-red-800">Ban Type: {{ ucfirst($user->ban_type) }}</p>
+                                        <p class="text-sm text-red-700 mt-1">Banned on: {{ $user->banned_at->format('M d, Y h:i A') }}</p>
+                                        @if($user->isTemporarilyBanned() && $user->ban_expires_at)
+                                            <p class="text-sm text-red-700 mt-1">Expires on: {{ $user->getBanExpiryDate() }}</p>
+                                        @endif
+                                        @if($user->bannedBy)
+                                            <p class="text-sm text-red-700 mt-1">Banned by: {{ $user->bannedBy->name }}</p>
+                                        @endif
+                                        <p class="text-sm text-red-700 mt-2">Reason: {{ $user->ban_reason }}</p>
+                                        
+                                        @if($user->latestBanAppeal)
+                                            <div class="mt-3 pt-3 border-t border-red-200">
+                                                <p class="text-sm font-medium text-red-800">Latest Appeal:</p>
+                                                <p class="text-sm text-red-700">Status: 
+                                                    <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full {{ $user->latestBanAppeal->status_badge_color }}">
+                                                        {{ ucfirst($user->latestBanAppeal->status) }}
+                                                    </span>
+                                                </p>
+                                                <a href="{{ route('admin.ban-appeals.show', $user->latestBanAppeal) }}" class="text-sm text-red-600 hover:text-red-800 underline">
+                                                    View Appeal
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </dd>
                             </div>
                             @endif

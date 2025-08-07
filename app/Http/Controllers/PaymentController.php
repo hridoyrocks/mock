@@ -429,11 +429,12 @@ class PaymentController extends Controller
 
     protected function processBkashPayment($gateway, $paymentData, $plan, $coupon)
     {
+       
         try {
             // Create bKash payment
-            $result = $gateway->createPayment($paymentData);
-            
-            if (isset($result['payment_url'])) {
+            $result = $gateway->processPayment($paymentData);
+            //dd($result);
+            if (isset($result['redirect_url'])) {
                 // Store payment info in session for callback
                 session([
                     'bkash_payment' => [
@@ -446,7 +447,7 @@ class PaymentController extends Controller
                 ]);
                 
                 // Redirect to bKash payment page
-                return redirect($result['payment_url']);
+                return redirect($result['redirect_url']);
             }
             
             return back()->with('error', 'Failed to initiate bKash payment.');
@@ -555,7 +556,56 @@ class PaymentController extends Controller
 
     public function success(Request $request)
     {
-        // Handle payment success callback (for payment gateways that use callbacks)
+        // Check for bKash payment callback
+        if ($request->has('paymentID')) {
+            $paymentId = $request->input('paymentID');
+            $status = $request->input('status');
+            
+            // Check if payment was cancelled
+            if ($status === 'cancel' || $status === 'failure') {
+                $this->clearPaymentSessions();
+                return redirect()->route('subscription.plans')
+                    ->with('error', 'Payment was cancelled.');
+            }
+            
+            // Get payment info from session
+            $paymentInfo = session('bkash_payment');
+            
+            if (!$paymentInfo) {
+                return redirect()->route('subscription.plans')
+                    ->with('error', 'Payment session expired.');
+            }
+            
+            // Verify and execute payment with bKash
+            try {
+                $gateway = $this->gatewayFactory->make('bkash');
+                $result = $gateway->verifyPayment($paymentId);
+                
+                if ($result['status'] === 'completed') {
+                    $plan = SubscriptionPlan::find($paymentInfo['plan_id']);
+                    $coupon = $paymentInfo['coupon_id'] ? Coupon::find($paymentInfo['coupon_id']) : null;
+                    
+                    return $this->handleSuccessfulPayment($result, $plan, $coupon, 'bkash');
+                }
+                
+                // Payment failed
+                $this->clearPaymentSessions();
+                return redirect()->route('payment.failed')
+                    ->with('error', $result['message'] ?? 'Payment verification failed');
+                    
+            } catch (\Exception $e) {
+                Log::error('bKash payment verification failed', [
+                    'error' => $e->getMessage(),
+                    'payment_id' => $paymentId
+                ]);
+                
+                $this->clearPaymentSessions();
+                return redirect()->route('payment.failed')
+                    ->with('error', 'Payment verification failed');
+            }
+        }
+        
+        // Handle other payment methods callback
         $paymentMethod = $request->input('payment_method');
         $type = $request->input('type');
         
@@ -566,9 +616,6 @@ class PaymentController extends Controller
             }
             
             switch ($paymentMethod) {
-                case 'bkash':
-                    return $this->handleBkashCallback($request);
-                    
                 case 'nagad':
                     return $this->handleNagadCallback($request);
                     
@@ -625,29 +672,6 @@ class PaymentController extends Controller
         $this->clearPaymentSessions();
         
         return view('payment.failed');
-    }
-
-    protected function handleBkashCallback(Request $request)
-    {
-        $paymentInfo = session('bkash_payment');
-        
-        if (!$paymentInfo) {
-            return redirect()->route('subscription.plans')
-                ->with('error', 'Payment session expired.');
-        }
-        
-        // Verify payment with bKash
-        $gateway = $this->gatewayFactory->make('bkash');
-        $result = $gateway->verifyPayment($paymentInfo['payment_id']);
-        
-        if ($result['status'] === 'completed') {
-            $plan = SubscriptionPlan::find($paymentInfo['plan_id']);
-            $coupon = $paymentInfo['coupon_id'] ? Coupon::find($paymentInfo['coupon_id']) : null;
-            
-            return $this->handleSuccessfulPayment($result, $plan, $coupon, 'bkash');
-        }
-        
-        return redirect()->route('payment.failed');
     }
 
     protected function handleNagadCallback(Request $request)

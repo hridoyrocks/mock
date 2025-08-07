@@ -134,30 +134,24 @@
                                             </div>
                                             
                                             <div class="py-1">
-                                                <form action="{{ route('admin.users.toggle-ban', $user) }}" method="POST" class="inline" x-data="{ showReasonInput: false }">
+                                                @if($user->isBanned())
+                                                <form action="{{ route('admin.users.unban', $user) }}" method="POST" class="inline">
                                                     @csrf
-                                                    @if($user->isBanned())
                                                     <button type="submit" class="group flex items-center px-4 py-2 text-sm text-green-700 hover:bg-green-100 hover:text-green-900 w-full text-left">
                                                         <svg class="mr-3 h-5 w-5 text-green-400 group-hover:text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                                         </svg>
                                                         Unban User
                                                     </button>
-                                                    @else
-                                                    <div x-show="!showReasonInput">
-                                                        <button type="button" @click="showReasonInput = true" class="group flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-100 hover:text-red-900 w-full text-left">
-                                                            <svg class="mr-3 h-5 w-5 text-red-400 group-hover:text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                                <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd" />
-                                                            </svg>
-                                                            Ban User
-                                                        </button>
-                                                    </div>
-                                                    <div x-show="showReasonInput" class="p-2">
-                                                        <input type="text" name="reason" placeholder="Ban reason" class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
-                                                        <button type="submit" class="mt-1 w-full px-2 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700">Confirm Ban</button>
-                                                    </div>
-                                                    @endif
                                                 </form>
+                                                @else
+                                                <a href="{{ route('admin.users.ban-form', $user) }}" class="group flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-100 hover:text-red-900 w-full text-left">
+                                                    <svg class="mr-3 h-5 w-5 text-red-400 group-hover:text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Ban User
+                                                </a>
+                                                @endif
                                             </div>
                                             
                                             @if($user->id !== auth()->id())

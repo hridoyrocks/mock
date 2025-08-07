@@ -4,6 +4,8 @@ namespace App\Services\Payment\Gateways;
 
 use App\Services\Payment\PaymentGatewayInterface;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class BkashGateway implements PaymentGatewayInterface
@@ -26,21 +28,21 @@ class BkashGateway implements PaymentGatewayInterface
     public function processPayment(array $data): array
     {
         try {
-            // Get token first
+            // Get token with caching
             $token = $this->getToken();
 
             // Create payment
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'X-APP-Key' => $this->appKey,
-            ])->post($this->baseUrl . '/checkout/payment/create', [
+            ])->post($this->baseUrl . '/checkout/create', [
                 'mode' => '0011',
                 'payerReference' => ' ',
                 'callbackURL' => $data['success_url'],
                 'amount' => (string) $data['amount'],
                 'currency' => 'BDT',
                 'intent' => 'sale',
-                'merchantInvoiceNumber' => $data['transaction_id'],
+                'merchantInvoiceNumber' => 'inv' . time(),
             ]);
 
             $result = $response->json();
@@ -51,6 +53,13 @@ class BkashGateway implements PaymentGatewayInterface
                     'payment_id' => $result['paymentID'],
                     'redirect_url' => $result['bkashURL'],
                 ];
+            }
+
+            // Handle token expiry
+            if ($response->status() === 401) {
+                Log::warning("BkashGateway: Token expired, refreshing...");
+                Cache::forget('bkash_id_token');
+                return $this->processPayment($data); // Retry with new token
             }
 
             throw new Exception('bKash payment creation failed');
@@ -68,25 +77,31 @@ class BkashGateway implements PaymentGatewayInterface
             $response = Http::withHeaders([
                 'Authorization' => $token,
                 'X-APP-Key' => $this->appKey,
-            ])->post($this->baseUrl . '/checkout/payment/execute', [
+            ])->post($this->baseUrl . '/checkout/execute', [
                 'paymentID' => $paymentId,
             ]);
 
             $result = $response->json();
 
-            if ($response->successful() && $result['transactionStatus'] === 'Completed') {
+            if ($response->successful() && $result['transactionStatus'] === 'Completed' && $result['statusCode'] === '0000') {
                 return [
                     'status' => 'completed',
-                    'transaction_id' => $result['merchantInvoiceNumber'],
+                    'transaction_id' => $result['trxID'] ?? $result['paymentID'],
                     'amount' => floatval($result['amount']),
                     'currency' => $result['currency'],
                     'bkash_trx_id' => $result['trxID'],
                 ];
             }
 
+            // Handle token expiry
+            if ($response->status() === 401) {
+                Cache::forget('bkash_id_token');
+                return $this->verifyPayment($paymentId); // Retry
+            }
+
             return [
                 'status' => 'failed',
-                'message' => $result['errorMessage'] ?? 'Payment verification failed',
+                'message' => $result['errorMessage'] ?? 'Payment failed',
             ];
 
         } catch (\Exception $e) {
@@ -134,7 +149,29 @@ class BkashGateway implements PaymentGatewayInterface
         return ['status' => 'ignored'];
     }
 
+    /**
+     * Get token with caching
+     */
     private function getToken(): string
+    {
+        $cacheKey = 'bkash_id_token';
+        $idToken = Cache::get($cacheKey);
+        
+        if (!$idToken) {
+            $idToken = $this->grantToken()['id_token'];
+            Cache::put($cacheKey, $idToken, now()->addMinutes(55)); // cache for 55 minutes
+            Log::info("bkashAuthService---> new token generated and cached");
+        } else {
+            Log::info("bkashAuthService---Token from existing cache");
+        }
+        
+        return $idToken;
+    }
+
+    /**
+     * Grant new token from bKash API
+     */
+    private function grantToken(): array
     {
         $response = Http::withHeaders([
             'username' => $this->username,
@@ -145,7 +182,7 @@ class BkashGateway implements PaymentGatewayInterface
         ]);
 
         if ($response->successful()) {
-            return $response->json()['id_token'];
+            return $response->json();
         }
 
         throw new Exception('Failed to get bKash token');

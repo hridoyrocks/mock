@@ -47,7 +47,7 @@
                         </div>
                         <h3 class="font-semibold text-white text-lg mb-2">Take a Mock Test</h3>
                         <p class="text-gray-400 text-sm mb-4">Start with a full IELTS mock test to assess your current level.</p>
-                        <a href="{{ route('student.index') }}" 
+                        <a href="{{ route('student.dashboard') }}" 
                            class="inline-flex items-center text-blue-400 hover:text-blue-300 font-medium group">
                             Start Test 
                             <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>

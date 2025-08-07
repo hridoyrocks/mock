@@ -243,7 +243,9 @@
                                 <div class="flex justify-center space-x-2">
                                     @if($user->activeSubscription())
                                         <button onclick="openRevokeModal({{ $user->activeSubscription()->id }}, '{{ addslashes($user->name) }}')" 
-                                                class="rounded-lg bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 transition-colors">
+                                                class="rounded-lg bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 transition-colors"
+                                                data-subscription-id="{{ $user->activeSubscription()->id }}"
+                                                data-user-name="{{ $user->name }}">
                                             Revoke
                                         </button>
                                     @else
@@ -281,33 +283,27 @@
     </div>
 
     <!-- Grant Modal -->
-    <div x-data="{ open: false }" 
-         x-show="open" 
-         @grant-modal.window="open = true"
-         id="grantModal" 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         style="display: none;">
-        <div class="flex min-h-screen items-center justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-            <div x-show="open"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+    <div id="grantModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex min-h-screen items-center justify-center px-4 py-4 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true" onclick="closeGrantModal()">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
 
-            <div x-show="open"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
+            <!-- Modal panel -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative">
                 <form id="grantForm" method="POST">
                     @csrf
                     <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="absolute top-0 right-0 pt-4 pr-4">
+                            <button type="button" onclick="closeGrantModal()" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                <span class="sr-only">Close</span>
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
                         <div class="sm:flex sm:items-start">
                             <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
                                 <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,14 +319,21 @@
                                         <label class="block text-sm font-medium text-gray-700">Select Plan</label>
                                         <select name="plan_id" required 
                                                 class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                            @foreach(\App\Models\SubscriptionPlan::active()->get() as $plan)
+                                            <option value="">Select a plan</option>
+                                            @php
+                                                $plans = \App\Models\SubscriptionPlan::where('is_active', true)->orderBy('price')->get();
+                                            @endphp
+                                            @forelse($plans as $plan)
                                                 <option value="{{ $plan->id }}">
                                                     {{ $plan->name }} - ৳{{ number_format($plan->price) }}
                                                     @if($plan->discount_price)
                                                         ({{ $plan->discount_percentage }}% off)
                                                     @endif
+                                                    - {{ $plan->duration_days }} days
                                                 </option>
-                                            @endforeach
+                                            @empty
+                                                <option value="" disabled>No active plans available</option>
+                                            @endforelse
                                         </select>
                                     </div>
                                     
@@ -352,11 +355,11 @@
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                         <button type="submit" 
+                                id="grantSubmitBtn"
                                 class="inline-flex w-full justify-center rounded-lg bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
                             Grant Subscription
                         </button>
                         <button type="button" 
-                                @click="open = false"
                                 onclick="closeGrantModal()"
                                 class="mt-3 inline-flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:ml-3 sm:mt-0 sm:w-auto sm:text-sm">
                             Cancel
@@ -368,33 +371,27 @@
     </div>
 
     <!-- Revoke Modal -->
-    <div x-data="{ open: false }" 
-         x-show="open" 
-         @revoke-modal.window="open = true"
-         id="revokeModal" 
-         class="fixed inset-0 z-50 overflow-y-auto" 
-         style="display: none;">
-        <div class="flex min-h-screen items-center justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-            <div x-show="open"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+    <div id="revokeModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex min-h-screen items-center justify-center px-4 py-4 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true" onclick="closeRevokeModal()">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
 
-            <div x-show="open"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                 class="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
+            <!-- Modal panel -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative">
                 <form id="revokeForm" method="POST">
                     @csrf
                     <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="absolute top-0 right-0 pt-4 pr-4">
+                            <button type="button" onclick="closeRevokeModal()" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+                                <span class="sr-only">Close</span>
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
                         <div class="sm:flex sm:items-start">
                             <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
                                 <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -420,11 +417,11 @@
                     </div>
                     <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                         <button type="submit" 
+                                id="revokeSubmitBtn"
                                 class="inline-flex w-full justify-center rounded-lg bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
                             Revoke Subscription
                         </button>
                         <button type="button" 
-                                @click="open = false"
                                 onclick="closeRevokeModal()"
                                 class="mt-3 inline-flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:mt-0 sm:w-auto sm:text-sm">
                             Cancel
@@ -437,27 +434,100 @@
 
     @push('scripts')
     <script>
+        // Initialize event listeners after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form submission handlers
+            const grantForm = document.getElementById('grantForm');
+            const revokeForm = document.getElementById('revokeForm');
+            
+            if (grantForm) {
+                grantForm.addEventListener('submit', function(e) {
+                    console.log('Grant form submitted');
+                    console.log('Form action:', this.action);
+                    console.log('Form data:', new FormData(this));
+                    
+                    // Add loading state to button
+                    const btn = document.getElementById('grantSubmitBtn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+                    }
+                });
+            }
+            
+            if (revokeForm) {
+                revokeForm.addEventListener('submit', function(e) {
+                    console.log('Revoke form submitted');
+                    console.log('Form action:', this.action);
+                    console.log('Form method:', this.method);
+                    
+                    const formData = new FormData(this);
+                    console.log('Form data:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(key + ':', value);
+                    }
+                    
+                    // Add loading state to button
+                    const btn = document.getElementById('revokeSubmitBtn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+                    }
+                });
+            }
+        });
+        
+        // Global functions for modals
         function openGrantModal(userId, userName) {
+            console.log('Opening grant modal for user:', userId, userName);
             document.getElementById('grantUserName').innerText = userName;
-            document.getElementById('grantForm').action = `/admin/subscriptions/grant/${userId}`;
-            document.getElementById('grantModal').style.display = 'block';
-            window.dispatchEvent(new CustomEvent('grant-modal'));
+            const form = document.getElementById('grantForm');
+            form.action = `/admin/subscriptions/grant/${userId}`;
+            console.log('Form action set to:', form.action);
+            const modal = document.getElementById('grantModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
         
         function closeGrantModal() {
-            document.getElementById('grantModal').style.display = 'none';
+            const modal = document.getElementById('grantModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('grantForm').reset();
         }
         
         function openRevokeModal(subscriptionId, userName) {
+            console.log('Opening revoke modal for subscription:', subscriptionId, userName);
+            
+            if (!subscriptionId) {
+                console.error('No subscription ID provided!');
+                showToast('Error: No subscription ID found', 'error');
+                return;
+            }
+            
             document.getElementById('revokeUserName').innerText = userName;
-            document.getElementById('revokeForm').action = `/admin/subscriptions/revoke/${subscriptionId}`;
-            document.getElementById('revokeModal').style.display = 'block';
-            window.dispatchEvent(new CustomEvent('revoke-modal'));
+            const form = document.getElementById('revokeForm');
+            form.action = `/admin/subscriptions/revoke/${subscriptionId}`;
+            console.log('Form action set to:', form.action);
+            const modal = document.getElementById('revokeModal');
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
         }
         
         function closeRevokeModal() {
-            document.getElementById('revokeModal').style.display = 'none';
+            const modal = document.getElementById('revokeModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            document.getElementById('revokeForm').reset();
         }
+        
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeGrantModal();
+                closeRevokeModal();
+            }
+        });
         
         function openBulkGrantModal() {
             showToast('Bulk grant feature coming soon!', 'info');
@@ -465,3 +535,34 @@
     </script>
     @endpush
 </x-admin-layout>
+
+<style>
+    /* Modal Styles */
+    #grantModal, #revokeModal {
+        z-index: 9999 !important;
+    }
+    
+    /* Ensure modal content is above overlay */
+    #grantModal .inline-block,
+    #revokeModal .inline-block {
+        z-index: 10000 !important;
+        position: relative;
+    }
+    
+    /* Fix for modal background */
+    .fixed.inset-0.transition-opacity {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    /* Ensure form elements are clickable */
+    #grantModal input,
+    #grantModal select,
+    #grantModal textarea,
+    #grantModal button,
+    #revokeModal input,
+    #revokeModal textarea,
+    #revokeModal button {
+        position: relative;
+        z-index: 10001;
+    }
+</style>

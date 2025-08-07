@@ -137,9 +137,9 @@
                                 </div>
                                 <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
                                     @php
-                                        $totalDays = $activeSubscription->starts_at->diffInDays($activeSubscription->ends_at);
-                                        $daysUsed = $activeSubscription->starts_at->diffInDays(now());
-                                        $percentageUsed = ($daysUsed / $totalDays) * 100;
+                                    $totalDays = $activeSubscription->starts_at->diffInDays($activeSubscription->ends_at);
+                                    $daysUsed = $activeSubscription->starts_at->diffInDays(now());
+                                    $percentageUsed = $totalDays > 0 ? ($daysUsed / $totalDays) * 100 : 0;
                                     @endphp
                                     <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500" 
                                          style="width: {{ min($percentageUsed, 100) }}%"></div>
@@ -208,14 +208,14 @@
                             @php
                                 $testLimit = $user->getFeatureLimit('mock_tests_per_month');
                                 $percentage = 0;
-                                if ($testLimit !== 'unlimited' && $testLimit > 0) {
+                                if (is_numeric($testLimit) && $testLimit > 0) {
                                     $percentage = ($user->tests_taken_this_month / $testLimit) * 100;
                                 }
                             @endphp
                         </div>
                         <p class="text-3xl font-bold text-white mb-1">{{ $user->tests_taken_this_month }}</p>
                         <p class="text-sm text-gray-400">Mock Tests Taken</p>
-                        @if($testLimit !== 'unlimited' && $testLimit > 0)
+                        @if(is_numeric($testLimit) && $testLimit > 0)
                             <p class="text-xs text-gray-500 mt-1">of {{ $testLimit }} monthly limit</p>
                             <div class="mt-3 w-full h-2 bg-white/10 rounded-full overflow-hidden">
                                 <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" 

@@ -23,6 +23,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'teacher' => \App\Http\Middleware\IsTeacher::class,
         ]);
         
+        // Set priority - CheckBanned should run early
+        $middleware->priority([
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\CheckBanned::class, // Run early after session
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
+        
         // Web middleware group
         $middleware->web(append: [
             \App\Http\Middleware\CheckMaintenanceMode::class,

@@ -106,8 +106,33 @@ Route::middleware(['guest'])->group(function () {
         ->name('password.update');
 });
 
+// Test banned status route - REMOVE IN PRODUCTION
+Route::get('/test-ban-status', function() {
+    if (!auth()->check()) {
+        return 'Not logged in';
+    }
+    
+    $user = auth()->user();
+    return [
+        'user_id' => $user->id,
+        'name' => $user->name,
+        'banned_at' => $user->banned_at,
+        'ban_type' => $user->ban_type,
+        'ban_expires_at' => $user->ban_expires_at,
+        'is_banned' => $user->isBanned(),
+        'is_permanent' => $user->isPermanentlyBanned(),
+        'is_temporary' => $user->isTemporarilyBanned(),
+    ];
+})->middleware('auth');
+
 // Logout Route (authenticated only)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Banned User Routes
+Route::middleware(['auth'])->prefix('banned')->name('banned.')->group(function () {
+    Route::get('/', [App\Http\Controllers\BannedController::class, 'index'])->name('index');
+    Route::post('/appeal', [App\Http\Controllers\BannedController::class, 'appeal'])->name('appeal');
+});
 
 // Maintenance page (accessible during maintenance) - MOVED HERE
 Route::get('/maintenance', [App\Http\Controllers\MaintenanceController::class, 'index'])
@@ -118,7 +143,7 @@ Route::get('/maintenance', [App\Http\Controllers\MaintenanceController::class, '
 Route::get('/audio/stream/{recording}', [App\Http\Controllers\AudioStreamController::class, 'stream'])
     ->name('audio.stream')
     ->middleware('auth');
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -127,7 +152,7 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar')->middleware('auth');
 
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(function () {
     // Coupon routes
     Route::prefix('coupon')->name('coupon.')->group(function () {
         Route::post('/validate', [App\Http\Controllers\CouponController::class, 'validate'])->name('validate');
@@ -145,7 +170,7 @@ Route::get('/invoice/verify/{transaction}', [SubscriptionController::class, 'ver
     ->name('invoice.verify');
 
 // Authenticated routes with role-based dashboard
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(function () {
     // Dashboard route with role-based redirection
     Route::get('/dashboard', function() {
         if (auth()->user()->is_admin) {
@@ -528,8 +553,18 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{user}/edit', [App\Http\Controllers\Admin\UserController::class, 'edit'])->name('edit');
             Route::put('/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('update');
             Route::delete('/{user}', [App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('destroy');
-            Route::post('/{user}/toggle-ban', [App\Http\Controllers\Admin\UserController::class, 'toggleBan'])->name('toggle-ban');
+            Route::get('/{user}/ban', [App\Http\Controllers\Admin\UserController::class, 'showBanForm'])->name('ban-form');
+            Route::post('/{user}/ban', [App\Http\Controllers\Admin\UserController::class, 'ban'])->name('ban');
+            Route::post('/{user}/unban', [App\Http\Controllers\Admin\UserController::class, 'unban'])->name('unban');
             Route::post('/{user}/verify-email', [App\Http\Controllers\Admin\UserController::class, 'verifyEmail'])->name('verify-email');
+        });
+        
+        // Ban Appeals Management
+        Route::prefix('ban-appeals')->name('ban-appeals.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\BanAppealController::class, 'index'])->name('index');
+            Route::get('/{banAppeal}', [App\Http\Controllers\Admin\BanAppealController::class, 'show'])->name('show');
+            Route::post('/{banAppeal}/approve', [App\Http\Controllers\Admin\BanAppealController::class, 'approve'])->name('approve');
+            Route::post('/{banAppeal}/reject', [App\Http\Controllers\Admin\BanAppealController::class, 'reject'])->name('reject');
         });
 
     });

@@ -14,6 +14,7 @@ use App\Models\UserSubscription;
 use App\Models\PaymentTransaction;
 use App\Models\StudentAttempt;
 use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 
 
 
@@ -51,6 +52,9 @@ class User extends Authenticatable
         'successful_referrals',
         'banned_at',
         'ban_reason',
+        'ban_type',
+        'ban_expires_at',
+        'banned_by',
     ];
 
     protected $casts = [
@@ -67,6 +71,7 @@ class User extends Authenticatable
         'total_referrals' => 'integer',
         'successful_referrals' => 'integer',
         'banned_at' => 'datetime',
+        'ban_expires_at' => 'datetime',
     ];
 
 
@@ -523,7 +528,120 @@ public function activeGoal()
      */
     public function isBanned(): bool
     {
-        return !is_null($this->banned_at);
+        if (is_null($this->banned_at)) {
+            return false;
+        }
+        
+        // Check if temporary ban has expired
+        if ($this->ban_type === 'temporary' && $this->ban_expires_at && $this->ban_expires_at->isPast()) {
+            // Auto-unban if temporary ban expired
+            $this->unban();
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Check if ban is permanent
+     */
+    public function isPermanentlyBanned(): bool
+    {
+        return $this->isBanned() && $this->ban_type === 'permanent';
+    }
+    
+    /**
+     * Check if ban is temporary
+     */
+    public function isTemporarilyBanned(): bool
+    {
+        return $this->isBanned() && $this->ban_type === 'temporary';
+    }
+    
+    /**
+     * Get ban expiry date for temporary bans
+     */
+    public function getBanExpiryDate(): ?string
+    {
+        if ($this->isTemporarilyBanned() && $this->ban_expires_at) {
+            return $this->ban_expires_at->format('F j, Y g:i A');
+        }
+        return null;
+    }
+    
+    /**
+     * Ban appeals relationship
+     */
+    public function banAppeals()
+    {
+        return $this->hasMany(BanAppeal::class);
+    }
+    
+    /**
+     * Get latest ban appeal
+     */
+    public function latestBanAppeal()
+    {
+        return $this->hasOne(BanAppeal::class)->latest();
+    }
+    
+    /**
+     * Check if user has pending appeal
+     */
+    public function hasPendingAppeal(): bool
+    {
+        return $this->banAppeals()->where('status', 'pending')->exists();
+    }
+    
+    /**
+     * Ban the user
+     */
+    public function ban(string $reason, string $type = 'temporary', $expiresAt = null, ?User $bannedBy = null): void
+    {
+        $banData = [
+            'banned_at' => now(),
+            'ban_reason' => $reason,
+            'ban_type' => $type,
+            'banned_by' => $bannedBy?->id
+        ];
+        
+        if ($type === 'temporary') {
+            if ($expiresAt instanceof \Carbon\Carbon) {
+                $banData['ban_expires_at'] = $expiresAt;
+            } elseif (is_string($expiresAt)) {
+                $banData['ban_expires_at'] = Carbon::parse($expiresAt);
+            } elseif (is_null($expiresAt)) {
+                $banData['ban_expires_at'] = now()->addDays(7); // Default 7 days
+            } else {
+                $banData['ban_expires_at'] = $expiresAt;
+            }
+        } else {
+            $banData['ban_expires_at'] = null;
+        }
+        
+        $this->update($banData);
+    }
+    
+    /**
+     * Unban the user
+     */
+    public function unban(): void
+    {
+        $this->update([
+            'banned_at' => null,
+            'ban_reason' => null,
+            'ban_type' => 'temporary',
+            'ban_expires_at' => null,
+            'banned_by' => null
+        ]);
+    }
+    
+    /**
+     * Get the admin who banned this user
+     */
+    public function bannedBy()
+    {
+        return $this->belongsTo(User::class, 'banned_by');
     }
     
     /**

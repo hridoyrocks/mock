@@ -4,23 +4,32 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
 
 class CheckBanned
 {
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        if (auth()->check() && auth()->user()->isBanned()) {
-            auth()->logout();
+        if (Auth::check() && Auth::user()->isBanned()) {
+            // Allow access to banned page, appeal routes, and logout
+            if ($request->routeIs('banned.*') || 
+                $request->routeIs('logout') || 
+                $request->is('banned') || 
+                $request->is('banned/*')) {
+                return $next($request);
+            }
             
-            return redirect()->route('login')->with('error', 'Your account has been banned. Reason: ' . auth()->user()->ban_reason);
+            // For any other route, redirect to banned page
+            return redirect()->route('banned.index');
         }
-        
+
         return $next($request);
     }
 }

@@ -177,25 +177,64 @@ class UserController extends Controller
     }
 
     /**
-     * Ban or unban a user.
+     * Show ban form
      */
-    public function toggleBan(User $user)
+    public function showBanForm(User $user)
     {
-        if ($user->banned_at) {
-            $user->update([
-                'banned_at' => null,
-                'ban_reason' => null,
-            ]);
-            $message = 'User has been unbanned successfully.';
-        } else {
-            $user->update([
-                'banned_at' => now(),
-                'ban_reason' => request('reason', 'Banned by administrator'),
-            ]);
-            $message = 'User has been banned successfully.';
+        if ($user->isBanned()) {
+            return redirect()->route('admin.users.show', $user)
+                ->with('error', 'User is already banned.');
         }
-
-        return back()->with('success', $message);
+        
+        return view('admin.users.ban', compact('user'));
+    }
+    
+    /**
+     * Ban a user
+     */
+    public function ban(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'ban_reason' => 'required|string|max:500',
+            'ban_type' => 'required|in:temporary,permanent',
+            'ban_duration' => 'required_if:ban_type,temporary|nullable|integer|min:1|max:365',
+        ]);
+        
+        $expiresAt = null;
+        if ($validated['ban_type'] === 'temporary' && isset($validated['ban_duration'])) {
+            $expiresAt = now()->addDays((int)$validated['ban_duration']);
+        }
+        
+        $user->ban(
+            $validated['ban_reason'],
+            $validated['ban_type'],
+            $expiresAt,
+            auth()->user()
+        );
+        
+        // Send ban notification
+        $user->notify(new \App\Notifications\UserBanned(
+            $validated['ban_reason'],
+            $validated['ban_type'],
+            $expiresAt
+        ));
+        
+        return redirect()->route('admin.users.show', $user)
+            ->with('success', 'User has been banned successfully.');
+    }
+    
+    /**
+     * Unban a user
+     */
+    public function unban(User $user)
+    {
+        if (!$user->isBanned()) {
+            return back()->with('error', 'User is not banned.');
+        }
+        
+        $user->unban();
+        
+        return back()->with('success', 'User has been unbanned successfully.');
     }
 
     /**
