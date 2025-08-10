@@ -98,9 +98,18 @@ class ResultController extends Controller
                     $sentenceCount = isset($scData['sentences']) ? count($scData['sentences']) : 0;
                     $totalQuestions += $sentenceCount > 0 ? $sentenceCount : 1;
                 } else {
+                    // Count blanks and dropdowns
                     $blankCount = $question->countBlanks();
-                    if ($blankCount > 0) {
-                        $totalQuestions += $blankCount;
+                    
+                    // Also count dropdowns if they exist
+                    $dropdownCount = 0;
+                    if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
+                        $dropdownCount = count($question->section_specific_data['dropdown_correct']);
+                    }
+                    
+                    $totalCount = max($blankCount, $dropdownCount);
+                    if ($totalCount > 0) {
+                        $totalQuestions += $totalCount;
                     } else {
                         $totalQuestions += 1;
                     }
@@ -170,16 +179,43 @@ class ResultController extends Controller
                             }
                         }
                     }
-                } elseif ($question->countBlanks() > 0) {
-                    // Handle fill-in-the-blanks
+                } elseif ($question->countBlanks() > 0 || 
+                         ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct']))) {
+                    // Handle fill-in-the-blanks and dropdowns
                     $answer = $questionAnswers->first();
-                    if ($answer && $this->checkTextAnswer($answer)) {
-                        // For multi-blank questions, count each correct blank
+                    if ($answer && $answer->answer) {
                         if ($this->isJson($answer->answer)) {
                             $studentAnswers = json_decode($answer->answer, true);
+                            
+                            // Count correct blanks
                             $results = $question->checkMultipleBlanks($studentAnswers);
                             $correctAnswers += $results['correct'];
-                        } else {
+                            
+                            // Count correct dropdowns
+                            $sectionData = $question->section_specific_data;
+                            if ($sectionData && isset($sectionData['dropdown_correct'])) {
+                                foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
+                                    $studentDropdownAnswer = null;
+                                    
+                                    if (isset($studentAnswers['dropdown_' . $num])) {
+                                        $studentDropdownAnswer = $studentAnswers['dropdown_' . $num];
+                                    } elseif (isset($studentAnswers[$num])) {
+                                        $studentDropdownAnswer = $studentAnswers[$num];
+                                    }
+                                    
+                                    $dropdownOptions = $sectionData['dropdown_options'][$num] ?? '';
+                                    
+                                    if ($dropdownOptions) {
+                                        $options = array_map('trim', explode(',', $dropdownOptions));
+                                        $correctOption = $options[$correctIndex] ?? '';
+                                        
+                                        if ($this->compareAnswers($studentDropdownAnswer ?? '', $correctOption)) {
+                                            $correctAnswers++;
+                                        }
+                                    }
+                                }
+                            }
+                        } else if ($this->checkTextAnswer($answer)) {
                             $correctAnswers++;
                         }
                     }
@@ -204,6 +240,22 @@ class ResultController extends Controller
             
             // Calculate accuracy percentage
             $accuracy = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
+            
+            // Calculate band score
+            $bandScore = 0;
+            if ($totalQuestions > 0) {
+                if ($attempt->testSet->section->name === 'listening') {
+                    $bandScore = \App\Helpers\ScoreCalculator::calculateListeningBandScore($correctAnswers, $totalQuestions);
+                } else if ($attempt->testSet->section->name === 'reading') {
+                    $bandScore = \App\Helpers\ScoreCalculator::calculateReadingBandScore($correctAnswers, $totalQuestions);
+                }
+                
+                // Update the attempt with calculated band score if not already set
+                if (!$attempt->band_score || $attempt->band_score == 0) {
+                    $attempt->band_score = $bandScore;
+                    $attempt->save();
+                }
+            }
             
             // Get current page from request
             $currentPage = $request->get('page', 1);
@@ -254,17 +306,18 @@ class ResultController extends Controller
             'blanks' => $question->blanks()->get()->toArray()
         ]);
         
-        // Handle JSON answers (fill-in-the-blanks with multiple blanks)
+        // Handle JSON answers (fill-in-the-blanks with multiple blanks or dropdowns)
         if ($this->isJson($studentAnswer)) {
             $studentAnswers = json_decode($studentAnswer, true);
             
-            // Use the new trait method for blanks
+            // Check blanks first
             $results = $question->checkMultipleBlanks($studentAnswers);
             $allCorrect = ($results['total'] > 0 && $results['correct'] === $results['total']);
             
-            // Also check dropdowns
+            // Check dropdowns
             $sectionData = $question->section_specific_data;
-            if ($allCorrect && $sectionData && isset($sectionData['dropdown_correct']) && is_array($sectionData['dropdown_correct'])) {
+            if ($sectionData && isset($sectionData['dropdown_correct']) && is_array($sectionData['dropdown_correct'])) {
+                // If there are dropdowns, check them
                 foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
                     $studentDropdownAnswer = null;
                     
@@ -283,6 +336,32 @@ class ResultController extends Controller
                         if (!$this->compareAnswers($studentDropdownAnswer ?? '', $correctOption)) {
                             $allCorrect = false;
                             break;
+                        }
+                    }
+                }
+                
+                // If only dropdowns exist (no blanks), set allCorrect based on dropdown check
+                if ($results['total'] === 0 && count($sectionData['dropdown_correct']) > 0) {
+                    $allCorrect = true;
+                    foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
+                        $studentDropdownAnswer = null;
+                        
+                        if (isset($studentAnswers['dropdown_' . $num])) {
+                            $studentDropdownAnswer = $studentAnswers['dropdown_' . $num];
+                        } elseif (isset($studentAnswers[$num])) {
+                            $studentDropdownAnswer = $studentAnswers[$num];
+                        }
+                        
+                        $dropdownOptions = $sectionData['dropdown_options'][$num] ?? '';
+                        
+                        if ($dropdownOptions) {
+                            $options = array_map('trim', explode(',', $dropdownOptions));
+                            $correctOption = $options[$correctIndex] ?? '';
+                            
+                            if (!$this->compareAnswers($studentDropdownAnswer ?? '', $correctOption)) {
+                                $allCorrect = false;
+                                break;
+                            }
                         }
                     }
                 }

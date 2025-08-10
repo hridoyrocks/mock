@@ -411,8 +411,8 @@ class QuestionController extends Controller
             // Process fill-in-the-blank questions
             // $sectionSpecificData already initialized above
             
-            // Handle fill-in-the-blank answers
-            if (in_array($request->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion'])) {
+            // Handle fill-in-the-blank and dropdown answers
+            if (in_array($request->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion', 'dropdown_selection'])) {
                 // Extract blank answers from content
                 $content = $request->content;
                 $blankAnswers = [];
@@ -728,7 +728,8 @@ class QuestionController extends Controller
                     'sentence_completion' => 'Sentence Completion',
                     'summary_completion' => 'Summary Completion',
                     'short_answer' => 'Short Answer',
-                    'fill_blanks' => 'Fill in the Blanks'
+                    'fill_blanks' => 'Fill in the Blanks',
+                    'dropdown_selection' => 'Dropdown Selection'
                 ];
                 break;
                 
@@ -1027,7 +1028,7 @@ class QuestionController extends Controller
     private function needsOptions($questionType): bool
     {
         // Special types that don't need traditional options
-        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram', 'matching_headings'];
+        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram', 'matching_headings', 'dropdown_selection'];
         
         // Text input types that don't need options
         $textTypes = ['short_answer', 'sentence_completion', 'note_completion', 'summary_completion', 'fill_blanks'];

@@ -14,13 +14,16 @@ class ScoreCalculator
      */
     public static function calculateListeningBandScore(int $correctAnswers, int $totalQuestions): float
     {
-        // If test has different number of questions, scale to 40
-        if ($totalQuestions != 40 && $totalQuestions > 0) {
-            $scaledScore = round(($correctAnswers / $totalQuestions) * 40);
+        // Scale to 40 questions (IELTS standard)
+        if ($totalQuestions > 0 && $totalQuestions != 40) {
+            // Calculate percentage and then scale to 40
+            $percentage = ($correctAnswers / $totalQuestions);
+            $scaledScore = round($percentage * 40);
             $correctAnswers = $scaledScore;
         }
         
-        // Official IELTS Listening band score conversion
+        // Official IELTS Listening band score conversion table
+        // Based on British Council / IDP official scoring
         return match(true) {
             $correctAnswers >= 39 => 9.0,
             $correctAnswers >= 37 => 8.5,
@@ -32,10 +35,10 @@ class ScoreCalculator
             $correctAnswers >= 18 => 5.5,
             $correctAnswers >= 16 => 5.0,
             $correctAnswers >= 13 => 4.5,
-            $correctAnswers >= 11 => 4.0,
-            $correctAnswers >= 9  => 3.5,
-            $correctAnswers >= 6  => 3.0,
-            $correctAnswers >= 4  => 2.5,
+            $correctAnswers >= 10 => 4.0,  // Official: 10-12 = 4.0
+            $correctAnswers >= 8  => 3.5,  // Official: 8-9 = 3.5
+            $correctAnswers >= 6  => 3.0,  // Official: 6-7 = 3.0
+            $correctAnswers >= 4  => 2.5,  // Official: 4-5 = 2.5
             $correctAnswers == 3  => 2.0,
             $correctAnswers == 2  => 1.5,
             $correctAnswers == 1  => 1.0,
@@ -54,53 +57,55 @@ class ScoreCalculator
      */
     public static function calculateReadingBandScore(int $correctAnswers, int $totalQuestions, string $testType = 'academic'): float
     {
-        // If test has different number of questions, scale to 40
-        if ($totalQuestions != 40 && $totalQuestions > 0) {
-            $scaledScore = round(($correctAnswers / $totalQuestions) * 40);
+        // Scale to 40 questions (IELTS standard)
+        if ($totalQuestions > 0 && $totalQuestions != 40) {
+            // Calculate percentage and then scale to 40
+            $percentage = ($correctAnswers / $totalQuestions);
+            $scaledScore = round($percentage * 40);
             $correctAnswers = $scaledScore;
         }
         
         if ($testType === 'academic') {
-            // Academic Reading band score conversion
+            // Official IELTS Academic Reading band score conversion
             return match(true) {
-                $correctAnswers >= 39 => 9.0,
-                $correctAnswers >= 37 => 8.5,
-                $correctAnswers >= 35 => 8.0,
-                $correctAnswers >= 33 => 7.5,
-                $correctAnswers >= 30 => 7.0,
-                $correctAnswers >= 27 => 6.5,
-                $correctAnswers >= 23 => 6.0,
-                $correctAnswers >= 19 => 5.5,
-                $correctAnswers >= 15 => 5.0,
-                $correctAnswers >= 13 => 4.5,
-                $correctAnswers >= 10 => 4.0,
-                $correctAnswers >= 8  => 3.5,
-                $correctAnswers >= 6  => 3.0,
-                $correctAnswers >= 4  => 2.5,
+                $correctAnswers >= 39 => 9.0,   // 39-40 correct = 9.0
+                $correctAnswers >= 37 => 8.5,   // 37-38 correct = 8.5
+                $correctAnswers >= 35 => 8.0,   // 35-36 correct = 8.0
+                $correctAnswers >= 33 => 7.5,   // 33-34 correct = 7.5
+                $correctAnswers >= 30 => 7.0,   // 30-32 correct = 7.0
+                $correctAnswers >= 27 => 6.5,   // 27-29 correct = 6.5
+                $correctAnswers >= 23 => 6.0,   // 23-26 correct = 6.0
+                $correctAnswers >= 19 => 5.5,   // 19-22 correct = 5.5
+                $correctAnswers >= 15 => 5.0,   // 15-18 correct = 5.0
+                $correctAnswers >= 13 => 4.5,   // 13-14 correct = 4.5
+                $correctAnswers >= 10 => 4.0,   // 10-12 correct = 4.0
+                $correctAnswers >= 8  => 3.5,   // 8-9 correct = 3.5
+                $correctAnswers >= 6  => 3.0,   // 6-7 correct = 3.0
+                $correctAnswers >= 4  => 2.5,   // 4-5 correct = 2.5
                 $correctAnswers == 3  => 2.0,
                 $correctAnswers == 2  => 1.5,
                 $correctAnswers == 1  => 1.0,
                 default => 0.0
             };
         } else {
-            // General Training Reading band score conversion
+            // Official IELTS General Training Reading band score conversion
             return match(true) {
-                $correctAnswers >= 40 => 9.0,
-                $correctAnswers >= 39 => 8.5,
-                $correctAnswers >= 37 => 8.0,
-                $correctAnswers >= 36 => 7.5,
-                $correctAnswers >= 34 => 7.0,
-                $correctAnswers >= 32 => 6.5,
-                $correctAnswers >= 30 => 6.0,
-                $correctAnswers >= 27 => 5.5,
-                $correctAnswers >= 23 => 5.0,
-                $correctAnswers >= 19 => 4.5,
-                $correctAnswers >= 15 => 4.0,
-                $correctAnswers >= 12 => 3.5,
-                $correctAnswers >= 9  => 3.0,
-                $correctAnswers >= 6  => 2.5,
-                $correctAnswers >= 4  => 2.0,
-                $correctAnswers == 2  => 1.5,
+                $correctAnswers == 40 => 9.0,   // 40 correct = 9.0
+                $correctAnswers == 39 => 8.5,   // 39 correct = 8.5
+                $correctAnswers >= 37 => 8.0,   // 37-38 correct = 8.0
+                $correctAnswers >= 36 => 7.5,   // 36 correct = 7.5
+                $correctAnswers >= 34 => 7.0,   // 34-35 correct = 7.0
+                $correctAnswers >= 32 => 6.5,   // 32-33 correct = 6.5
+                $correctAnswers >= 30 => 6.0,   // 30-31 correct = 6.0
+                $correctAnswers >= 27 => 5.5,   // 27-29 correct = 5.5
+                $correctAnswers >= 23 => 5.0,   // 23-26 correct = 5.0
+                $correctAnswers >= 19 => 4.5,   // 19-22 correct = 4.5
+                $correctAnswers >= 15 => 4.0,   // 15-18 correct = 4.0
+                $correctAnswers >= 12 => 3.5,   // 12-14 correct = 3.5
+                $correctAnswers >= 9  => 3.0,   // 9-11 correct = 3.0
+                $correctAnswers >= 6  => 2.5,   // 6-8 correct = 2.5
+                $correctAnswers >= 4  => 2.0,   // 4-5 correct = 2.0
+                $correctAnswers >= 2  => 1.5,   // 2-3 correct = 1.5
                 $correctAnswers == 1  => 1.0,
                 default => 0.0
             };
@@ -119,12 +124,33 @@ class ScoreCalculator
      */
     public static function calculatePartialTestScore(int $correctAnswers, int $answeredQuestions, int $totalQuestions, string $section = 'listening'): array
     {
-        // Don't give score if less than 25% attempted
-        if ($answeredQuestions < $totalQuestions * 0.25) {
+        // For very small tests (practice tests), be more lenient
+        $minRequired = $totalQuestions < 10 ? 1 : ceil($totalQuestions * 0.25);
+        
+        // Don't give score if no questions attempted
+        if ($answeredQuestions == 0) {
+            return [
+                'band_score' => null,
+                'message' => 'No questions attempted',
+                'min_required' => $minRequired,
+                'answered' => $answeredQuestions,
+                'total' => $totalQuestions,
+                'completion_percentage' => 0
+            ];
+        }
+        
+        // For small tests, allow scoring even with few questions
+        if ($totalQuestions < 10 && $answeredQuestions < $minRequired) {
+            // Still try to give a score for practice tests
+            $minRequired = 1;
+        }
+        
+        // Don't give score if less than minimum attempted
+        if ($answeredQuestions < $minRequired) {
             return [
                 'band_score' => null,
                 'message' => 'Insufficient questions attempted for scoring',
-                'min_required' => ceil($totalQuestions * 0.25),
+                'min_required' => $minRequired,
                 'answered' => $answeredQuestions,
                 'total' => $totalQuestions,
                 'completion_percentage' => round(($answeredQuestions / $totalQuestions) * 100, 1)
@@ -134,7 +160,30 @@ class ScoreCalculator
         // Calculate accuracy on attempted questions
         $accuracy = $answeredQuestions > 0 ? ($correctAnswers / $answeredQuestions) : 0;
         
-        // Project score for all questions based on current accuracy
+        // For complete tests (100% completion), use actual score
+        if ($answeredQuestions == $totalQuestions) {
+            // Use actual correct answers, not projected
+            if ($section === 'listening') {
+                $bandScore = self::calculateListeningBandScore($correctAnswers, $totalQuestions);
+            } else {
+                $bandScore = self::calculateReadingBandScore($correctAnswers, $totalQuestions);
+            }
+            
+            return [
+                'band_score' => $bandScore,
+                'confidence' => 'Complete',
+                'is_reliable' => true,
+                'answered' => $answeredQuestions,
+                'total' => $totalQuestions,
+                'correct' => $correctAnswers,
+                'projected_correct' => $correctAnswers,
+                'accuracy_percentage' => round($accuracy * 100, 1),
+                'completion_percentage' => 100.0,
+                'message' => "Complete test with band score {$bandScore}"
+            ];
+        }
+        
+        // Project score for incomplete tests
         $projectedCorrect = round($accuracy * $totalQuestions);
         
         // Get appropriate band score

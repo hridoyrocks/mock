@@ -472,19 +472,61 @@
                                         $currentNumber++;
                                     }
                                     } else {
-                                        // Regular question
-                                        $answer = $attempt->answers->where('question_id', $question->id)->first();
-                                        $displayQuestions[] = [
-                                            'number' => $currentNumber,
-                                            'question' => $question,
-                                            'content' => $question->content,
-                                            'answer' => $answer,
-                                            'is_master_sub' => false
-                                        ];
-                                        
-                                        // Count blanks for numbering
-                                        $blankCount = $question->countBlanks();
-                                        $currentNumber += $blankCount > 0 ? $blankCount : 1;
+                                        // Check if this is a dropdown question
+                                        if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
+                                            $dropdownCount = count($question->section_specific_data['dropdown_correct']);
+                                            $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                            
+                                            if ($dropdownCount > 1) {
+                                                // Multiple dropdown question - create separate display for each
+                                                // Extract the base content without HTML tags
+                                                $baseContent = strip_tags($question->content);
+                                                // Remove the dropdown placeholders from the content for cleaner display
+                                                $cleanContent = preg_replace('/\[DROPDOWN_\d+\]/', '________', $baseContent);
+                                                
+                                                for ($i = 1; $i <= $dropdownCount; $i++) {
+                                                    $displayQuestions[] = [
+                                                        'number' => $currentNumber,
+                                                        'question' => $question,
+                                                        'content' => $cleanContent,
+                                                        'answer' => $answer,
+                                                        'is_master_sub' => false,
+                                                        'dropdown_index' => $i,
+                                                        'is_dropdown' => true
+                                                    ];
+                                                    $currentNumber++;
+                                                }
+                                            } else {
+                                                // Single dropdown question
+                                                $baseContent = strip_tags($question->content);
+                                                $cleanContent = preg_replace('/\[DROPDOWN_\d+\]/', '________', $baseContent);
+                                                
+                                                $displayQuestions[] = [
+                                                    'number' => $currentNumber,
+                                                    'question' => $question,
+                                                    'content' => $cleanContent,
+                                                    'answer' => $answer,
+                                                    'is_master_sub' => false,
+                                                    'dropdown_index' => 1,
+                                                    'is_dropdown' => true
+                                                ];
+                                                $currentNumber++;
+                                            }
+                                        } else {
+                                            // Regular question
+                                            $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                            $displayQuestions[] = [
+                                                'number' => $currentNumber,
+                                                'question' => $question,
+                                                'content' => $question->content,
+                                                'answer' => $answer,
+                                                'is_master_sub' => false
+                                            ];
+                                            
+                                            // Count blanks for numbering
+                                            $blankCount = $question->countBlanks();
+                                            $currentNumber += $blankCount > 0 ? $blankCount : 1;
+                                        }
                                     }
                                 }
                             @endphp
@@ -504,7 +546,30 @@
                                     $isCorrect = false;
                                     $displayAnswer = 'No answer';
                                     
-                                    if ($isAnswered && $answer) {
+                                    // Handle dropdown-specific display
+                                    if (isset($item['dropdown_index']) && $isAnswered && $answer) {
+                                        $answerData = @json_decode($answer->answer, true);
+                                        if (is_array($answerData)) {
+                                            $dropdownNum = $item['dropdown_index'];
+                                            $studentDropdownAnswer = $answerData['dropdown_' . $dropdownNum] ?? null;
+                                            
+                                            if ($studentDropdownAnswer !== null) {
+                                                $displayAnswer = $studentDropdownAnswer;
+                                                
+                                                // Check if correct
+                                                if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'][$dropdownNum])) {
+                                                    $correctIndex = $question->section_specific_data['dropdown_correct'][$dropdownNum];
+                                                    $dropdownOptions = $question->section_specific_data['dropdown_options'][$dropdownNum] ?? '';
+                                                    
+                                                    if ($dropdownOptions) {
+                                                        $options = array_map('trim', explode(',', $dropdownOptions));
+                                                        $correctOption = $options[$correctIndex] ?? '';
+                                                        $isCorrect = (strtolower(trim($studentDropdownAnswer)) === strtolower(trim($correctOption)));
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else if ($isAnswered && $answer) {
                                         if (isset($item['is_master_sub']) && $item['is_master_sub']) {
                                             // Master matching heading sub-question
                                             $decoded = json_decode($answer->answer, true);
@@ -528,7 +593,7 @@
                                                 }
                                             }
                                         } elseif ($answer->answer) {
-                                            // Check if it's JSON (fill-in-the-blank)
+                                            // Check if it's JSON (fill-in-the-blank or dropdown)
                                             $answerData = @json_decode($answer->answer, true);
                                             if (is_array($answerData)) {
                                                 $displayParts = [];
@@ -539,18 +604,51 @@
                                                 }
                                                 $displayAnswer = implode(', ', $displayParts);
                                                 
-                                                // For fill-in-the-blank, we need to check against section_specific_data
+                                                // Check blanks
+                                                $allCorrect = true;
                                                 if ($question->section_specific_data && isset($question->section_specific_data['blank_answers'])) {
-                                                    $allBlanksCorrect = true;
                                                     foreach ($question->section_specific_data['blank_answers'] as $num => $correctAnswer) {
                                                         $studentAnswer = $answerData['blank_' . $num] ?? '';
                                                         if (strtolower(trim($studentAnswer)) !== strtolower(trim($correctAnswer))) {
-                                                            $allBlanksCorrect = false;
+                                                            $allCorrect = false;
                                                             break;
                                                         }
                                                     }
-                                                    $isCorrect = $allBlanksCorrect;
                                                 }
+                                                
+                                                // Check dropdowns
+                                                if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
+                                                    // If only dropdowns exist (no blanks), reset allCorrect
+                                                    $hasDropdowns = count($question->section_specific_data['dropdown_correct']) > 0;
+                                                    $hasBlanks = isset($question->section_specific_data['blank_answers']) && count($question->section_specific_data['blank_answers']) > 0;
+                                                    
+                                                    if ($hasDropdowns && !$hasBlanks) {
+                                                        $allCorrect = true;
+                                                    }
+                                                    
+                                                    foreach ($question->section_specific_data['dropdown_correct'] as $num => $correctIndex) {
+                                                        $studentDropdownAnswer = $answerData['dropdown_' . $num] ?? null;
+                                                        
+                                                        if ($studentDropdownAnswer !== null) {
+                                                            $dropdownOptions = $question->section_specific_data['dropdown_options'][$num] ?? '';
+                                                            if ($dropdownOptions) {
+                                                                $options = array_map('trim', explode(',', $dropdownOptions));
+                                                                $correctOption = $options[$correctIndex] ?? '';
+                                                                
+                                                                if (strtolower(trim($studentDropdownAnswer)) !== strtolower(trim($correctOption))) {
+                                                                    $allCorrect = false;
+                                                                    break;
+                                                                }
+                                                            }
+                                                        } else if ($hasDropdowns && !$hasBlanks) {
+                                                            // For dropdown-only questions, if answer is missing, it's incorrect
+                                                            $allCorrect = false;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                $isCorrect = $allCorrect;
                                             } else {
                                                 $displayAnswer = $answer->answer;
                                             }
@@ -561,13 +659,33 @@
                                 <div class="glass rounded-lg p-4 {{ !$isAnswered ? 'opacity-60' : '' }}">
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
-                                            <div class="flex items-center gap-3 mb-2">
-                                                <span class="glass px-3 py-1 rounded-lg text-sm font-medium text-white">
+                                            <div class="flex items-start gap-3 mb-2">
+                                                <span class="glass px-3 py-1 rounded-lg text-sm font-medium text-white min-w-[3rem] text-center">
                                                     Q{{ $item['number'] }}
                                                 </span>
-                                                <p class="text-gray-300 text-sm flex-1">
-                                                    {!! Str::limit(strip_tags($item['content']), 100) !!}
-                                                </p>
+                                                <div class="flex-1">
+                                                    <p class="text-gray-300 text-sm">
+                                                        @if(isset($item['is_dropdown']) && $item['is_dropdown'])
+                                                            @php
+                                                                // For dropdown questions, show full content with dropdown highlighted
+                                                                $content = $item['content'];
+                                                                $dropdownNum = $item['dropdown_index'];
+                                                                $counter = 0;
+                                                                // Replace the specific dropdown placeholder
+                                                                $formattedContent = preg_replace_callback('/________/', function($matches) use ($dropdownNum, &$counter) {
+                                                                    $counter++;
+                                                                    if ($counter == $dropdownNum) {
+                                                                        return '<span class="inline-block px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded font-medium">[blank]</span>';
+                                                                    }
+                                                                    return '________';
+                                                                }, $content);
+                                                            @endphp
+                                                            {!! $formattedContent !!}
+                                                        @else
+                                                            {!! Str::limit(strip_tags($item['content']), 100) !!}
+                                                        @endif
+                                                    </p>
+                                                </div>
                                             </div>
                                             
                                             <div class="text-sm">
@@ -587,21 +705,22 @@
                                                     <p class="text-gray-400 mt-1">
                                                         Correct answer: 
                                                         <span class="text-green-400">
-                                                            @if(isset($item['is_master_sub']) && $item['is_master_sub'])
-                                                            Option {{ $item['correct_letter'] }}
-                                                            @elseif(isset($item['is_sentence_completion']) && $item['is_sentence_completion'])
-                                                            Option {{ $item['correct_answer'] }}
-                                                            @elseif($question->correctOption())
-                                                                {{ $question->correctOption()->content }}
-                                                            @elseif($question->section_specific_data && isset($question->section_specific_data['blank_answers']))
+                                                            @if(isset($item['dropdown_index']))
                                                                 @php
-                                                                    $blankAnswers = $question->getBlankAnswersArray();
+                                                                    $dropdownNum = $item['dropdown_index'];
+                                                                    $correctIndex = $question->section_specific_data['dropdown_correct'][$dropdownNum] ?? null;
+                                                                    $dropdownOptions = $question->section_specific_data['dropdown_options'][$dropdownNum] ?? '';
+                                                                    $correctAnswer = '';
+                                                                    if ($dropdownOptions && $correctIndex !== null) {
+                                                                        $options = array_map('trim', explode(',', $dropdownOptions));
+                                                                        $correctAnswer = $options[$correctIndex] ?? '';
+                                                                    }
                                                                 @endphp
-                                                                @if(!empty($blankAnswers))
-                                                                    {{ implode(', ', $blankAnswers) }}
-                                                                @else
-                                                                    {{ implode(', ', $question->section_specific_data['blank_answers']) }}
-                                                                @endif
+                                                                {{ $correctAnswer }}
+                                                            @elseif(isset($item['is_master_sub']) && $item['is_master_sub'])
+                                                                Option {{ $item['correct_letter'] }}
+                                                            @elseif(isset($item['is_sentence_completion']) && $item['is_sentence_completion'])
+                                                                Option {{ $item['correct_answer'] }}
                                                             @else
                                                                 {{ $question->getCorrectAnswerForDisplay() }}
                                                             @endif

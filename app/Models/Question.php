@@ -285,7 +285,16 @@ public function getProgressiveSettings()
     preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
     preg_match_all('/\[HEADING_DROPDOWN_\d+\]/', $content, $headingDropdownMatches);
     
-    return count($blankMatches[0]) + count($dropdownMatches[0]) + count($headingDropdownMatches[0]);
+    $contentCount = count($blankMatches[0]) + count($dropdownMatches[0]) + count($headingDropdownMatches[0]);
+    
+    // Also check section_specific_data for dropdown_correct
+    $dropdownDataCount = 0;
+    if ($this->section_specific_data && isset($this->section_specific_data['dropdown_correct'])) {
+        $dropdownDataCount = count($this->section_specific_data['dropdown_correct']);
+    }
+    
+    // Return the maximum to ensure we count all dropdowns
+    return max($contentCount, $dropdownDataCount);
 }
 
 public function getBlankAnswers(): array
@@ -789,20 +798,78 @@ public function getCorrectAnswerForDisplay(): string
         return $this->correctOption()->content;
     }
     
-    // Fill in the blanks
-    if ($this->section_specific_data && isset($this->section_specific_data['blank_answers'])) {
-        $blankAnswers = $this->section_specific_data['blank_answers'];
-        if (is_array($blankAnswers)) {
-            return implode(', ', $blankAnswers);
+    // Fill in the blanks and dropdowns
+    if ($this->section_specific_data) {
+        $answers = [];
+        
+        // Get blank answers
+        if (isset($this->section_specific_data['blank_answers'])) {
+            $blankAnswers = $this->section_specific_data['blank_answers'];
+            if (is_array($blankAnswers)) {
+                foreach ($blankAnswers as $num => $answer) {
+                    $answers['blank_' . $num] = $answer;
+                }
+            }
+        }
+        
+        // Get dropdown answers
+        if (isset($this->section_specific_data['dropdown_correct']) && 
+            isset($this->section_specific_data['dropdown_options'])) {
+            $dropdownCorrect = $this->section_specific_data['dropdown_correct'];
+            $dropdownOptions = $this->section_specific_data['dropdown_options'];
+            
+            if (is_array($dropdownCorrect) && is_array($dropdownOptions)) {
+                foreach ($dropdownCorrect as $num => $correctIndex) {
+                    if (isset($dropdownOptions[$num])) {
+                        $options = array_map('trim', explode(',', $dropdownOptions[$num]));
+                        if (isset($options[$correctIndex])) {
+                            $answers['dropdown_' . $num] = $options[$correctIndex];
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (!empty($answers)) {
+            // Sort by key to maintain order
+            ksort($answers);
+            return implode(', ', $answers);
+        }
+        
+        // Single text answer
+        if (isset($this->section_specific_data['correct_answer'])) {
+            return $this->section_specific_data['correct_answer'];
         }
     }
     
-    // Single text answer
-    if ($this->section_specific_data && isset($this->section_specific_data['correct_answer'])) {
-        return $this->section_specific_data['correct_answer'];
+    return 'See explanation';
+}
+
+/**
+ * Get dropdown correct answers for display
+ */
+public function getDropdownCorrectAnswers(): array
+{
+    if (!$this->section_specific_data || 
+        !isset($this->section_specific_data['dropdown_correct']) ||
+        !isset($this->section_specific_data['dropdown_options'])) {
+        return [];
     }
     
-    return 'See explanation';
+    $correctAnswers = [];
+    $dropdownCorrect = $this->section_specific_data['dropdown_correct'];
+    $dropdownOptions = $this->section_specific_data['dropdown_options'];
+    
+    foreach ($dropdownCorrect as $num => $correctIndex) {
+        if (isset($dropdownOptions[$num])) {
+            $options = array_map('trim', explode(',', $dropdownOptions[$num]));
+            if (isset($options[$correctIndex])) {
+                $correctAnswers[$num] = $options[$correctIndex];
+            }
+        }
+    }
+    
+    return $correctAnswers;
 }
 
 /**

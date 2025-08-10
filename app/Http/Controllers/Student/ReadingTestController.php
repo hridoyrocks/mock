@@ -354,8 +354,8 @@ class ReadingTestController extends Controller
                         'question_type' => $question->question_type ?? 'unknown'
                     ]);
                     
-                    // Handle array answers (blanks or multiple selections)
-                    if (isset($answer['blank_1']) || isset($answer['dropdown_1'])) {
+                    // Handle array answers (blanks, dropdowns or multiple selections)
+                    if (isset($answer['blank_1']) || isset($answer['dropdown_1']) || ($question->question_type === 'dropdown_selection' && isset($answer['dropdown_1']))) {
                         // Fill-in-the-blanks with multiple blanks
                         $combinedAnswer = json_encode($answer);
                         StudentAnswer::updateOrCreate(
@@ -369,10 +369,44 @@ class ReadingTestController extends Controller
                             ]
                         );
                         
-                        // Check each blank separately for IELTS scoring
-                        $blankResults = $this->checkMultiBlankAnswer($question, $answer);
-                        $answeredCount += $blankResults['answered'];
-                        $correctAnswers += $blankResults['correct'];
+                        // Check each blank/dropdown separately for IELTS scoring
+                        if ($question->question_type === 'dropdown_selection') {
+                            $sectionData = $question->section_specific_data;
+                            
+                            // For dropdown_selection, each dropdown counts as a separate question
+                            foreach ($answer as $dropdownKey => $dropdownValue) {
+                                if (strpos($dropdownKey, 'dropdown_') === 0 && !empty($dropdownValue)) {
+                                    $answeredCount++;
+                                    
+                                    // Extract dropdown number
+                                    $dropdownNum = str_replace('dropdown_', '', $dropdownKey);
+                                    
+                                    // Check if correct
+                                    if (isset($sectionData['dropdown_correct'][$dropdownNum])) {
+                                        $correctIndex = $sectionData['dropdown_correct'][$dropdownNum];
+                                        $options = explode(',', $sectionData['dropdown_options'][$dropdownNum] ?? '');
+                                        $correctAnswer = isset($options[$correctIndex]) ? trim($options[$correctIndex]) : '';
+                                        
+                                        \Log::info('Dropdown answer check', [
+                                            'dropdown_num' => $dropdownNum,
+                                            'student_answer' => $dropdownValue,
+                                            'correct_answer' => $correctAnswer,
+                                            'correct_index' => $correctIndex,
+                                            'options' => $options
+                                        ]);
+                                        
+                                        if ($this->compareAnswers($dropdownValue, $correctAnswer)) {
+                                            $correctAnswers++;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Regular blank checking
+                            $blankResults = $this->checkMultiBlankAnswer($question, $answer);
+                            $answeredCount += $blankResults['answered'];
+                            $correctAnswers += $blankResults['correct'];
+                        }
                     } else {
                         // Multiple selection question (including matching headings)
                         \Log::info('Processing multiple selection answer', [
@@ -548,7 +582,7 @@ class ReadingTestController extends Controller
         // Use the new trait method
         $results = $question->checkMultipleBlanks($studentAnswers);
         
-        // Also check dropdowns (not handled by trait yet)
+        // Also check dropdowns
         $sectionData = $question->section_specific_data;
         $answeredCount = $results['total'];
         $correctCount = $results['correct'];

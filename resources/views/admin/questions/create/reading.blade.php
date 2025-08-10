@@ -73,6 +73,15 @@
                                             </span>
                                         </div>
                                         
+                                        <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
+                                            <button type="button" onclick="insertDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
+                                                Insert Dropdown
+                                            </button>
+                                            <span class="text-xs text-gray-500 flex items-center">
+                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
+                                            </span>
+                                        </div>
+                                        
                                         
                                         <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                                     </div>
@@ -121,7 +130,8 @@
                                             'sentence_completion' => 'Sentence Completion',
                                             'summary_completion' => 'Summary Completion',
                                             'short_answer' => 'Short Answer',
-                                            'fill_blanks' => 'Fill in the Blanks'
+                                            'fill_blanks' => 'Fill in the Blanks',
+                                            'dropdown_selection' => 'Dropdown Selection'
                                         ]
                                     ])
                                     
@@ -425,8 +435,9 @@
                 editor.on('change', function() {
                     editor.save();
                     
-                    // Check for fill blanks
-                    if (fillBlanksMode) {
+                    // Check for fill blanks or dropdown selection
+                    const questionType = document.getElementById('question_type')?.value;
+                    if (fillBlanksMode || questionType === 'dropdown_selection') {
                         updateBlanks();
                     }
                 });
@@ -447,8 +458,9 @@
         // Initialize TinyMCE for content
         const questionType = document.getElementById('question_type');
         const isFillBlanks = questionType && questionType.value === 'fill_blanks';
+        const isDropdownSelection = questionType && questionType.value === 'dropdown_selection';
         
-        initTinyMCE('#content', isFillBlanks);
+        initTinyMCE('#content', isFillBlanks || isDropdownSelection);
         
         // Initialize simple editor for instructions
         initSimpleTinyMCE('#instructions');
@@ -484,6 +496,16 @@
                 if ((questionType === 'fill_blanks' || questionType === 'sentence_completion') && (e.key === 'b' || e.key === 'B')) {
                     e.preventDefault();
                     insertBlank();
+                }
+                
+                if (questionType === 'dropdown_selection' && (e.key === 'd' || e.key === 'D')) {
+                    e.preventDefault();
+                    insertDropdown();
+                }
+                
+                if (questionType === 'dropdown_selection' && (e.key === 'b' || e.key === 'B')) {
+                    e.preventDefault();
+                    insertDropdown(); // For dropdown_selection, Alt+B also inserts dropdown
                 }
             }
         });
@@ -701,6 +723,7 @@
         const passageTitleField = document.getElementById('passage-title-field');
         const blanksManager = document.getElementById('blanks-manager');
         const blankButtons = document.getElementById('blank-buttons');
+        const dropdownButtons = document.getElementById('dropdown-buttons');
 
         const optionsCard = document.getElementById('options-card');
         const matchingHeadingsCard = document.getElementById('matching-headings-card');
@@ -716,6 +739,7 @@
         passageTitleField?.classList.add('hidden');
         blanksManager?.classList.add('hidden');
         if (blankButtons) blankButtons.style.display = 'none';
+        if (dropdownButtons) dropdownButtons.style.display = 'none';
 
         if (orderNumberWrapper) orderNumberWrapper.style.display = 'block';
         if (matchingHeadingsCard) matchingHeadingsCard.style.display = 'none';
@@ -859,6 +883,13 @@
             if (orderInput) orderInput.value = '0';
             if (marksInput) marksInput.value = '0';
 
+        } else if (type === 'dropdown_selection') {
+            // Show dropdown buttons and manager
+            if (dropdownButtons) dropdownButtons.style.display = 'flex';
+            blanksManager?.classList.remove('hidden');
+            
+            // Initial update to show any existing dropdowns
+            setTimeout(updateBlanks, 500);
         } else if (type === 'fill_blanks') {
             // Show blank buttons and manager
             if (blankButtons) blankButtons.style.display = 'flex';
@@ -1063,14 +1094,17 @@
         setTimeout(updateBlanks, 100);
     };
 
-    // Insert dropdown function (kept for future use, not used for sentence completion)
+    // Insert dropdown function for dropdown_selection question type
     window.insertDropdown = function() {
+        console.log('insertDropdown called');
         if (!contentEditor) {
+            console.error('No content editor!');
             return;
         }
         
         dropdownCounter++;
-        const dropdownText = `[DROPDOWN_${dropdownCounter}:Option1,Option2,Option3]`;
+        const dropdownText = `[DROPDOWN_${dropdownCounter}]`;
+        console.log('Inserting dropdown:', dropdownText);
         
         contentEditor.insertContent(dropdownText);
         
@@ -1110,16 +1144,20 @@
     // Update blanks display
     window.updateBlanks = function() {
         if (!contentEditor) {
+            console.log('No content editor found');
             return;
         }
 
         saveCurrentBlankValues();
 
         const content = contentEditor.getContent({ format: 'text' });
+        console.log('Content:', content);
         
         // Find all blanks, dropdowns, and heading dropdowns using regex
         const blankMatches = content.match(/\[____\d+____\]/g) || [];
-        const dropdownMatches = content.match(/\[DROPDOWN_\d+:[^\]]+\]/g) || [];
+        const dropdownMatches = content.match(/\[DROPDOWN_\d+\]/g) || [];
+        
+        console.log('Found dropdowns:', dropdownMatches);
         
         const blanksManager = document.getElementById('blanks-manager');
         const blanksList = document.getElementById('blanks-list');
@@ -1175,17 +1213,17 @@
                 }
             });
 
-            // Process dropdowns (keeping for backward compatibility)
+            // Process dropdowns
             dropdownMatches.forEach((match) => {
-                const parts = match.match(/\[DROPDOWN_(\d+):([^\]]+)\]/);
-                const num = parts[1];
-                const options = parts[2];
+                const num = match.match(/\d+/)[0];
+                console.log('Processing dropdown:', num);
 
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
                 
-                const storedOptions = dropdownStore.options[num] || options;
+                const storedOptions = dropdownStore.options[num] || '';
                 const storedCorrect = dropdownStore.correct[num] || '0';
+                console.log('Stored options for dropdown', num, ':', storedOptions);
                 
                 itemDiv.innerHTML = `
                     <span class="text-sm font-medium text-gray-700 min-w-[80px]">Dropdown ${num}:</span>
@@ -1194,12 +1232,12 @@
                            value="${storedOptions}" 
                            name="dropdown_options[]" 
                            class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="Options (comma separated)"
-                           data-dropdown-num="${num}">
+                           placeholder="Options (comma separated, e.g: good, better, best)"
+                           data-dropdown-num="${num}" required>
                     <select id="dropdown_correct_${num}" name="dropdown_correct[]" 
                             class="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                             data-dropdown-num="${num}">
-                        ${storedOptions.split(',').map((opt, idx) => `<option value="${idx}" ${idx == storedCorrect ? 'selected' : ''}>${opt.trim()}</option>`).join('')}
+                        ${storedOptions ? storedOptions.split(',').map((opt, idx) => `<option value="${idx}" ${idx == storedCorrect ? 'selected' : ''}>${opt.trim()}</option>`).join('') : '<option value="">Enter options first</option>'}
                     </select>
                     <button type="button" onclick="removeDropdown(${num})" class="text-red-500 hover:text-red-700 p-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1310,7 +1348,7 @@
             delete dropdownStore.correct[num];
             
             let content = contentEditor.getContent();
-            const regex = new RegExp(`\\[DROPDOWN_${num}:[^\\]]+\\]`, 'g');
+            const regex = new RegExp(`\\[DROPDOWN_${num}\\]`, 'g');
             content = content.replace(regex, '');
             contentEditor.setContent(content);
             
@@ -1359,7 +1397,7 @@
         let content = contentEditor.getContent();
         
         // Find all dropdown patterns
-        const dropdownRegex = /\[DROPDOWN_\d+:[^\]]+\]/g;
+        const dropdownRegex = /\[DROPDOWN_\d+\]/g;
         const matches = content.match(dropdownRegex) || [];
         
         const newOptionsStore = {};
@@ -1367,12 +1405,10 @@
         
         // Renumber dropdowns
         matches.forEach((match, index) => {
-            const parts = match.match(/\[DROPDOWN_(\d+):([^\]]+)\]/);
-            const oldNum = parts[1];
-            const options = parts[2];
+            const oldNum = match.match(/\d+/)[0];
             const newNum = index + 1;
             
-            content = content.replace(match, `[DROPDOWN_${newNum}:${options}]`);
+            content = content.replace(match, `[DROPDOWN_${newNum}]`);
             
             // Transfer dropdown data to new number
             if (dropdownStore.options[oldNum]) {

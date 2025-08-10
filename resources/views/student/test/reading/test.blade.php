@@ -141,7 +141,13 @@
                         preg_match_all('/\[BLANK_\d+\]|\[____\d+____\]/', $question->content, $blankMatches);
                         preg_match_all('/\[DROPDOWN_\d+\]/', $question->content, $dropdownMatches);
                         preg_match_all('/\[HEADING_DROPDOWN_\d+\]/', $question->content, $headingDropdownMatches);
-                        $blankCount = count($blankMatches[0]) + count($dropdownMatches[0]) + count($headingDropdownMatches[0]);
+                        
+                        // For dropdown_selection type, count dropdowns as individual questions
+                        if ($question->question_type === 'dropdown_selection') {
+                            $blankCount = count($dropdownMatches[0]);
+                        } else {
+                            $blankCount = count($blankMatches[0]) + count($dropdownMatches[0]) + count($headingDropdownMatches[0]);
+                        }
                         
                         if ($blankCount > 0) {
                             // Store blank numbers for this question
@@ -249,6 +255,7 @@
                         return $item['question']->part_number;
                     });
                     $globalShownInstructions = [];
+                    $globalProcessedQuestions = []; // Track globally processed questions
                 @endphp
                 
                 @foreach ($groupedQuestions as $partNumber => $partQuestions)
@@ -290,161 +297,99 @@
                         <div class="part-questions-inner" data-start-number="{{ $startNumber }}" data-end-number="{{ $endNumber }}" data-part-number="{{ $partNumber }}">
                         
                         @php
-                        $questionGroups = $partQuestions->groupBy(function($item) {
-                            return $item['question']->question_group;
-                        });
-                        $shownInstructions = [];
-                        $processedQuestions = [];
+                        // Group questions by instruction first, then by group
+                        $instructionGroups = [];
+                        
+                        foreach($partQuestions as $item) {
+                            $question = $item['question'];
+                            $instructionKey = $question->instructions ?: 'no-instruction-' . $question->id;
+                            
+                            if (!isset($instructionGroups[$instructionKey])) {
+                                $instructionGroups[$instructionKey] = [];
+                            }
+                            $instructionGroups[$instructionKey][] = $item;
+                        }
                         @endphp
                         
-                        @foreach ($questionGroups as $groupName => $questions)
-                            @if($groupName)
-                                @php
-                                    // Check if this group contains sentence completion questions
-                                    $groupHasSentenceCompletion = false;
-                                    foreach($questions as $item) {
-                                        if($item['question']->question_type === 'sentence_completion') {
-                                            $groupHasSentenceCompletion = true;
-                                            break;
-                                        }
-                                    }
-                                @endphp
-                                
-                                @if(!$groupHasSentenceCompletion)
-                                    <div class="question-group-header">
-                                        {{ $groupName }}
-                                    </div>
-                                @endif
-                            @endif
-                            
+                        @foreach ($instructionGroups as $instructionKey => $instructionQuestions)
                             @php
-                                // Group questions by instruction
-                                $questionsByInstruction = $questions->groupBy(function($item) {
-                                    // Skip instruction grouping for sentence completion
-                                    if($item['question']->question_type === 'sentence_completion') {
-                                        return 'no-instruction';
+                                $hasInstruction = !str_starts_with($instructionKey, 'no-instruction-');
+                                $instructionText = $hasInstruction ? $instructionKey : '';
+                                
+                                // Check if any question in this group is already processed
+                                $groupAlreadyProcessed = false;
+                                foreach($instructionQuestions as $item) {
+                                    if (in_array($item['question']->id, $globalProcessedQuestions)) {
+                                        $groupAlreadyProcessed = true;
+                                        break;
                                     }
-                                    return $item['question']->instructions ?: 'no-instruction';
-                                });
+                                }
+                                
+                                if ($groupAlreadyProcessed) {
+                                    continue;
+                                }
                             @endphp
                             
-                            @foreach($questionsByInstruction as $instruction => $instructionQuestions)
-                                @if($instruction !== 'no-instruction')
+                            {{-- Show instruction once per unique instruction --}}
+                            @if($hasInstruction && !isset($globalShownInstructions[$instructionKey]))
+                                <div class="question-instructions" style="margin-bottom: 16px; font-weight: 600; color: #1f2937;">
+                                    {!! $instructionText !!}
+                                </div>
+                                @php $globalShownInstructions[$instructionKey] = true; @endphp
+                            @endif
+                            
+                            {{-- Now group by question_group within same instruction --}}
+                            @php
+                                $questionGroups = [];
+                                foreach($instructionQuestions as $item) {
+                                    $groupKey = $item['question']->question_group ?: 'no-group-' . $item['question']->id;
+                                    if (!isset($questionGroups[$groupKey])) {
+                                        $questionGroups[$groupKey] = [];
+                                    }
+                                    $questionGroups[$groupKey][] = $item;
+                                }
+                            @endphp
+                            
+                            @foreach ($questionGroups as $groupName => $questions)
+                                @if($groupName && !str_starts_with($groupName, 'no-group-'))
                                     @php
-                                        // Skip showing instruction here for sentence completion as it has custom display
-                                        $skipInstructionTypes = ['sentence_completion'];
-                                        $shouldShowInstruction = true;
-                                        foreach($instructionQuestions as $q) {
-                                            if(in_array($q['question']->question_type, $skipInstructionTypes)) {
-                                                $shouldShowInstruction = false;
+                                        // Check if this group contains sentence completion questions
+                                        $groupHasSentenceCompletion = false;
+                                        foreach($questions as $item) {
+                                            if($item['question']->question_type === 'sentence_completion') {
+                                                $groupHasSentenceCompletion = true;
                                                 break;
                                             }
                                         }
-                                        
-                                        // Check if this instruction has already been shown globally
-                                        if($shouldShowInstruction && isset($globalShownInstructions[$instruction])) {
-                                            $shouldShowInstruction = false;
-                                        }
                                     @endphp
-                                    @if($shouldShowInstruction)
-                                        <div class="question-instructions">
-                                            {!! $instruction !!}
+                                    
+                                    @if(!$groupHasSentenceCompletion)
+                                        <div class="question-group-header" style="margin-top: 20px; margin-bottom: 12px; font-weight: 700; font-size: 15px;">
+                                            {{ $groupName }}
                                         </div>
-                                        @php $globalShownInstructions[$instruction] = true; @endphp
                                     @endif
                                 @endif
                                 
-                                @foreach ($instructionQuestions as $item)
-                                @php
-                                    $question = $item['question'];
-                                    $hasBlanks = $item['has_blanks'];
-                                @endphp
-                                
-                                <div class="ielts-question-item" id="question-{{ $question->id }}" style="margin-bottom: 24px;">
-                                    {{-- Question Title/Instructions - Skip default handling for sentence completion --}}
-                                    @if($question->instructions && !isset($shownInstructions[$question->instructions]) && !isset($globalShownInstructions[$question->instructions]) && $question->question_type !== 'sentence_completion')
-                                        <div class="question-instructions" style="margin-bottom: 12px; font-weight: 600; color: #1f2937;">
-                                            {!! $question->instructions !!}
-                                        </div>
-                                        @php 
-                                            $shownInstructions[$question->instructions] = true;
-                                            $globalShownInstructions[$question->instructions] = true;
-                                        @endphp
-                                    @endif
+                                @foreach ($questions as $item)
+                                    @php
+                                        $question = $item['question'];
+                                        $hasBlanks = $item['has_blanks'];
+                                        
+                                        // Mark this question as processed
+                                        $globalProcessedQuestions[] = $question->id;
+                                    @endphp
                                     
-                                    @if($hasBlanks)
-                                        {{-- Check if this is a heading dropdown question --}}
-                                        @php
-                                            $hasHeadingDropdowns = preg_match('/\[HEADING_DROPDOWN_\d+\]/', $question->content);
-                                            $headingOptions = [];
-                                            
-                                            if ($hasHeadingDropdowns && $question->question_group) {
-                                                // Get heading options from matching_headings question in same group
-                                                $headingQuestion = $testSet->questions
-                                                    ->where('question_type', 'matching_headings')
-                                                    ->where('question_group', $question->question_group)
-                                                    ->where('part_number', $question->part_number)
-                                                    ->first();
-                                                
-                                                if ($headingQuestion && $headingQuestion->options) {
-                                                    $headingOptions = $headingQuestion->options;
-                                                }
-                                            }
-                                        @endphp
+                                    <div class="ielts-question-item" id="question-{{ $question->id }}" style="margin-bottom: 24px;">
                                         
-                                        {{-- Show heading list if this is first heading dropdown question in group --}}
-                                        @if($hasHeadingDropdowns && count($headingOptions) > 0)
+                                        @if($hasBlanks)
+                                            {{-- Check if this is a heading dropdown question --}}
                                             @php
-                                                $showHeadingsList = true;
-                                                if ($loop->index > 0) {
-                                                    $prevQuestion = $questions[$loop->index - 1]['question'] ?? null;
-                                                    if ($prevQuestion && $prevQuestion->question_group === $question->question_group && preg_match('/\[HEADING_DROPDOWN_\d+\]/', $prevQuestion->content)) {
-                                                        $showHeadingsList = false;
-                                                    }
-                                                }
-                                            @endphp
-                                            
-                                            @if($showHeadingsList)
-                                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
-                                                    <div style="font-weight: bold; margin-bottom: 10px;">List of Headings</div>
-                                                    @foreach ($headingOptions as $optionIndex => $option)
-                                                        <div style="margin-bottom: 5px;">
-                                                            <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            @endif
-                                        @endif
-                                        
-                                        {{-- Fill-in-the-blanks question with simple numbered blanks --}}
-                                        @php
-                                            $processedContent = $question->content;
-                                            $blankNumbers = $item['blank_numbers'];
-                                            
-                                            // Replace blanks with simple underline inputs
-                                            $blankCounter = 0;
-$processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/', function($matches) use ($question, &$blankCounter, $blankNumbers) {
-    $blankCounter++;
-    $displayNum = $blankNumbers[$blankCounter];
-    
-    return '<input type="text" 
-            name="answers[' . $question->id . '][blank_' . $blankCounter . ']" 
-            class="gap-input" 
-            data-question-number="' . $displayNum . '"
-            placeholder="' . $displayNum . '"
-            autocomplete="off">';
-}, $processedContent);
-                                            
-                                            // Replace heading dropdowns
-                                            $processedContent = preg_replace_callback('/\[HEADING_DROPDOWN_(\d+)\]/', function($matches) use ($question, &$blankCounter, $blankNumbers) {
-                                                $dropdownNum = $matches[1];
-                                                $blankCounter++;
-                                                $displayNum = $blankNumbers[$blankCounter];
-                                                
-                                                // Get heading options from the first matching_headings question in the group
+                                                $hasHeadingDropdowns = preg_match('/\[HEADING_DROPDOWN_\d+\]/', $question->content);
                                                 $headingOptions = [];
-                                                if ($question->question_group) {
-                                                    $headingQuestion = $question->testSet->questions()
+                                                
+                                                if ($hasHeadingDropdowns && $question->question_group) {
+                                                    // Get heading options from matching_headings question in same group
+                                                    $headingQuestion = $testSet->questions
                                                         ->where('question_type', 'matching_headings')
                                                         ->where('question_group', $question->question_group)
                                                         ->where('part_number', $question->part_number)
@@ -454,426 +399,439 @@ $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/',
                                                         $headingOptions = $headingQuestion->options;
                                                     }
                                                 }
-                                                
-                                                $selectHtml = '<select name="answers[' . $question->id . '][heading_' . $dropdownNum . ']" 
-                       class="gap-dropdown" 
-                       data-question-number="' . $displayNum . '">
-               <option value="">' . $displayNum . '</option>';
-                                                
-                                                foreach ($headingOptions as $index => $option) {
-                                                    $selectHtml .= '<option value="' . $option->id . '">' . chr(65 + $index) . '</option>';
-                                                }
-                                                
-                                                $selectHtml .= '</select>';
-                                                return $selectHtml;
-                                            }, $processedContent);
+                                            @endphp
                                             
-                                            // Replace dropdowns similarly
-                                            if ($question->section_specific_data) {
-                                                $dropdownOptions = $question->section_specific_data['dropdown_options'] ?? [];
+                                            {{-- Show heading list if this is first heading dropdown question in group --}}
+                                            @if($hasHeadingDropdowns && count($headingOptions) > 0)
+                                                @php
+                                                    $showHeadingsList = true;
+                                                    if ($loop->index > 0) {
+                                                        $prevQuestion = $questions[$loop->index - 1]['question'] ?? null;
+                                                        if ($prevQuestion && $prevQuestion->question_group === $question->question_group && preg_match('/\[HEADING_DROPDOWN_\d+\]/', $prevQuestion->content)) {
+                                                            $showHeadingsList = false;
+                                                        }
+                                                    }
+                                                @endphp
                                                 
-                                                $processedContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question, $dropdownOptions, &$blankCounter, $blankNumbers) {
+                                                @if($showHeadingsList)
+                                                    <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
+                                                        <div style="font-weight: bold; margin-bottom: 10px;">List of Headings</div>
+                                                        @foreach ($headingOptions as $optionIndex => $option)
+                                                            <div style="margin-bottom: 5px;">
+                                                                <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            @endif
+                                            
+                                            {{-- Fill-in-the-blanks question with simple numbered blanks --}}
+                                            @php
+                                                $processedContent = $question->content;
+                                                $blankNumbers = $item['blank_numbers'];
+                                                
+                                                // Replace blanks with simple underline inputs
+                                                $blankCounter = 0;
+    $processedContent = preg_replace_callback('/\[BLANK_(\d+)\]|\[____(\d+)____\]/', function($matches) use ($question, &$blankCounter, $blankNumbers) {
+        $blankCounter++;
+        $displayNum = $blankNumbers[$blankCounter];
+        
+        return '<input type="text" 
+                name="answers[' . $question->id . '][blank_' . $blankCounter . ']" 
+                class="gap-input" 
+                data-question-number="' . $displayNum . '"
+                placeholder="' . $displayNum . '"
+                autocomplete="off">';
+    }, $processedContent);
+                                                
+                                                // Replace heading dropdowns
+                                                $processedContent = preg_replace_callback('/\[HEADING_DROPDOWN_(\d+)\]/', function($matches) use ($question, &$blankCounter, $blankNumbers) {
                                                     $dropdownNum = $matches[1];
                                                     $blankCounter++;
                                                     $displayNum = $blankNumbers[$blankCounter];
-                                                    $options = isset($dropdownOptions[$dropdownNum]) ? explode(',', $dropdownOptions[$dropdownNum]) : [];
                                                     
-                                                    $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
-                       class="gap-dropdown" 
-                       data-question-number="' . $displayNum . '">
-               <option value="">' . $displayNum . '</option>';
+                                                    // Get heading options from the first matching_headings question in the group
+                                                    $headingOptions = [];
+                                                    if ($question->question_group) {
+                                                        $headingQuestion = $question->testSet->questions()
+                                                            ->where('question_type', 'matching_headings')
+                                                            ->where('question_group', $question->question_group)
+                                                            ->where('part_number', $question->part_number)
+                                                            ->first();
+                                                        
+                                                        if ($headingQuestion && $headingQuestion->options) {
+                                                            $headingOptions = $headingQuestion->options;
+                                                        }
+                                                    }
                                                     
-                                                    foreach ($options as $option) {
-                                                        $selectHtml .= '<option value="' . trim($option) . '">' . trim($option) . '</option>';
+                                                    $selectHtml = '<select name="answers[' . $question->id . '][heading_' . $dropdownNum . ']" 
+                           class="gap-dropdown" 
+                           data-question-number="' . $displayNum . '">
+                   <option value="">' . $displayNum . '</option>';
+                                                    
+                                                    foreach ($headingOptions as $index => $option) {
+                                                        $selectHtml .= '<option value="' . $option->id . '">' . chr(65 + $index) . '</option>';
                                                     }
                                                     
                                                     $selectHtml .= '</select>';
                                                     return $selectHtml;
                                                 }, $processedContent);
-                                            }
-                                        @endphp
-                                        
-                                        <div class="question-content">
-                                            {!! $processedContent !!}
-                                        </div>
-                                    @else
-                                        {{-- Regular question --}}
-                                        @if($question->question_type !== 'sentence_completion')
-                                            <div class="ielts-q-number" style="font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;">
-                                                <span style="font-weight: 700 !important;">{{ $item['display_number'] }}.</span> {!! strip_tags($question->content) !!}
-                                            </div>
-                                        @endif
-                                            
-                                            @if ($question->media_path)
-                                                <div class="mb-3">
-                                                    <img src="{{ Storage::url($question->media_path) }}" alt="Question Image" class="max-w-full h-auto rounded">
-                                                </div>
-                                            @endif
-                                            
-                                        <div class="ielts-options" style="margin-left: 24px; margin-top: 8px;">
-                                            @switch($question->question_type)
-                                                @case('single_choice')
-                                                @case('multiple_choice')
-                                                    @foreach ($question->options as $optionIndex => $option)
-                                                        <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
-                                                            <input type="radio" 
-                                                                   name="answers[{{ $question->id }}]" 
-                                                                   id="option-{{ $option->id }}" 
-                                                                   value="{{ $option->id }}" 
-                                                                   style="-webkit-appearance: radio !important; -moz-appearance: radio !important; appearance: radio !important; margin: 0 !important; margin-right: 8px !important; width: 14px !important; height: 14px !important; cursor: pointer !important; padding: 0 !important;"
-                                                                   data-question-number="{{ $item['display_number'] }}">
-                                                            <label for="option-{{ $option->id }}" style="cursor: pointer !important; font-size: 14px !important; color: #000000 !important; font-weight: normal !important; margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;">
-                                                                <strong style="font-weight: 700 !important;">{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
-                                                            </label>
-                                                        </div>
-                                                    @endforeach
-                                                    @break
                                                 
-                                                @case('true_false')
-                                                @case('yes_no')
-                                                    @foreach ($question->options as $option)
-                                                        <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
-                                                            <input type="radio" 
-                                                                   name="answers[{{ $question->id }}]" 
-                                                                   id="option-{{ $option->id }}" 
-                                                                   value="{{ $option->id }}" 
-                                                                   style="-webkit-appearance: radio !important; -moz-appearance: radio !important; appearance: radio !important; margin: 0 !important; margin-right: 8px !important; width: 14px !important; height: 14px !important; cursor: pointer !important; padding: 0 !important;"
-                                                                   data-question-number="{{ $item['display_number'] }}">
-                                                            <label for="option-{{ $option->id }}" style="cursor: pointer !important; font-size: 14px !important; color: #000000 !important; font-weight: normal !important; margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;">
-                                                                {{ strtoupper($option->content) }}
-                                                            </label>
-                                                        </div>
-                                                    @endforeach
-                                                    @break
-                                                
-                                                @case('matching_headings')
-                                                    {{-- Master Matching Headings Implementation --}}
-                                                    @php
-                                                        $displayData = $question->generateMatchingHeadingsDisplay();
-                                                        $isFirstInGroup = true;
+                                                // Replace dropdowns similarly
+                                                if ($question->section_specific_data) {
+                                                    $dropdownOptions = $question->section_specific_data['dropdown_options'] ?? [];
+                                                    
+                                                    $processedContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question, $dropdownOptions, &$blankCounter, $blankNumbers) {
+                                                        $dropdownNum = $matches[1];
+                                                        $blankCounter++;
+                                                        $displayNum = $blankNumbers[$blankCounter];
+                                                        $options = isset($dropdownOptions[$dropdownNum]) ? explode(',', $dropdownOptions[$dropdownNum]) : [];
                                                         
-                                                        // Check if this is first question in group
-                                                        if ($question->question_group) {
-                                                            foreach($questions as $prevItem) {
-                                                                if ($prevItem['question']->id == $question->id) break;
-                                                                if ($prevItem['question']->question_type === 'matching_headings' && 
-                                                                    $prevItem['question']->question_group === $question->question_group) {
-                                                                    $isFirstInGroup = false;
-                                                                    break;
+                                                        $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" 
+                           class="gap-dropdown" 
+                           data-question-number="' . $displayNum . '">
+                   <option value="">' . $displayNum . '</option>';
+                                                        
+                                                        foreach ($options as $option) {
+                                                            $selectHtml .= '<option value="' . trim($option) . '">' . trim($option) . '</option>';
+                                                        }
+                                                        
+                                                        $selectHtml .= '</select>';
+                                                        return $selectHtml;
+                                                    }, $processedContent);
+                                                }
+                                            @endphp
+                                            
+                                            <div class="question-content">
+                                                {!! $processedContent !!}
+                                            </div>
+                                        @else
+                                            {{-- Regular question --}}
+                                            @if($question->question_type !== 'sentence_completion' && $question->question_type !== 'dropdown_selection')
+                                            <div class="ielts-q-number" style="font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;">
+                                            <span style="font-weight: 700 !important;">{{ $item['display_number'] }}.</span> {!! strip_tags($question->content) !!}
+                                            </div>
+                                            @endif
+                                                
+                                                @if ($question->media_path)
+                                                    <div class="mb-3">
+                                                        <img src="{{ Storage::url($question->media_path) }}" alt="Question Image" class="max-w-full h-auto rounded">
+                                                    </div>
+                                                @endif
+                                                
+                                            <div class="ielts-options" style="margin-left: 24px; margin-top: 8px;">
+                                                @switch($question->question_type)
+                                                    @case('single_choice')
+                                                    @case('multiple_choice')
+                                                        @foreach ($question->options as $optionIndex => $option)
+                                                            <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
+                                                                <input type="radio" 
+                                                                       name="answers[{{ $question->id }}]" 
+                                                                       id="option-{{ $option->id }}" 
+                                                                       value="{{ $option->id }}" 
+                                                                       style="-webkit-appearance: radio !important; -moz-appearance: radio !important; appearance: radio !important; margin: 0 !important; margin-right: 8px !important; width: 14px !important; height: 14px !important; cursor: pointer !important; padding: 0 !important;"
+                                                                       data-question-number="{{ $item['display_number'] }}">
+                                                                <label for="option-{{ $option->id }}" style="cursor: pointer !important; font-size: 14px !important; color: #000000 !important; font-weight: normal !important; margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;">
+                                                                    {{ $option->content }}
+                                                                </label>
+                                                            </div>
+                                                        @endforeach
+                                                        @break
+                                                    
+                                                    @case('true_false')
+                                                    @case('yes_no')
+                                                        @foreach ($question->options as $option)
+                                                            <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
+                                                                <input type="radio" 
+                                                                       name="answers[{{ $question->id }}]" 
+                                                                       id="option-{{ $option->id }}" 
+                                                                       value="{{ $option->id }}" 
+                                                                       style="-webkit-appearance: radio !important; -moz-appearance: radio !important; appearance: radio !important; margin: 0 !important; margin-right: 8px !important; width: 14px !important; height: 14px !important; cursor: pointer !important; padding: 0 !important;"
+                                                                       data-question-number="{{ $item['display_number'] }}">
+                                                                <label for="option-{{ $option->id }}" style="cursor: pointer !important; font-size: 14px !important; color: #000000 !important; font-weight: normal !important; margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;">
+                                                                    {{ strtoupper($option->content) }}
+                                                                </label>
+                                                            </div>
+                                                        @endforeach
+                                                        @break
+                                                    
+                                                    @case('matching_headings')
+                                                        {{-- Master Matching Headings Implementation --}}
+                                                        @php
+                                                            $displayData = $question->generateMatchingHeadingsDisplay();
+                                                            $isFirstInGroup = true;
+                                                            
+                                                            // Check if this is first question in group
+                                                            if ($question->question_group) {
+                                                                foreach($questions as $prevItem) {
+                                                                    if ($prevItem['question']->id == $question->id) break;
+                                                                    if ($prevItem['question']->question_type === 'matching_headings' && 
+                                                                        $prevItem['question']->question_group === $question->question_group) {
+                                                                        $isFirstInGroup = false;
+                                                                        break;
+                                                                    }
                                                                 }
                                                             }
+                                                        @endphp
+                                                        
+                                                        @if($question->isMasterMatchingHeading())
+                                                            {{-- This is a master question with multiple mappings --}}
+                                                            @if($isFirstInGroup && !empty($displayData['headings']))
+                                                                {{-- Show headings list once --}}
+                                                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
+                                                                    <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
+                                                                    @foreach ($displayData['headings'] as $heading)
+                                                                        <div style="margin-bottom: 5px;">
+                                                                            <strong>{{ $heading['letter'] }}.</strong> {{ $heading['text'] }}
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            @endif
+                                                            
+                                                            {{-- Display individual questions from master --}}
+                                                            @foreach($displayData['questions'] as $qIndex => $questionData)
+                                                                @php
+                                                                    $currentDisplayNumber = isset($item['question_numbers'][$qIndex]) ? $item['question_numbers'][$qIndex] : ($item['display_number'] + $qIndex);
+                                                                    $questionNumber = isset($questionData['number']) ? $questionData['number'] : (isset($questionData['question']) ? $questionData['question'] : ($item['display_number'] + $qIndex));
+                                                                    $paragraphLabel = isset($questionData['paragraph']) ? $questionData['paragraph'] : chr(65 + $qIndex);
+                                                                    $fieldName = 'answers[' . $question->id . '_q' . $questionNumber . ']';
+                                                                @endphp
+                                                                <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                                                                    <span style="font-weight: 700; min-width: 30px;">{{ $currentDisplayNumber }}.</span>
+                                                                    <span style="min-width: 100px;">Paragraph {{ $paragraphLabel }}:</span>
+                                                                    <select name="{{ $fieldName }}" 
+                                                                            data-question-number="{{ $currentDisplayNumber }}" 
+                                                                            data-question-id="{{ $question->id }}"
+                                                                            data-sub-question="{{ $questionNumber }}"
+                                                                            class="matching-heading-select"
+                                                                            style="padding: 5px; border: 1px solid #ccc;">
+                                                                        <option value="">Choose</option>
+                                                                        @foreach ($displayData['headings'] as $heading)
+                                                                            <option value="{{ $heading['letter'] }}">
+                                                                                {{ $heading['letter'] }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                            @endforeach
+                                                            
+                                                        @else
+                                                            {{-- Fallback to old implementation --}}
+                                                            @php
+                                                                $showHeadingsList = true;
+                                                                if ($loop->index > 0) {
+                                                                    $prevQuestion = $questions[$loop->index - 1]['question'] ?? null;
+                                                                    if ($prevQuestion && $prevQuestion->question_type === 'matching_headings' && $prevQuestion->question_group === $question->question_group) {
+                                                                        $showHeadingsList = false;
+                                                                    }
+                                                                }
+                                                            @endphp
+                                                            
+                                                            @if($showHeadingsList && count($question->options) > 0)
+                                                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
+                                                                    <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
+                                                                    @foreach ($question->options->sortBy('order') as $optionIndex => $option)
+                                                                        <div style="margin-bottom: 5px;">
+                                                                            <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            @endif
+                                                            
+                                                            <div style="margin-left: 24px; display: flex; align-items: center; gap: 10px;">
+                                                                <select name="answers[{{ $question->id }}]" 
+                                                                        data-question-number="{{ $item['display_number'] }}" 
+                                                                        style="width: 60px; padding: 5px; border: 1px solid #ccc;">
+                                                                    <option value=""></option>
+                                                                    @foreach ($question->options as $optionIndex => $option)
+                                                                        <option value="{{ $option->id }}">{{ chr(65 + $optionIndex) }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <span>{{ strip_tags($question->content) }}</span>
+                                                            </div>
+                                                        @endif
+                                                        @break
+                                                        
+                                                    @case('matching')
+                                                    @case('matching_information')
+                                                    @case('matching_features')
+                                                        <div class="ielts-matching-dropdown">
+                                                            <select name="answers[{{ $question->id }}]" 
+                                                                    class="ielts-select" 
+                                                                    data-question-number="{{ $item['display_number'] }}">
+                                                                <option value="" disabled selected>Select your answer</option>
+                                                                @foreach ($question->options as $optionIndex => $option)
+                                                                    <option value="{{ $option->id }}">
+                                                                        {{ $option->content }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                        @break
+                                                    
+                                                    @case('fill_blanks')
+                                                    @case('dropdown_selection')
+                                                    {{-- Dropdown Selection Display --}}
+                                                    @php
+                                                        $dropdownContent = $question->content;
+                                                        $dropdownData = $question->section_specific_data;
+                                                        
+                                                        // Process inline dropdowns
+                                                        if (isset($dropdownData['dropdown_options'])) {
+                                                            $dropdownContent = preg_replace_callback('/\[DROPDOWN_(\d+)\]/', function($matches) use ($question, $dropdownData, $item) {
+                                                                $dropdownNum = $matches[1];
+                                                                $options = isset($dropdownData['dropdown_options'][$dropdownNum]) ? explode(',', $dropdownData['dropdown_options'][$dropdownNum]) : [];
+                                                                
+                                                                $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $dropdownNum . ']" '
+                                                                           . 'class="inline-dropdown" '
+                                                                           . 'data-question-number="' . $item['display_number'] . '" '
+                                                                           . 'style="display: inline-block; margin: 0 4px; padding: 2px 8px; border: 1px solid #666; border-radius: 3px; font-size: 14px; background: #fff; cursor: pointer;">';
+                                                                $selectHtml .= '<option value="">Choose</option>';
+                                                                
+                                                                foreach ($options as $option) {
+                                                                    $selectHtml .= '<option value="' . trim($option) . '">' . trim($option) . '</option>';
+                                                                }
+                                                                
+                                                                $selectHtml .= '</select>';
+                                                                return $selectHtml;
+                                                            }, $dropdownContent);
                                                         }
                                                     @endphp
                                                     
-                                                    @if($question->isMasterMatchingHeading())
-                                                        {{-- This is a master question with multiple mappings --}}
-                                                        @if($isFirstInGroup && !empty($displayData['headings']))
-                                                            {{-- Show headings list once --}}
-                                                            <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
-                                                                <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
-                                                                @foreach ($displayData['headings'] as $heading)
-                                                                    <div style="margin-bottom: 5px;">
-                                                                        <strong>{{ $heading['letter'] }}.</strong> {{ $heading['text'] }}
-                                                                    </div>
-                                                                @endforeach
-                                                            </div>
-                                                        @endif
-                                                        
-                                                        {{-- Display individual questions from master --}}
-                                                        @foreach($displayData['questions'] as $qIndex => $questionData)
-                                                            @php
-                                                                $currentDisplayNumber = isset($item['question_numbers'][$qIndex]) ? $item['question_numbers'][$qIndex] : ($item['display_number'] + $qIndex);
-                                                                $questionNumber = isset($questionData['number']) ? $questionData['number'] : (isset($questionData['question']) ? $questionData['question'] : ($item['display_number'] + $qIndex));
-                                                                $paragraphLabel = isset($questionData['paragraph']) ? $questionData['paragraph'] : chr(65 + $qIndex);
-                                                                $fieldName = 'answers[' . $question->id . '_q' . $questionNumber . ']';
-                                                            @endphp
-                                                            <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                                                                <span style="font-weight: 700; min-width: 30px;">{{ $currentDisplayNumber }}.</span>
-                                                                <span style="min-width: 100px;">Paragraph {{ $paragraphLabel }}:</span>
-                                                                <select name="{{ $fieldName }}" 
-                                                                        data-question-number="{{ $currentDisplayNumber }}" 
-                                                                        data-question-id="{{ $question->id }}"
-                                                                        data-sub-question="{{ $questionNumber }}"
-                                                                        class="matching-heading-select"
-                                                                        style="padding: 5px; border: 1px solid #ccc;">
-                                                                    <option value="">Choose</option>
-                                                                    @foreach ($displayData['headings'] as $heading)
-                                                                        <option value="{{ $heading['letter'] }}">
-                                                                            {{ $heading['letter'] }}
-                                                                        </option>
-                                                                    @endforeach
-                                                                </select>
-                                                            </div>
-                                                        @endforeach
-                                                        
-                                                    @else
-                                                        {{-- EMERGENCY DEBUG - Show why sentence completion is not rendering --}}
-                                                        @php
-                                                            \Log::emergency('=== SENTENCE COMPLETION NOT RENDERING ===', [
-                                                                'question_id' => $question->id,
-                                                                'question_type' => $question->question_type,
-                                                                'has_section_specific_data' => isset($question->section_specific_data),
-                                                                'section_specific_data' => $question->section_specific_data ?? 'null',
-                                                                'has_sentence_completion_key' => isset($question->section_specific_data['sentence_completion']),
-                                                                'sectionData' => $sectionData ?? 'null',
-                                                                'hasSentenceCompletionData_value' => $hasSentenceCompletionData
-                                                            ]);
-                                                            
-                                                            // Debug for browser console
-                                                            echo '<script>console.error("SENTENCE COMPLETION NOT RENDERING:", ' . json_encode([
-                                                                'question_id' => $question->id,
-                                                                'question_type' => $question->question_type,
-                                                                'has_section_data' => isset($sectionData),
-                                                                'hasSentenceCompletionData' => $hasSentenceCompletionData,
-                                                                'section_specific_data' => $question->section_specific_data
-                                                            ]) . ');</script>';
-                                                        @endphp
-                                                        
-                                                        {{-- Show debug info on page --}}
-                                                        <div style="background: #ffcccc; border: 2px solid #ff0000; padding: 10px; margin: 10px 0;">
-                                                            <strong>DEBUG: Sentence Completion Not Rendering</strong><br>
-                                                            Question ID: {{ $question->id }}<br>
-                                                            Question Type: {{ $question->question_type }}<br>
-                                                            Has Section Data: {{ isset($sectionData) ? 'Yes' : 'No' }}<br>
-                                                            Has Sentence Completion Data: {{ $hasSentenceCompletionData ? 'Yes' : 'No' }}<br>
-                                                            Section Data Keys: {{ $sectionData ? implode(', ', array_keys($sectionData)) : 'None' }}
-                                                        </div>
-                                                        {{-- Fallback to old implementation --}}
-                                                        @php
-                                                            $showHeadingsList = true;
-                                                            if ($loop->index > 0) {
-                                                                $prevQuestion = $questions[$loop->index - 1]['question'] ?? null;
-                                                                if ($prevQuestion && $prevQuestion->question_type === 'matching_headings' && $prevQuestion->question_group === $question->question_group) {
-                                                                    $showHeadingsList = false;
-                                                                }
-                                                            }
-                                                        @endphp
-                                                        
-                                                        @if($showHeadingsList && count($question->options) > 0)
-                                                            <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
-                                                                <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
-                                                                @foreach ($question->options->sortBy('order') as $optionIndex => $option)
-                                                                    <div style="margin-bottom: 5px;">
-                                                                        <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
-                                                                    </div>
-                                                                @endforeach
-                                                            </div>
-                                                        @endif
-                                                        
-                                                        <div style="margin-left: 24px; display: flex; align-items: center; gap: 10px;">
-                                                            <select name="answers[{{ $question->id }}]" 
-                                                                    data-question-number="{{ $item['display_number'] }}" 
-                                                                    style="width: 60px; padding: 5px; border: 1px solid #ccc;">
-                                                                <option value=""></option>
-                                                                @foreach ($question->options as $optionIndex => $option)
-                                                                    <option value="{{ $option->id }}">{{ chr(65 + $optionIndex) }}</option>
-                                                                @endforeach
-                                                            </select>
-                                                            <span>{{ strip_tags($question->content) }}</span>
-                                                        </div>
-                                                    @endif
-                                                    @break
-                                                    
-                                                @case('matching')
-                                                @case('matching_information')
-                                                @case('matching_features')
-                                                    <div class="ielts-matching-dropdown">
-                                                        <select name="answers[{{ $question->id }}]" 
-                                                                class="ielts-select" 
-                                                                data-question-number="{{ $item['display_number'] }}">
-                                                            <option value="" disabled selected>Select your answer</option>
-                                                            @foreach ($question->options as $optionIndex => $option)
-                                                                <option value="{{ $option->id }}">
-                                                                    {{ chr(65 + $optionIndex) }}. {{ Str::limit($option->content, 50) }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
+                                                    <div class="dropdown-selection-question" style="font-size: 14px; line-height: 1.8; color: #111;">
+                                                        <span style="font-weight: 700; margin-right: 8px;">{{ $item['display_number'] }}.</span>
+                                                        {!! $dropdownContent !!}
                                                     </div>
                                                     @break
-                                                
-                                                @case('fill_blanks')
+                                                    
                                                 @case('sentence_completion')
-                                                    {{-- Enhanced Sentence Completion Display --}}
-                                                    @php
-                                                        $sectionData = $question->section_specific_data;
-                                                        $hasSentenceCompletionData = isset($sectionData['sentence_completion']);
-                                                    @endphp
-                                                    
-                                                    {{-- Skip question title display for sentence completion - it has its own format --}}
-                                                    
-                                                    @if($hasSentenceCompletionData)
+                                                        {{-- Enhanced Sentence Completion Display --}}
                                                         @php
-                                                            $scData = $sectionData['sentence_completion'];
-                                                            
-                                                            // EMERGENCY DEBUG - Log everything
-                                                            \Log::emergency('=== SENTENCE COMPLETION DEBUG ===', [
-                                                                'question_id' => $question->id,
-                                                                'question_type' => $question->question_type,
-                                                                'has_section_data' => isset($sectionData),
-                                                                'section_data_keys' => $sectionData ? array_keys($sectionData) : 'null',
-                                                                'has_sc_data' => isset($sectionData['sentence_completion']),
-                                                                'sc_data' => $scData ?? 'No SC data',
-                                                                'has_sentences' => isset($scData['sentences']),
-                                                                'sentence_count' => isset($scData['sentences']) ? count($scData['sentences']) : 0,
-                                                                'has_options' => isset($scData['options']),
-                                                                'option_count' => isset($scData['options']) ? count($scData['options']) : 0
-                                                            ]);
-                                                            
-                                                            // Debug log for browser console - EXPANDED
-                                                            echo '<script>console.log("SENTENCE COMPLETION EXPANDED DEBUG:", ' . json_encode([
-                                                                'question_id' => $question->id,
-                                                                'has_sc_data' => isset($scData),
-                                                                'sc_data_full' => $scData ?? null,
-                                                                'sentences_count' => isset($scData['sentences']) ? count($scData['sentences']) : 0,
-                                                                'sentences_data' => $scData['sentences'] ?? null,
-                                                                'options_count' => isset($scData['options']) ? count($scData['options']) : 0,
-                                                                'options_data' => $scData['options'] ?? null,
-                                                                'item_question_numbers' => $item['question_numbers'] ?? null,
-                                                                'item_display_number' => $item['display_number'] ?? null
-                                                            ]) . ');</script>';
-                                                            
-                                                            $showWordList = true;
-                                                            
-                                                            // Check if word list already shown in this group
-                                                            if ($question->question_group && isset($shownInstructions[$question->question_group . '_sc_wordlist'])) {
-                                                                $showWordList = false;
-                                                            } elseif ($question->question_group) {
-                                                                $shownInstructions[$question->question_group . '_sc_wordlist'] = true;
-                                                            }
-                                                            
-                                                            // Get question range for title
-                                                            $startNum = $item['display_number'];
-                                                            $sentenceCount = isset($scData['sentences']) ? count($scData['sentences']) : 0;
-                                                            $endNum = $startNum + $sentenceCount - 1;
+                                                            $sectionData = $question->section_specific_data;
+                                                            $hasSentenceCompletionData = isset($sectionData['sentence_completion']);
                                                         @endphp
                                                         
-                                                        {{-- Question Title with Range --}}
-                                                        <div style="margin-bottom: 16px; font-weight: 700; font-size: 15px; color: #111827;">
-                                                            Questions {{ $startNum }}-{{ $endNum }}
-                                                        </div>
-                                                        
-                                                        {{-- Display instruction from question or default --}}
-                                                        <div style="margin-bottom: 16px; font-size: 14px; color: #374151;">
-                                                            @if($question->instructions)
-                                                                {!! $question->instructions !!}
-                                                            @else
-                                                                Complete the sentences below. Choose NO MORE THAN ONE WORD from the list for each answer.
+                                                        @if($hasSentenceCompletionData)
+                                                            @php
+                                                                $scData = $sectionData['sentence_completion'];
+                                                                
+                                                                $showWordList = true;
+                                                                
+                                                                // Check if word list already shown in this group
+                                                                if ($question->question_group && isset($globalShownInstructions[$question->question_group . '_sc_wordlist'])) {
+                                                                    $showWordList = false;
+                                                                } elseif ($question->question_group) {
+                                                                    $globalShownInstructions[$question->question_group . '_sc_wordlist'] = true;
+                                                                }
+                                                                
+                                                                // Get question range for title
+                                                                $startNum = $item['display_number'];
+                                                                $sentenceCount = isset($scData['sentences']) ? count($scData['sentences']) : 0;
+                                                                $endNum = $startNum + $sentenceCount - 1;
+                                                            @endphp
+                                                            
+                                                            {{-- Question Title with Range --}}
+                                                            <div style="margin-bottom: 16px; font-weight: 700; font-size: 15px; color: #111827;">
+                                                                Questions {{ $startNum }}-{{ $endNum }}
+                                                            </div>
+                                                            
+                                                            @if($showWordList)
+                                                                {{-- Word List Box - Simple Black-White Design --}}
+                                                                @if(isset($scData['options']) && count($scData['options']) > 0)
+                                                                    <div class="word-list-box">
+                                                                        <div style="font-weight: 600; margin-bottom: 12px; font-size: 15px; color: #000000; display: flex; align-items: center;">
+                                                                            <svg style="width: 18px; height: 18px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                                                            </svg>
+                                                                            Word List
+                                                                        </div>
+                                                                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;">
+                                                                            @foreach($scData['options'] as $option)
+                                                                                <div class="word-list-item">
+                                                                                    <strong style="color: #000000; font-size: 15px;">{{ $option['id'] }}</strong>
+                                                                                    <span style="color: #333333; margin-left: 6px;">{{ $option['text'] }}</span>
+                                                                                </div>
+                                                                            @endforeach
+                                                                        </div>
+                                                                    </div>
+                                                                @endif
                                                             @endif
-                                                        </div>
-                                                        
-                                                        @if($showWordList)
-                                                            {{-- Word List Box - Simple Black-White Design --}}
-                                                            @if(isset($scData['options']) && count($scData['options']) > 0)
-                                                                <div class="word-list-box">
-                                                                    <div style="font-weight: 600; margin-bottom: 12px; font-size: 15px; color: #000000; display: flex; align-items: center;">
-                                                                        <svg style="width: 18px; height: 18px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                                                        </svg>
-                                                                        Word List
-                                                                    </div>
-                                                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;">
-                                                                        @foreach($scData['options'] as $option)
-                                                                            <div class="word-list-item">
-                                                                                <strong style="color: #000000; font-size: 15px;">{{ $option['id'] }}</strong>
-                                                                                <span style="color: #333333; margin-left: 6px;">{{ $option['text'] }}</span>
-                                                                            </div>
-                                                                        @endforeach
-                                                                    </div>
+                                                            
+                                                            {{-- Sentences --}}
+                                                            @if(isset($scData['sentences']))
+                                                                <div style="margin-top: 15px;">
+                                                                    @foreach($scData['sentences'] as $sentenceIndex => $sentence)
+                                                                        @php
+                                                                            // Get the display number from the item's question_numbers array
+                                                                            $displayNum = isset($item['question_numbers'][$sentenceIndex]) ? $item['question_numbers'][$sentenceIndex] : ($item['display_number'] + $sentenceIndex);
+                                                                            $sentenceText = $sentence['text'];
+                                                                            
+                                                                            // Replace [GAP] with dropdown - ULTRA COMPACT WITH PROPER ALIGNMENT
+                                                                            $dropdownHtml = '<select name="answers[' . $question->id . '_q' . $displayNum . ']" '
+                                                                                          . 'class="sc-dropdown visible-dropdown" '
+                                                                                          . 'data-question-number="' . $displayNum . '" '
+                                                                                          . 'data-question-id="' . $question->id . '" '
+                                                                                          . 'style="display: inline-block; margin: 0 4px; padding: 2px 6px; border: 1px solid #666666; border-radius: 2px; font-size: 12px; font-weight: 500; min-width: 40px; max-width: 50px; background: #ffffff; color: #000000; cursor: pointer; vertical-align: baseline; line-height: normal;">';
+                                                                            $dropdownHtml .= '<option value="" style="color: #666666;">Select</option>';
+                                                                            
+                                                                            foreach($scData['options'] as $option) {
+                                                                                $dropdownHtml .= '<option value="' . $option['id'] . '">' . $option['id'] . '</option>';
+                                                                            }
+                                                                            
+                                                                            $dropdownHtml .= '</select>';
+                                                                            
+                                                                            $processedText = str_replace('[GAP]', $dropdownHtml, $sentenceText);
+                                                                            
+                                                                            // SMART FALLBACK: Handle cases where [GAP] might be missing or malformed
+                                                                            if (strpos($processedText, '<select') === false) {
+                                                                                // No dropdown found in processed text, add it intelligently
+                                                                                if (trim($sentenceText)) {
+                                                                                    // If sentence ends with punctuation, add dropdown before it
+                                                                                    if (preg_match('/[.!?]\s*$/', $sentenceText)) {
+                                                                                        $processedText = preg_replace('/([.!?]\s*)$/', ' ' . $dropdownHtml . '$1', $sentenceText);
+                                                                                    } else {
+                                                                                        // Add dropdown at the end
+                                                                                        $processedText = trim($sentenceText) . ' ' . $dropdownHtml;
+                                                                                    }
+                                                                                } else {
+                                                                                    // Empty sentence, just show dropdown
+                                                                                    $processedText = $dropdownHtml;
+                                                                                }
+                                                                            }
+                                                                        @endphp
+                                                                        
+                                                                        <div style="margin-bottom: 10px; display: flex; align-items: baseline;">
+                                                                            <span style="font-weight: 700; min-width: 35px; margin-right: 8px; font-size: 14px; color: #1f2937;">{{ $displayNum }}.</span>
+                                                                            <div style="flex: 1; font-size: 14px; line-height: 1.6; color: #374151;">{!! $processedText !!}</div>
+                                                                        </div>
+                                                                    @endforeach
                                                                 </div>
                                                             @endif
+                                                        @else
+                                                            {{-- Fallback to old display --}}
+                                                            <input type="text" 
+                                                                   name="answers[{{ $question->id }}]" 
+                                                                   style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;"
+                                                                   placeholder="Enter your answer"
+                                                                   maxlength="100"
+                                                                   data-question-number="{{ $item['display_number'] }}">
                                                         @endif
-                                                        
-                                                        {{-- Sentences --}}
-                                                        @if(isset($scData['sentences']))
-                                                            <script>console.log('PROCESSING SENTENCES:', @json($scData['sentences']));</script>
-                                                            <div style="margin-top: 15px;">
-                                                                @foreach($scData['sentences'] as $sentenceIndex => $sentence)
-                                                                    @php
-                                                                        // Get the display number from the item's question_numbers array
-                                                                        $displayNum = isset($item['question_numbers'][$sentenceIndex]) ? $item['question_numbers'][$sentenceIndex] : ($item['display_number'] + $sentenceIndex);
-                                                                        $sentenceText = $sentence['text'];
-                                                                        
-                                                                        echo '<script>console.log("PROCESSING SENTENCE ' . $sentenceIndex . ':", ' . json_encode([
-                                                                            'sentenceIndex' => $sentenceIndex,
-                                                                            'sentence' => $sentence,
-                                                                            'displayNum' => $displayNum,
-                                                                            'sentenceText' => $sentenceText,
-                                                                            'hasGap' => strpos($sentenceText, '[GAP]') !== false
-                                                                        ]) . ');</script>';
-                                                                        
-                                                                        // Replace [GAP] with dropdown - ULTRA COMPACT WITH PROPER ALIGNMENT
-                                                                        $dropdownHtml = '<select name="answers[' . $question->id . '_q' . $displayNum . ']" '
-                                                                                      . 'class="sc-dropdown visible-dropdown" '
-                                                                                      . 'data-question-number="' . $displayNum . '" '
-                                                                                      . 'data-question-id="' . $question->id . '" '
-                                                                                      . 'style="display: inline-block; margin: 0 4px; padding: 2px 6px; border: 1px solid #666666; border-radius: 2px; font-size: 12px; font-weight: 500; min-width: 40px; max-width: 50px; background: #ffffff; color: #000000; cursor: pointer; vertical-align: baseline; line-height: normal;">';
-                                                                        $dropdownHtml .= '<option value="" style="color: #666666;">Select</option>';
-                                                                        
-                                                                        foreach($scData['options'] as $option) {
-                                                                            $dropdownHtml .= '<option value="' . $option['id'] . '">' . $option['id'] . '</option>';
-                                                                        }
-                                                                        
-                                                                        $dropdownHtml .= '</select>';
-                                                                        
-                                                                        echo '<script>console.log("DROPDOWN HTML CREATED:", ' . json_encode($dropdownHtml) . ');</script>';
-                                                                        
-                                                                        $processedText = str_replace('[GAP]', $dropdownHtml, $sentenceText);
-                                                                        
-                                                                        // SMART FALLBACK: Handle cases where [GAP] might be missing or malformed
-                                                                        if (strpos($processedText, '<select') === false) {
-                                                                            // No dropdown found in processed text, add it intelligently
-                                                                            if (trim($sentenceText)) {
-                                                                                // If sentence ends with punctuation, add dropdown before it
-                                                                                if (preg_match('/[.!?]\s*$/', $sentenceText)) {
-                                                                                    $processedText = preg_replace('/([.!?]\s*)$/', ' ' . $dropdownHtml . '$1', $sentenceText);
-                                                                                } else {
-                                                                                    // Add dropdown at the end
-                                                                                    $processedText = trim($sentenceText) . ' ' . $dropdownHtml;
-                                                                                }
-                                                                                echo '<script>console.log("SMART FALLBACK: Added dropdown intelligently");</script>';
-                                                                            } else {
-                                                                                // Empty sentence, just show dropdown
-                                                                                $processedText = $dropdownHtml;
-                                                                            }
-                                                                        } else {
-                                                                            echo '<script>console.log("SUCCESS: [GAP] replacement worked");</script>';
-                                                                        }
-                                                                        
-                                                                        echo '<script>console.log("PROCESSED TEXT:", ' . json_encode($processedText) . ');</script>';
-                                                                    @endphp
-                                                                    
-                                                                    <div style="margin-bottom: 10px; display: flex; align-items: baseline;">
-                                                                        <span style="font-weight: 700; min-width: 35px; margin-right: 8px; font-size: 14px; color: #1f2937;">{{ $displayNum }}.</span>
-                                                                        <div style="flex: 1; font-size: 14px; line-height: 1.6; color: #374151;">{!! $processedText !!}</div>
-                                                                    </div>
-                                                                @endforeach
-                                                            </div>
-                                                        @endif
-                                                    @else
-                                                        {{-- Fallback to old display --}}
+                                                        @break
+                                                    @case('summary_completion')
+                                                    @case('short_answer')
+                                                    @default
                                                         <input type="text" 
                                                                name="answers[{{ $question->id }}]" 
                                                                style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;"
                                                                placeholder="Enter your answer"
                                                                maxlength="100"
                                                                data-question-number="{{ $item['display_number'] }}">
-                                                    @endif
-                                                    @break
-                                                @case('summary_completion')
-                                                @case('short_answer')
-                                                @default
-                                                    <input type="text" 
-                                                           name="answers[{{ $question->id }}]" 
-                                                           style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px;"
-                                                           placeholder="Enter your answer"
-                                                           maxlength="100"
-                                                           data-question-number="{{ $item['display_number'] }}">
-                                                    @break
-                                            @endswitch
-                                        </div>
-                                    @endif
-                                </div>
-                            @endforeach
+                                                        @break
+                                                @endswitch
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
                             @endforeach
                         @endforeach
                         </div> <!-- End part-questions-inner -->
@@ -1180,6 +1138,47 @@ select[name*="_q"] {
 .word-list-item:hover {
     background: #f5f5f5;
     border-color: #999999;
+}
+
+/* Inline dropdown styles for dropdown_selection question type */
+.inline-dropdown {
+    display: inline-block !important;
+    margin: 0 4px !important;
+    padding: 3px 10px !important;
+    border: 1px solid #666666 !important;
+    border-radius: 3px !important;
+    font-size: 14px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    cursor: pointer !important;
+    min-width: 80px !important;
+    max-width: 150px !important;
+    vertical-align: baseline !important;
+    -webkit-appearance: menulist !important;
+    -moz-appearance: menulist !important;
+    appearance: auto !important;
+}
+
+.inline-dropdown:hover {
+    background: #f9f9f9 !important;
+    border-color: #333333 !important;
+}
+
+.inline-dropdown:focus {
+    outline: none !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
+}
+
+.inline-dropdown[data-answered="true"] {
+    background: #e8f5e9 !important;
+    border-color: #4caf50 !important;
+}
+
+.dropdown-selection-question {
+    line-height: 2 !important;
+    font-size: 14px !important;
+    color: #111827 !important;
 }
 </style>
     @endpush
