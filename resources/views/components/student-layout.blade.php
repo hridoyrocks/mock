@@ -248,44 +248,7 @@
                 </div>
             </div>
 
-            <!-- User Quick Stats -->
-            <div class="p-6 border-b" :class="darkMode ? 'border-white/10' : 'border-gray-200'">
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        @if(auth()->user()->avatar_url)
-                            <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" 
-                                 class="w-16 h-16 rounded-xl object-cover border-2 border-[#C8102E]">
-                        @else
-                            <div class="w-16 h-16 rounded-xl bg-[#C8102E] flex items-center justify-center text-white font-bold text-xl">
-                                {{ substr(auth()->user()->name, 0, 1) }}
-                            </div>
-                        @endif
-                        <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-[#C8102E] rounded-full border-2 border-slate-900"></div>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-semibold" :class="darkMode ? 'text-white' : 'text-[#C8102E]'">{{ auth()->user()->name }}</h3>
-                        <div class="flex items-center space-x-2 mt-1">
-                            <span class="text-xs px-2 py-1 rounded-full bg-[#C8102E] text-white">
-                            {{ ucfirst(auth()->user()->subscription_status) }}
-                            </span>
-                            <span class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
-                                <i class="fas fa-fire text-[#C8102E]"></i> {{ auth()->user()->study_streak_days ?? 0 }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Mini Progress Bar -->
-                <div class="mt-4 space-y-2">
-                    <div class="flex justify-between text-xs">
-                        <span :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Daily Goal</span>
-                        <span :class="darkMode ? 'text-white' : 'text-[#C8102E] font-bold'">75%</span>
-                    </div>
-                    <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                        <div class="h-full bg-[#C8102E] rounded-full" style="width: 75%"></div>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Navigation Menu -->
             <nav class="flex-1 overflow-y-auto py-4">
