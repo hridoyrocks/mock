@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
+use App\Models\OtpVerification;
+use App\Notifications\EmailVerificationNotification;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
@@ -27,15 +30,170 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user = $request->user();
+        $oldEmail = $user->email;
+        $newEmail = $request->input('email');
+        
+        // Process phone number with country code
+        if ($request->filled('phone_number') && $request->filled('phone_country_code')) {
+            $phoneNumber = $request->input('phone_country_code') . ' ' . $request->input('phone_number');
+            $request->merge(['phone_number' => $phoneNumber]);
         }
-
-        $request->user()->save();
+        
+        // Get all countries from helper
+        $countries = \App\Helpers\CountryHelper::getAllCountries();
+        
+        // Set country name based on country code
+        if ($request->filled('country_code')) {
+            $countryCode = $request->input('country_code');
+            $countryName = isset($countries[$countryCode]) ? $countries[$countryCode]['name'] : null;
+            $request->merge(['country_name' => $countryName]);
+        }
+        
+        // Check if email is being changed
+        if ($oldEmail !== $newEmail) {
+            // Check if new email is already taken
+            if (\App\Models\User::where('email', $newEmail)->where('id', '!=', $user->id)->exists()) {
+                return back()->withErrors(['email' => 'This email address is already taken.']);
+            }
+            
+            // Store the new email in a temporary field or session
+            session(['pending_email' => $newEmail]);
+            
+            // Generate and send OTP
+            $this->sendEmailVerificationOtp($user, $newEmail);
+            
+            // Update other fields except email
+            $user->fill($request->except('email', 'phone_country_code'));
+            $user->save();
+            
+            return Redirect::route('profile.edit')->with('status', 'email-verification-sent');
+        }
+        
+        // If email is not being changed, update normally
+        $user->fill($request->except('phone_country_code'));
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+    
+    /**
+     * Send email verification OTP
+     */
+    protected function sendEmailVerificationOtp($user, $newEmail)
+    {
+        // Delete any existing OTPs for this email
+        OtpVerification::where('identifier', $newEmail)->delete();
+        
+        // Generate new OTP
+        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+        // Store OTP in database
+        DB::table('otp_verifications')->insert([
+            'identifier' => $newEmail,
+            'token' => hash('sha256', $otp),
+            'otp_code' => $otp,  // Store the actual OTP code
+            'type' => 'email',  // Required: must be 'email' or 'phone'
+            'expires_at' => now()->addMinutes(10),
+            'attempts' => 0,  // Initialize attempts counter
+            'verified_at' => null,  // Not verified yet
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        
+        // Send OTP via email
+        try {
+            \Illuminate\Support\Facades\Mail::to($newEmail)->send(new \App\Mail\EmailChangeOtpMail($otp, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send email change OTP: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Verify email change OTP
+     */
+    public function verifyEmailChange(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'otp' => ['required', 'string', 'size:6'],
+        ]);
+        
+        $pendingEmail = session('pending_email');
+        
+        if (!$pendingEmail) {
+            return back()->withErrors(['otp' => 'No pending email change found.']);
+        }
+        
+        // Find the OTP record
+        $otpRecord = DB::table('otp_verifications')
+            ->where('identifier', $pendingEmail)
+            ->where('expires_at', '>', now())
+            ->first();
+        
+        if (!$otpRecord) {
+            return back()->withErrors(['otp' => 'Invalid or expired OTP.']);
+        }
+        
+        // Verify OTP
+        if (!hash_equals($otpRecord->token, hash('sha256', $request->otp))) {
+            return back()->withErrors(['otp' => 'Invalid OTP code.']);
+        }
+        
+        // Update user's email
+        $user = $request->user();
+        $user->email = $pendingEmail;
+        $user->email_verified_at = now();
+        $user->save();
+        
+        // Delete OTP record and clear session
+        DB::table('otp_verifications')->where('id', $otpRecord->id)->delete();
+        session()->forget('pending_email');
+        
+        return Redirect::route('profile.edit')->with('status', 'email-updated');
+    }
+    
+    /**
+     * Resend email change OTP
+     */
+    public function resendEmailChangeOtp(Request $request): RedirectResponse
+    {
+        $pendingEmail = session('pending_email');
+        
+        if (!$pendingEmail) {
+            return back()->withErrors(['error' => 'No pending email change found.']);
+        }
+        
+        // Check rate limiting (max 1 resend per minute)
+        $lastOtp = DB::table('otp_verifications')
+            ->where('identifier', $pendingEmail)
+            ->where('created_at', '>', now()->subMinute())
+            ->first();
+        
+        if ($lastOtp) {
+            return back()->withErrors(['error' => 'Please wait a minute before requesting another OTP.']);
+        }
+        
+        // Send new OTP
+        $this->sendEmailVerificationOtp($request->user(), $pendingEmail);
+        
+        return back()->with('status', 'otp-resent');
+    }
+    
+    /**
+     * Cancel email change
+     */
+    public function cancelEmailChange(Request $request): RedirectResponse
+    {
+        $pendingEmail = session('pending_email');
+        
+        // Delete any pending OTPs
+        if ($pendingEmail) {
+            DB::table('otp_verifications')->where('identifier', $pendingEmail)->delete();
+        }
+        
+        session()->forget('pending_email');
+        
+        return Redirect::route('profile.edit')->with('status', 'email-change-cancelled');
     }
 
     /**
@@ -59,82 +217,57 @@ class ProfileController extends Controller
         return Redirect::to('/');
     }
 
-    public function removeDevice(Request $request, $deviceId)
-{
-    $device = $request->user()->devices()->findOrFail($deviceId);
-    
-    // Don't allow removing current device
-    if ($device->device_fingerprint === $request->header('User-Agent')) {
-        return response()->json(['error' => 'Cannot remove current device'], 400);
-    }
-    
-    $device->delete();
-    
-    return response()->json(['success' => true]);
-}
+    /**
+     * Update user avatar
+     */
+    public function updateAvatar(Request $request): RedirectResponse
+    {
+        try {
+            $request->validate([
+                'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'], // Max 2MB
+            ]);
 
-/**
- * Logout from all devices except current
- */
-public function logoutAllDevices(Request $request)
-{
-    $currentFingerprint = UserDevice::generateFingerprint($request);
-    
-    $request->user()->devices()
-        ->where('device_fingerprint', '!=', $currentFingerprint)
-        ->delete();
-    
-    return response()->json(['success' => true]);
-}
+            $user = $request->user();
 
-/**
- * Update notification preferences
- */
-public function updateNotifications(Request $request)
-{
-    $preferences = [
-        'test_reminders' => $request->boolean('test_reminders'),
-        'score_updates' => $request->boolean('score_updates'),
-        'achievement_alerts' => $request->boolean('achievement_alerts'),
-        'marketing_emails' => $request->boolean('marketing_emails'),
-    ];
-    
-    $request->user()->update([
-        'notification_preferences' => $preferences
-    ]);
-    
-    return redirect()->route('profile.edit')
-        ->with('success', 'Notification preferences updated!');
-}
-
-public function updateAvatar(Request $request): RedirectResponse
-{
-    try {
-        $request->validate([
-            'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'], // Max 2MB
-        ]);
-
-        $user = $request->user();
-
-        // Delete old avatar if exists (but not if it's a social avatar URL)
-        if ($user->avatar_url && !filter_var($user->avatar_url, FILTER_VALIDATE_URL)) {
-            $oldPath = str_replace('/storage/', '', $user->avatar_url);
-            if (Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->delete($oldPath);
+            // Delete old avatar if exists (but not if it's a social avatar URL)
+            if ($user->avatar_url && !filter_var($user->avatar_url, FILTER_VALIDATE_URL)) {
+                $oldPath = str_replace('/storage/', '', $user->avatar_url);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
             }
+
+            // Store new avatar
+            $path = $request->file('avatar')->store('avatars', 'public');
+            
+            $user->update([
+                'avatar_url' => '/storage/' . $path
+            ]);
+
+            return back()->with('status', 'profile-updated');
+            
+        } catch (\Exception $e) {
+            return back()->withErrors(['avatar' => 'Failed to upload avatar. Please try again.']);
         }
-
-        // Store new avatar
-        $path = $request->file('avatar')->store('avatars', 'public');
-        
-        $user->update([
-            'avatar_url' => '/storage/' . $path
-        ]);
-
-        return back()->with('status', 'profile-updated');
-        
-    } catch (\Exception $e) {
-        return back()->withErrors(['avatar' => 'Failed to upload avatar. Please try again.']);
     }
-}
+    
+    /**
+     * Update notification preferences
+     */
+    public function updateNotifications(Request $request): RedirectResponse
+    {
+        $preferences = [
+            'test_reminders' => $request->boolean('test_reminders'),
+            'score_updates' => $request->boolean('score_updates'),
+            'achievement_alerts' => $request->boolean('achievement_alerts'),
+            'marketing_emails' => $request->boolean('marketing_emails'),
+        ];
+        
+        $request->user()->update([
+            'notification_preferences' => $preferences
+        ]);
+        
+        return redirect()->route('profile.edit')
+            ->with('success', 'Notification preferences updated!');
+    }
 }

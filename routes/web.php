@@ -147,6 +147,11 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Email change verification routes
+    Route::post('/profile/verify-email-change', [ProfileController::class, 'verifyEmailChange'])->name('profile.verify-email-change');
+    Route::post('/profile/resend-email-otp', [ProfileController::class, 'resendEmailChangeOtp'])->name('profile.resend-email-otp');
+    Route::post('/profile/cancel-email-change', [ProfileController::class, 'cancelEmailChange'])->name('profile.cancel-email-change');
 });
 
 Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar')->middleware('auth');

@@ -15,14 +15,74 @@ class ResultController extends Controller
     /**
      * Display a listing of the student's results.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $attempts = StudentAttempt::where('user_id', auth()->id())
-            ->with(['testSet', 'testSet.section'])
-            ->latest()
-            ->paginate(10);
+        $query = StudentAttempt::where('user_id', auth()->id())
+            ->with(['testSet', 'testSet.section']);
         
-        return view('student.results.index', compact('attempts'));
+        // Filter by section - exclude full-test filter from regular attempts
+        if ($request->has('section') && $request->section !== 'all' && $request->section !== 'full-test') {
+            $query->whereHas('testSet.section', function($q) use ($request) {
+                $q->where('name', $request->section);
+            });
+        }
+        
+        // If filtering for full tests only, return empty collection for regular attempts
+        if ($request->has('section') && $request->section === 'full-test') {
+            // Create an empty paginator for consistency
+            $attempts = new \Illuminate\Pagination\LengthAwarePaginator(
+                collect([]), // empty collection
+                0, // total items
+                10, // per page
+                1, // current page
+                ['path' => $request->url()]
+            );
+        } else {
+            // Filter by time period for regular attempts
+            if ($request->has('period') && $request->period !== 'all') {
+                switch($request->period) {
+                    case '30days':
+                        $query->where('created_at', '>=', now()->subDays(30));
+                        break;
+                    case '3months':
+                        $query->where('created_at', '>=', now()->subMonths(3));
+                        break;
+                    case '6months':
+                        $query->where('created_at', '>=', now()->subMonths(6));
+                        break;
+                }
+            }
+            
+            $attempts = $query->latest()->paginate(10)->withQueryString();
+        }
+        
+        // Get full test attempts separately
+        $fullTestAttempts = collect();
+        
+        // Only fetch full test attempts if not filtering by specific section or if showing all/full-test
+        if (!$request->has('section') || in_array($request->section, ['all', 'full-test'])) {
+            $fullTestQuery = \App\Models\FullTestAttempt::where('user_id', auth()->id())
+                ->with('fullTest');
+            
+            // Apply time period filter
+            if ($request->has('period') && $request->period !== 'all') {
+                switch($request->period) {
+                    case '30days':
+                        $fullTestQuery->where('created_at', '>=', now()->subDays(30));
+                        break;
+                    case '3months':
+                        $fullTestQuery->where('created_at', '>=', now()->subMonths(3));
+                        break;
+                    case '6months':
+                        $fullTestQuery->where('created_at', '>=', now()->subMonths(6));
+                        break;
+                }
+            }
+            
+            $fullTestAttempts = $fullTestQuery->latest()->get();
+        }
+        
+        return view('student.results.index', compact('attempts', 'fullTestAttempts'));
     }
     
     /**
