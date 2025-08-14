@@ -153,20 +153,28 @@ class ReadingTestController extends Controller
                 'matching_headings_count' => $questions->where('question_type', 'matching_headings')->count()
             ]);
             
-            // Calculate total question count INCLUDING blanks
+            // Calculate total question count INCLUDING blanks and multiple choice with multiple answers
             $totalQuestions = 0;
             foreach ($questions as $question) {
                 $blankCount = $question->countBlanks();
                 if ($blankCount > 0) {
                     $totalQuestions += $blankCount; // Each blank counts as a separate question
                 } elseif ($question->question_type === 'multiple_choice') {
-                    // For multiple choice, count each correct option as a question
+                    // For multiple choice, if there are multiple correct options, count each as a question
                     $correctCount = $question->options->where('is_correct', true)->count();
                     if ($correctCount > 1) {
                         $totalQuestions += $correctCount;
                     } else {
                         $totalQuestions += 1;
                     }
+                } elseif ($question->question_type === 'matching_headings' && $question->isMasterMatchingHeading()) {
+                    // Master matching heading questions count based on mappings
+                    $mappingCount = count($question->section_specific_data['mappings'] ?? []);
+                    $totalQuestions += $mappingCount > 0 ? $mappingCount : 1;
+                } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
+                    // Sentence completion with multiple sentences
+                    $sentenceCount = count($question->section_specific_data['sentence_completion']['sentences'] ?? []);
+                    $totalQuestions += $sentenceCount > 0 ? $sentenceCount : 1;
                 } else {
                     $totalQuestions += 1;
                 }
@@ -476,13 +484,28 @@ class ReadingTestController extends Controller
                             'correct_selections' => $correctSelections
                         ]);
                         
-                        // For multiple choice questions, count each correct selection as a mark
+                        // For multiple choice questions with multiple correct answers
                         if ($question->question_type === 'multiple_choice') {
-                            $correctAnswers += $correctSelections;
-                            $answeredCount += $correctSelections; // Each correct option counts as a question
-                        } else {
-                            $answeredCount++;
-                        }
+                        // Get total expected correct answers
+                        $totalCorrectOptions = $question->options->where('is_correct', true)->count();
+                            
+                        // User gets marks based on how many they got right
+                            if ($totalCorrectOptions > 1) {
+                                                    // For questions with multiple correct answers:
+                                                    // - Each correct selection gets a mark
+                                                    // - Each question with multiple answers counts as multiple questions for IELTS
+                                                    $correctAnswers += $correctSelections;
+                                                    $answeredCount += count($answer); // Count how many options were selected
+                                                } else {
+                                                    // Single correct answer - traditional scoring
+                                                    if ($correctSelections > 0) {
+                                                        $correctAnswers++;
+                                                    }
+                                                    $answeredCount++;
+                                                }
+                                            } else {
+                                                $answeredCount++;
+                                            }
                     }
                 } else {
                     // Single answer

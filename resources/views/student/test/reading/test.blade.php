@@ -583,15 +583,6 @@
                                                         @break
                                                         
                                                     @case('multiple_choice')
-                                                        @php
-                                                            // Count correct options to show marks info
-                                                            $correctCount = $question->options->filter(function($opt) { return $opt->is_correct; })->count();
-                                                        @endphp
-                                                        @if($correctCount > 1)
-                                                            <div style="margin-bottom: 8px; font-size: 12px; color: #666; font-style: italic;">
-                                                                (Select {{ $correctCount }} options)
-                                                            </div>
-                                                        @endif
                                                         @foreach ($question->options as $optionIndex => $option)
                                                             <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
                                                                 <input type="checkbox" 

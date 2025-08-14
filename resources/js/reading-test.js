@@ -396,6 +396,37 @@ const AnswerManager = {
             input.addEventListener('change', () => this.trackAnswer(input));
         });
         
+        // Track checkbox inputs for multiple choice
+        document.querySelectorAll('input[type="checkbox"].multiple-choice-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                // Get all checkboxes for this question
+                const questionId = checkbox.name.replace('answers[', '').replace('][]', '');
+                const allCheckboxes = document.querySelectorAll(`input[name="answers[${questionId}][]"]`);
+                const checkedBoxes = document.querySelectorAll(`input[name="answers[${questionId}][]"]:checked`);
+                
+                // Update each checkbox's navigation button
+                allCheckboxes.forEach((cb, index) => {
+                    const questionNumber = cb.dataset.questionNumber;
+                    if (questionNumber) {
+                        // Find all nav buttons for this question number range
+                        const baseNum = parseInt(questionNumber);
+                        const navButton = document.querySelector(`.number-btn[data-display-number="${baseNum + index}"]`);
+                        if (navButton) {
+                            // Check if this specific checkbox is checked
+                            if (cb.checked) {
+                                navButton.classList.add('answered');
+                            } else {
+                                navButton.classList.remove('answered');
+                            }
+                        }
+                    }
+                });
+                
+                this.saveAllAnswers();
+                this.updateAnswerCount();
+            });
+        });
+        
         // IMPORTANT FIX: Track ALL select dropdowns including matching headings
         // This includes regular selects and those for matching headings with array notation
         document.querySelectorAll('select').forEach(select => {
@@ -446,6 +477,26 @@ const AnswerManager = {
             }
         }
         
+        // Special handling for sentence completion with _q notation
+        if (input.name && input.name.includes('_q')) {
+            // Extract the sub-question number from name like answers[123_q14]
+            const match = input.name.match(/answers\[(\d+)_q(\d+)\]/);
+            if (match) {
+                const questionId = match[1];
+                const subQuestionNum = match[2];
+                
+                // Find the nav button with the matching display number
+                const navButton = document.querySelector(`.number-btn[data-display-number="${subQuestionNum}"]`);
+                if (navButton) {
+                    if (input.value && input.value.trim()) {
+                        navButton.classList.add('answered');
+                    } else {
+                        navButton.classList.remove('answered');
+                    }
+                }
+            }
+        }
+        
         // For matching headings, check all related selects
         if (input.name && input.name.includes('[') && input.name.includes(']')) {
             // Extract question ID from name like answers[123][0]
@@ -479,7 +530,45 @@ const AnswerManager = {
     },
 
     updateAnswerCount() {
-        const answeredCount = document.querySelectorAll('.number-btn.answered').length;
+        // Count unique answered questions properly
+        let answeredCount = 0;
+        const processedQuestions = new Set();
+        
+        // Count all answered navigation buttons
+        document.querySelectorAll('.number-btn.answered').forEach(btn => {
+            answeredCount++;
+        });
+        
+        // Also check for any filled inputs that might not have updated nav buttons
+        document.querySelectorAll('input[type="text"]:not(.gap-input), input[type="radio"]:checked, input[type="checkbox"]:checked').forEach(input => {
+            const questionNumber = input.dataset.questionNumber;
+            if (questionNumber && input.value && input.value.trim()) {
+                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                if (navButton && !navButton.classList.contains('answered')) {
+                    navButton.classList.add('answered');
+                    answeredCount++;
+                }
+            }
+        });
+        
+        // Check all selects including matching headings and sentence completion
+        document.querySelectorAll('select').forEach(select => {
+            if (select.value && select.value.trim()) {
+                const questionNumber = select.dataset.questionNumber;
+                if (questionNumber) {
+                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                    if (navButton && !navButton.classList.contains('answered')) {
+                        navButton.classList.add('answered');
+                        answeredCount++;
+                    }
+                }
+            }
+        });
+        
+        // Recount after updates
+        answeredCount = document.querySelectorAll('.number-btn.answered').length;
+        
+        console.log('Total answered questions:', answeredCount);
 
         // Update submit modal count
         const answeredCountSpan = document.getElementById('answered-count');
