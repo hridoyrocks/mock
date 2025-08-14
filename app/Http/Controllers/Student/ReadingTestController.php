@@ -159,6 +159,14 @@ class ReadingTestController extends Controller
                 $blankCount = $question->countBlanks();
                 if ($blankCount > 0) {
                     $totalQuestions += $blankCount; // Each blank counts as a separate question
+                } elseif ($question->question_type === 'multiple_choice') {
+                    // For multiple choice, count each correct option as a question
+                    $correctCount = $question->options->where('is_correct', true)->count();
+                    if ($correctCount > 1) {
+                        $totalQuestions += $correctCount;
+                    } else {
+                        $totalQuestions += 1;
+                    }
                 } else {
                     $totalQuestions += 1;
                 }
@@ -408,15 +416,21 @@ class ReadingTestController extends Controller
                             $correctAnswers += $blankResults['correct'];
                         }
                     } else {
-                        // Multiple selection question (including matching headings)
+                        // Multiple selection question (multiple choice with checkboxes)
                         \Log::info('Processing multiple selection answer', [
                             'question_id' => $questionId,
                             'answer_values' => $answer,
                             'question_type' => $question->question_type
                         ]);
                         
+                        // First, clear any existing answers for this question
+                        StudentAnswer::where('attempt_id', $attempt->id)
+                                    ->where('question_id', $questionId)
+                                    ->delete();
+                        
                         // Check if this is actually saving to database
                         $savedCount = 0;
+                        $correctSelections = 0;
                         
                         foreach ($answer as $key => $value) {
                             \Log::info('Individual selection', [
@@ -440,6 +454,12 @@ class ReadingTestController extends Controller
                                         'question_id' => $questionId,
                                         'selected_option_id' => $value
                                     ]);
+                                    
+                                    // Check if this option is correct
+                                    $option = $question->options->find($value);
+                                    if ($option && $option->is_correct) {
+                                        $correctSelections++;
+                                    }
                                 } else {
                                     \Log::error('FAILED TO SAVE TO DATABASE', [
                                         'question_id' => $questionId,
@@ -452,17 +472,24 @@ class ReadingTestController extends Controller
                         \Log::info('Total saved for this question', [
                             'question_id' => $questionId,
                             'saved_count' => $savedCount,
-                            'total_answers' => count($answer)
+                            'total_answers' => count($answer),
+                            'correct_selections' => $correctSelections
                         ]);
                         
-                        $answeredCount++;
+                        // For multiple choice questions, count each correct selection as a mark
+                        if ($question->question_type === 'multiple_choice') {
+                            $correctAnswers += $correctSelections;
+                            $answeredCount += $correctSelections; // Each correct option counts as a question
+                        } else {
+                            $answeredCount++;
+                        }
                     }
                 } else {
                     // Single answer
                     $hasOptions = $question->options->count() > 0;
                     
                     if ($hasOptions && is_numeric($answer)) {
-                        // Option ID (multiple choice, true/false, etc.)
+                        // Option ID (single choice, true/false, etc.)
                         StudentAnswer::updateOrCreate(
                             [
                                 'attempt_id' => $attempt->id,

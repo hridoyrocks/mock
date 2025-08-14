@@ -197,7 +197,14 @@ class QuestionController extends Controller
         if ($this->needsOptions($request->question_type)) {
             $rules['options'] = 'required|array|min:2';
             $rules['options.*.content'] = 'required|string';
-            $rules['correct_option'] = 'required|integer|min:0';
+            
+            // For multiple choice, validate correct_options array instead of correct_option
+            if ($request->question_type === 'multiple_choice') {
+                $rules['correct_options'] = 'required|array|min:1';
+                $rules['correct_options.*'] = 'integer|min:0';
+            } else {
+                $rules['correct_option'] = 'required|integer|min:0';
+            }
         }
         
         // Add type-specific validation rules only if JSON data not provided
@@ -498,6 +505,13 @@ class QuestionController extends Controller
                 $content = "Questions {$startNum}-{$endNum}\n\nChoose the correct heading for each paragraph from the list of headings below.";
             }
             
+            // Calculate marks for multiple choice questions
+            $marks = $request->marks ?? 1;
+            if ($request->question_type === 'multiple_choice' && $request->has('correct_options')) {
+                // For multiple choice, marks = number of correct options
+                $marks = count($request->correct_options);
+            }
+            
             // Prepare question data
             $questionData = [
                 'test_set_id' => $request->test_set_id,
@@ -505,7 +519,7 @@ class QuestionController extends Controller
                 'content' => $content,
                 'order_number' => $request->order_number,
                 'part_number' => $request->part_number ?? 1,
-                'marks' => $request->marks ?? 1,
+                'marks' => $marks,
                 'instructions' => $request->instructions,
                 'media_path' => $mediaPath,
                 'use_part_audio' => $usePartAudio,
@@ -639,6 +653,10 @@ class QuestionController extends Controller
                             // For matching headings, we'll mark options as correct based on JSON data
                             // This is handled differently as mappings determine correctness
                             $isCorrect = false; // Default to false, actual mapping is in section_specific_data
+                        } else if ($request->question_type === 'multiple_choice') {
+                            // For multiple choice, check if this index is in the correct_options array
+                            $correctOptions = $request->input('correct_options', []);
+                            $isCorrect = in_array($index, $correctOptions);
                         } else {
                             $isCorrect = ($request->correct_option == $index);
                         }
@@ -809,6 +827,14 @@ class QuestionController extends Controller
             if ($request->has('sentence_completion_json')) {
                 $rules['sentence_completion_json'] = 'required|json';
             }
+        }
+        
+        // Add options validation for multiple choice
+        if ($question->question_type === 'multiple_choice' && $request->has('options')) {
+            $rules['options'] = 'required|array|min:2';
+            $rules['options.*.content'] = 'required|string';
+            $rules['correct_options'] = 'required|array|min:1';
+            $rules['correct_options.*'] = 'integer|min:0';
         }
 
         $request->validate($rules);
@@ -985,6 +1011,40 @@ class QuestionController extends Controller
             }
         }
         
+        // Handle options update for multiple choice and other option-based questions
+        if (in_array($question->question_type, ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features']) && isset($request->options)) {
+            // Delete existing options
+            $question->options()->delete();
+            
+            // Create new options
+            foreach ($request->options as $index => $option) {
+                if (!empty($option['content'])) {
+                    $isCorrect = false;
+                    
+                    if ($question->question_type === 'multiple_choice') {
+                        // For multiple choice, check if this index is in correct_options array
+                        $correctOptions = $request->input('correct_options', []);
+                        $isCorrect = in_array($index, $correctOptions);
+                    } else {
+                        // For single choice questions
+                        $isCorrect = ($request->input('correct_option') == $index);
+                    }
+                    
+                    QuestionOption::create([
+                        'question_id' => $question->id,
+                        'content' => $option['content'],
+                        'is_correct' => $isCorrect,
+                    ]);
+                }
+            }
+            
+            // Update marks for multiple choice based on correct options count
+            if ($question->question_type === 'multiple_choice' && $request->has('correct_options')) {
+                $correctCount = count($request->correct_options);
+                $updateData['marks'] = $correctCount;
+            }
+        }
+        
         return redirect()->route('admin.test-sets.show', $question->test_set_id)
             ->with('success', 'Question updated successfully.');
     }
@@ -1039,7 +1099,8 @@ class QuestionController extends Controller
         }
         
         // Option-based types that require correct_option validation
-        $optionTypes = ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features'];
+        // Note: 'single_choice' is not a valid type - it should be treated as default behavior
+        $optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features'];
         
         return in_array($questionType, $optionTypes);
     }
@@ -1083,6 +1144,15 @@ class QuestionController extends Controller
                 // Add the count of actual questions in the master
                 $actualCount = $question->getActualQuestionCount();
                 $totalCount += $actualCount;
+            }
+            // Check if it's a multiple choice with multiple correct answers
+            elseif ($question->question_type === 'multiple_choice') {
+                $correctCount = $question->options->where('is_correct', true)->count();
+                if ($correctCount > 1) {
+                    $totalCount += $correctCount;
+                } else {
+                    $totalCount += 1;
+                }
             }
             // Check if question has blanks
             elseif ($blankCount = $question->countBlanks()) {

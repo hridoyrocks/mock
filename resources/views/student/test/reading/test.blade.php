@@ -105,6 +105,36 @@
                             ];
                             $currentQuestionNumber++;
                         }
+                    } elseif ($question->question_type === 'multiple_choice') {
+                        // Handle multiple choice questions with multiple correct answers
+                        $correctCount = $question->options->filter(function($opt) { return $opt->is_correct; })->count();
+                        
+                        if ($correctCount > 1) {
+                            // Store all question numbers for this multiple choice
+                            $questionNumbers = [];
+                            for ($i = 0; $i < $correctCount; $i++) {
+                                $questionNumbers[$i] = $currentQuestionNumber + $i;
+                            }
+                            
+                            $displayQuestions[] = [
+                                'question' => $question,
+                                'has_blanks' => false,
+                                'is_multiple_choice' => true,
+                                'display_number' => $currentQuestionNumber,
+                                'question_numbers' => $questionNumbers,
+                                'count' => $correctCount
+                            ];
+                            
+                            $currentQuestionNumber += $correctCount;
+                        } else {
+                            // Single correct answer (treat as regular question)
+                            $displayQuestions[] = [
+                                'question' => $question,
+                                'has_blanks' => false,
+                                'display_number' => $currentQuestionNumber
+                            ];
+                            $currentQuestionNumber++;
+                        }
                     } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
                         // Handle sentence completion with multiple sentences
                         $scData = $question->section_specific_data['sentence_completion'];
@@ -508,9 +538,24 @@
                                         @else
                                             {{-- Regular question --}}
                                             @if($question->question_type !== 'sentence_completion' && $question->question_type !== 'dropdown_selection')
-                                            <div class="ielts-q-number" style="font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;">
-                                            <span style="font-weight: 700 !important;">{{ $item['display_number'] }}.</span> {!! strip_tags($question->content) !!}
-                                            </div>
+                                                @if(isset($item['is_multiple_choice']) && $item['is_multiple_choice'] && isset($item['count']) && $item['count'] > 1)
+                                                    {{-- Multiple choice with range --}}
+                                                    @php
+                                                        $startNum = $item['display_number'];
+                                                        $endNum = $startNum + $item['count'] - 1;
+                                                    @endphp
+                                                    <div class="ielts-q-number" style="font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;">
+                                                        <span style="font-weight: 700 !important;">Questions {{ $startNum }}-{{ $endNum }}</span>
+                                                    </div>
+                                                    <div style="margin-bottom: 8px; font-size: 14px; line-height: 1.6; color: #111827;">
+                                                        {!! strip_tags($question->content) !!}
+                                                    </div>
+                                                @else
+                                                    {{-- Single question number --}}
+                                                    <div class="ielts-q-number" style="font-weight: 700 !important; font-size: 14px !important; color: #000000 !important; line-height: 1.5 !important; margin-bottom: 10px !important; display: block !important; padding: 0 !important; background: none !important; border: none !important;">
+                                                        <span style="font-weight: 700 !important;">{{ $item['display_number'] }}.</span> {!! strip_tags($question->content) !!}
+                                                    </div>
+                                                @endif
                                             @endif
                                                 
                                                 @if ($question->media_path)
@@ -522,7 +567,6 @@
                                             <div class="ielts-options" style="margin-left: 24px; margin-top: 8px;">
                                                 @switch($question->question_type)
                                                     @case('single_choice')
-                                                    @case('multiple_choice')
                                                         @foreach ($question->options as $optionIndex => $option)
                                                             <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
                                                                 <input type="radio" 
@@ -531,6 +575,32 @@
                                                                        value="{{ $option->id }}" 
                                                                        style="-webkit-appearance: radio !important; -moz-appearance: radio !important; appearance: radio !important; margin: 0 !important; margin-right: 8px !important; width: 14px !important; height: 14px !important; cursor: pointer !important; padding: 0 !important;"
                                                                        data-question-number="{{ $item['display_number'] }}">
+                                                                <label for="option-{{ $option->id }}" style="cursor: pointer !important; font-size: 14px !important; color: #000000 !important; font-weight: normal !important; margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;">
+                                                                    {{ $option->content }}
+                                                                </label>
+                                                            </div>
+                                                        @endforeach
+                                                        @break
+                                                        
+                                                    @case('multiple_choice')
+                                                        @php
+                                                            // Count correct options to show marks info
+                                                            $correctCount = $question->options->filter(function($opt) { return $opt->is_correct; })->count();
+                                                        @endphp
+                                                        @if($correctCount > 1)
+                                                            <div style="margin-bottom: 8px; font-size: 12px; color: #666; font-style: italic;">
+                                                                (Select {{ $correctCount }} options)
+                                                            </div>
+                                                        @endif
+                                                        @foreach ($question->options as $optionIndex => $option)
+                                                            <div class="ielts-option" style="margin-bottom: 6px !important; display: flex !important; align-items: center !important; padding: 0 !important; background: none !important;">
+                                                                <input type="checkbox" 
+                                                                       name="answers[{{ $question->id }}][]" 
+                                                                       id="option-{{ $option->id }}" 
+                                                                       value="{{ $option->id }}" 
+                                                                       style="-webkit-appearance: checkbox !important; -moz-appearance: checkbox !important; appearance: checkbox !important; margin: 0 !important; margin-right: 8px !important; width: 14px !important; height: 14px !important; cursor: pointer !important; padding: 0 !important;"
+                                                                       data-question-number="{{ $item['display_number'] }}"
+                                                                       class="multiple-choice-checkbox">
                                                                 <label for="option-{{ $option->id }}" style="cursor: pointer !important; font-size: 14px !important; color: #000000 !important; font-weight: normal !important; margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;">
                                                                     {{ $option->content }}
                                                                 </label>
@@ -889,6 +959,17 @@
                                     {{ $number }}
                                 </div>
                             @endforeach
+                        @elseif(isset($item['is_multiple_choice']) && $item['is_multiple_choice'] && isset($item['count']) && $item['count'] > 1)
+                            {{-- Multiple choice buttons --}}
+                            @foreach($item['question_numbers'] as $subIndex => $number)
+                                <div class="number-btn {{ $loop->parent->first && $loop->first ? 'active' : '' }}" 
+                                     data-question="{{ $item['question']->id }}"
+                                     data-sub-question="{{ $subIndex }}"
+                                     data-display-number="{{ $number }}"
+                                     data-part="{{ $item['question']->part_number }}">
+                                    {{ $number }}
+                                </div>
+                            @endforeach
                         @elseif(isset($item['is_sentence_completion']) && $item['is_sentence_completion'])
                             {{-- Sentence completion buttons --}}
                             @foreach($item['question_numbers'] as $subIndex => $number)
@@ -1026,6 +1107,7 @@
 @vite('resources/js/reading-test.js')
 <script src="{{ asset('js/matching-headings-enhanced-fix.js') }}"></script>
 <script src="{{ asset('js/sentence-completion-handler.js') }}"></script>
+<script src="{{ asset('js/student/multiple-choice-handler.js') }}"></script>
 
 <!-- CLEAN MINIMAL DROPDOWN STYLING -->
 <style>

@@ -185,7 +185,7 @@
                     </div>
                     
                     <!-- Options Manager (if applicable) -->
-                    @if(in_array($question->question_type, ['multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features']))
+                    @if(in_array($question->question_type, ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features']))
                     <div class="bg-white rounded-lg shadow-sm">
                         <div class="px-6 py-4 border-b border-gray-200">
                             <h3 class="text-lg font-medium text-gray-900">Answer Options</h3>
@@ -195,8 +195,13 @@
                             <div id="options-container" class="space-y-3">
                                 @foreach($question->options as $index => $option)
                                 <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                    <input type="radio" name="correct_option" value="{{ $index }}" 
-                                           class="h-4 w-4 text-blue-600" {{ $option->is_correct ? 'checked' : '' }}>
+                                    @if($question->question_type === 'multiple_choice')
+                                        <input type="checkbox" name="correct_options[]" value="{{ $index }}" 
+                                               class="h-4 w-4 text-blue-600" {{ $option->is_correct ? 'checked' : '' }}>
+                                    @else
+                                        <input type="radio" name="correct_option" value="{{ $index }}" 
+                                               class="h-4 w-4 text-blue-600" {{ $option->is_correct ? 'checked' : '' }}>
+                                    @endif
                                     <span class="font-medium text-gray-700">{{ chr(65 + $index) }}.</span>
                                     <input type="text" name="options[{{ $index }}][content]" value="{{ $option->content }}" 
                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required>
@@ -208,6 +213,19 @@
                                 </div>
                                 @endforeach
                             </div>
+                            
+                            @if($question->question_type === 'multiple_choice')
+                                @php
+                                    $correctCount = $question->options->where('is_correct', true)->count();
+                                @endphp
+                                @if($correctCount > 0)
+                                    <div class="mt-3 p-3 bg-blue-50 rounded text-sm text-blue-800">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        This question has {{ $correctCount }} correct {{ Str::plural('option', $correctCount) }}. 
+                                        Students will need to select all correct options to get full marks.
+                                    </div>
+                                @endif
+                            @endif
                             
                             <button type="button" id="add-option-btn" onclick="addOption()"
                                     class="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-md hover:border-gray-400 hover:text-gray-600 transition-all">
@@ -390,8 +408,111 @@
     <script src="{{ asset('js/admin/question-common.js') }}"></script>
     <script src="{{ asset('js/admin/sentence-completion-enhanced.js') }}"></script>
     <script>
+        // Store question type for reference
+        const questionType = '{{ $question->question_type }}';
+        
+        // Add option function
+        function addOption(content = '', isCorrect = false) {
+            const container = document.getElementById('options-container');
+            if (!container) return;
+            
+            const index = container.children.length;
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+            
+            if (questionType === 'multiple_choice') {
+                // Checkbox for multiple choice
+                optionDiv.innerHTML = `
+                    <input type="checkbox" name="correct_options[]" value="${index}" 
+                           class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
+                    <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
+                    <input type="text" name="options[${index}][content]" value="${content}" 
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter option text..." required>
+                    <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+            } else {
+                // Radio button for single choice
+                optionDiv.innerHTML = `
+                    <input type="radio" name="correct_option" value="${index}" 
+                           class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
+                    <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
+                    <input type="text" name="options[${index}][content]" value="${content}" 
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter option text..." required>
+                    <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+            }
+            
+            container.appendChild(optionDiv);
+        }
+        
+        // Remove option function
+        function removeOption(btn) {
+            btn.parentElement.remove();
+            reindexOptions();
+        }
+        
+        // Reindex options after removal
+        function reindexOptions() {
+            const options = document.querySelectorAll('#options-container > div');
+            options.forEach((option, index) => {
+                const radio = option.querySelector('input[type="radio"]');
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                
+                if (radio) radio.value = index;
+                if (checkbox) checkbox.value = index;
+                
+                option.querySelector('input[type="text"]').name = `options[${index}][content]`;
+                option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
+            });
+            
+            updateMarksInfo();
+        }
+        
+        // Update marks info for multiple choice
+        function updateMarksInfo() {
+            if (questionType === 'multiple_choice') {
+                const checkedCount = document.querySelectorAll('#options-container input[type="checkbox"]:checked').length;
+                const marksInput = document.querySelector('input[name="marks"]');
+                if (marksInput && checkedCount > 0) {
+                    marksInput.value = checkedCount;
+                    
+                    // Update info message if exists
+                    let infoDiv = document.querySelector('.marks-info');
+                    if (!infoDiv) {
+                        infoDiv = document.createElement('div');
+                        infoDiv.className = 'marks-info mt-2 text-sm text-blue-600';
+                        marksInput.parentElement.appendChild(infoDiv);
+                    }
+                    infoDiv.textContent = `Auto-calculated: ${checkedCount} marks (based on correct options)`;
+                }
+            }
+        }
+        
         // Initialize TinyMCE
         document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for checkbox changes (multiple choice)
+            if (questionType === 'multiple_choice') {
+                document.addEventListener('change', function(e) {
+                    if (e.target.type === 'checkbox' && e.target.name === 'correct_options[]') {
+                        updateMarksInfo();
+                    }
+                });
+                
+                // Initial marks update
+                updateMarksInfo();
+            }
+            
             // Initialize TinyMCE for instructions (simple editor)
             tinymce.init({
                 selector: '.tinymce-editor-simple',
