@@ -61,6 +61,19 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 // Referral Controller
 use App\Http\Controllers\Student\ReferralController;
 
+// Legal Pages Routes
+Route::get('/privacy-policy', function() {
+    return view('legal.privacy-policy');
+})->name('privacy-policy');
+
+Route::get('/terms-of-service', function() {
+    return view('legal.terms-of-service');
+})->name('terms-of-service');
+
+Route::get('/cookie-policy', function() {
+    return view('legal.cookie-policy');
+})->name('cookie-policy');
+
 // Home route
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
