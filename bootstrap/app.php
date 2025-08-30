@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'verify.webhook' => \App\Http\Middleware\VerifyWebhookSignature::class,
             'maintenance.check' => \App\Http\Middleware\CheckMaintenanceMode::class,
             'teacher' => \App\Http\Middleware\IsTeacher::class,
+            'trust.device' => \App\Http\Middleware\CheckTrustedDevice::class,
         ]);
         
         // Set priority - CheckBanned should run early
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\CheckTrustedDevice::class, // Check trusted device after session
             \App\Http\Middleware\CheckBanned::class, // Run early after session
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
@@ -35,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Web middleware group
         $middleware->web(append: [
             \App\Http\Middleware\CheckMaintenanceMode::class,
+            \App\Http\Middleware\CheckTrustedDevice::class,
             \App\Http\Middleware\CheckBanned::class,
         ]);
         
