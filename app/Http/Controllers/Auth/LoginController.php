@@ -28,7 +28,6 @@ class LoginController extends Controller
         $request->validate([
             'email' => 'required|string',
             'password' => 'required|string',
-            'remember_device' => 'boolean',
         ]);
 
         // Rate limiting
@@ -42,7 +41,10 @@ class LoginController extends Controller
             'password' => $request->password,
         ];
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+        // Remember me functionality - will keep user logged in for 30 days if checked
+        $remember = $request->filled('remember');
+        
+        if (!Auth::attempt($credentials, $remember)) {
             RateLimiter::hit($this->throttleKey($request));
             
             return back()
@@ -69,39 +71,42 @@ class LoginController extends Controller
                 ->with('warning', 'Please verify your email first.');
         }
 
-        // Device tracking
-        $this->handleDeviceTracking($request, $user);
-
-        return redirect()->intended($this->redirectPath());
-
-if (!$user->is_admin && MaintenanceMode::isActive()) {
-            return redirect()->route('maintenance');
+        // Device tracking (without trust device feature)
+        try {
+            $this->handleDeviceTracking($request, $user);
+        } catch (\Exception $e) {
+            // Log error but don't fail login
+            \Log::error('Device tracking failed: ' . $e->getMessage());
         }
 
-        return redirect()->intended($this->redirectPath());
+        // Regenerate session for security
+        $request->session()->regenerate();
 
+        return redirect()->intended($this->redirectPath());
     }
 
     private function handleDeviceTracking(Request $request, $user)
     {
-        $locationData = $this->locationService->getLocation($request->ip());
-        $device = UserDevice::createFromRequest($request, $user->id, $locationData);
+        try {
+            $locationData = $this->locationService->getLocation($request->ip());
+            $device = UserDevice::createFromRequest($request, $user->id, $locationData);
 
-        // Check if new device
-        if ($device->wasRecentlyCreated || !$device->is_trusted) {
-            // Send notification for new device
-            $user->notify(new \App\Notifications\NewDeviceNotification($device));
-            
-            // If remember device is checked, mark as trusted
-            if ($request->boolean('remember_device')) {
-                $device->markAsTrusted();
+            // Check if new device
+            if ($device->wasRecentlyCreated) {
+                // Send notification for new device (only if class exists)
+                if (class_exists('\App\Notifications\NewDeviceNotification')) {
+                    $user->notify(new \App\Notifications\NewDeviceNotification($device));
+                }
+            } else {
+                $device->updateActivity();
             }
-        } else {
-            $device->updateActivity();
-        }
 
-        // Store device info in session
-        session(['device_id' => $device->id]);
+            // Store device info in session
+            session(['device_id' => $device->id]);
+        } catch (\Exception $e) {
+            // Don't fail login if device tracking fails
+            \Log::error('Device tracking error: ' . $e->getMessage());
+        }
     }
 
     private function checkRateLimit(Request $request)

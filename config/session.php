@@ -35,6 +35,18 @@ return [
     'lifetime' => (int) env('SESSION_LIFETIME', 120),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Remember Me Duration
+    |--------------------------------------------------------------------------
+    |
+    | When "remember me" is checked, users stay logged in for this duration.
+    | Default is 43200 minutes (30 days). This is separate from session lifetime.
+    |
+    */
+    
+    'remember' => 43200, // 30 days in minutes
 
     /*
     |--------------------------------------------------------------------------

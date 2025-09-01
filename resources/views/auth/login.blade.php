@@ -4,7 +4,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - CD IELTS</title>
+    
+    @php
+        $settings = \App\Models\WebsiteSetting::first();
+        $siteName = $settings ? $settings->site_title : 'CD IELTS';
+        $favicon = $settings && $settings->favicon_path ? Storage::url($settings->favicon_path) : null;
+        $logo = $settings && $settings->logo_path ? Storage::url($settings->logo_path) : null;
+    @endphp
+    
+    <title>Sign In - {{ $siteName }}</title>
+    
+    @if($favicon)
+        <link rel="icon" type="image/x-icon" href="{{ $favicon }}">
+    @endif
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -16,6 +29,15 @@
         {{-- Left Side - Branding (Desktop Only) --}}
         <div class="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-red-500 to-rose-600 items-center justify-center px-12">
             <div class="text-white text-center">
+                @if($logo)
+                    <img src="{{ $logo }}" alt="{{ $siteName }}" class="h-16 w-auto mx-auto mb-6 brightness-0 invert">
+                @else
+                    <div class="flex items-center justify-center space-x-3 mb-6">
+                        <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
+                            <span class="text-red-500 font-bold text-3xl">CD</span>
+                        </div>
+                    </div>
+                @endif
                 <h1 class="text-4xl font-bold mb-4">Welcome Back!</h1>
                 <p class="text-lg opacity-90">Continue your IELTS preparation journey</p>
             </div>
@@ -24,10 +46,26 @@
         {{-- Right Side - Form --}}
         <div class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
             <div class="w-full max-w-md">
+                {{-- Logo for Mobile and Desktop Form --}}
+                <div class="text-center mb-6">
+                    <a href="{{ route('home') }}" class="inline-block">
+                        @if($logo)
+                            <img src="{{ $logo }}" alt="{{ $siteName }}" class="h-12 w-auto mx-auto">
+                        @else
+                            <div class="flex items-center justify-center space-x-2">
+                                <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                                    <span class="text-white font-bold text-xl">CD</span>
+                                </div>
+                                <span class="text-2xl font-bold text-gray-900">{{ $siteName }}</span>
+                            </div>
+                        @endif
+                    </a>
+                </div>
+                
                 {{-- Mobile Header --}}
                 <div class="lg:hidden text-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-900">Sign In</h1>
-                    <p class="text-sm text-gray-600 mt-1">Welcome back to IELTS Mock Test</p>
+                    <p class="text-sm text-gray-600 mt-1">Welcome back to {{ $siteName }}</p>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm p-6 lg:p-8">
@@ -99,7 +137,7 @@
                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent pr-10 @error('password') border-red-300 @enderror"
                                        placeholder="Enter your password">
                                 <button type="button" 
-                                        onclick="togglePassword()" 
+                                        onclick="togglePasswordVisibility()" 
                                         class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="eye-icon">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -118,23 +156,12 @@
                                 <input type="checkbox" 
                                        name="remember" 
                                        class="w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
-                                <span class="ml-2 text-xs text-gray-700">Remember me</span>
+                                <span class="ml-2 text-xs text-gray-700">Remember me for 30 days</span>
                             </label>
                             <a href="{{ route('password.request') }}" 
                                class="text-xs text-red-600 hover:text-red-500 font-medium">
                                 Forgot password?
                             </a>
-                        </div>
-
-                        {{-- Trust Device --}}
-                        <div class="flex items-center">
-                            <input id="remember_device" 
-                                   name="remember_device" 
-                                   type="checkbox" 
-                                   class="w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500">
-                            <label for="remember_device" class="ml-2 text-xs text-gray-700">
-                                Trust this device for 30 days
-                            </label>
                         </div>
 
                         {{-- Submit Button --}}
@@ -179,7 +206,7 @@
     </div>
 
     <script>
-        function togglePassword() {
+        function togglePasswordVisibility() {
             const passwordField = document.getElementById('password');
             const eyeIcon = document.getElementById('eye-icon');
             
