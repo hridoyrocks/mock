@@ -1,299 +1,311 @@
-{{-- resources/views/student/full-test/index.blade.php --}}
 <x-student-layout>
     <x-slot:title>Full Tests</x-slot>
-
-    <!-- Hero Section -->
-    <section class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/20 via-transparent to-purple-600/20"></div>
+    
+    <div x-data="{ 
+        showAll: false,
+        testsPerPage: 9,
+        loading: false
+    }" x-init="() => { if (typeof darkMode === 'undefined') { darkMode = localStorage.getItem('darkMode') !== 'false'; } }">
+    <div x-cloak>
         
-        <!-- Animated Background Elements -->
-        <div class="absolute inset-0 overflow-hidden">
-            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
-        </div>
-        
-        <div class="relative px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-            <div class="max-w-7xl mx-auto">
-                <div class="text-center">
-                    <h1 class="text-5xl lg:text-6xl font-bold text-white mb-6 animated-gradient bg-clip-text text-transparent">
-                        Full IELTS Tests
-                    </h1>
-                    <p class="text-gray-300 text-xl max-w-3xl mx-auto">
-                        Complete all four modules in one sitting - just like the real IELTS exam
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Category Filter -->
-    @if($categories->count() > 0)
-    <section class="px-4 sm:px-6 lg:px-8 py-6">
-        <div class="max-w-7xl mx-auto">
-            <div class="glass rounded-2xl p-6">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-filter mr-2 text-indigo-400"></i>
-                    Filter by Category
-                </h3>
-                <div class="flex flex-wrap gap-3">
-                    <a href="{{ route('student.full-test.index') }}" 
-                       class="inline-flex items-center px-4 py-2 rounded-xl transition-all {{ !$selectedCategory ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : 'glass text-gray-300 hover:text-white hover:border-indigo-500/50' }}">
-                        <i class="fas fa-th mr-2"></i>
-                        All Categories
-                    </a>
-                    @foreach($categories as $category)
-                        <a href="{{ route('student.full-test.index', ['category' => $category->slug]) }}" 
-                           class="inline-flex items-center px-4 py-2 rounded-xl transition-all {{ $selectedCategory && $selectedCategory->id == $category->id ? 'text-white shadow-lg' : 'glass text-gray-300 hover:text-white hover:border-indigo-500/50' }}"
-                           @if($selectedCategory && $selectedCategory->id == $category->id)
-                               style="background: linear-gradient(135deg, {{ $category->color }}dd, {{ $category->color }}99);"
-                           @endif>
-                            @if($category->icon)
-                                <i class="{{ $category->icon }} mr-2" style="color: {{ $selectedCategory && $selectedCategory->id == $category->id ? 'white' : $category->color }};"></i>
-                            @else
-                                <div class="w-5 h-5 mr-2 rounded" style="background-color: {{ $category->color }};"></div>
-                            @endif
-                            {{ $category->name }}
-                        </a>
-                    @endforeach
-                </div>
-                
-                @if($selectedCategory)
-                <div class="mt-4 pt-4 border-t border-gray-700">
-                    <p class="text-sm text-gray-400">
-                        <i class="fas fa-info-circle mr-2 text-indigo-400"></i>
-                        {{ $selectedCategory->description ?: 'Showing full tests in ' . $selectedCategory->name . ' category' }}
-                    </p>
-                </div>
-                @endif
-            </div>
-        </div>
-    </section>
-    @endif
-
-    <!-- Full Tests Grid -->
-    <section class="px-4 sm:px-6 lg:px-8 py-12">
-        <div class="max-w-7xl mx-auto">
-            <!-- Header -->
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold text-white">
-                    @if($selectedCategory)
-                        {{ $selectedCategory->name }} - Full Tests
-                    @else
-                        All Full Tests
-                    @endif
-                </h2>
-                <p class="text-gray-400 mt-2">
-                    {{ $fullTests->count() }} {{ Str::plural('test', $fullTests->count()) }} available
-                </p>
-            </div>
-
-            @if($fullTests->isEmpty())
-                <div class="glass rounded-2xl p-12 text-center">
-                    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-clipboard-list text-indigo-400 text-4xl"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold text-white mb-3">
-                        @if($selectedCategory)
-                            No Full Tests in {{ $selectedCategory->name }}
-                        @else
-                            No Full Tests Available
-                        @endif
-                    </h3>
-                    <p class="text-gray-400 max-w-md mx-auto">
-                        @if($selectedCategory)
-                            There are no full tests available in the {{ $selectedCategory->name }} category. Try selecting a different category or view all tests.
-                        @else
-                            Full tests will be available soon. Check back later!
-                        @endif
-                    </p>
-                    <div class="mt-6 space-x-4">
-                        @if($selectedCategory)
-                            <a href="{{ route('student.full-test.index') }}" 
-                               class="inline-flex items-center text-indigo-400 hover:text-indigo-300 font-medium">
-                                <i class="fas fa-th mr-2"></i>
-                                View All Tests
-                            </a>
-                        @endif
-                        <a href="{{ route('student.dashboard') }}" 
-                           class="inline-flex items-center text-indigo-400 hover:text-indigo-300 font-medium">
-                            <i class="fas fa-arrow-left mr-2"></i>
-                            Back to Dashboard
-                        </a>
-                    </div>
-                </div>
-            @else
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @foreach($fullTests as $fullTest)
-                        @php
-                            $userAttempts = $attempts->get($fullTest->id) ?? collect();
-                            $completedAttempts = $userAttempts->where('status', 'completed');
-                            $inProgressAttempt = $userAttempts->where('status', 'in_progress')->first();
-                            
-                            // Get categories for this full test (from related test sets)
-                            $testCategories = collect();
-                            foreach ($fullTest->testSets as $testSet) {
-                                $testCategories = $testCategories->merge($testSet->categories);
-                            }
-                            $testCategories = $testCategories->unique('id');
-                        @endphp
-                        
-                        <div class="group relative">
-                            <!-- Premium Badge -->
-                            @if($fullTest->is_premium)
-                                <div class="absolute -top-3 -right-3 z-10">
-                                    <div class="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                                        <i class="fas fa-crown mr-1"></i>
-                                        Premium
-                                    </div>
+        <!-- Header Section with Glass Effect -->
+        <section class="relative overflow-hidden">
+            <!-- Background Gradient -->
+            <div class="absolute inset-0 bg-gradient-to-br from-[#C8102E]/5 via-transparent to-[#C8102E]/5 dark:from-[#C8102E]/10 dark:to-[#C8102E]/10"></div>
+            
+            <div class="relative px-4 sm:px-6 lg:px-8 py-8">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Title Section -->
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C8102E] to-[#A00E27] flex items-center justify-center shadow-lg shadow-[#C8102E]/30">
+                                    <i class="fas fa-file-alt text-white text-xl"></i>
                                 </div>
-                            @endif
-                            
-                            <div class="glass rounded-2xl p-8 hover:border-indigo-500/50 transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
-                                <!-- Icon -->
-                                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform neon-purple">
-                                    <i class="fas fa-file-alt text-white text-3xl"></i>
-                                </div>
-                                
-                                <!-- Content -->
-                                <h3 class="text-2xl font-bold text-white mb-3 text-center">{{ $fullTest->title }}</h3>
-                                
-                                @if($fullTest->description)
-                                    <p class="text-gray-400 text-sm text-center mb-4">{{ $fullTest->description }}</p>
-                                @endif
-
-                                <!-- Categories Tags -->
-                                @if($testCategories->count() > 0)
-                                <div class="flex flex-wrap gap-2 mb-4 justify-center">
-                                    @foreach($testCategories as $cat)
-                                        <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border"
-                                              style="background-color: {{ $cat->color }}15; color: {{ $cat->color }}; border-color: {{ $cat->color }}40;">
-                                            @if($cat->icon)
-                                                <i class="{{ $cat->icon }} mr-1 text-xs"></i>
-                                            @endif
-                                            {{ $cat->name }}
-                                        </span>
-                                    @endforeach
-                                </div>
-                                @endif
-                                
-                                <!-- Status -->
-                                @if($completedAttempts->count() > 0)
-                                    <div class="text-center mb-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                                            <i class="fas fa-check-circle mr-1"></i>
-                                            {{ $completedAttempts->count() }} {{ Str::plural('Attempt', $completedAttempts->count()) }} Completed
-                                        </span>
-                                    </div>
-                                @elseif($inProgressAttempt)
-                                    <div class="text-center mb-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                            <i class="fas fa-clock mr-1"></i>
-                                            In Progress
-                                        </span>
-                                    </div>
-                                @endif
-                                
-                                <!-- Test Details -->
-                                <div class="space-y-2 mb-6 flex-grow">
-                                    <div class="flex items-center justify-between text-sm">
-                                        <span class="text-gray-400">Total Duration</span>
-                                        <span class="text-white font-medium">~3 hours</span>
-                                    </div>
-                                    <div class="flex items-center justify-between text-sm">
-                                        <span class="text-gray-400">Sections</span>
-                                        <span class="text-white font-medium">L, R, W, S</span>
-                                    </div>
-                                    <div class="flex items-center justify-between text-sm">
-                                        <span class="text-gray-400">Questions</span>
-                                        <span class="text-white font-medium">~80-85</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- CTA -->
-                                @if($fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests'))
-                                    <a href="{{ route('subscription.plans') }}" 
-                                       class="btn-secondary text-center">
-                                        <i class="fas fa-lock mr-2"></i>
-                                        Upgrade to Premium
-                                    </a>
-                                @else
-                                    <a href="{{ route('student.full-test.onboarding', $fullTest) }}" 
-                                       class="btn-primary text-center">
-                                        @if($inProgressAttempt)
-                                            <i class="fas fa-play mr-2"></i>
-                                            Continue Test
-                                        @else
-                                            <i class="fas fa-play mr-2"></i>
-                                            Start Full Test
-                                        @endif
-                                    </a>
-                                @endif
+                                <h1 class="text-3xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                                    @if(isset($selectedCategory) && $selectedCategory)
+                                        {{ $selectedCategory->name }}
+                                    @else
+                                        Full IELTS Tests
+                                    @endif
+                                </h1>
                             </div>
                         </div>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-    </section>
-
-    <!-- Info Section -->
-    <section class="px-4 sm:px-6 lg:px-8 py-12">
-        <div class="max-w-7xl mx-auto">
-            <div class="glass rounded-2xl p-8">
-                <h2 class="text-2xl font-bold text-white mb-6">About Full Tests</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                        <h3 class="text-lg font-semibold text-white mb-3">
-                            <i class="fas fa-info-circle text-blue-400 mr-2"></i>
-                            What's Included
-                        </h3>
-                        <ul class="space-y-2 text-gray-400">
-                            <li class="flex items-start">
-                                <i class="fas fa-check text-green-400 mt-1 mr-2"></i>
-                                <span>Complete IELTS test experience with all 4 sections</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check text-green-400 mt-1 mr-2"></i>
-                                <span>Timed sections matching real exam conditions</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check text-green-400 mt-1 mr-2"></i>
-                                <span>Overall band score calculation</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check text-green-400 mt-1 mr-2"></i>
-                                <span>Detailed performance analysis for each section</span>
-                            </li>
-                        </ul>
+                        
+                        <!-- Quick Stats -->
+                        <div class="flex items-center gap-4">
+                            <div class="text-center">
+                                <p class="text-2xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                                    {{ \App\Models\FullTestAttempt::where('user_id', auth()->id())->where('status', 'completed')->count() }}
+                                </p>
+                                <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Tests Taken</p>
+                            </div>
+                            <div class="w-px h-12" :class="darkMode ? 'bg-white/10' : 'bg-gray-300'"></div>
+                            <div class="text-center">
+                                <p class="text-2xl font-bold text-[#C8102E]">
+                                    {{ number_format(\App\Models\FullTestAttempt::where('user_id', auth()->id())->where('status', 'completed')->avg('overall_band_score') ?? 0, 1) }}
+                                </p>
+                                <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Avg. Score</p>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div>
-                        <h3 class="text-lg font-semibold text-white mb-3">
-                            <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
-                            Test Tips
-                        </h3>
-                        <ul class="space-y-2 text-gray-400">
-                            <li class="flex items-start">
-                                <i class="fas fa-arrow-right text-purple-400 mt-1 mr-2"></i>
-                                <span>Set aside 3 uninterrupted hours</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-arrow-right text-purple-400 mt-1 mr-2"></i>
-                                <span>Use headphones for the listening section</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-arrow-right text-purple-400 mt-1 mr-2"></i>
-                                <span>Have pen and paper ready for notes</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-arrow-right text-purple-400 mt-1 mr-2"></i>
-                                <span>Test your microphone before starting</span>
-                            </li>
-                        </ul>
+
+                    <!-- Filters Section -->
+                    <div class="space-y-4">
+                        <!-- Category Filter -->
+                        @if(isset($categories) && $categories->count() > 0)
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-sm font-medium" :class="darkMode ? 'text-gray-400' : 'text-gray-700'">Categories:</span>
+                            
+                            <a href="{{ route('student.full-test.index') }}" 
+                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium transition-all {{ !$selectedCategory ? 'bg-[#C8102E] text-white shadow-md' : '' }}"
+                               :class="!{{ !$selectedCategory ? 'true' : 'false' }} && (darkMode ? 'glass text-gray-300 hover:text-white hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')">
+                                All Tests
+                                <span class="ml-1.5 text-xs opacity-75">({{ $fullTests->count() }})</span>
+                            </a>
+                            
+                            @foreach($categories as $category)
+                                <a href="{{ route('student.full-test.index', ['category' => $category->slug]) }}" 
+                                   class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium transition-all {{ $selectedCategory && $selectedCategory->id == $category->id ? 'bg-[#C8102E] text-white shadow-md' : '' }}"
+                                   :class="!{{ $selectedCategory && $selectedCategory->id == $category->id ? 'true' : 'false' }} && (darkMode ? 'glass text-gray-300 hover:text-white hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200')">
+                                    @if($category->icon)
+                                        <i class="{{ $category->icon }} mr-1.5 text-xs"></i>
+                                    @endif
+                                    {{ $category->name }}
+                                    <span class="ml-1.5 text-xs opacity-75">({{ $category->full_tests_count ?? 0 }})</span>
+                                </a>
+                            @endforeach
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <!-- Tests Grid Section -->
+        <section class="px-4 sm:px-6 lg:px-8 pb-12">
+            <div class="max-w-7xl mx-auto">
+                @if ($fullTests->count() > 0)
+                    <!-- Compact Grid Layout -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach ($fullTests as $index => $fullTest)
+                            @php
+                                $userAttempts = $attempts->get($fullTest->id) ?? collect();
+                                $completedAttempts = $userAttempts->where('status', 'completed');
+                                $inProgressAttempt = $userAttempts->where('status', 'in_progress')->first();
+                                
+                                // Get categories for this full test
+                                $testCategories = collect();
+                                foreach ($fullTest->testSets as $testSet) {
+                                    $testCategories = $testCategories->merge($testSet->categories);
+                                }
+                                $testCategories = $testCategories->unique('id');
+                            @endphp
+                            
+                            <div class="group relative rounded-lg border transition-all duration-300 hover:shadow-lg" 
+                                 x-show="showAll || {{ $index }} < testsPerPage"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 transform scale-95"
+                                 x-transition:enter-end="opacity-100 transform scale-100"
+                                 :class="darkMode ? 'glass border-white/10 hover:border-[#C8102E]/50' : 'bg-white border-gray-200 hover:border-[#C8102E]/30'">
+                                
+                                <!-- Premium Badge -->
+                                @if($fullTest->is_premium)
+                                    <div class="absolute -top-2 -right-2 z-10">
+                                        <div class="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                                            <i class="fas fa-crown mr-1"></i>
+                                            Premium
+                                        </div>
+                                    </div>
+                                @endif
+                                
+                                <!-- Test Card Content -->
+                                <div class="p-4">
+                                    <!-- Header -->
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div class="flex items-center gap-3 flex-1">
+                                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#C8102E] to-[#A00E27] flex items-center justify-center flex-shrink-0">
+                                                <i class="fas fa-file-alt text-white text-sm"></i>
+                                            </div>
+                                            <h3 class="font-semibold text-base flex-1" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                                                {{ $fullTest->title }}
+                                            </h3>
+                                        </div>
+                                        
+                                        @if($completedAttempts->count() > 0)
+                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium flex-shrink-0"
+                                                  :class="darkMode ? 'glass text-green-400' : 'bg-green-50 text-green-700 border border-green-200'">
+                                                <i class="fas fa-check mr-1"></i>
+                                                @if($completedAttempts->count() > 1) {{ $completedAttempts->count() }}x @endif
+                                            </span>
+                                        @elseif($inProgressAttempt)
+                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium flex-shrink-0"
+                                                  :class="darkMode ? 'glass text-amber-400' : 'bg-amber-50 text-amber-700 border border-amber-200'">
+                                                <i class="fas fa-clock mr-1"></i>
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <!-- Categories (Compact) -->
+                                    @if($testCategories->count() > 0)
+                                    <div class="flex gap-1 mb-3">
+                                        @foreach($testCategories->take(2) as $cat)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs"
+                                                  :class="darkMode ? 'glass text-gray-300' : 'bg-gray-100 text-gray-600'">
+                                                {{ $cat->name }}
+                                            </span>
+                                        @endforeach
+                                        @if($testCategories->count() > 2)
+                                            <span class="text-xs" :class="darkMode ? 'text-gray-500' : 'text-gray-500'">
+                                                +{{ $testCategories->count() - 2 }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    @endif
+
+                                    <!-- Quick Info -->
+                                    <div class="flex items-center justify-between text-sm mb-3" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex items-center">
+                                                <i class="fas fa-clock mr-1 text-[#C8102E]"></i>
+                                                ~3 hours
+                                            </span>
+                                            <span class="flex items-center">
+                                                <i class="fas fa-layer-group mr-1 text-[#C8102E]"></i>
+                                                4 sections
+                                            </span>
+                                        </div>
+                                        @if($completedAttempts->count() > 0 && $completedAttempts->first()->overall_band_score)
+                                            <span class="flex items-center font-semibold text-[#C8102E]">
+                                                {{ $completedAttempts->first()->overall_band_score }}
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    @if($fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests'))
+                                        <a href="{{ route('subscription.plans') }}" 
+                                           class="w-full inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all"
+                                           :class="darkMode ? 'glass text-amber-400 hover:bg-amber-400/10 border border-amber-400/30' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'">
+                                            <i class="fas fa-lock mr-1.5"></i>
+                                            Upgrade to Premium
+                                        </a>
+                                    @else
+                                        @if($completedAttempts->count() > 0)
+                                            <div class="flex gap-2">
+                                                <a href="{{ route('student.full-test.results', $completedAttempts->first()) }}" 
+                                                   class="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all"
+                                                   :class="darkMode ? 'glass text-white hover:bg-white/10' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'">
+                                                    <i class="fas fa-chart-bar mr-1.5"></i>
+                                                    Results
+                                                </a>
+                                                
+                                                <a href="{{ route('student.full-test.onboarding', $fullTest) }}" 
+                                                   class="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-md bg-[#C8102E] text-white text-sm font-medium hover:bg-[#A00E27] transition-all">
+                                                    <i class="fas fa-redo mr-1.5"></i>
+                                                    Retake
+                                                </a>
+                                            </div>
+                                        @elseif($inProgressAttempt)
+                                            <a href="{{ route('student.full-test.section', ['fullTestAttempt' => $inProgressAttempt, 'section' => $inProgressAttempt->current_section]) }}" 
+                                               class="w-full inline-flex items-center justify-center px-3 py-2 rounded-md bg-[#C8102E] text-white text-sm font-medium hover:bg-[#A00E27] transition-all">
+                                                <i class="fas fa-play mr-1.5"></i>
+                                                Continue Test
+                                            </a>
+                                        @else
+                                            <button onclick="startTest(this, '{{ route('student.full-test.onboarding', $fullTest) }}')"
+                                                    class="w-full inline-flex items-center justify-center px-3 py-2 rounded-md bg-[#C8102E] text-white text-sm font-medium hover:bg-[#A00E27] transition-all">
+                                                <i class="fas fa-play mr-1.5"></i>
+                                                Start Full Test
+                                            </button>
+                                        @endif
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Load More Button -->
+                    @if($fullTests->count() > 9)
+                    <div class="text-center mt-8" x-show="!showAll && {{ $fullTests->count() }} > testsPerPage">
+                        <button @click="showAll = true; loading = true; setTimeout(() => loading = false, 500)" 
+                                class="inline-flex items-center px-6 py-3 rounded-lg font-medium transition-all"
+                                :class="darkMode ? 'glass text-white hover:bg-white/10 border border-white/20' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm'">
+                            <span x-show="!loading">
+                                <i class="fas fa-plus mr-2"></i>
+                                Show All Tests ({{ $fullTests->count() - 9 }} more)
+                            </span>
+                            <span x-show="loading" x-cloak>
+                                <i class="fas fa-spinner fa-spin mr-2"></i>
+                                Loading...
+                            </span>
+                        </button>
+                    </div>
+                    
+                    <!-- Collapse Button -->
+                    <div class="text-center mt-4" x-show="showAll" x-cloak>
+                        <button @click="showAll = false; window.scrollTo({ top: 0, behavior: 'smooth' })" 
+                                class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                                :class="darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'">
+                            <i class="fas fa-chevron-up mr-2"></i>
+                            Show Less
+                        </button>
+                    </div>
+                    @endif
+                @else
+                    <!-- Empty State -->
+                    <div class="text-center py-16">
+                        <div class="max-w-md mx-auto">
+                            <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+                                 :class="darkMode ? 'glass' : 'bg-gray-100'">
+                                <i class="fas fa-file-alt text-3xl" :class="darkMode ? 'text-gray-400' : 'text-gray-400'"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                                @if($selectedCategory)
+                                    No Full Tests in {{ $selectedCategory->name }}
+                                @else
+                                    No Full Tests Available
+                                @endif
+                            </h3>
+                            <p class="mb-6" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+                                @if($selectedCategory)
+                                    Try selecting a different category or check back later.
+                                @else
+                                    Full tests are being added regularly. Check back soon!
+                                @endif
+                            </p>
+                            @if($selectedCategory)
+                                <a href="{{ route('student.full-test.index') }}" 
+                                   class="inline-flex items-center text-[#C8102E] hover:text-[#A00E27] font-medium">
+                                    <i class="fas fa-arrow-left mr-2"></i>
+                                    View All Tests
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </section>
+    </div>
+    </div>
+    
+    @push('scripts')
+    <script>
+        function startTest(button, url) {
+            // Disable button and show loading state
+            button.disabled = true;
+            button.innerHTML = `
+                <svg class="animate-spin h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Starting...
+            `;
+            button.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            // Redirect after a brief delay for better UX
+            setTimeout(() => window.location.href = url, 300);
+        }
+    </script>
+    @endpush
 </x-student-layout>
