@@ -7,6 +7,7 @@
         <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
         <meta http-equiv="Pragma" content="no-cache">
         <meta http-equiv="Expires" content="0">
+        <link rel="stylesheet" href="{{ asset('css/listening-test-fix.css') }}?v={{ time() }}">
     </x-slot:meta>
     
     <style>
@@ -169,12 +170,10 @@
         
         .question-instruction {
             font-size: 14px;
-            color: #333;
-            margin-bottom: 25px;
-            font-weight: 500;
-            background: #f5f5f5;
-            padding: 12px 20px;
-            border-left: 4px solid #666;
+            color: #1f2937;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.6;
         }
         
         /* ========== QUESTION ITEMS - LEFT ALIGNED ========== */
@@ -220,50 +219,7 @@
             font-weight: 500;
         }
         
-        /* ========== OPTIONS STYLING ========== */
-        .options-list {
-            margin-left: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .option-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-        
-        .option-item:hover {
-            background: rgba(59, 130, 246, 0.05);
-            padding-left: 8px;
-        }
-        
-        .option-radio {
-            margin-right: 12px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #3b82f6;
-        }
-        
-        .option-label {
-            flex: 1;
-            cursor: pointer;
-            font-size: 15px;
-            color: #1f2937;
-            line-height: 1.5;
-        }
-        
-        .option-label strong {
-            font-weight: 600;
-            margin-right: 4px;
-        }
+        /* Options will be styled by external CSS */
         
         /* ========== INPUT FIELDS ========== */
         .answer-input {
@@ -955,6 +911,8 @@
                 width: 100%;
             }
             
+            /* Mobile options styling - handled by external CSS */
+            
             /* Special types mobile */
             .matching-grid {
                 grid-template-columns: 1fr !important;
@@ -1135,12 +1093,14 @@
                 // Pre-calculate total questions including sub-questions
                 $totalQuestionCount = 0;
                 foreach ($allQuestions as $q) {
-                    if ($q->question_type === 'matching' && $q->matching_pairs) {
-                        $totalQuestionCount += count($q->matching_pairs);
-                    } elseif ($q->question_type === 'form_completion' && $q->form_structure) {
-                        $totalQuestionCount += count($q->form_structure['fields'] ?? []);
-                    } elseif ($q->question_type === 'plan_map_diagram' && $q->diagram_hotspots) {
-                        $totalQuestionCount += count($q->diagram_hotspots);
+                    if ($q->question_type === 'fill_blanks') {
+                        preg_match_all('/\[____(\d+)____\]/', $q->content, $matches);
+                        $blankCount = count($matches[0]);
+                        $totalQuestionCount += ($blankCount > 0 ? $blankCount : 1);
+                    } elseif ($q->question_type === 'dropdown_selection') {
+                        preg_match_all('/\[DROPDOWN_(\d+)\]/', $q->content, $matches);
+                        $dropdownCount = count($matches[0]);
+                        $totalQuestionCount += ($dropdownCount > 0 ? $dropdownCount : 1);
                     } else {
                         $totalQuestionCount++;
                     }
@@ -1158,6 +1118,7 @@
                     <!-- Questions -->
                     @php
                         $questionGroups = $partQuestions->groupBy('question_group');
+                        $shownInstructions = [];
                     @endphp
                     
                     @foreach ($questionGroups as $groupName => $questions)
@@ -1165,208 +1126,37 @@
                             <div class="question-group-header">{{ $groupName }}</div>
                         @endif
                         
-                        @php
-                            $instructions = $questions->pluck('instructions')->filter()->unique();
-                        @endphp
-                        
-                        @foreach($instructions as $instruction)
-                            <div class="question-instruction">{{ $instruction }}</div>
-                        @endforeach
-                        
                         @foreach ($questions as $question)
                             @php
                                 $displayNumber = $currentQuestionNumber;
                             @endphp
                             
-                            @if($question->question_type === 'matching' && $question->matching_pairs)
-                                {{-- MATCHING QUESTION - OFFICIAL IELTS STYLE --}}
-                                <div class="question-item" id="question-{{ $question->id }}">
-                                    <div class="question-content">
-                                        <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + count($question->matching_pairs) - 1 }}</span>
-                                        <div class="question-text">{!! $question->content !!}</div>
-                                    </div>
-                                    
-                                    <div class="matching-container">
-                                        <!-- Left Section - Questions with drop boxes -->
-                                        <div class="matching-left-section">
-                                            <div class="matching-table">
-                                                @foreach($question->matching_pairs as $index => $pair)
-                                                    <div class="matching-row">
-                                                        <span class="question-number-inline">{{ $displayNumber + $index }}</span>
-                                                        <span class="matching-question">{{ $pair['left'] }}</span>
-                                                        <div class="drop-box" 
-                                                             data-question-id="{{ $question->id }}" 
-                                                             data-index="{{ $index }}" 
-                                                             data-question-number="{{ $displayNumber + $index }}">
-                                                            <span class="placeholder-text">Drag answer here</span>
-                                                        </div>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Right Section - Available Options -->
-                                        <div class="matching-right-section">
-                                            <div class="matching-options-container">
-                                                <div class="matching-options-title">Available answers:</div>
-                                                <div class="matching-options-grid">
-                                                    @php
-                                                        $options = collect($question->matching_pairs)->pluck('right')->shuffle();
-                                                    @endphp
-                                                    @foreach($options as $index => $option)
-                                                        <div class="draggable-option" 
-                                                             draggable="true" 
-                                                             data-option="{{ $option }}"
-                                                             data-option-letter="{{ chr(65 + $index) }}">
-                                                            <strong>{{ chr(65 + $index) }}.</strong> {{ $option }}
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Hidden inputs for answers -->
-                                        @foreach($question->matching_pairs as $index => $pair)
-                                            <input type="hidden" 
-                                                   name="answers[{{ $question->id }}_{{ $index }}]" 
-                                                   class="matching-answer"
-                                                   data-question-number="{{ $displayNumber + $index }}"
-                                                   data-pair-index="{{ $index }}">
-                                        @endforeach
-                                    </div>
-                                </div>
-                                @php $currentQuestionNumber += count($question->matching_pairs); @endphp
-                                
-                            @elseif($question->question_type === 'form_completion' && $question->form_structure)
-                                {{-- FORM COMPLETION QUESTION --}}
-                                <div class="question-item" id="question-{{ $question->id }}">
-                                    <div class="question-content">
-                                        <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + count($question->form_structure['fields']) - 1 }}</span>
-                                        <div class="question-text">{!! $question->content !!}</div>
-                                    </div>
-                                    
-                                    <div class="form-completion-container">
-                                        <div class="form-wrapper">
-                                            <h4 class="form-title">{{ $question->form_structure['title'] ?? 'HOLIDAY RENTAL ENQUIRY' }}</h4>
-                                            
-                                            @foreach($question->form_structure['fields'] as $index => $field)
-                                                <div class="form-field-row">
-                                                    <div class="form-question-number">{{ $displayNumber + $index }}</div>
-                                                    <label class="form-label">{{ $field['label'] }}:</label>
-                                                    <input type="text" 
-                                                           name="answers[{{ $question->id }}_{{ $index }}]"
-                                                           class="form-input"
-                                                           placeholder="Type answer here"
-                                                           maxlength="30"
-                                                           data-question-number="{{ $displayNumber + $index }}">
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                </div>
-                                @php $currentQuestionNumber += count($question->form_structure['fields']); @endphp
-                                
-                            @elseif($question->question_type === 'plan_map_diagram' && $question->diagram_hotspots)
-                                {{-- DIAGRAM LABELING QUESTION --}}
-                                <div class="question-item" id="question-{{ $question->id }}">
-                                    <div class="question-content">
-                                        <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + count($question->diagram_hotspots) - 1 }}</span>
-                                        <div class="question-text">{!! $question->content !!}</div>
-                                    </div>
-                                    
-                                    <div class="diagram-container">
-                                        <div class="diagram-wrapper">
-                                            <img src="{{ asset('storage/' . $question->media_path) }}" 
-                                                 class="diagram-image"
-                                                 alt="Diagram">
-                                            
-                                            <!-- Add hotspot markers -->
-                                            @foreach($question->diagram_hotspots as $hotspot)
-                                                <div class="diagram-hotspot" 
-                                                     style="left: {{ $hotspot['x'] }}%; top: {{ $hotspot['y'] }}%;">
-                                                    <div class="hotspot-marker">{{ $hotspot['label'] }}</div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                        
-                                        <!-- Answer inputs -->
-                                        <div class="diagram-answers">
-                                            @foreach($question->diagram_hotspots as $index => $hotspot)
-                                                <div class="diagram-answer-item">
-                                                    <span class="diagram-label">{{ $hotspot['label'] }}</span>
-                                                    <span class="diagram-number">{{ $displayNumber + $index }}.</span>
-                                                    <input type="text" 
-                                                           name="answers[{{ $question->id }}_{{ $index }}]"
-                                                           class="diagram-input"
-                                                           placeholder="Type answer"
-                                                           maxlength="30"
-                                                           data-question-number="{{ $displayNumber + $index }}">
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                </div>
-                                @php $currentQuestionNumber += count($question->diagram_hotspots); @endphp
-                                
-                            @else
-                                {{-- REGULAR QUESTIONS --}}
-                                <div class="question-item" id="question-{{ $question->id }}">
-                                    <div class="question-content">
-                                        <span class="question-number">{{ $displayNumber }}</span>
-                                        <div class="question-text">{!! $question->content !!}</div>
-                                    </div>
-                                    
-                                    @switch($question->question_type)
-                                        @case('multiple_choice')
-                                            <div class="options-list">
-                                                @foreach ($question->options as $optionIndex => $option)
-                                                    <label class="option-item">
-                                                        <input type="radio" 
-                                                               name="answers[{{ $question->id }}]" 
-                                                               value="{{ $option->id }}" 
-                                                               class="option-radio"
-                                                               data-question-number="{{ $displayNumber }}">
-                                                        <span class="option-label">
-                                                            <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
-                                                        </span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                            @break
-                                        
-                                        @case('form_completion')
-                                        @case('note_completion')
-                                        @case('sentence_completion')
-                                        @case('short_answer')
-                                            <div class="answer-input">
-                                                <input type="text" 
-                                                       name="answers[{{ $question->id }}]" 
-                                                       class="text-input" 
-                                                       placeholder="Type your answer"
-                                                       maxlength="50"
-                                                       data-question-number="{{ $displayNumber }}">
-                                            </div>
-                                            @break
-                                        
-                                        @case('matching')
-                                        @case('plan_map_diagram')
-                                            <div class="answer-input">
-                                                <select name="answers[{{ $question->id }}]" 
-                                                        class="select-input" 
-                                                        data-question-number="{{ $displayNumber }}">
-                                                    <option value="">Select your answer</option>
-                                                    @foreach ($question->options as $optionIndex => $option)
-                                                        <option value="{{ $option->id }}">
-                                                            {{ chr(65 + $optionIndex) }}. {{ $option->content }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            @break
-                                    @endswitch
-                                </div>
-                                @php $currentQuestionNumber++; @endphp
+                            {{-- Show instruction if not already shown --}}
+                            @if($question->instructions && !in_array($question->instructions, $shownInstructions))
+                                <div class="question-instruction">{!! $question->instructions !!}</div>
+                                @php $shownInstructions[] = $question->instructions; @endphp
                             @endif
+                            
+                            {{-- Include the question render partial --}}
+                            @include('student.test.listening.question-render', [
+                                'question' => $question,
+                                'displayNumber' => $displayNumber
+                            ])
+                            
+                            @php
+                                // Update current question number based on question type
+                                if ($question->question_type === 'fill_blanks') {
+                                    preg_match_all('/\[____(\d+)____\]/', $question->content, $matches);
+                                    $blankCount = count($matches[0]);
+                                    $currentQuestionNumber += ($blankCount > 0 ? $blankCount : 1);
+                                } elseif ($question->question_type === 'dropdown_selection') {
+                                    preg_match_all('/\[DROPDOWN_(\d+)\]/', $question->content, $matches);
+                                    $dropdownCount = count($matches[0]);
+                                    $currentQuestionNumber += ($dropdownCount > 0 ? $dropdownCount : 1);
+                                } else {
+                                    $currentQuestionNumber++;
+                                }
+                            @endphp
                         @endforeach
                     @endforeach
                 </div>
@@ -1404,39 +1194,38 @@
                         $questionIdMap = [];
                     @endphp
                     @foreach($allQuestions as $question)
-                        @if($question->question_type === 'matching' && $question->matching_pairs)
-                            @foreach($question->matching_pairs as $index => $pair)
+                        @if($question->question_type === 'fill_blanks')
+                            @php
+                                preg_match_all('/\[____(\d+)____\]/', $question->content, $matches);
+                                $blankCount = count($matches[0]);
+                                $blankCount = $blankCount > 0 ? $blankCount : 1;
+                            @endphp
+                            @for($i = 1; $i <= $blankCount; $i++)
                                 @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
                                 <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
                                      data-question="{{ $question->id }}"
-                                     data-sub-index="{{ $index }}"
+                                     data-sub-index="{{ $i }}"
                                      data-display-number="{{ $navQuestionNum }}"
                                      data-part="{{ $question->part_number }}">
                                     {{ $navQuestionNum++ }}
                                 </div>
-                            @endforeach
-                        @elseif($question->question_type === 'form_completion' && $question->form_structure)
-                            @foreach($question->form_structure['fields'] as $index => $field)
+                            @endfor
+                        @elseif($question->question_type === 'dropdown_selection')
+                            @php
+                                preg_match_all('/\[DROPDOWN_(\d+)\]/', $question->content, $matches);
+                                $dropdownCount = count($matches[0]);
+                                $dropdownCount = $dropdownCount > 0 ? $dropdownCount : 1;
+                            @endphp
+                            @for($i = 1; $i <= $dropdownCount; $i++)
                                 @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
                                 <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
                                      data-question="{{ $question->id }}"
-                                     data-sub-index="{{ $index }}"
+                                     data-sub-index="{{ $i }}"
                                      data-display-number="{{ $navQuestionNum }}"
                                      data-part="{{ $question->part_number }}">
                                     {{ $navQuestionNum++ }}
                                 </div>
-                            @endforeach
-                        @elseif($question->question_type === 'plan_map_diagram' && $question->diagram_hotspots)
-                            @foreach($question->diagram_hotspots as $index => $hotspot)
-                                @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
-                                <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
-                                     data-question="{{ $question->id }}"
-                                     data-sub-index="{{ $index }}"
-                                     data-display-number="{{ $navQuestionNum }}"
-                                     data-part="{{ $question->part_number }}">
-                                    {{ $navQuestionNum++ }}
-                                </div>
-                            @endforeach
+                            @endfor
                         @else
                             @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
                             <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
@@ -1720,16 +1509,28 @@
         });
         
         // ========== Answer Tracking ==========
-        document.querySelectorAll('input[type="radio"], input[type="text"], select').forEach(input => {
+        document.querySelectorAll('input[type="radio"], input[type="checkbox"], input[type="text"], select').forEach(input => {
             input.addEventListener('change', function() {
                 const questionNumber = this.dataset.questionNumber;
                 if (questionNumber) {
                     const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
                     if (navButton) {
-                        if (this.value && this.value.trim()) {
-                            navButton.classList.add('answered');
+                        if (this.type === 'radio' || this.type === 'checkbox') {
+                            // For radio/checkbox, check if any option is selected
+                            const name = this.name;
+                            const isAnswered = document.querySelector(`input[name="${name}"]:checked`) !== null;
+                            if (isAnswered) {
+                                navButton.classList.add('answered');
+                            } else {
+                                navButton.classList.remove('answered');
+                            }
                         } else {
-                            navButton.classList.remove('answered');
+                            // For text/select inputs
+                            if (this.value && this.value.trim()) {
+                                navButton.classList.add('answered');
+                            } else {
+                                navButton.classList.remove('answered');
+                            }
                         }
                     }
                 }

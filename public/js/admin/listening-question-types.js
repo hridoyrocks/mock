@@ -25,14 +25,10 @@ window.ListeningQuestionTypes = {
         // Show appropriate panel based on question type
         switch(questionType) {
             case 'fill_blanks':
-            case 'note_completion':
-            case 'sentence_completion':
                 this.initFillBlanks();
                 break;
                 
             case 'single_choice':
-            case 'true_false':
-            case 'yes_no':
                 this.initSingleChoice(questionType);
                 break;
                 
@@ -41,22 +37,7 @@ window.ListeningQuestionTypes = {
                 break;
                 
             case 'dropdown_selection':
-            case 'form_completion':
                 this.initDropdownSelection();
-                break;
-                
-            case 'matching':
-                // Use existing matching handler
-                if (window.QuestionTypeHandlers) {
-                    window.QuestionTypeHandlers.init(questionType);
-                }
-                break;
-                
-            case 'plan_map_diagram':
-                // Use existing diagram handler
-                if (window.SimpleDiagramHandler) {
-                    window.SimpleDiagramHandler.init();
-                }
                 break;
         }
     },
@@ -100,20 +81,9 @@ window.ListeningQuestionTypes = {
         const panel = document.getElementById('single-choice-panel');
         if (panel) panel.style.display = 'block';
         
-        // Add default options based on type
-        if (type === 'true_false') {
-            this.addSingleChoiceOption('TRUE', true);
-            this.addSingleChoiceOption('FALSE', false);
-            this.addSingleChoiceOption('NOT GIVEN', false);
-        } else if (type === 'yes_no') {
-            this.addSingleChoiceOption('YES', true);
-            this.addSingleChoiceOption('NO', false);
-            this.addSingleChoiceOption('NOT GIVEN', false);
-        } else {
-            // Add 4 empty options for regular single choice
-            for (let i = 0; i < 4; i++) {
-                this.addSingleChoiceOption('', i === 0);
-            }
+        // Add 4 empty options for single choice
+        for (let i = 0; i < 4; i++) {
+            this.addSingleChoiceOption('', i === 0);
         }
     },
     
@@ -252,15 +222,22 @@ window.ListeningQuestionTypes = {
     // Setup Blank Insertion
     setupBlankInsertion() {
         // This will be called from the main script
-        window.listeningBlankCounter = 0;
+        if (!window.listeningBlankCounter) {
+            window.listeningBlankCounter = 0;
+        }
+        
         window.insertListeningBlank = () => {
-            const editor = tinymce.activeEditor;
-            if (!editor) return;
+            const editor = window.contentEditor || tinymce.activeEditor;
+            if (!editor) {
+                console.error('No editor found');
+                return;
+            }
             
             window.listeningBlankCounter++;
             const blankText = `[____${window.listeningBlankCounter}____]`;
             editor.insertContent(blankText);
             
+            console.log('Inserted blank:', blankText);
             setTimeout(() => this.updateBlanks(), 100);
         };
     },
@@ -282,17 +259,25 @@ window.ListeningQuestionTypes = {
     
     // Update Blanks Display
     updateBlanks() {
-        const editor = tinymce.activeEditor;
-        if (!editor) return;
+        const editor = window.contentEditor || tinymce.activeEditor;
+        if (!editor) {
+            console.error('No editor found in updateBlanks');
+            return;
+        }
         
         const content = editor.getContent({ format: 'text' });
         const blankMatches = content.match(/\[____\d+____\]/g) || [];
+        
+        console.log('Found blanks:', blankMatches);
         
         const blanksList = document.getElementById('blanks-list-listening');
         const blanksManager = document.getElementById('blanks-manager-listening');
         const counter = document.getElementById('blank-counter-listening');
         
-        if (!blanksList || !blanksManager) return;
+        if (!blanksList || !blanksManager) {
+            console.error('Blanks manager elements not found');
+            return;
+        }
         
         if (blankMatches.length > 0) {
             blanksManager.classList.remove('hidden');
@@ -319,6 +304,10 @@ window.ListeningQuestionTypes = {
             });
             
             if (counter) counter.textContent = blankMatches.length;
+            
+            // Update blank counter to highest number
+            const highestNum = Math.max(...blankMatches.map(m => parseInt(m.match(/\d+/)[0])));
+            window.listeningBlankCounter = highestNum;
         } else {
             blanksManager.classList.add('hidden');
         }

@@ -54,44 +54,66 @@
                                     
                                     <!-- Question Content -->
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Question <span class="text-red-500">*</span>
-                                        </label>
-                                        <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
-                                            <button type="button" onclick="insertListeningBlank()" class="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 transition-colors">
-                                                Insert Blank
-                                            </button>
-                                            <span class="text-xs text-gray-500 flex items-center">
-                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
-                                            </span>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Question <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
+                                    <button type="button" onclick="insertListeningBlank()" class="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 transition-colors">
+                                    Insert Blank
+                                    </button>
+                                    <span class="text-xs text-gray-500 flex items-center">
+                                    <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
+                                    </span>
+                                    </div>
+                                    <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
+                                    <button type="button" onclick="insertListeningDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
+                                    Insert Dropdown
+                                    </button>
+                                    <span class="text-xs text-gray-500 flex items-center">
+                                    <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
+                                    </span>
+                                    </div>
+                                    <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
+                                    </div>
+                    
+                    <!-- Blanks Manager -->
+                                    <div id="blanks-manager-listening" class="hidden mt-4">
+                                    <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center">
+                                    <h4 class="text-sm font-medium text-gray-900">Fill in the Blanks Configuration</h4>
+                                    <span id="blank-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">0</span>
+                                    </div>
+                                    </div>
+                                    <div id="blanks-list-listening" class="space-y-2 max-h-64 overflow-y-auto">
+                                    <!-- Dynamically populated -->
+                                    </div>
+                                    </div>
+                                    </div>
+                                    
+                                    <!-- Dropdown Manager -->
+                                    <div id="dropdown-manager-listening" class="hidden mt-4">
+                                        <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                            <div class="flex items-center justify-between mb-3">
+                                                <div class="flex items-center">
+                                                    <h4 class="text-sm font-medium text-gray-900">Dropdown Configuration</h4>
+                                                    <span id="dropdown-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">0</span>
+                                                </div>
+                                            </div>
+                                            <div id="dropdown-list-listening" class="space-y-3">
+                                                <!-- Dynamically populated -->
+                                            </div>
                                         </div>
-                                        <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
-                                            <button type="button" onclick="insertListeningDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
-                                                Insert Dropdown
-                                            </button>
-                                            <span class="text-xs text-gray-500 flex items-center">
-                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
-                                            </span>
-                                        </div>
-                                        <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                                     </div>
                                 </div>
                                 
                                 <div class="space-y-4 sm:space-y-6">
                                     @include('admin.questions.partials.question-settings', [
                                         'questionTypes' => [
+                                            'fill_blanks' => 'Fill in the Blanks',
                                             'single_choice' => 'Single Choice (Radio)',
                                             'multiple_choice' => 'Multiple Choice (Checkbox)',
-                                            'true_false' => 'True/False/Not Given',
-                                            'yes_no' => 'Yes/No/Not Given',
-                                            'fill_blanks' => 'Fill in the Blanks',
-                                            'dropdown_selection' => 'Dropdown Selection',
-                                            'form_completion' => 'Form Completion',
-                                            'note_completion' => 'Note Completion',
-                                            'sentence_completion' => 'Sentence Completion',
-                                            'short_answer' => 'Short Answer',
-                                            'matching' => 'Matching',
-                                            'plan_map_diagram' => 'Plan/Map/Diagram Labeling'
+                                            'dropdown_selection' => 'Dropdown Selection'
                                         ]
                                     ])
                                     
@@ -226,8 +248,6 @@
     @push('scripts')
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script src="{{ asset('js/admin/listening-question-types.js') }}"></script>
-    <script src="{{ asset('js/admin/question-types.js') }}"></script>
-    <script src="{{ asset('js/admin/question-diagram-simple.js') }}"></script>
 
     <script>
     // Global variables
@@ -299,11 +319,16 @@
                     window.ListeningQuestionTypes.init(selectedType);
                 }
                 
-                // Special handling for specific types that have their own handlers
-                if (selectedType === 'plan_map_diagram' && window.SimpleDiagramHandler) {
-                    window.SimpleDiagramHandler.init();
-                } else if (selectedType === 'matching' && window.QuestionTypeHandlers) {
-                    window.QuestionTypeHandlers.init(selectedType);
+                // Show/hide blank and dropdown buttons based on type
+                if (selectedType === 'fill_blanks') {
+                    document.getElementById('blank-buttons').style.display = 'flex';
+                    document.getElementById('dropdown-buttons').style.display = 'none';
+                } else if (selectedType === 'dropdown_selection') {
+                    document.getElementById('blank-buttons').style.display = 'none';
+                    document.getElementById('dropdown-buttons').style.display = 'flex';
+                } else {
+                    document.getElementById('blank-buttons').style.display = 'none';
+                    document.getElementById('dropdown-buttons').style.display = 'none';
                 }
             });
             
@@ -333,15 +358,9 @@
                     window.ListeningQuestionTypes.prepareSubmissionData();
                 }
                 
-                // Handle special types
-                if (questionType === 'matching') {
-                    handleMatchingSubmission();
-                } else if (questionType === 'form_completion') {
-                    handleFormCompletionSubmission();
-                } else if (questionType === 'plan_map_diagram') {
-                    if (window.SimpleDiagramHandler) {
-                        window.SimpleDiagramHandler.prepareSubmissionData();
-                    }
+                // Handle fill_blanks submission
+                if (questionType === 'fill_blanks') {
+                    handleFillBlanksSubmission();
                 }
                 
                 console.log('=== FORM SUBMISSION COMPLETED ===');
@@ -485,14 +504,12 @@
             if (e.altKey) {
                 const questionType = document.getElementById('question_type')?.value;
                 
-                if ((questionType === 'fill_blanks' || questionType === 'note_completion' || questionType === 'sentence_completion') && 
-                    (e.key === 'b' || e.key === 'B')) {
+                if (questionType === 'fill_blanks' && (e.key === 'b' || e.key === 'B')) {
                     e.preventDefault();
                     insertListeningBlank();
                 }
                 
-                if ((questionType === 'dropdown_selection' || questionType === 'form_completion') && 
-                    (e.key === 'd' || e.key === 'D')) {
+                if (questionType === 'dropdown_selection' && (e.key === 'd' || e.key === 'D')) {
                     e.preventDefault();
                     insertListeningDropdown();
                 }
@@ -557,11 +574,24 @@
     }
     
     window.insertListeningBlank = function() {
-        if (window.ListeningQuestionTypes && window.contentEditor) {
-            window.ListeningQuestionTypes.setupBlankInsertion();
-            if (window.insertListeningBlank) {
-                window.insertListeningBlank();
+        if (window.ListeningQuestionTypes) {
+            // Call updateBlanks directly on ListeningQuestionTypes
+            const editor = window.contentEditor || tinymce.activeEditor;
+            if (!editor) {
+                console.error('No editor found');
+                return;
             }
+            
+            if (!window.listeningBlankCounter) {
+                window.listeningBlankCounter = 0;
+            }
+            
+            window.listeningBlankCounter++;
+            const blankText = `[____${window.listeningBlankCounter}____]`;
+            editor.insertContent(blankText);
+            
+            console.log('Inserted blank:', blankText);
+            setTimeout(() => window.ListeningQuestionTypes.updateBlanks(), 100);
         }
     }
     
@@ -574,72 +604,24 @@
         }
     }
     
-    function handleMatchingSubmission() {
-        // Handle matching question submission
-        const pairs = [];
-        document.querySelectorAll('.matching-pair').forEach((pair, index) => {
-            const leftInput = pair.querySelector('input[name*="[left]"]');
-            const rightInput = pair.querySelector('input[name*="[right]"]');
-            
-            if (leftInput && rightInput) {
-                const left = leftInput.value.trim();
-                const right = rightInput.value.trim();
-                
-                if (left && right) {
-                    pairs.push({ left: left, right: right });
-                }
+    function handleFillBlanksSubmission() {
+        // Extract and validate blank answers
+        const blankInputs = document.querySelectorAll('input[name="blank_answers[]"]');
+        console.log('Found blank inputs:', blankInputs.length);
+        
+        // Check if all blanks have answers
+        let hasEmptyBlanks = false;
+        blankInputs.forEach((input, index) => {
+            if (!input.value || input.value.trim() === '') {
+                console.error(`Blank ${index + 1} is empty`);
+                hasEmptyBlanks = true;
+            } else {
+                console.log(`Blank ${index + 1} answer:`, input.value);
             }
         });
         
-        if (pairs.length > 0) {
-            let hiddenInput = document.getElementById('matching_pairs_json');
-            if (!hiddenInput) {
-                hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.id = 'matching_pairs_json';
-                hiddenInput.name = 'matching_pairs_json';
-                document.getElementById('questionForm').appendChild(hiddenInput);
-            }
-            hiddenInput.value = JSON.stringify(pairs);
-        }
-    }
-    
-    function handleFormCompletionSubmission() {
-        // Handle form completion submission
-        const titleInput = document.querySelector('input[name="form_structure[title]"]');
-        const formData = {
-            title: titleInput ? titleInput.value.trim() : 'Form',
-            fields: []
-        };
-        
-        document.querySelectorAll('.form-field').forEach((field, index) => {
-            const labelInput = field.querySelector('input[name*="[label]"]');
-            const answerInput = field.querySelector('input[name*="[answer]"]');
-            
-            if (labelInput && answerInput) {
-                const label = labelInput.value.trim();
-                const answer = answerInput.value.trim();
-                
-                if (label && answer) {
-                    formData.fields.push({
-                        label: label,
-                        blank_id: index + 1,
-                        answer: answer
-                    });
-                }
-            }
-        });
-        
-        if (formData.fields.length > 0) {
-            let hiddenInput = document.getElementById('form_structure_json');
-            if (!hiddenInput) {
-                hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.id = 'form_structure_json';
-                hiddenInput.name = 'form_structure_json';
-                document.getElementById('questionForm').appendChild(hiddenInput);
-            }
-            hiddenInput.value = JSON.stringify(formData);
+        if (hasEmptyBlanks) {
+            console.error('Some blanks have no answers');
         }
     }
     

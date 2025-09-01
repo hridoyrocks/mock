@@ -523,6 +523,7 @@ public function checkDropdownAnswer($dropdownNumber, $selectedIndex): bool
     public function requiresOptions(): bool
     {
         return in_array($this->question_type, [
+            'single_choice',
             'multiple_choice',
             'true_false', 
             'yes_no',

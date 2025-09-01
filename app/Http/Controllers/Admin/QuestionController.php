@@ -142,6 +142,9 @@ class QuestionController extends Controller
         } else if ($request->question_type === 'matching_headings') {
             // For matching headings, content will be auto-generated
             $rules['content'] = 'nullable|string';
+        } else if (in_array($request->question_type, ['fill_blanks', 'sentence_completion', 'note_completion', 'summary_completion'])) {
+            // For fill-in-the-blank types, content is required as it contains the blanks
+            $rules['content'] = 'required|string';
         } else {
             $rules['content'] = 'required|string';
         }
@@ -418,12 +421,11 @@ class QuestionController extends Controller
             // Process fill-in-the-blank questions
             // $sectionSpecificData already initialized above
             
-            // Handle fill-in-the-blank and dropdown answers
-            if (in_array($request->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion', 'dropdown_selection'])) {
+            // Handle fill-in-the-blank answers (for fill_blanks, note_completion, summary_completion)
+            if (in_array($request->question_type, ['fill_blanks', 'note_completion', 'summary_completion'])) {
                 // Extract blank answers from content
                 $content = $request->content;
                 $blankAnswers = [];
-                $blankIndex = 1;
                 
                 // Process [____N____] format blanks
                 if (preg_match_all('/\[____\d+____\]/', $content, $matches)) {
@@ -438,6 +440,13 @@ class QuestionController extends Controller
                     }
                 }
                 
+                if (!empty($blankAnswers)) {
+                    $sectionSpecificData['blank_answers'] = $blankAnswers;
+                }
+            }
+            
+            // Handle dropdown selection and form completion (uses dropdowns)
+            if (in_array($request->question_type, ['dropdown_selection', 'form_completion'])) {
                 // Process dropdown options
                 if ($request->has('dropdown_options')) {
                     $dropdownOptions = [];
@@ -457,6 +466,22 @@ class QuestionController extends Controller
                     if (!empty($dropdownOptions)) {
                         $sectionSpecificData['dropdown_options'] = $dropdownOptions;
                         $sectionSpecificData['dropdown_correct'] = $dropdownCorrect;
+                    }
+                }
+            }
+            
+            // Handle sentence completion separately (it has its own structure)
+            if ($request->question_type === 'sentence_completion' && !$request->has('sentence_completion_json')) {
+                // Legacy handling for sentence completion without JSON
+                $content = $request->content;
+                $blankAnswers = [];
+                
+                if (preg_match_all('/\[____\d+____\]/', $content, $matches)) {
+                    $requestBlankAnswers = $request->input('blank_answers', []);
+                    foreach ($requestBlankAnswers as $index => $answer) {
+                        if (!empty($answer)) {
+                            $blankAnswers[$index + 1] = $answer;
+                        }
                     }
                 }
                 
@@ -942,7 +967,7 @@ class QuestionController extends Controller
         $question->update($updateData);
         
         // Handle blank answers for fill-in-the-blank questions
-        if (in_array($request->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion', 'fill_blanks'])) {
+        if (in_array($request->question_type, ['fill_blanks', 'note_completion', 'summary_completion'])) {
             // Clear existing blanks
             $question->blanks()->delete();
             
