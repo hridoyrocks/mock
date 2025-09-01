@@ -17,13 +17,37 @@ class ReadingTestController extends Controller
     /**
      * Display a listing of the available reading tests.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $testSets = TestSet::whereHas('section', function ($query) {
-            $query->where('name', 'reading');
-        })->where('active', true)->get();
+        // Get all active categories with counts for reading section
+        $categories = \App\Models\TestCategory::active()
+            ->ordered()
+            ->withCount(['testSets as reading_count' => function ($query) {
+                $query->whereHas('section', function ($q) {
+                    $q->where('slug', 'reading')->orWhere('name', 'reading');
+                })->where('active', true);
+            }])
+            ->get();
         
-        return view('student.test.reading.index', compact('testSets'));
+        // Get test sets query
+        $testSetsQuery = TestSet::whereHas('section', function ($query) {
+            $query->where('name', 'reading');
+        })->where('active', true);
+        
+        // Filter by category if selected
+        $selectedCategory = null;
+        if ($request->has('category') && $request->category) {
+            $selectedCategory = \App\Models\TestCategory::where('slug', $request->category)->first();
+            if ($selectedCategory) {
+                $testSetsQuery->whereHas('categories', function ($query) use ($selectedCategory) {
+                    $query->where('test_categories.id', $selectedCategory->id);
+                });
+            }
+        }
+        
+        $testSets = $testSetsQuery->get();
+        
+        return view('student.test.reading.index', compact('testSets', 'categories', 'selectedCategory'));
     }
     
     /**

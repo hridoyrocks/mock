@@ -30,6 +30,11 @@ if (file_exists(base_path('routes/test-matching-display.php'))) {
     require base_path('routes/test-matching-display.php');
 }
 
+// Include debug categories route
+if (file_exists(base_path('routes/debug-categories.php'))) {
+    require base_path('routes/debug-categories.php');
+}
+
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\StudentAttemptController;
 use App\Http\Controllers\Admin\TestSectionController;
@@ -583,6 +588,21 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
             Route::get('/{banAppeal}', [App\Http\Controllers\Admin\BanAppealController::class, 'show'])->name('show');
             Route::post('/{banAppeal}/approve', [App\Http\Controllers\Admin\BanAppealController::class, 'approve'])->name('approve');
             Route::post('/{banAppeal}/reject', [App\Http\Controllers\Admin\BanAppealController::class, 'reject'])->name('reject');
+        });
+        
+        // Test Categories Management
+        Route::prefix('test-categories')->name('test-categories.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\TestCategoryController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Admin\TestCategoryController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\TestCategoryController::class, 'store'])->name('store');
+            Route::get('/{testCategory}', [App\Http\Controllers\Admin\TestCategoryController::class, 'show'])->name('show');
+            Route::get('/{testCategory}/edit', [App\Http\Controllers\Admin\TestCategoryController::class, 'edit'])->name('edit');
+            Route::put('/{testCategory}', [App\Http\Controllers\Admin\TestCategoryController::class, 'update'])->name('update');
+            Route::delete('/{testCategory}', [App\Http\Controllers\Admin\TestCategoryController::class, 'destroy'])->name('destroy');
+            Route::patch('/{testCategory}/toggle-status', [App\Http\Controllers\Admin\TestCategoryController::class, 'toggleStatus'])->name('toggle-status');
+            Route::get('/{testCategory}/manage-test-sets', [App\Http\Controllers\Admin\TestCategoryController::class, 'manageTestSets'])->name('manage-test-sets');
+            Route::post('/{testCategory}/update-test-sets', [App\Http\Controllers\Admin\TestCategoryController::class, 'updateTestSets'])->name('update-test-sets');
+            Route::post('/reorder', [App\Http\Controllers\Admin\TestCategoryController::class, 'reorder'])->name('reorder');
         });
 
     });

@@ -1,10 +1,68 @@
-{{-- resources/views/student/test/speaking/index.blade.php --}}
 <x-student-layout>
     <x-slot:title>Speaking Tests</x-slot>
+
+    <!-- Category Filter -->
+    @if($categories->count() > 0)
+    <section class="px-4 sm:px-6 lg:px-8 py-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-filter mr-2 text-orange-400"></i>
+                    Filter by Category
+                </h3>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('student.speaking.index') }}" 
+                       class="inline-flex items-center px-4 py-2 rounded-xl transition-all {{ !$selectedCategory ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg' : 'glass text-gray-300 hover:text-white hover:border-orange-500/50' }}">
+                        <i class="fas fa-th mr-2"></i>
+                        All Categories
+                    </a>
+                    @foreach($categories as $category)
+                        <a href="{{ route('student.speaking.index', ['category' => $category->slug]) }}" 
+                           class="inline-flex items-center px-4 py-2 rounded-xl transition-all {{ $selectedCategory && $selectedCategory->id == $category->id ? 'text-white shadow-lg' : 'glass text-gray-300 hover:text-white hover:border-orange-500/50' }}"
+                           @if($selectedCategory && $selectedCategory->id == $category->id)
+                               style="background: linear-gradient(135deg, {{ $category->color }}dd, {{ $category->color }}99);"
+                           @endif>
+                            @if($category->icon)
+                                <i class="{{ $category->icon }} mr-2" style="color: {{ $selectedCategory && $selectedCategory->id == $category->id ? 'white' : $category->color }};"></i>
+                            @else
+                                <div class="w-5 h-5 mr-2 rounded" style="background-color: {{ $category->color }};"></div>
+                            @endif
+                            {{ $category->name }}
+                            <span class="ml-2 text-xs opacity-75">({{ $category->speaking_count ?? 0 }})</span>
+                        </a>
+                    @endforeach
+                </div>
+                
+                @if($selectedCategory)
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <p class="text-sm text-gray-400">
+                        <i class="fas fa-info-circle mr-2 text-orange-400"></i>
+                        {{ $selectedCategory->description ?: 'Showing tests in ' . $selectedCategory->name . ' category' }}
+                    </p>
+                </div>
+                @endif
+            </div>
+        </div>
+    </section>
+    @endif
 
     <!-- Tests Grid -->
     <section class="px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white">
+                    @if($selectedCategory)
+                        {{ $selectedCategory->name }} - Speaking Tests
+                    @else
+                        All Speaking Tests
+                    @endif
+                </h2>
+                <p class="text-gray-400 mt-2">
+                    {{ $testSets->count() }} {{ Str::plural('test', $testSets->count()) }} available
+                </p>
+            </div>
+
             @if ($testSets->count() > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach ($testSets as $testSet)
@@ -18,14 +76,17 @@
                             $userCompleted = $userAttempts->count() > 0;
                             $latestAttempt = $userAttempts->first();
                             $totalAttempts = $userAttempts->count();
+                            
+                            // Get categories for this test
+                            $testCategories = $testSet->categories;
                         @endphp
                         
                         <div class="group relative">
                             <!-- Glow Effect -->
-                            <div class="absolute inset-0 bg-gradient-to-br from-rose-600 to-pink-600 rounded-2xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+                            <div class="absolute inset-0 bg-gradient-to-br from-orange-600 to-red-600 rounded-2xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
                             
                             <!-- Card Content -->
-                            <div class="relative glass rounded-2xl p-6 hover:border-rose-500/50 transition-all duration-300 hover:-translate-y-1">
+                            <div class="relative glass rounded-2xl p-6 hover:border-orange-500/50 transition-all duration-300 hover:-translate-y-1">
                                 <!-- Status Badge -->
                                 @if($userCompleted)
                                     <div class="absolute top-4 right-4">
@@ -44,52 +105,50 @@
                                 @endif
 
                                 <!-- Test Icon -->
-                                <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                     <i class="fas fa-microphone-alt text-white text-2xl"></i>
                                 </div>
 
                                 <!-- Test Title -->
-                                <h3 class="text-xl font-bold text-white mb-2 group-hover:text-rose-400 transition-colors">
+                                <h3 class="text-xl font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">
                                     {{ $testSet->title }}
                                 </h3>
+
+                                <!-- Categories Tags -->
+                                @if($testCategories->count() > 0)
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    @foreach($testCategories as $cat)
+                                        <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border"
+                                              style="background-color: {{ $cat->color }}15; color: {{ $cat->color }}; border-color: {{ $cat->color }}40;">
+                                            @if($cat->icon)
+                                                <i class="{{ $cat->icon }} mr-1 text-xs"></i>
+                                            @endif
+                                            {{ $cat->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                                @endif
 
                                 <!-- Test Stats -->
                                 <div class="space-y-2 mb-6">
                                     <div class="flex items-center text-sm text-gray-400">
-                                        <i class="fas fa-clock mr-2 text-rose-400"></i>
+                                        <i class="fas fa-clock mr-2 text-orange-400"></i>
                                         <span>11-14 minutes duration</span>
                                     </div>
                                     <div class="flex items-center text-sm text-gray-400">
-                                        <i class="fas fa-users mr-2 text-pink-400"></i>
+                                        <i class="fas fa-users mr-2 text-red-400"></i>
                                         <span>{{ $attemptCount }} students attempted</span>
                                     </div>
                                     @if($userCompleted)
-                                        @if($latestAttempt->band_score)
-                                            <div class="flex items-center text-sm">
-                                                <i class="fas fa-star mr-2 text-yellow-400"></i>
-                                                <span class="text-white">Your Score: <strong>{{ $latestAttempt->band_score }}</strong></span>
-                                                @if($totalAttempts > 1)
-                                                    <span class="text-gray-400 text-xs ml-2">(Latest)</span>
-                                                @endif
-                                            </div>
-                                        @else
-                                            <div class="flex items-center text-sm text-yellow-400">
-                                                <i class="fas fa-hourglass-half mr-2"></i>
-                                                <span>Awaiting evaluation</span>
-                                            </div>
-                                        @endif
+                                        <div class="flex items-center text-sm">
+                                            <i class="fas fa-tasks mr-2 text-yellow-400"></i>
+                                            <span class="text-white">Test Completed</span>
+                                            @if($totalAttempts > 1)
+                                                <span class="text-gray-400 text-xs ml-2">({{ $totalAttempts }} attempts)</span>
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
-
-                                <!-- AI Evaluation Badge -->
-                                @if(auth()->user()->hasFeature('ai_speaking_evaluation'))
-                                    <div class="mb-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                                            <i class="fas fa-robot mr-1"></i>
-                                            Instant Evaluation Available
-                                        </span>
-                                    </div>
-                                @endif
 
                                 <!-- Action Button -->
                                 @if($userCompleted)
@@ -105,7 +164,7 @@
                                             <form action="{{ route('student.results.retake', $latestAttempt) }}" method="POST" class="w-full">
                                                 @csrf
                                                 <button type="submit" 
-                                                        class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white font-medium hover:from-rose-700 hover:to-pink-700 transition-all group">
+                                                        class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 text-white font-medium hover:from-orange-700 hover:to-red-700 transition-all group">
                                                     <i class="fas fa-redo mr-2"></i>
                                                     Retake Test
                                                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
@@ -115,7 +174,7 @@
                                     </div>
                                 @else
                                     <button onclick="startTest(this, '{{ route('student.speaking.onboarding.confirm-details', $testSet) }}')"
-                                            class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white font-medium hover:from-rose-700 hover:to-pink-700 transition-all neon-pink group">
+                                            class="w-full inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 text-white font-medium hover:from-orange-700 hover:to-red-700 transition-all neon-orange group">
                                         <i class="fas fa-play-circle mr-2"></i>
                                         <span class="button-text">Start Test</span>
                                         <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
@@ -128,18 +187,37 @@
             @else
                 <!-- Empty State -->
                 <div class="glass rounded-2xl p-12 text-center">
-                    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-microphone text-rose-400 text-4xl"></i>
+                    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-microphone-alt text-orange-400 text-4xl"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-white mb-3">No Tests Available</h3>
+                    <h3 class="text-2xl font-bold text-white mb-3">
+                        @if($selectedCategory)
+                            No Tests in {{ $selectedCategory->name }}
+                        @else
+                            No Tests Available
+                        @endif
+                    </h3>
                     <p class="text-gray-400 max-w-md mx-auto">
-                        Speaking tests will be available soon. Check back later or explore other sections.
+                        @if($selectedCategory)
+                            There are no speaking tests available in the {{ $selectedCategory->name }} category. Try selecting a different category or view all tests.
+                        @else
+                            Speaking tests will be available soon. Check back later or explore other sections.
+                        @endif
                     </p>
-                    <a href="{{ route('student.index') }}" 
-                       class="inline-flex items-center mt-6 text-rose-400 hover:text-rose-300 font-medium">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back to All Tests
-                    </a>
+                    <div class="mt-6 space-x-4">
+                        @if($selectedCategory)
+                            <a href="{{ route('student.speaking.index') }}" 
+                               class="inline-flex items-center text-orange-400 hover:text-orange-300 font-medium">
+                                <i class="fas fa-th mr-2"></i>
+                                View All Tests
+                            </a>
+                        @endif
+                        <a href="{{ route('student.dashboard') }}" 
+                           class="inline-flex items-center text-orange-400 hover:text-orange-300 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
                 </div>
             @endif
         </div>
@@ -148,19 +226,28 @@
     <!-- Tips Section -->
     <section class="px-4 sm:px-6 lg:px-8 pb-12">
         <div class="max-w-7xl mx-auto">
-            <div class="glass rounded-2xl p-8 border-rose-500/30">
+            <div class="glass rounded-2xl p-8 border-orange-500/30">
                 <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
                     <i class="fas fa-lightbulb text-yellow-400 mr-3"></i>
                     Speaking Test Tips
                 </h3>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                            <i class="fas fa-check text-rose-400 text-sm"></i>
+                        <div class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                            <i class="fas fa-check text-orange-400 text-sm"></i>
                         </div>
                         <div>
-                            <h4 class="text-white font-medium mb-1">Speak naturally</h4>
-                            <p class="text-sm text-gray-400">Don't memorize answers, be conversational</p>
+                            <h4 class="text-white font-medium mb-1">Speak clearly and naturally</h4>
+                            <p class="text-sm text-gray-400">Don't rush - maintain a steady pace and clear pronunciation</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                            <i class="fas fa-check text-red-400 text-sm"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-medium mb-1">Extend your answers</h4>
+                            <p class="text-sm text-gray-400">Provide detailed responses with examples and explanations</p>
                         </div>
                     </div>
                     <div class="flex items-start space-x-3">
@@ -168,26 +255,17 @@
                             <i class="fas fa-check text-pink-400 text-sm"></i>
                         </div>
                         <div>
-                            <h4 class="text-white font-medium mb-1">Extend your answers</h4>
-                            <p class="text-sm text-gray-400">Give reasons and examples to support your points</p>
+                            <h4 class="text-white font-medium mb-1">Use preparation time wisely</h4>
+                            <p class="text-sm text-gray-400">Make brief notes for Part 2 during your 1-minute preparation</p>
                         </div>
                     </div>
                     <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 rounded-lg bg-fuchsia-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                            <i class="fas fa-check text-fuchsia-400 text-sm"></i>
+                        <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                            <i class="fas fa-check text-rose-400 text-sm"></i>
                         </div>
                         <div>
-                            <h4 class="text-white font-medium mb-1">Use varied vocabulary</h4>
-                            <p class="text-sm text-gray-400">Show your range but stay accurate</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start space-x-3">
-                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                            <i class="fas fa-check text-purple-400 text-sm"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-white font-medium mb-1">Practice pronunciation</h4>
-                            <p class="text-sm text-gray-400">Clear speech is more important than accent</p>
+                            <h4 class="text-white font-medium mb-1">Stay calm and confident</h4>
+                            <p class="text-sm text-gray-400">It's okay to pause briefly to collect your thoughts</p>
                         </div>
                     </div>
                 </div>
@@ -216,7 +294,7 @@
             // Navigate to URL after a small delay
             setTimeout(() => {
                 window.location.href = url;
-            }, 3000);
+            }, 300);
         }
     </script>
     @endpush

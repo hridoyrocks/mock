@@ -250,6 +250,18 @@
                         <span class="ml-auto rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">New</span>
                     </a>
                     
+                    <a href="{{ route('admin.test-categories.index') }}" 
+                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.test-categories.*') ? 'active' : 'text-gray-700' }}">
+                        <!-- Folder Icon -->
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                        <span>Test Categories</span>
+                        @if($categoryCount = \App\Models\TestCategory::count())
+                            <span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-0.5">{{ $categoryCount }}</span>
+                        @endif
+                    </a>
+                    
                     <a href="{{ route('admin.attempts.index') }}" 
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.attempts.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Clipboard Icon -->

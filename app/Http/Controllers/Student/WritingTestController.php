@@ -18,13 +18,37 @@ class WritingTestController extends Controller
     /**
      * Display a listing of the available writing tests.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $testSets = TestSet::whereHas('section', function ($query) {
-            $query->where('name', 'writing');
-        })->where('active', true)->get();
+        // Get all active categories with counts for writing section
+        $categories = \App\Models\TestCategory::active()
+            ->ordered()
+            ->withCount(['testSets as writing_count' => function ($query) {
+                $query->whereHas('section', function ($q) {
+                    $q->where('slug', 'writing')->orWhere('name', 'writing');
+                })->where('active', true);
+            }])
+            ->get();
         
-        return view('student.test.writing.index', compact('testSets'));
+        // Get test sets query
+        $testSetsQuery = TestSet::whereHas('section', function ($query) {
+            $query->where('name', 'writing');
+        })->where('active', true);
+        
+        // Filter by category if selected
+        $selectedCategory = null;
+        if ($request->has('category') && $request->category) {
+            $selectedCategory = \App\Models\TestCategory::where('slug', $request->category)->first();
+            if ($selectedCategory) {
+                $testSetsQuery->whereHas('categories', function ($query) use ($selectedCategory) {
+                    $query->where('test_categories.id', $selectedCategory->id);
+                });
+            }
+        }
+        
+        $testSets = $testSetsQuery->get();
+        
+        return view('student.test.writing.index', compact('testSets', 'categories', 'selectedCategory'));
     }
     
     /**

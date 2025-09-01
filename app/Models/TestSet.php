@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TestSet extends Model
 {
@@ -43,4 +44,39 @@ public function hasPartAudio($partNumber): bool
 {
     return $this->partAudios()->where('part_number', $partNumber)->exists();
 }
+
+    /**
+     * Categories that this test set belongs to
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(TestCategory::class, 'test_category_test_set')
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if test set belongs to a specific category
+     */
+    public function belongsToCategory(string $categorySlug): bool
+    {
+        return $this->categories()->where('slug', $categorySlug)->exists();
+    }
+
+    /**
+     * Get primary category (first one)
+     */
+    public function getPrimaryCategoryAttribute()
+    {
+        return $this->categories()->orderBy('sort_order')->first();
+    }
+
+    /**
+     * Full tests that this test set belongs to
+     */
+    public function fullTests(): BelongsToMany
+    {
+        return $this->belongsToMany(FullTest::class, 'full_test_sets')
+            ->withPivot('section_type', 'order_number')
+            ->withTimestamps();
+    }
 }

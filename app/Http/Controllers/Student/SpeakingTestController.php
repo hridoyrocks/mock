@@ -23,13 +23,37 @@ class SpeakingTestController extends Controller
     /**
      * Display a listing of the available speaking tests.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $testSets = TestSet::whereHas('section', function ($query) {
-            $query->where('name', 'speaking');
-        })->where('active', true)->get();
+        // Get all active categories with counts for speaking section
+        $categories = \App\Models\TestCategory::active()
+            ->ordered()
+            ->withCount(['testSets as speaking_count' => function ($query) {
+                $query->whereHas('section', function ($q) {
+                    $q->where('slug', 'speaking')->orWhere('name', 'speaking');
+                })->where('active', true);
+            }])
+            ->get();
         
-        return view('student.test.speaking.index', compact('testSets'));
+        // Get test sets query
+        $testSetsQuery = TestSet::whereHas('section', function ($query) {
+            $query->where('name', 'speaking');
+        })->where('active', true);
+        
+        // Filter by category if selected
+        $selectedCategory = null;
+        if ($request->has('category') && $request->category) {
+            $selectedCategory = \App\Models\TestCategory::where('slug', $request->category)->first();
+            if ($selectedCategory) {
+                $testSetsQuery->whereHas('categories', function ($query) use ($selectedCategory) {
+                    $query->where('test_categories.id', $selectedCategory->id);
+                });
+            }
+        }
+        
+        $testSets = $testSetsQuery->get();
+        
+        return view('student.test.speaking.index', compact('testSets', 'categories', 'selectedCategory'));
     }
     
     /**

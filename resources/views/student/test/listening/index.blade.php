@@ -1,9 +1,68 @@
 <x-student-layout>
     <x-slot:title>Listening Tests</x-slot>
+    
+    <!-- Category Filter -->
+    @if(isset($categories) && $categories->count() > 0)
+    <section class="px-4 sm:px-6 lg:px-8 py-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="glass rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-filter mr-2 text-violet-400"></i>
+                    Filter by Category
+                </h3>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('student.listening.index') }}" 
+                       class="inline-flex items-center px-4 py-2 rounded-xl transition-all {{ !$selectedCategory ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg' : 'glass text-gray-300 hover:text-white hover:border-violet-500/50' }}">
+                        <i class="fas fa-th mr-2"></i>
+                        All Categories
+                    </a>
+                    @foreach($categories as $category)
+                        <a href="{{ route('student.listening.index', ['category' => $category->slug]) }}" 
+                           class="inline-flex items-center px-4 py-2 rounded-xl transition-all {{ $selectedCategory && $selectedCategory->id == $category->id ? 'text-white shadow-lg' : 'glass text-gray-300 hover:text-white hover:border-violet-500/50' }}"
+                           @if($selectedCategory && $selectedCategory->id == $category->id)
+                               style="background: linear-gradient(135deg, {{ $category->color }}dd, {{ $category->color }}99);"
+                           @endif>
+                            @if($category->icon)
+                                <i class="{{ $category->icon }} mr-2" style="color: {{ $selectedCategory && $selectedCategory->id == $category->id ? 'white' : $category->color }};"></i>
+                            @else
+                                <div class="w-5 h-5 mr-2 rounded" style="background-color: {{ $category->color }};"></div>
+                            @endif
+                            {{ $category->name }}
+                            <span class="ml-2 text-xs opacity-75">({{ $category->listening_count ?? 0 }})</span>
+                        </a>
+                    @endforeach
+                </div>
+                
+                @if($selectedCategory)
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <p class="text-sm text-gray-400">
+                        <i class="fas fa-info-circle mr-2 text-violet-400"></i>
+                        {{ $selectedCategory->description ?: 'Showing tests in ' . $selectedCategory->name . ' category' }}
+                    </p>
+                </div>
+                @endif
+            </div>
+        </div>
+    </section>
+    @endif
 
     <!-- Tests Grid -->
     <section class="px-4 sm:px-6 lg:px-8 py-8">
         <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white">
+                    @if(isset($selectedCategory) && $selectedCategory)
+                        {{ $selectedCategory->name }} - Listening Tests
+                    @else
+                        All Listening Tests
+                    @endif
+                </h2>
+                <p class="text-gray-400 mt-2">
+                    {{ $testSets->count() }} {{ Str::plural('test', $testSets->count()) }} available
+                </p>
+            </div>
+
             @if ($testSets->count() > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach ($testSets as $testSet)
@@ -17,6 +76,9 @@
                             $userCompleted = $userAttempts->count() > 0;
                             $latestAttempt = $userAttempts->first();
                             $totalAttempts = $userAttempts->count();
+                            
+                            // Get categories for this test
+                            $testCategories = $testSet->categories;
                         @endphp
                         
                         <div class="group relative">
@@ -51,6 +113,21 @@
                                 <h3 class="text-xl font-bold text-white mb-2 group-hover:text-violet-400 transition-colors">
                                     {{ $testSet->title }}
                                 </h3>
+
+                                <!-- Categories Tags -->
+                                @if($testCategories->count() > 0)
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    @foreach($testCategories as $cat)
+                                        <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium border"
+                                              style="background-color: {{ $cat->color }}15; color: {{ $cat->color }}; border-color: {{ $cat->color }}40;">
+                                            @if($cat->icon)
+                                                <i class="{{ $cat->icon }} mr-1 text-xs"></i>
+                                            @endif
+                                            {{ $cat->name }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                                @endif
 
                                 <!-- Test Stats -->
                                 <div class="space-y-2 mb-6">
@@ -113,15 +190,34 @@
                     <div class="w-24 h-24 rounded-full bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-6">
                         <i class="fas fa-headphones-alt text-violet-400 text-4xl"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-white mb-3">No Tests Available</h3>
+                    <h3 class="text-2xl font-bold text-white mb-3">
+                        @if($selectedCategory)
+                            No Tests in {{ $selectedCategory->name }}
+                        @else
+                            No Tests Available
+                        @endif
+                    </h3>
                     <p class="text-gray-400 max-w-md mx-auto">
-                        Listening tests will be available soon. Check back later or explore other sections.
+                        @if($selectedCategory)
+                            There are no listening tests available in the {{ $selectedCategory->name }} category. Try selecting a different category or view all tests.
+                        @else
+                            Listening tests will be available soon. Check back later or explore other sections.
+                        @endif
                     </p>
-                    <a href="{{ route('student.index') }}" 
-                       class="inline-flex items-center mt-6 text-violet-400 hover:text-violet-300 font-medium">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        Back to All Tests
-                    </a>
+                    <div class="mt-6 space-x-4">
+                        @if($selectedCategory)
+                            <a href="{{ route('student.listening.index') }}" 
+                               class="inline-flex items-center text-violet-400 hover:text-violet-300 font-medium">
+                                <i class="fas fa-th mr-2"></i>
+                                View All Tests
+                            </a>
+                        @endif
+                        <a href="{{ route('student.dashboard') }}" 
+                           class="inline-flex items-center text-violet-400 hover:text-violet-300 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
                 </div>
             @endif
         </div>
@@ -198,7 +294,7 @@
             // Navigate to URL after a small delay
             setTimeout(() => {
                 window.location.href = url;
-            }, 3000);
+            }, 300);
         }
     </script>
     @endpush

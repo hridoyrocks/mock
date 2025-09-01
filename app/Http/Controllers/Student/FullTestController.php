@@ -14,15 +14,33 @@ class FullTestController extends Controller
     /**
      * Display available full tests.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         
-        // Get full tests based on user's subscription
+        // Get all active categories
+        $categories = \App\Models\TestCategory::active()
+            ->ordered()
+            ->get();
+        
+        // Get full tests query based on user's subscription
         $query = FullTest::active()->with('testSets');
         
         if (!$user->hasFeature('premium_full_tests')) {
             $query->free();
+        }
+        
+        // Filter by category if selected
+        $selectedCategory = null;
+        if ($request->has('category') && $request->category) {
+            $selectedCategory = \App\Models\TestCategory::where('slug', $request->category)->first();
+            if ($selectedCategory) {
+                $query->whereHas('testSets', function ($q) use ($selectedCategory) {
+                    $q->whereHas('categories', function ($catQuery) use ($selectedCategory) {
+                        $catQuery->where('test_categories.id', $selectedCategory->id);
+                    });
+                });
+            }
         }
         
         $fullTests = $query->orderBy('order_number')->get();
@@ -34,7 +52,7 @@ class FullTestController extends Controller
             ->get()
             ->groupBy('full_test_id');
         
-        return view('student.full-test.index', compact('fullTests', 'attempts'));
+        return view('student.full-test.index', compact('fullTests', 'attempts', 'categories', 'selectedCategory'));
     }
 
     /**
