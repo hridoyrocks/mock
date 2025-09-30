@@ -28,13 +28,7 @@ class TeacherController extends Controller
      */
     public function create()
     {
-        // Get users who are not already teachers
-        $users = User::whereNotIn('id', Teacher::pluck('user_id'))
-            ->where('is_admin', false)
-            ->orderBy('name')
-            ->get();
-        
-        return view('admin.teachers.create', compact('users'));
+        return view('admin.teachers.create');
     }
     
     /**
@@ -43,7 +37,9 @@ class TeacherController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id|unique:teachers,user_id',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
             'specialization' => 'required|array|min:1',
             'experience_years' => 'required|integer|min:0',
             'evaluation_price_tokens' => 'required|integer|min:1',
@@ -53,12 +49,24 @@ class TeacherController extends Controller
         ]);
         
         DB::transaction(function () use ($request) {
-            // Create teacher
-            $teacher = Teacher::create($request->all());
+            // Create user account for teacher
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => bcrypt($request->password),
+                'is_admin' => false,
+            ]);
             
-            // Update user role (optional - you might want to add is_teacher field)
-            // $user = User::find($request->user_id);
-            // $user->update(['is_teacher' => true]);
+            // Create teacher profile
+            Teacher::create([
+                'user_id' => $user->id,
+                'specialization' => $request->specialization,
+                'experience_years' => $request->experience_years,
+                'evaluation_price_tokens' => $request->evaluation_price_tokens,
+                'qualifications' => $request->qualifications,
+                'languages' => $request->languages,
+                'profile_description' => $request->profile_description,
+            ]);
         });
         
         return redirect()->route('admin.teachers.index')
