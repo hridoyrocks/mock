@@ -258,9 +258,17 @@
                 'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
                 'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
             ],
-            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
+            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | link image | removeformat code',
             font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
             content_css: '//www.tiny.cloud/css/codepen.min.css',
+            table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+            table_default_styles: {
+                'border-collapse': 'collapse',
+                'width': '100%'
+            },
+            table_default_attributes: {
+                border: '1'
+            },
             setup: function(editor) {
                 contentEditor = editor;
                 editor.on('change', function() {

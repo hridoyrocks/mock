@@ -277,12 +277,12 @@ class QuestionController extends Controller
             $options = [];
             $allowReuse = $request->has('drag_drop_allow_reuse');
             
-            // Process drop zones
-            if ($request->has('drag_drop_zones')) {
-                foreach ($request->drag_drop_zones as $index => $zone) {
-                    if (!empty($zone['label']) && !empty($zone['answer'])) {
+            // Process drag zones from content [DRAG_X] markers
+            if ($request->has('drag_zones')) {
+                foreach ($request->drag_zones as $num => $zone) {
+                    if (!empty($zone['answer'])) {
                         $dropZones[] = [
-                            'label' => trim($zone['label']),
+                            'zone_number' => $num,
                             'answer' => trim($zone['answer'])
                         ];
                     }
@@ -305,6 +305,7 @@ class QuestionController extends Controller
             
             \Log::info('Drag & Drop data:', [
                 'drop_zones' => $dropZones,
+                'drop_zone_count' => count($dropZones),
                 'options' => $options,
                 'allow_reuse' => $allowReuse
             ]);
@@ -574,6 +575,14 @@ class QuestionController extends Controller
             if ($request->question_type === 'multiple_choice' && $request->has('correct_options')) {
                 // For multiple choice, marks = number of correct options
                 $marks = count($request->correct_options);
+            }
+            
+            // Calculate marks for drag & drop questions
+            if ($request->question_type === 'drag_drop') {
+                // For drag & drop, marks = number of drag zones
+                if (isset($sectionSpecificData['drop_zones'])) {
+                    $marks = $request->marks ?? count($sectionSpecificData['drop_zones']);
+                }
             }
             
             // Prepare question data
@@ -1223,7 +1232,7 @@ class QuestionController extends Controller
                     $totalCount += 1;
                 }
             }
-            // Check if question has blanks
+            // Check if question has blanks (includes drag zones)
             elseif ($blankCount = $question->countBlanks()) {
                 $totalCount += $blankCount;
             }

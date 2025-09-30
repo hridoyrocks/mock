@@ -284,8 +284,9 @@ public function getProgressiveSettings()
     preg_match_all('/\[____\d+____\]/', $content, $blankMatches);
     preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
     preg_match_all('/\[HEADING_DROPDOWN_\d+\]/', $content, $headingDropdownMatches);
+    preg_match_all('/\[DRAG_\d+\]/', $content, $dragZoneMatches);
     
-    $contentCount = count($blankMatches[0]) + count($dropdownMatches[0]) + count($headingDropdownMatches[0]);
+    $contentCount = count($blankMatches[0]) + count($dropdownMatches[0]) + count($headingDropdownMatches[0]) + count($dragZoneMatches[0]);
     
     // Also check section_specific_data for dropdown_correct
     $dropdownDataCount = 0;
@@ -293,8 +294,18 @@ public function getProgressiveSettings()
         $dropdownDataCount = count($this->section_specific_data['dropdown_correct']);
     }
     
-    // Return the maximum to ensure we count all dropdowns
-    return max($contentCount, $dropdownDataCount);
+    // Check for drag zones in section_specific_data
+    $dragZoneCount = 0;
+    if ($this->question_type === 'drag_drop' && $this->section_specific_data) {
+        if (isset($this->section_specific_data['drop_zones'])) {
+            $dragZoneCount = count($this->section_specific_data['drop_zones']);
+        } elseif (isset($this->section_specific_data['drag_zones'])) {
+            $dragZoneCount = count($this->section_specific_data['drag_zones']);
+        }
+    }
+    
+    // Return the maximum to ensure we count all blanks/dropdowns/drag zones
+    return max($contentCount, $dropdownDataCount, $dragZoneCount);
 }
 
 public function getBlankAnswers(): array
@@ -764,17 +775,33 @@ public function generateMatchingHeadingsDisplay(): array
  */
 public function getQuestionRangeAttribute(): string
 {
-    if (!$this->isMasterMatchingHeading()) {
-        return (string) $this->order_number;
+    // For matching headings with mappings
+    if ($this->isMasterMatchingHeading()) {
+        $numbers = $this->getIndividualQuestionNumbers();
+        if (!empty($numbers)) {
+            sort($numbers);
+            return $numbers[0] . '-' . end($numbers);
+        }
     }
     
-    $numbers = $this->getIndividualQuestionNumbers();
-    if (empty($numbers)) {
-        return (string) $this->order_number;
+    // For questions with blanks/dropdowns/drag zones
+    $blankCount = $this->countBlanks();
+    if ($blankCount > 1) {
+        $endNumber = $this->order_number + $blankCount - 1;
+        return $this->order_number . '-' . $endNumber;
     }
     
-    sort($numbers);
-    return $numbers[0] . '-' . end($numbers);
+    // For multiple choice with multiple correct answers
+    if ($this->question_type === 'multiple_choice') {
+        $correctCount = $this->options->where('is_correct', true)->count();
+        if ($correctCount > 1) {
+            $endNumber = $this->order_number + $correctCount - 1;
+            return $this->order_number . '-' . $endNumber;
+        }
+    }
+    
+    // Single question
+    return (string) $this->order_number;
 }
 
 /**
@@ -782,11 +809,27 @@ public function getQuestionRangeAttribute(): string
  */
 public function getActualQuestionCount(): int
 {
-    if (!$this->isMasterMatchingHeading()) {
-        return 1;
+    // For matching headings
+    if ($this->isMasterMatchingHeading()) {
+        return count($this->section_specific_data['mappings'] ?? []);
     }
     
-    return count($this->section_specific_data['mappings'] ?? []);
+    // For questions with blanks/dropdowns/drag zones
+    $blankCount = $this->countBlanks();
+    if ($blankCount > 0) {
+        return $blankCount;
+    }
+    
+    // For multiple choice with multiple correct answers
+    if ($this->question_type === 'multiple_choice') {
+        $correctCount = $this->options->where('is_correct', true)->count();
+        if ($correctCount > 1) {
+            return $correctCount;
+        }
+    }
+    
+    // Single question
+    return 1;
 }
 
 /**
