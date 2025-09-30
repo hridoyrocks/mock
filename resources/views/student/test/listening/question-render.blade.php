@@ -190,59 +190,81 @@
         
     @case('drag_drop')
         {{-- Drag and Drop Question --}}
-        <div class="question-item drag-drop-question" id="question-{{ $question->id }}" style="background: none; border: none; box-shadow: none;">
+        <div class="question-item drag-drop-question" id="question-{{ $question->id }}" style="background: none; border: none; box-shadow: none; padding: 0; margin-bottom: 20px;">
             @php
-                $dragDropData = $question->section_specific_data ?? [];
-                $dropZones = $dragDropData['drop_zones'] ?? [];
-                $options = $dragDropData['draggable_options'] ?? [];
-                $allowReuse = $dragDropData['allow_reuse'] ?? true;
-                $dropZoneCount = count($dropZones);
+                $sectionData = $question->section_specific_data ?? [];
+                
+                // Parse drag zones from content
+                $content = $question->content;
+                preg_match_all('/\[DRAG_(\d+)\]/', $content, $matches);
+                $dragZoneNumbers = $matches[1] ?? [];
+                
+                // Get drag zone answers (now without labels)
+                $dragZones = [];
+                foreach ($dragZoneNumbers as $num) {
+                    if (isset($sectionData['drag_zones'][$num])) {
+                        $dragZones[] = [
+                            'number' => $num,
+                            'answer' => $sectionData['drag_zones'][$num]['answer'] ?? ''
+                        ];
+                    } else {
+                        $dragZones[] = [
+                            'number' => $num,
+                            'answer' => ''
+                        ];
+                    }
+                }
+                
+                $options = $sectionData['draggable_options'] ?? [];
+                $allowReuse = $sectionData['allow_reuse'] ?? true;
+                $dropZoneCount = count($dragZones);
+                
+                // Process content to replace [DRAG_X] with drop boxes
+                $processedContent = $content;
+                $questionNumber = $displayNumber;
+                
+                foreach ($dragZones as $index => $zone) {
+                    $num = $zone['number'];
+                    $zoneNumber = $displayNumber + $index;
+                    
+                    // Use 'num' as the actual zone identifier for backend matching
+                    $dropBoxHtml = '<span class="drop-box" 
+                                         data-question-id="' . $question->id . '"
+                                         data-zone-number="' . $num . '"
+                                         data-zone-index="' . $index . '"
+                                         data-question-number="' . $zoneNumber . '"
+                                         data-allow-reuse="' . ($allowReuse ? '1' : '0') . '"
+                                         style="display: inline-block; min-width: 100px; max-width: 200px; height: 36px; border: 2px dashed #9ca3af; border-radius: 4px; line-height: 36px; text-align: center; background: white; font-size: 14px; padding: 0 8px; cursor: pointer; margin: 0 4px; vertical-align: baseline;">
+                        <span class="placeholder-text" style="color: #000000; font-weight: 700; font-size: 14px;">' . $zoneNumber . '</span>
+                    </span>';
+                    
+                    $processedContent = preg_replace('/\[DRAG_' . $num . '\]/', $dropBoxHtml, $processedContent, 1);
+                }
             @endphp
             
-            {{-- Question Header --}}
-            <div class="question-content">
-                @if($dropZoneCount > 1)
-                    <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + $dropZoneCount - 1 }}</span>
-                @else
-                    <span class="question-number">{{ $displayNumber }}</span>
-                @endif
-                
-                <div class="question-text">{!! $question->content !!}</div>
-            </div>
-            
             {{-- Draggable Options at Top --}}
-            <div class="draggable-options-grid">
+            <div class="draggable-options-grid" style="display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 20px 0; padding: 0; background: none; border: none;">
                 @foreach($options as $optionIndex => $optionText)
                     <div class="draggable-option" 
                          draggable="true"
                          data-option-value="{{ $optionText }}"
-                         data-option-letter="{{ chr(65 + $optionIndex) }}">
+                         data-option-letter="{{ chr(65 + $optionIndex) }}"
+                         style="padding: 10px 16px; background: white; border: 1px solid #d1d5db; border-radius: 4px; cursor: move; font-size: 14px; color: #1f2937; user-select: none; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);">
                         {{ chr(65 + $optionIndex) }}. {{ $optionText }}
                     </div>
                 @endforeach
             </div>
             
-            {{-- Drop Zones Below Options --}}
-            <div class="drag-drop-zones-list">
-                @foreach($dropZones as $zoneIndex => $zone)
-                    @php
-                        $zoneNumber = $displayNumber + $zoneIndex;
-                    @endphp
-                    <div class="drop-zone-row" data-zone-index="{{ $zoneIndex }}">
-                        <span class="drop-zone-text">{{ $zone['label'] }}</span>
-                        <div class="drop-box" 
-                             data-question-id="{{ $question->id }}"
-                             data-zone-index="{{ $zoneIndex }}"
-                             data-question-number="{{ $zoneNumber }}"
-                             data-allow-reuse="{{ $allowReuse ? '1' : '0' }}">
-                            <span class="placeholder-text">{{ $zoneNumber }}</span>
-                        </div>
-                        <input type="hidden" 
-                               name="answers[{{ $question->id }}][zone_{{ $zoneIndex }}]" 
-                               data-question-number="{{ $zoneNumber }}">
-                    </div>
-                @endforeach
-            </div>
+            {{-- Question Text with inline drop boxes (NO question number shown) --}}
+            <div class="question-text" style="font-size: 15px; line-height: 1.6; color: #1f2937;">{!! $processedContent !!}</div>
+            
+            {{-- Hidden inputs for each drag zone - use zone number for backend matching --}}
+            @foreach($dragZones as $index => $zone)
+                <input type="hidden" 
+                       name="answers[{{ $question->id }}][zone_{{ $zone['number'] }}]" 
+                       data-question-number="{{ $displayNumber + $index }}"
+                       data-zone-number="{{ $zone['number'] }}">
+            @endforeach
         </div>
         @break
     
@@ -475,34 +497,9 @@
     color: white;
 }
 
-/* Drag and Drop Styles - Simple Layout like Image */
+/* Drag and Drop Styles - Inline in Content */
 
-/* Drop Zones List - No background card */
-.drag-drop-zones-list {
-    margin: 0;
-    padding: 0;
-    background: none;
-    border: none;
-}
-
-.drop-zone-row {
-    display: block;
-    margin-bottom: 12px;
-    line-height: 2;
-}
-
-.drop-zone-row:last-child {
-    margin-bottom: 0;
-}
-
-.drop-zone-text {
-    font-size: 15px;
-    font-weight: normal;
-    color: #1f2937;
-    line-height: 1.6;
-    display: inline;
-}
-
+/* Drop box styles - now inline in text */
 .drop-box {
     display: inline-block;
     min-width: 100px;
@@ -518,7 +515,7 @@
     padding: 0 8px;
     cursor: pointer;
     position: relative;
-    margin-left: 8px;
+    margin: 0 4px;
     vertical-align: baseline;
     white-space: nowrap;
     overflow: hidden;
@@ -583,12 +580,12 @@
     display: flex;
 }
 
-/* Draggable Options - Grid Layout at Top */
+/* Draggable Options - Above content */
 .draggable-options-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    margin: 20px 0 24px 0;
+    margin: 16px 0 20px 0;
     padding: 0;
     background: none;
     border: none;
@@ -626,33 +623,5 @@
     cursor: not-allowed;
     background: #f3f4f6;
     border-color: #d1d5db;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .drop-zone-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        margin-bottom: 20px;
-    }
-    
-    .drop-zone-text {
-        width: 100%;
-    }
-    
-    .drop-box {
-        width: 100%;
-        max-width: 100%;
-        min-width: 100%;
-    }
-    
-    .draggable-options-grid {
-        flex-direction: column;
-    }
-    
-    .draggable-option {
-        width: 100%;
-    }
 }
 </style>

@@ -137,24 +137,25 @@
         <div class="bg-gray-50 rounded-lg p-4 mb-4">
             <h4 class="text-sm font-medium text-gray-700 mb-2">How to use:</h4>
             <ul class="text-sm text-gray-600 space-y-1">
-                <li>• Add drop zones where students will drag answers</li>
-                <li>• Define draggable options that students can use</li>
-                <li>• Set correct answers for each drop zone</li>
+                <li>• Write your question content in the editor above</li>
+                <li>• Click "Insert Drag Zone" or press Alt+G where you want students to drag answers</li>
+                <li>• Example: "The capital of France is [DRAG_1] and Germany is [DRAG_2]"</li>
+                <li>• Add draggable options below that students can use</li>
+                <li>• Select correct answer for each [DRAG_X] from the dropdown</li>
                 <li>• Options can be used multiple times or only once</li>
             </ul>
         </div>
 
-        {{-- Drop Zones Section --}}
-        <div class="mb-6">
-            <div class="flex items-center justify-between mb-3">
-                <h4 class="text-sm font-medium text-gray-900">Drop Zones</h4>
-                <button type="button" onclick="ListeningQuestionTypes.addDropZone()" 
-                        class="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700">
-                    + Add Drop Zone
-                </button>
-            </div>
-            <div id="drop-zones-container" class="space-y-3">
-                <!-- Drop zones will be added here -->
+        {{-- Drag Zones Manager - Auto-populated from content --}}
+        <div id="drag-zones-manager" class="mb-6 hidden">
+            <div class="bg-white border border-gray-200 rounded-md p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-sm font-medium text-gray-900">Drag Zones Configuration</h4>
+                    <span id="drag-zone-counter" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">0</span>
+                </div>
+                <div id="drag-zones-list" class="space-y-3 max-h-96 overflow-y-auto">
+                    <!-- Drag zones will be auto-populated here -->
+                </div>
             </div>
         </div>
 

@@ -150,16 +150,21 @@ window.ListeningDragDrop = {
     },
 
     updateHiddenInput(box, questionId, zoneIndex, index, optionValue, questionNumber) {
+        // Get the actual zone number from data attribute for backend matching
+        const zoneNumber = box.dataset.zoneNumber;
         let inputName;
         
-        if (zoneIndex !== undefined) {
-            // Drag-drop question
+        if (zoneNumber !== undefined) {
+            // Use zone number from [DRAG_X] for backend matching
+            inputName = `answers[${questionId}][zone_${zoneNumber}]`;
+        } else if (zoneIndex !== undefined) {
+            // Fallback: Drag-drop question with zone index
             inputName = `answers[${questionId}][zone_${zoneIndex}]`;
         } else if (index !== undefined) {
             // Matching question
             inputName = `answers[${questionId}_${index}]`;
         } else {
-            console.error('Neither zoneIndex nor index defined');
+            console.error('No zone identifier found');
             return;
         }
 

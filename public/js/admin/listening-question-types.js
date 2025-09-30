@@ -17,6 +17,9 @@ window.ListeningQuestionTypes = {
         allowReuse: true
     },
     
+    dragZoneCounter: 0,
+    dragZoneData: {},
+    
     init(questionType) {
         console.log('ListeningQuestionTypes.init:', questionType);
         
@@ -417,6 +420,18 @@ window.ListeningQuestionTypes = {
         const panel = document.getElementById('drag-drop-panel');
         if (panel) panel.style.display = 'block';
         
+        // Show drag zone buttons
+        const dragZoneButtons = document.getElementById('drag-zone-buttons');
+        if (dragZoneButtons) dragZoneButtons.style.display = 'flex';
+        
+        // Initialize drag zones manager
+        const dragZonesManager = document.getElementById('drag-zones-manager');
+        if (dragZonesManager) dragZonesManager.classList.remove('hidden');
+        
+        // Reset drag zone data
+        this.dragZoneCounter = 0;
+        this.dragZoneData = {};
+        
         // Reset drag drop data
         this.dragDropData = {
             dropZones: [],
@@ -424,11 +439,10 @@ window.ListeningQuestionTypes = {
             allowReuse: true
         };
         
-        // Add default drop zones and options
-        for (let i = 0; i < 3; i++) {
-            this.addDropZone();
-        }
+        // Setup drag zone insertion
+        this.setupDragZoneInsertion();
         
+        // Add default draggable options
         for (let i = 0; i < 5; i++) {
             this.addDraggableOption();
         }
@@ -530,6 +544,9 @@ window.ListeningQuestionTypes = {
         if (this.dragDropData.options[index] !== undefined) {
             this.dragDropData.options[index] = value;
         }
+        
+        // Sync with drag zone answer dropdowns
+        this.syncDragZoneAnswerOptions();
     },
     
     // Remove Drop Zone
@@ -601,6 +618,140 @@ window.ListeningQuestionTypes = {
             const removeBtn = option.querySelector('button');
             removeBtn.setAttribute('onclick', `ListeningQuestionTypes.removeDraggableOption(${newIndex})`);
         });
+    },
+    
+    // Setup Drag Zone Insertion
+    setupDragZoneInsertion() {
+        if (!window.dragZoneCounter) {
+            window.dragZoneCounter = 0;
+        }
+        
+        window.insertDragZone = () => {
+            const editor = window.contentEditor || tinymce.activeEditor;
+            if (!editor) {
+                console.error('No editor found');
+                return;
+            }
+            
+            window.dragZoneCounter++;
+            const dragZoneText = `[DRAG_${window.dragZoneCounter}]`;
+            editor.insertContent(dragZoneText);
+            
+            console.log('Inserted drag zone:', dragZoneText);
+            setTimeout(() => this.updateDragZones(), 100);
+        };
+    },
+    
+    // Update Drag Zones Display
+    updateDragZones() {
+        const editor = window.contentEditor || tinymce.activeEditor;
+        if (!editor) {
+            console.error('No editor found in updateDragZones');
+            return;
+        }
+        
+        const content = editor.getContent({ format: 'text' });
+        const dragZoneMatches = content.match(/\[DRAG_\d+\]/g) || [];
+        
+        console.log('Found drag zones:', dragZoneMatches);
+        
+        const dragZonesList = document.getElementById('drag-zones-list');
+        const dragZonesManager = document.getElementById('drag-zones-manager');
+        const counter = document.getElementById('drag-zone-counter');
+        
+        if (!dragZonesList || !dragZonesManager) {
+            console.error('Drag zones manager elements not found');
+            return;
+        }
+        
+        if (dragZoneMatches.length > 0) {
+            dragZonesManager.classList.remove('hidden');
+            dragZonesList.innerHTML = '';
+            
+            dragZoneMatches.forEach(match => {
+                const num = match.match(/\d+/)[0];
+                const zoneData = this.dragZoneData[num] || { label: '', answer: '' };
+                
+                const dragZoneDiv = document.createElement('div');
+                dragZoneDiv.className = 'border border-indigo-300 rounded-lg p-3 bg-white';
+                dragZoneDiv.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                            ${num}
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Correct Answer for DRAG_${num}:</label>
+                            <select name="drag_zones[${num}][answer]" 
+                                    class="w-full px-3 py-2 border border-indigo-300 rounded-md text-sm bg-indigo-50 drag-zone-answer-select"
+                                    data-zone="${num}"
+                                    onchange="ListeningQuestionTypes.updateDragZoneData(${num}, 'answer', this.value)"
+                                    required>
+                                <option value="">Select correct answer from options below</option>
+                                ${this.generateDragZoneAnswerOptions(zoneData.answer)}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Write the context in the question editor above, insert [DRAG_${num}] where students will drag the answer.</p>
+                        </div>
+                    </div>
+                `;
+                
+                dragZonesList.appendChild(dragZoneDiv);
+            });
+            
+            if (counter) counter.textContent = dragZoneMatches.length;
+            
+            // Update drag zone counter to highest number
+            const highestNum = Math.max(...dragZoneMatches.map(m => parseInt(m.match(/\d+/)[0])));
+            window.dragZoneCounter = highestNum;
+            
+            // Sync answer options with draggable options
+            this.syncDragZoneAnswerOptions();
+        } else {
+            dragZonesManager.classList.add('hidden');
+        }
+    },
+    
+    // Generate Drag Zone Answer Options from Draggable Options
+    generateDragZoneAnswerOptions(selectedValue) {
+        const optionsContainer = document.getElementById('draggable-options-container');
+        if (!optionsContainer) return '';
+        
+        const optionInputs = optionsContainer.querySelectorAll('input[name="drag_drop_options[]"]');
+        let html = '';
+        
+        optionInputs.forEach((input, index) => {
+            const optionText = input.value.trim();
+            if (optionText) {
+                const letter = String.fromCharCode(65 + index);
+                const isSelected = optionText === selectedValue ? 'selected' : '';
+                html += `<option value="${optionText}" ${isSelected}>${letter}. ${optionText}</option>`;
+            }
+        });
+        
+        return html;
+    },
+    
+    // Sync Drag Zone Answer Options when draggable options change
+    syncDragZoneAnswerOptions() {
+        const selects = document.querySelectorAll('.drag-zone-answer-select');
+        
+        selects.forEach(select => {
+            const currentValue = select.value;
+            const optionsHtml = this.generateDragZoneAnswerOptions(currentValue);
+            
+            // Keep the first option and update the rest
+            const firstOption = select.querySelector('option[value=""]');
+            select.innerHTML = firstOption ? firstOption.outerHTML : '<option value="">Select from draggable options</option>';
+            select.innerHTML += optionsHtml;
+        });
+    },
+    
+    // Update Drag Zone Data
+    updateDragZoneData(num, field, value) {
+        if (!this.dragZoneData[num]) {
+            this.dragZoneData[num] = { answer: '' };
+        }
+        this.dragZoneData[num][field] = value;
+        console.log('Updated drag zone data:', num, field, value);
     },
     
     // Prepare submission data

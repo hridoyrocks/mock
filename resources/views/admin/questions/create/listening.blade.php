@@ -73,6 +73,14 @@
                                     <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
                                     </span>
                                     </div>
+                                    <div class="mb-3 flex flex-wrap gap-2" id="drag-zone-buttons" style="display: none;">
+                                    <button type="button" onclick="insertDragZone()" class="px-3 py-1 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors">
+                                    Insert Drag Zone
+                                    </button>
+                                    <span class="text-xs text-gray-500 flex items-center">
+                                    <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+G</kbd>
+                                    </span>
+                                    </div>
                                     <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                                     </div>
                     
@@ -101,6 +109,21 @@
                                                 </div>
                                             </div>
                                             <div id="dropdown-list-listening" class="space-y-3">
+                                                <!-- Dynamically populated -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Drag Zones Manager -->
+                                    <div id="drag-zones-manager" class="hidden mt-4">
+                                        <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                            <div class="flex items-center justify-between mb-3">
+                                                <div class="flex items-center">
+                                                    <h4 class="text-sm font-medium text-gray-900">Drag Zones Configuration</h4>
+                                                    <span id="drag-zone-counter" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">0</span>
+                                                </div>
+                                            </div>
+                                            <div id="drag-zones-list" class="space-y-3 max-h-96 overflow-y-auto">
                                                 <!-- Dynamically populated -->
                                             </div>
                                         </div>
@@ -289,7 +312,7 @@
                 editor.on('change', function() {
                     editor.save();
                     
-                    // Update blanks/dropdowns based on question type
+                    // Update blanks/dropdowns/dragzones based on question type
                     const questionType = document.getElementById('question_type')?.value;
                     if (['fill_blanks', 'note_completion', 'sentence_completion'].includes(questionType)) {
                         if (window.ListeningQuestionTypes) {
@@ -298,6 +321,10 @@
                     } else if (['dropdown_selection', 'form_completion'].includes(questionType)) {
                         if (window.ListeningQuestionTypes) {
                             window.ListeningQuestionTypes.updateDropdowns();
+                        }
+                    } else if (questionType === 'drag_drop') {
+                        if (window.ListeningQuestionTypes) {
+                            window.ListeningQuestionTypes.updateDragZones();
                         }
                     }
                 });
@@ -321,16 +348,21 @@
                     window.ListeningQuestionTypes.init(selectedType);
                 }
                 
-                // Show/hide blank and dropdown buttons based on type
-                if (selectedType === 'fill_blanks') {
-                    document.getElementById('blank-buttons').style.display = 'flex';
-                    document.getElementById('dropdown-buttons').style.display = 'none';
-                } else if (selectedType === 'dropdown_selection') {
-                    document.getElementById('blank-buttons').style.display = 'none';
-                    document.getElementById('dropdown-buttons').style.display = 'flex';
-                } else {
-                    document.getElementById('blank-buttons').style.display = 'none';
-                    document.getElementById('dropdown-buttons').style.display = 'none';
+                // Show/hide buttons based on type
+                const blankButtons = document.getElementById('blank-buttons');
+                const dropdownButtons = document.getElementById('dropdown-buttons');
+                const dragZoneButtons = document.getElementById('drag-zone-buttons');
+                
+                if (blankButtons) blankButtons.style.display = 'none';
+                if (dropdownButtons) dropdownButtons.style.display = 'none';
+                if (dragZoneButtons) dragZoneButtons.style.display = 'none';
+                
+                if (selectedType === 'fill_blanks' && blankButtons) {
+                    blankButtons.style.display = 'flex';
+                } else if (selectedType === 'dropdown_selection' && dropdownButtons) {
+                    dropdownButtons.style.display = 'flex';
+                } else if (selectedType === 'drag_drop' && dragZoneButtons) {
+                    dragZoneButtons.style.display = 'flex';
                 }
             });
             
@@ -515,6 +547,11 @@
                     e.preventDefault();
                     insertListeningDropdown();
                 }
+                
+                if (questionType === 'drag_drop' && (e.key === 'g' || e.key === 'G')) {
+                    e.preventDefault();
+                    insertDragZone();
+                }
             }
         });
     });
@@ -603,6 +640,27 @@
             if (window.insertListeningDropdown) {
                 window.insertListeningDropdown();
             }
+        }
+    }
+    
+    window.insertDragZone = function() {
+        if (window.ListeningQuestionTypes) {
+            const editor = window.contentEditor || tinymce.activeEditor;
+            if (!editor) {
+                console.error('No editor found');
+                return;
+            }
+            
+            if (!window.dragZoneCounter) {
+                window.dragZoneCounter = 0;
+            }
+            
+            window.dragZoneCounter++;
+            const dragZoneText = `[DRAG_${window.dragZoneCounter}]`;
+            editor.insertContent(dragZoneText);
+            
+            console.log('Inserted drag zone:', dragZoneText);
+            setTimeout(() => window.ListeningQuestionTypes.updateDragZones(), 100);
         }
     }
     

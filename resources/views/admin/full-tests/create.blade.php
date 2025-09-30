@@ -1,199 +1,251 @@
-{{-- resources/views/admin/full-tests/create.blade.php --}}
 <x-admin-layout>
     <x-slot:title>Create Full Test</x-slot>
 
-    <div class="p-6">
-        <!-- Header -->
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-white">Create Full Test</h1>
-            <p class="text-gray-400 mt-2">Create a new full IELTS test by combining individual section tests</p>
-        </div>
-
-        <!-- Form -->
-        <form action="{{ route('admin.full-tests.store') }}" method="POST">
-            @csrf
-            
-            <div class="glass rounded-lg p-6">
-                <!-- Basic Information -->
-                <div class="mb-8">
-                    <h2 class="text-xl font-semibold text-white mb-4">Basic Information</h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="title" class="block text-sm font-medium text-gray-300 mb-2">
-                                Test Title <span class="text-red-400">*</span>
-                            </label>
-                            <input type="text" 
-                                   name="title" 
-                                   id="title" 
-                                   value="{{ old('title') }}"
-                                   class="form-input"
-                                   placeholder="e.g., Cambridge IELTS 18 Test 1"
-                                   required>
-                            @error('title')
-                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        
-                        <div>
-                            <label for="description" class="block text-sm font-medium text-gray-300 mb-2">
-                                Description
-                            </label>
-                            <input type="text" 
-                                   name="description" 
-                                   id="description" 
-                                   value="{{ old('description') }}"
-                                   class="form-input"
-                                   placeholder="Brief description of the test">
-                            @error('description')
-                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                        <div>
-                            <label class="flex items-center space-x-3 cursor-pointer">
-                                <input type="checkbox" 
-                                       name="is_premium" 
-                                       value="1"
-                                       {{ old('is_premium') ? 'checked' : '' }}
-                                       class="form-checkbox">
-                                <span class="text-gray-300">
-                                    <i class="fas fa-crown text-amber-400 mr-2"></i>
-                                    Premium Test (Requires subscription)
-                                </span>
-                            </label>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center space-x-3 cursor-pointer">
-                                <input type="checkbox" 
-                                       name="active" 
-                                       value="1"
-                                       {{ old('active', true) ? 'checked' : '' }}
-                                       class="form-checkbox">
-                                <span class="text-gray-300">
-                                    <i class="fas fa-check-circle text-green-400 mr-2"></i>
-                                    Active (Visible to students)
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section Selection -->
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200">
+            <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-xl font-semibold text-white mb-4">Select Test Sets for Each Section</h2>
-                    <p class="text-gray-400 mb-6">Choose one test set for each section to create a complete IELTS test</p>
-                    
-                    <div class="space-y-6">
-                        <!-- Listening Section -->
-                        <div class="bg-gray-800/50 rounded-lg p-6">
-                            <h3 class="text-lg font-medium text-white mb-4">
-                                <i class="fas fa-headphones text-violet-400 mr-2"></i>
-                                Listening Section
-                            </h3>
-                            <select name="listening_test_set_id" 
-                                    id="listening_test_set_id" 
-                                    class="form-select"
-                                    required>
-                                <option value="">Select a listening test set</option>
-                                @foreach($testSets['listening'] ?? [] as $testSet)
-                                    <option value="{{ $testSet->id }}" 
-                                            {{ old('listening_test_set_id') == $testSet->id ? 'selected' : '' }}>
-                                        {{ $testSet->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('listening_test_set_id')
-                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Reading Section -->
-                        <div class="bg-gray-800/50 rounded-lg p-6">
-                            <h3 class="text-lg font-medium text-white mb-4">
-                                <i class="fas fa-book-open text-emerald-400 mr-2"></i>
-                                Reading Section
-                            </h3>
-                            <select name="reading_test_set_id" 
-                                    id="reading_test_set_id" 
-                                    class="form-select"
-                                    required>
-                                <option value="">Select a reading test set</option>
-                                @foreach($testSets['reading'] ?? [] as $testSet)
-                                    <option value="{{ $testSet->id }}" 
-                                            {{ old('reading_test_set_id') == $testSet->id ? 'selected' : '' }}>
-                                        {{ $testSet->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('reading_test_set_id')
-                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Writing Section -->
-                        <div class="bg-gray-800/50 rounded-lg p-6">
-                            <h3 class="text-lg font-medium text-white mb-4">
-                                <i class="fas fa-pen-fancy text-amber-400 mr-2"></i>
-                                Writing Section
-                            </h3>
-                            <select name="writing_test_set_id" 
-                                    id="writing_test_set_id" 
-                                    class="form-select"
-                                    required>
-                                <option value="">Select a writing test set</option>
-                                @foreach($testSets['writing'] ?? [] as $testSet)
-                                    <option value="{{ $testSet->id }}" 
-                                            {{ old('writing_test_set_id') == $testSet->id ? 'selected' : '' }}>
-                                        {{ $testSet->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('writing_test_set_id')
-                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Speaking Section -->
-                        <div class="bg-gray-800/50 rounded-lg p-6">
-                            <h3 class="text-lg font-medium text-white mb-4">
-                                <i class="fas fa-microphone text-rose-400 mr-2"></i>
-                                Speaking Section
-                            </h3>
-                            <select name="speaking_test_set_id" 
-                                    id="speaking_test_set_id" 
-                                    class="form-select"
-                                    required>
-                                <option value="">Select a speaking test set</option>
-                                @foreach($testSets['speaking'] ?? [] as $testSet)
-                                    <option value="{{ $testSet->id }}" 
-                                            {{ old('speaking_test_set_id') == $testSet->id ? 'selected' : '' }}>
-                                        {{ $testSet->title }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('speaking_test_set_id')
-                                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">Create Full Test</h1>
+                    <p class="mt-1 text-sm text-gray-600">Combine individual section tests to create a complete IELTS mock test</p>
                 </div>
+                <a href="{{ route('admin.full-tests.index') }}" 
+                   class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to List
+                </a>
+            </div>
+        </div>
+    </div>
 
-                <!-- Actions -->
-                <div class="mt-8 flex justify-end space-x-4">
-                    <a href="{{ route('admin.full-tests.index') }}" class="btn-secondary">
-                        <i class="fas fa-times mr-2"></i>
-                        Cancel
-                    </a>
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-save mr-2"></i>
-                        Create Full Test
-                    </button>
+    <!-- Form -->
+    <form action="{{ route('admin.full-tests.store') }}" method="POST" class="space-y-6">
+        @csrf
+        
+        <!-- Basic Information Card -->
+        <div class="rounded-xl bg-white shadow-sm border border-gray-200">
+            <div class="border-b border-gray-200 px-6 py-4">
+                <div class="flex items-center">
+                    <svg class="mr-3 h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900">Basic Information</h3>
                 </div>
             </div>
-        </form>
-    </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                            Test Title <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               name="title" 
+                               id="title" 
+                               value="{{ old('title') }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                               placeholder="e.g., Cambridge IELTS 18 Test 1"
+                               required>
+                        @error('title')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                            Description
+                        </label>
+                        <input type="text" 
+                               name="description" 
+                               id="description" 
+                               value="{{ old('description') }}"
+                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                               placeholder="Brief description of the test">
+                        @error('description')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="rounded-lg border-2 border-gray-200 p-4 hover:border-amber-300 transition-colors">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" 
+                                   name="is_premium" 
+                                   value="1"
+                                   {{ old('is_premium') ? 'checked' : '' }}
+                                   class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                            <span class="ml-3 flex items-center text-sm font-medium text-gray-700">
+                                <svg class="mr-2 h-5 w-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                Premium Test
+                                <span class="ml-2 text-xs text-gray-500">(Requires subscription)</span>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <div class="rounded-lg border-2 border-gray-200 p-4 hover:border-green-300 transition-colors">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" 
+                                   name="active" 
+                                   value="1"
+                                   {{ old('active', true) ? 'checked' : '' }}
+                                   class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                            <span class="ml-3 flex items-center text-sm font-medium text-gray-700">
+                                <svg class="mr-2 h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                                Active Status
+                                <span class="ml-2 text-xs text-gray-500">(Visible to students)</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Selection Card -->
+        <div class="rounded-xl bg-white shadow-sm border border-gray-200">
+            <div class="border-b border-gray-200 px-6 py-4">
+                <div class="flex items-center">
+                    <svg class="mr-3 h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900">Select Test Sets for Each Section</h3>
+                </div>
+                <p class="mt-1 text-sm text-gray-500">Choose one test set for each section to create a complete IELTS test</p>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Listening Section -->
+                <div class="rounded-lg border-2 border-purple-200 bg-purple-50 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                        </div>
+                        <h3 class="ml-4 text-lg font-semibold text-purple-900">Listening Section</h3>
+                    </div>
+                    <select name="listening_test_set_id" 
+                            id="listening_test_set_id" 
+                            class="block w-full rounded-lg border-purple-300 bg-white shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
+                            required>
+                        <option value="">Select a listening test set</option>
+                        @foreach($testSets['listening'] ?? [] as $testSet)
+                            <option value="{{ $testSet->id }}" 
+                                    {{ old('listening_test_set_id') == $testSet->id ? 'selected' : '' }}>
+                                {{ $testSet->title }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('listening_test_set_id')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Reading Section -->
+                <div class="rounded-lg border-2 border-green-200 bg-green-50 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-600">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                        </div>
+                        <h3 class="ml-4 text-lg font-semibold text-green-900">Reading Section</h3>
+                    </div>
+                    <select name="reading_test_set_id" 
+                            id="reading_test_set_id" 
+                            class="block w-full rounded-lg border-green-300 bg-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
+                            required>
+                        <option value="">Select a reading test set</option>
+                        @foreach($testSets['reading'] ?? [] as $testSet)
+                            <option value="{{ $testSet->id }}" 
+                                    {{ old('reading_test_set_id') == $testSet->id ? 'selected' : '' }}>
+                                {{ $testSet->title }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('reading_test_set_id')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Writing Section -->
+                <div class="rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </div>
+                        <h3 class="ml-4 text-lg font-semibold text-blue-900">Writing Section</h3>
+                    </div>
+                    <select name="writing_test_set_id" 
+                            id="writing_test_set_id" 
+                            class="block w-full rounded-lg border-blue-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            required>
+                        <option value="">Select a writing test set</option>
+                        @foreach($testSets['writing'] ?? [] as $testSet)
+                            <option value="{{ $testSet->id }}" 
+                                    {{ old('writing_test_set_id') == $testSet->id ? 'selected' : '' }}>
+                                {{ $testSet->title }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('writing_test_set_id')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Speaking Section -->
+                <div class="rounded-lg border-2 border-orange-200 bg-orange-50 p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-600">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        </div>
+                        <h3 class="ml-4 text-lg font-semibold text-orange-900">Speaking Section</h3>
+                    </div>
+                    <select name="speaking_test_set_id" 
+                            id="speaking_test_set_id" 
+                            class="block w-full rounded-lg border-orange-300 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                            required>
+                        <option value="">Select a speaking test set</option>
+                        @foreach($testSets['speaking'] ?? [] as $testSet)
+                            <option value="{{ $testSet->id }}" 
+                                    {{ old('speaking_test_set_id') == $testSet->id ? 'selected' : '' }}>
+                                {{ $testSet->title }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('speaking_test_set_id')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-4">
+            <a href="{{ route('admin.full-tests.index') }}" 
+               class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="inline-flex items-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Create Full Test
+            </button>
+        </div>
+    </form>
 </x-admin-layout>
