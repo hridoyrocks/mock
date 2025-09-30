@@ -158,6 +158,16 @@ class ListeningTestController extends Controller
                     $totalQuestions += count($question->form_structure['fields'] ?? []);
                 } elseif ($question->question_type === 'plan_map_diagram' && $question->diagram_hotspots) {
                     $totalQuestions += count($question->diagram_hotspots);
+                } elseif ($question->question_type === 'drag_drop') {
+                    // Count drop zones for drag & drop questions
+                    $sectionData = $question->section_specific_data ?? [];
+                    $dropZones = $sectionData['drop_zones'] ?? [];
+                    $totalQuestions += count($dropZones);
+                } elseif ($question->question_type === 'drag_drop') {
+                    // Count drop zones for drag & drop questions
+                    $sectionData = $question->section_specific_data ?? [];
+                    $dropZones = $sectionData['drop_zones'] ?? [];
+                    $totalQuestions += count($dropZones) > 0 ? count($dropZones) : 1;
                 } elseif (in_array($question->question_type, ['sentence_completion', 'note_completion'])) {
                     // Count blanks for fill-in-the-gap questions
                     $blankCount = $question->countBlanks();
@@ -174,6 +184,20 @@ class ListeningTestController extends Controller
             foreach ($request->answers as $answerKey => $answer) {
                 if (empty($answer) && $answer !== '0') {
                     continue;
+                }
+                
+                // Skip if answer is an empty array
+                if (is_array($answer) && empty($answer)) {
+                    continue;
+                }
+                
+                // Debug log for problematic answers
+                if (is_array($answer)) {
+                    \Log::info('Processing array answer', [
+                        'answer_key' => $answerKey,
+                        'answer' => $answer,
+                        'answer_type' => gettype($answer)
+                    ]);
                 }
                 
                 // Parse answer key for special types
@@ -207,20 +231,34 @@ class ListeningTestController extends Controller
                                     $isCorrect = $this->compareAnswers($answer, $correctAnswer);
                                 }
                                 break;
+                                
+                            case 'drag_drop':
+                                // Handle drag & drop answers
+                                $sectionData = $question->section_specific_data ?? [];
+                                $dropZones = $sectionData['drop_zones'] ?? [];
+                                // Extract zone index from subIndex (e.g., 'zone_0' -> 0)
+                                $zoneIdx = str_replace('zone_', '', $subIndex);
+                                if (isset($dropZones[$zoneIdx])) {
+                                    $correctAnswer = $dropZones[$zoneIdx]['answer'];
+                                    $isCorrect = $this->compareAnswers($answer, $correctAnswer);
+                                }
+                                break;
                         }
                         
-                        // Save answer
+                        // Save answer - ensure it's properly formatted
+                        $answerData = [
+                            'sub_index' => $subIndex,
+                            'answer' => is_array($answer) ? json_encode($answer) : $answer,
+                            'is_correct' => $isCorrect
+                        ];
+                        
                         StudentAnswer::updateOrCreate(
                             [
                                 'attempt_id' => $attempt->id,
                                 'question_id' => $questionId,
                             ],
                             [
-                                'answer' => json_encode([
-                                    'sub_index' => $subIndex,
-                                    'answer' => $answer,
-                                    'is_correct' => $isCorrect
-                                ]),
+                                'answer' => json_encode($answerData),
                             ]
                         );
                         
@@ -238,8 +276,41 @@ class ListeningTestController extends Controller
                         continue;
                     }
                     
+                    // Handle drag & drop questions with zone-based answers
+                    if (is_array($answer) && isset($answer['zone_0'])) {
+                        // This is a drag & drop question with multiple zones
+                        $sectionData = $question->section_specific_data ?? [];
+                        $dropZones = $sectionData['drop_zones'] ?? [];
+                        
+                        foreach ($answer as $zoneKey => $zoneAnswer) {
+                            if (strpos($zoneKey, 'zone_') === 0 && !empty($zoneAnswer)) {
+                                $zoneIdx = str_replace('zone_', '', $zoneKey);
+                                $answeredCount++;
+                                
+                                // Check if correct
+                                if (isset($dropZones[$zoneIdx])) {
+                                    $correctAnswer = $dropZones[$zoneIdx]['answer'];
+                                    if ($this->compareAnswers($zoneAnswer, $correctAnswer)) {
+                                        $correctAnswers++;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Store the entire answer array as JSON
+                        StudentAnswer::updateOrCreate(
+                            [
+                                'attempt_id' => $attempt->id,
+                                'question_id' => $questionId,
+                            ],
+                            [
+                                'selected_option_id' => null,
+                                'answer' => json_encode($answer),
+                            ]
+                        );
+                    }
                     // Handle fill-in-the-blank questions with multiple blanks
-                    if (is_array($answer) && (isset($answer['blank_1']) || isset($answer['dropdown_1']))) {
+                    elseif (is_array($answer) && (isset($answer['blank_1']) || isset($answer['dropdown_1']))) {
                         // This is a multi-blank question
                         StudentAnswer::updateOrCreate(
                             [
@@ -265,7 +336,7 @@ class ListeningTestController extends Controller
                             ],
                             [
                                 'selected_option_id' => is_numeric($answer) ? $answer : null,
-                                'answer' => !is_numeric($answer) ? $answer : null,
+                                'answer' => !is_numeric($answer) ? (is_array($answer) ? json_encode($answer) : $answer) : null,
                             ]
                         );
                         
@@ -455,6 +526,18 @@ class ListeningTestController extends Controller
      */
     protected function checkSingleTextAnswer($question, $studentAnswer): bool
     {
+        // Handle array student answers
+        if (is_array($studentAnswer)) {
+            \Log::info('checkSingleTextAnswer received array', [
+                'question_id' => $question->id,
+                'answer' => $studentAnswer
+            ]);
+            
+            // For drag & drop or complex answers, we shouldn't reach here
+            // But if we do, extract first value
+            $studentAnswer = !empty($studentAnswer) ? reset($studentAnswer) : '';
+        }
+        
         $sectionData = $question->section_specific_data;
         
         // Check if there's a correct answer defined
@@ -494,6 +577,31 @@ class ListeningTestController extends Controller
      */
     protected function compareAnswers($studentAnswer, $correctAnswer): bool
     {
+        // Handle array answers (convert to string first)
+        if (is_array($studentAnswer)) {
+            \Log::warning('compareAnswers received array for studentAnswer', [
+                'student' => $studentAnswer,
+                'correct' => $correctAnswer
+            ]);
+            
+            // Extract the actual answer from array
+            if (isset($studentAnswer['zone_0'])) {
+                $studentAnswer = $studentAnswer['zone_0'];
+            } elseif (isset($studentAnswer['blank_1'])) {
+                $studentAnswer = $studentAnswer['blank_1'];
+            } else {
+                $studentAnswer = !empty($studentAnswer) ? reset($studentAnswer) : '';
+            }
+        }
+        
+        if (is_array($correctAnswer)) {
+            \Log::warning('compareAnswers received array for correctAnswer', [
+                'student' => $studentAnswer,
+                'correct' => $correctAnswer
+            ]);
+            $correctAnswer = !empty($correctAnswer) ? reset($correctAnswer) : '';
+        }
+        
         // Handle null/empty cases
         if (empty($studentAnswer) && empty($correctAnswer)) {
             return true;
@@ -542,10 +650,48 @@ class ListeningTestController extends Controller
     }
 
     /**
+     * Safely convert answer to string for database storage
+     */
+    protected function answerToString($answer): ?string
+    {
+        if (is_null($answer)) {
+            return null;
+        }
+        
+        if (is_array($answer)) {
+            return json_encode($answer);
+        }
+        
+        if (is_bool($answer)) {
+            return $answer ? '1' : '0';
+        }
+        
+        return (string) $answer;
+    }
+    
+    /**
      * Normalize answer for comparison
      */
     protected function normalizeAnswer($answer): string
     {
+        // Handle array answers
+        if (is_array($answer)) {
+            // If it's a drag & drop zone answer array, extract the first value
+            if (isset($answer['zone_0'])) {
+                $answer = $answer['zone_0'];
+            } elseif (isset($answer['blank_1'])) {
+                $answer = $answer['blank_1'];
+            } else {
+                // Get first non-empty value from array
+                $answer = !empty($answer) ? reset($answer) : '';
+            }
+        }
+        
+        // Handle null
+        if (is_null($answer)) {
+            return '';
+        }
+        
         // Convert to string
         $answer = (string) $answer;
         

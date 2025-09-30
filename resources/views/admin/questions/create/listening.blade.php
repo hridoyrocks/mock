@@ -109,13 +109,14 @@
                                 
                                 <div class="space-y-4 sm:space-y-6">
                                     @include('admin.questions.partials.question-settings', [
-                                        'questionTypes' => [
-                                            'fill_blanks' => 'Fill in the Blanks',
-                                            'single_choice' => 'Single Choice (Radio)',
-                                            'multiple_choice' => 'Multiple Choice (Checkbox)',
-                                            'dropdown_selection' => 'Dropdown Selection'
+                                    'questionTypes' => [
+                                    'fill_blanks' => 'Fill in the Blanks',
+                                    'single_choice' => 'Single Choice (Radio)',
+                                    'multiple_choice' => 'Multiple Choice (Checkbox)',
+                                    'dropdown_selection' => 'Dropdown Selection',
+                                        'drag_drop' => 'Drag & Drop'
                                         ]
-                                    ])
+                    ])
                                     
                                     <!-- Audio Transcript -->
                                     <div>
@@ -248,6 +249,7 @@
     @push('scripts')
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script src="{{ asset('js/admin/listening-question-types.js') }}"></script>
+    <script src="{{ asset('js/student/listening-drag-drop.js') }}"></script>
 
     <script>
     // Global variables

@@ -271,6 +271,45 @@ class QuestionController extends Controller
         $typeSpecificData = [];
         $sectionSpecificData = []; // Initialize here
 
+        // Drag & Drop Question Type
+        if ($request->question_type === 'drag_drop') {
+            $dropZones = [];
+            $options = [];
+            $allowReuse = $request->has('drag_drop_allow_reuse');
+            
+            // Process drop zones
+            if ($request->has('drag_drop_zones')) {
+                foreach ($request->drag_drop_zones as $index => $zone) {
+                    if (!empty($zone['label']) && !empty($zone['answer'])) {
+                        $dropZones[] = [
+                            'label' => trim($zone['label']),
+                            'answer' => trim($zone['answer'])
+                        ];
+                    }
+                }
+            }
+            
+            // Process draggable options
+            if ($request->has('drag_drop_options')) {
+                foreach ($request->drag_drop_options as $option) {
+                    if (!empty($option)) {
+                        $options[] = trim($option);
+                    }
+                }
+            }
+            
+            // Store in section specific data
+            $sectionSpecificData['drop_zones'] = $dropZones;
+            $sectionSpecificData['draggable_options'] = $options;
+            $sectionSpecificData['allow_reuse'] = $allowReuse;
+            
+            \Log::info('Drag & Drop data:', [
+                'drop_zones' => $dropZones,
+                'options' => $options,
+                'allow_reuse' => $allowReuse
+            ]);
+        }
+
         // Check for JSON data first (new approach)
         if ($request->has('matching_pairs_json')) {
             $matchingPairs = json_decode($request->matching_pairs_json, true);

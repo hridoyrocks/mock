@@ -143,6 +143,64 @@
         </div>
         @break
         
+    @case('drag_drop')
+        {{-- Drag and Drop Question --}}
+        <div class="question-item drag-drop-question" id="question-{{ $question->id }}">
+            @php
+                $dragDropData = $question->section_specific_data ?? [];
+                $dropZones = $dragDropData['drop_zones'] ?? [];
+                $options = $dragDropData['draggable_options'] ?? [];
+                $allowReuse = $dragDropData['allow_reuse'] ?? true;
+                $dropZoneCount = count($dropZones);
+            @endphp
+            
+            {{-- Question Header --}}
+            <div class="question-content">
+                @if($dropZoneCount > 1)
+                    <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + $dropZoneCount - 1 }}</span>
+                @else
+                    <span class="question-number">{{ $displayNumber }}</span>
+                @endif
+                
+                <div class="question-text">{!! $question->content !!}</div>
+            </div>
+            
+            {{-- Draggable Options at Top --}}
+            <div class="draggable-options-grid">
+                @foreach($options as $optionIndex => $optionText)
+                    <div class="draggable-option" 
+                         draggable="true"
+                         data-option-value="{{ $optionText }}"
+                         data-option-letter="{{ chr(65 + $optionIndex) }}">
+                        {{ chr(65 + $optionIndex) }}. {{ $optionText }}
+                    </div>
+                @endforeach
+            </div>
+            
+            {{-- Drop Zones Below Options --}}
+            <div class="drag-drop-zones-list">
+                @foreach($dropZones as $zoneIndex => $zone)
+                    @php
+                        $zoneNumber = $displayNumber + $zoneIndex;
+                    @endphp
+                    <div class="drop-zone-row" data-zone-index="{{ $zoneIndex }}">
+                        <span class="drop-zone-text">{{ $zone['label'] }}</span>
+                        <div class="drop-box" 
+                             data-question-id="{{ $question->id }}"
+                             data-zone-index="{{ $zoneIndex }}"
+                             data-question-number="{{ $zoneNumber }}"
+                             data-allow-reuse="{{ $allowReuse ? '1' : '0' }}">
+                            <span class="placeholder-text">{{ $zoneNumber }}</span>
+                        </div>
+                        <input type="hidden" 
+                               name="answers[{{ $question->id }}][zone_{{ $zoneIndex }}]" 
+                               data-question-number="{{ $zoneNumber }}">
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @break
+    
     @default
         {{-- Fallback for any other type - treat as text input --}}
         <div class="question-item" id="question-{{ $question->id }}">
@@ -203,5 +261,183 @@
 
 .question-instruction p:last-child {
     margin-bottom: 0 !important;
+}
+
+/* Drag and Drop Styles - Simple Layout like Image */
+
+/* Drop Zones List - No background card */
+.drag-drop-zones-list {
+    margin: 0;
+}
+
+.drop-zone-row {
+    display: block;
+    margin-bottom: 12px;
+    line-height: 2;
+}
+
+.drop-zone-row:last-child {
+    margin-bottom: 0;
+}
+
+.drop-zone-text {
+    font-size: 15px;
+    font-weight: normal;
+    color: #1f2937;
+    line-height: 1.6;
+    display: inline;
+}
+
+.drop-box {
+    display: inline-block;
+    min-width: 100px;
+    max-width: 200px;
+    height: 36px;
+    border: 2px dashed #9ca3af;
+    border-radius: 4px;
+    line-height: 36px;
+    text-align: center;
+    transition: all 0.2s;
+    background: white;
+    font-size: 14px;
+    padding: 0 8px;
+    cursor: pointer;
+    position: relative;
+    margin-left: 8px;
+    vertical-align: baseline;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.drop-box.drag-over {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    border-style: solid;
+}
+
+.drop-box.has-answer {
+    border-style: solid;
+    border-color: #10b981;
+    background: #ecfdf5;
+    color: #065f46;
+    font-weight: 500;
+    cursor: move;
+    padding-right: 28px;
+}
+
+.drop-box .placeholder-text {
+    color: #000000;
+    font-style: normal;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.drop-box .answer-text {
+    color: #065f46;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 36px;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: baseline;
+}
+
+.drop-box .remove-answer {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: white;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 18px;
+}
+
+.drop-box.has-answer:hover .remove-answer {
+    display: flex;
+}
+
+/* Draggable Options - Grid Layout at Top */
+.draggable-options-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 20px 0 24px 0;
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.draggable-option {
+    padding: 10px 16px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    cursor: move;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: normal;
+    color: #1f2937;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.draggable-option:hover:not(.placed) {
+    background: #f9fafb;
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.draggable-option.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.draggable-option.placed {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .drop-zone-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .drop-zone-text {
+        width: 100%;
+    }
+    
+    .drop-box {
+        width: 100%;
+        max-width: 100%;
+        min-width: 100%;
+    }
+    
+    .draggable-options-grid {
+        flex-direction: column;
+    }
+    
+    .draggable-option {
+        width: 100%;
+    }
 }
 </style>

@@ -1101,6 +1101,11 @@
                         preg_match_all('/\[DROPDOWN_(\d+)\]/', $q->content, $matches);
                         $dropdownCount = count($matches[0]);
                         $totalQuestionCount += ($dropdownCount > 0 ? $dropdownCount : 1);
+                    } elseif ($q->question_type === 'drag_drop') {
+                        $dragDropData = $q->section_specific_data ?? [];
+                        $dropZones = $dragDropData['drop_zones'] ?? [];
+                        $dropZoneCount = count($dropZones);
+                        $totalQuestionCount += ($dropZoneCount > 0 ? $dropZoneCount : 1);
                     } else {
                         $totalQuestionCount++;
                     }
@@ -1153,6 +1158,11 @@
                                     preg_match_all('/\[DROPDOWN_(\d+)\]/', $question->content, $matches);
                                     $dropdownCount = count($matches[0]);
                                     $currentQuestionNumber += ($dropdownCount > 0 ? $dropdownCount : 1);
+                                } elseif ($question->question_type === 'drag_drop') {
+                                    $dragDropData = $question->section_specific_data ?? [];
+                                    $dropZones = $dragDropData['drop_zones'] ?? [];
+                                    $dropZoneCount = count($dropZones);
+                                    $currentQuestionNumber += ($dropZoneCount > 0 ? $dropZoneCount : 1);
                                 } else {
                                     $currentQuestionNumber++;
                                 }
@@ -1221,6 +1231,24 @@
                                 <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
                                      data-question="{{ $question->id }}"
                                      data-sub-index="{{ $i }}"
+                                     data-display-number="{{ $navQuestionNum }}"
+                                     data-part="{{ $question->part_number }}">
+                                    {{ $navQuestionNum++ }}
+                                </div>
+                            @endfor
+                        @elseif($question->question_type === 'drag_drop')
+                            @php
+                                // For drag_drop questions, show one button per drop zone
+                                $dragDropData = $question->section_specific_data ?? [];
+                                $dropZones = $dragDropData['drop_zones'] ?? [];
+                                $dropZoneCount = count($dropZones);
+                                $dropZoneCount = $dropZoneCount > 0 ? $dropZoneCount : 1;
+                            @endphp
+                            @for($i = 0; $i < $dropZoneCount; $i++)
+                                @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
+                                <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
+                                     data-question="{{ $question->id }}"
+                                     data-zone-index="{{ $i }}"
                                      data-display-number="{{ $navQuestionNum }}"
                                      data-part="{{ $question->part_number }}">
                                     {{ $navQuestionNum++ }}
@@ -1329,6 +1357,9 @@
     
     
     @push('scripts')
+    {{-- Include Drag & Drop Handler --}}
+    <script src="{{ asset('js/student/listening-drag-drop.js') }}"></script>
+    
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // ========== Disable Right Click ==========
@@ -1461,6 +1492,7 @@
                 
                 const questionId = this.dataset.question;
                 const subIndex = this.dataset.subIndex;
+                const zoneIndex = this.dataset.zoneIndex;
                 const questionElement = document.getElementById(`question-${questionId}`);
                 
                 if (questionElement) {
@@ -1476,11 +1508,32 @@
                         }
                     }
                     
-                    // Scroll to question
-                    questionElement.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
+                    // For drag_drop questions, scroll to specific drop zone
+                    if (zoneIndex !== undefined) {
+                        const dropZoneItem = questionElement.querySelector(`[data-zone-index="${zoneIndex}"]`);
+                        if (dropZoneItem) {
+                            dropZoneItem.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                            
+                            // Highlight the drop box briefly
+                            const dropBox = dropZoneItem.querySelector('.drop-box');
+                            if (dropBox) {
+                                dropBox.style.transition = 'all 0.3s ease';
+                                dropBox.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)';
+                                setTimeout(() => {
+                                    dropBox.style.boxShadow = '';
+                                }, 1000);
+                            }
+                        }
+                    } else {
+                        // Regular scroll to question
+                        questionElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }
                     
                     // Focus on specific sub-question input if applicable
                     if (subIndex !== undefined) {
@@ -2364,10 +2417,20 @@
             });
         });
         
-        // ========== Drag & Drop for Matching Questions ==========
+        // ========== Drag & Drop - Now handled by listening-drag-drop.js ==========
         function initializeDragAndDrop() {
+            // New drag & drop system is automatically initialized
+            // by listening-drag-drop.js file
+            console.log('Drag & Drop initialized via listening-drag-drop.js');
+            
+            // Fallback for old matching questions if needed
             const draggableOptions = document.querySelectorAll('.draggable-option');
             const dropBoxes = document.querySelectorAll('.drop-box');
+            
+            console.log('Found elements:', { 
+                draggableOptions: draggableOptions.length, 
+                dropBoxes: dropBoxes.length 
+            });
             
             // Setup draggable options
             draggableOptions.forEach(option => {

@@ -11,6 +11,12 @@ window.ListeningQuestionTypes = {
         correct: {}
     },
     
+    dragDropData: {
+        dropZones: [],
+        options: [],
+        allowReuse: true
+    },
+    
     init(questionType) {
         console.log('ListeningQuestionTypes.init:', questionType);
         
@@ -38,6 +44,10 @@ window.ListeningQuestionTypes = {
                 
             case 'dropdown_selection':
                 this.initDropdownSelection();
+                break;
+                
+            case 'drag_drop':
+                this.initDragDrop();
                 break;
         }
     },
@@ -390,13 +400,205 @@ window.ListeningQuestionTypes = {
         ).join('');
     },
     
+    // Initialize Drag & Drop
+    initDragDrop() {
+        const panel = document.getElementById('drag-drop-panel');
+        if (panel) panel.style.display = 'block';
+        
+        // Reset drag drop data
+        this.dragDropData = {
+            dropZones: [],
+            options: [],
+            allowReuse: true
+        };
+        
+        // Add default drop zones and options
+        for (let i = 0; i < 3; i++) {
+            this.addDropZone();
+        }
+        
+        for (let i = 0; i < 5; i++) {
+            this.addDraggableOption();
+        }
+    },
+    
+    // Add Drop Zone
+    addDropZone() {
+        const container = document.getElementById('drop-zones-container');
+        if (!container) return;
+        
+        const index = this.dragDropData.dropZones.length;
+        this.dragDropData.dropZones.push({ label: '', correctAnswer: '' });
+        
+        const dropZoneDiv = document.createElement('div');
+        dropZoneDiv.className = 'border border-gray-300 rounded-lg p-3 bg-gray-50';
+        dropZoneDiv.dataset.dropZoneIndex = index;
+        dropZoneDiv.innerHTML = `
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                    ${index + 1}
+                </div>
+                <div class="flex-1 space-y-2">
+                    <input type="text" 
+                           name="drag_drop_zones[${index}][label]" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                           placeholder="Drop zone label (e.g., 'Capital of France is...')"
+                           value=""
+                           onchange="ListeningQuestionTypes.updateDropZoneLabel(${index}, this.value)"
+                           required>
+                    <input type="text" 
+                           name="drag_drop_zones[${index}][answer]" 
+                           class="w-full px-3 py-2 border border-indigo-300 rounded-md text-sm bg-indigo-50"
+                           placeholder="Correct answer (must match one of the draggable options)"
+                           value=""
+                           onchange="ListeningQuestionTypes.updateDropZoneAnswer(${index}, this.value)"
+                           required>
+                </div>
+                <button type="button" 
+                        onclick="ListeningQuestionTypes.removeDropZone(${index})" 
+                        class="text-red-500 hover:text-red-700">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(dropZoneDiv);
+    },
+    
+    // Add Draggable Option
+    addDraggableOption() {
+        const container = document.getElementById('draggable-options-container');
+        if (!container) return;
+        
+        const index = this.dragDropData.options.length;
+        this.dragDropData.options.push('');
+        
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'flex items-center gap-3 p-2 bg-gray-50 rounded border border-gray-200';
+        optionDiv.dataset.optionIndex = index;
+        optionDiv.innerHTML = `
+            <span class="font-medium text-gray-700 text-sm">${String.fromCharCode(65 + index)}.</span>
+            <input type="text" 
+                   name="drag_drop_options[]" 
+                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                   placeholder="Option text"
+                   value=""
+                   onchange="ListeningQuestionTypes.updateDraggableOption(${index}, this.value)"
+                   required>
+            <button type="button" 
+                    onclick="ListeningQuestionTypes.removeDraggableOption(${index})" 
+                    class="text-red-500 hover:text-red-700">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+        
+        container.appendChild(optionDiv);
+    },
+    
+    // Update Drop Zone Label
+    updateDropZoneLabel(index, value) {
+        if (this.dragDropData.dropZones[index]) {
+            this.dragDropData.dropZones[index].label = value;
+        }
+    },
+    
+    // Update Drop Zone Answer
+    updateDropZoneAnswer(index, value) {
+        if (this.dragDropData.dropZones[index]) {
+            this.dragDropData.dropZones[index].correctAnswer = value;
+        }
+    },
+    
+    // Update Draggable Option
+    updateDraggableOption(index, value) {
+        if (this.dragDropData.options[index] !== undefined) {
+            this.dragDropData.options[index] = value;
+        }
+    },
+    
+    // Remove Drop Zone
+    removeDropZone(index) {
+        const container = document.getElementById('drop-zones-container');
+        const dropZone = container.querySelector(`[data-drop-zone-index="${index}"]`);
+        if (dropZone) {
+            dropZone.remove();
+        }
+        
+        // Remove from data
+        this.dragDropData.dropZones.splice(index, 1);
+        
+        // Reindex remaining drop zones
+        this.reindexDropZones();
+    },
+    
+    // Remove Draggable Option
+    removeDraggableOption(index) {
+        const container = document.getElementById('draggable-options-container');
+        const option = container.querySelector(`[data-option-index="${index}"]`);
+        if (option) {
+            option.remove();
+        }
+        
+        // Remove from data
+        this.dragDropData.options.splice(index, 1);
+        
+        // Reindex remaining options
+        this.reindexDraggableOptions();
+    },
+    
+    // Reindex Drop Zones
+    reindexDropZones() {
+        const container = document.getElementById('drop-zones-container');
+        const dropZones = container.querySelectorAll('[data-drop-zone-index]');
+        
+        dropZones.forEach((zone, newIndex) => {
+            zone.dataset.dropZoneIndex = newIndex;
+            
+            const numberBadge = zone.querySelector('.bg-indigo-600');
+            if (numberBadge) numberBadge.textContent = newIndex + 1;
+            
+            const inputs = zone.querySelectorAll('input');
+            inputs[0].name = `drag_drop_zones[${newIndex}][label]`;
+            inputs[0].setAttribute('onchange', `ListeningQuestionTypes.updateDropZoneLabel(${newIndex}, this.value)`);
+            inputs[1].name = `drag_drop_zones[${newIndex}][answer]`;
+            inputs[1].setAttribute('onchange', `ListeningQuestionTypes.updateDropZoneAnswer(${newIndex}, this.value)`);
+            
+            const removeBtn = zone.querySelector('button');
+            removeBtn.setAttribute('onclick', `ListeningQuestionTypes.removeDropZone(${newIndex})`);
+        });
+    },
+    
+    // Reindex Draggable Options
+    reindexDraggableOptions() {
+        const container = document.getElementById('draggable-options-container');
+        const options = container.querySelectorAll('[data-option-index]');
+        
+        options.forEach((option, newIndex) => {
+            option.dataset.optionIndex = newIndex;
+            
+            const label = option.querySelector('span');
+            if (label) label.textContent = String.fromCharCode(65 + newIndex) + '.';
+            
+            const input = option.querySelector('input[type="text"]');
+            input.setAttribute('onchange', `ListeningQuestionTypes.updateDraggableOption(${newIndex}, this.value)`);
+            
+            const removeBtn = option.querySelector('button');
+            removeBtn.setAttribute('onclick', `ListeningQuestionTypes.removeDraggableOption(${newIndex})`);
+        });
+    },
+    
     // Prepare submission data
     prepareSubmissionData() {
         const questionType = document.getElementById('question_type').value;
         const data = {
             type: questionType,
             blanks: this.blankAnswers,
-            dropdowns: this.dropdownData
+            dropdowns: this.dropdownData,
+            dragDrop: this.dragDropData
         };
         
         // Store in hidden input
