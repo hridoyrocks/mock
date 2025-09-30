@@ -162,16 +162,20 @@ class ListeningTestController extends Controller
                     // Count drop zones for drag & drop questions
                     $sectionData = $question->section_specific_data ?? [];
                     $dropZones = $sectionData['drop_zones'] ?? [];
-                    $totalQuestions += count($dropZones);
-                } elseif ($question->question_type === 'drag_drop') {
-                    // Count drop zones for drag & drop questions
-                    $sectionData = $question->section_specific_data ?? [];
-                    $dropZones = $sectionData['drop_zones'] ?? [];
                     $totalQuestions += count($dropZones) > 0 ? count($dropZones) : 1;
-                } elseif (in_array($question->question_type, ['sentence_completion', 'note_completion'])) {
-                    // Count blanks for fill-in-the-gap questions
+                } elseif ($question->question_type === 'multiple_choice') {
+                    // For multiple choice, count correct answers as separate questions
+                    $correctCount = $question->options->where('is_correct', true)->count();
+                    $totalQuestions += ($correctCount > 1 ? $correctCount : 1);
+                } elseif (in_array($question->question_type, ['fill_blanks', 'sentence_completion', 'note_completion', 'dropdown_selection'])) {
+                    // Count blanks/dropdowns for fill-in-the-gap questions
                     $blankCount = $question->countBlanks();
-                    $totalQuestions += $blankCount > 0 ? $blankCount : 1;
+                    // Also check for dropdowns
+                    $dropdownCount = 0;
+                    if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
+                        $dropdownCount = count($question->section_specific_data['dropdown_correct']);
+                    }
+                    $totalQuestions += max($blankCount, $dropdownCount, 1);
                 } else {
                     $totalQuestions++;
                 }
@@ -340,18 +344,53 @@ class ListeningTestController extends Controller
                             ]
                         );
                         
-                        $answeredCount++;
-                        
-                        // Check if correct
-                        if ($question->requiresOptions() && is_numeric($answer)) {
-                            $option = QuestionOption::find($answer);
-                            if ($option && $option->is_correct) {
-                                $correctAnswers++;
+                        // For multiple choice with multiple correct answers, count each correct selection
+                        if ($question->question_type === 'multiple_choice') {
+                            $correctCount = $question->options->where('is_correct', true)->count();
+                            
+                            if ($correctCount > 1) {
+                                // Multiple correct answers - check if this is an array of selected options
+                                if (is_array($answer)) {
+                                    foreach ($answer as $selectedOptionId) {
+                                        $answeredCount++;
+                                        $option = QuestionOption::find($selectedOptionId);
+                                        if ($option && $option->is_correct) {
+                                            $correctAnswers++;
+                                        }
+                                    }
+                                } else {
+                                    // Single selection (shouldn't happen for multiple correct, but handle it)
+                                    $answeredCount++;
+                                    $option = QuestionOption::find($answer);
+                                    if ($option && $option->is_correct) {
+                                        $correctAnswers++;
+                                    }
+                                }
+                            } else {
+                                // Single correct answer
+                                $answeredCount++;
+                                if (is_numeric($answer)) {
+                                    $option = QuestionOption::find($answer);
+                                    if ($option && $option->is_correct) {
+                                        $correctAnswers++;
+                                    }
+                                }
                             }
-                        } elseif (!$question->requiresOptions()) {
-                            // Check text answer
-                            if ($this->checkSingleTextAnswer($question, $answer)) {
-                                $correctAnswers++;
+                        } else {
+                            // Other question types
+                            $answeredCount++;
+                            
+                            // Check if correct
+                            if ($question->requiresOptions() && is_numeric($answer)) {
+                                $option = QuestionOption::find($answer);
+                                if ($option && $option->is_correct) {
+                                    $correctAnswers++;
+                                }
+                            } elseif (!$question->requiresOptions()) {
+                                // Check text answer
+                                if ($this->checkSingleTextAnswer($question, $answer)) {
+                                    $correctAnswers++;
+                                }
                             }
                         }
                     }

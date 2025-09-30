@@ -721,7 +721,12 @@ class QuestionController extends Controller
                             // For multiple choice, check if this index is in the correct_options array
                             $correctOptions = $request->input('correct_options', []);
                             $isCorrect = in_array($index, $correctOptions);
+                        } else if ($request->question_type === 'single_choice') {
+                            // For single choice (radio), check against correct_option
+                            $correctOption = $request->input('correct_option');
+                            $isCorrect = ($correctOption !== null && $correctOption == $index);
                         } else {
+                            // For other types (true_false, yes_no, etc.)
                             $isCorrect = ($request->correct_option == $index);
                         }
                         
@@ -1152,7 +1157,7 @@ class QuestionController extends Controller
     private function needsOptions($questionType): bool
     {
         // Special types that don't need traditional options
-        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram', 'matching_headings', 'dropdown_selection'];
+        $specialTypes = ['matching', 'form_completion', 'plan_map_diagram', 'matching_headings', 'dropdown_selection', 'drag_drop'];
         
         // Text input types that don't need options
         $textTypes = ['short_answer', 'sentence_completion', 'note_completion', 'summary_completion', 'fill_blanks'];
@@ -1163,8 +1168,8 @@ class QuestionController extends Controller
         }
         
         // Option-based types that require correct_option validation
-        // Note: 'single_choice' is not a valid type - it should be treated as default behavior
-        $optionTypes = ['multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features'];
+        // Added 'single_choice' to support radio button questions
+        $optionTypes = ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features'];
         
         return in_array($questionType, $optionTypes);
     }

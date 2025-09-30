@@ -37,11 +37,7 @@
                     }
                 @endphp
                 
-                @if($blankCount > 1)
-                    <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + $blankCount - 1 }}</span>
-                @else
-                    <span class="question-number">{{ $displayNumber }}</span>
-                @endif
+                {{-- No question number displayed before content --}}
                 
                 <div class="question-text">{!! $processedContent !!}</div>
             </div>
@@ -49,11 +45,60 @@
         @break
         
     @case('single_choice')
+        {{-- Single Choice Question --}}
+        <div class="question-item single-choice-question" id="question-{{ $question->id }}">
+            <div class="question-content">
+                <span class="question-number">{{ $displayNumber }}</span>
+                <div class="question-text">{!! $question->content !!}</div>
+            </div>
+            
+            @if($question->options && $question->options->count() > 0)
+                <div class="single-choice-options">
+                    @foreach ($question->options as $optionIndex => $option)
+                        <div class="single-choice-option-item">
+                            <input type="radio" 
+                                   name="answers[{{ $question->id }}]" 
+                                   value="{{ $option->id }}" 
+                                   class="single-choice-radio"
+                                   id="option-{{ $question->id }}-{{ $option->id }}"
+                                   data-question-number="{{ $displayNumber }}">
+                            <label for="option-{{ $question->id }}-{{ $option->id }}" class="single-choice-label">
+                                <span class="option-letter">{{ chr(65 + $optionIndex) }}</span>
+                                <span class="option-text">{{ $option->content }}</span>
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                {{-- No options found, show text input as fallback --}}
+                <div class="answer-input">
+                    <input type="text" 
+                           name="answers[{{ $question->id }}]" 
+                           class="text-input" 
+                           placeholder="Type your answer"
+                           maxlength="50"
+                           data-question-number="{{ $displayNumber }}">
+                </div>
+            @endif
+        </div>
+        @break
+        
     @case('multiple_choice')
         {{-- Single/Multiple Choice Question --}}
         <div class="question-item" id="question-{{ $question->id }}">
             <div class="question-content">
-                <span class="question-number">{{ $displayNumber }}</span>
+                @php
+                    // Check if multiple correct answers
+                    $correctCount = $question->options->where('is_correct', true)->count();
+                    $hasMultipleCorrect = $correctCount > 1;
+                @endphp
+                
+                @if($hasMultipleCorrect)
+                    <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + $correctCount - 1 }}</span>
+                @else
+                    <span class="question-number">{{ $displayNumber }}</span>
+                @endif
+                
                 <div class="question-text">{!! $question->content !!}</div>
             </div>
             
@@ -145,7 +190,7 @@
         
     @case('drag_drop')
         {{-- Drag and Drop Question --}}
-        <div class="question-item drag-drop-question" id="question-{{ $question->id }}">
+        <div class="question-item drag-drop-question" id="question-{{ $question->id }}" style="background: none; border: none; box-shadow: none;">
             @php
                 $dragDropData = $question->section_specific_data ?? [];
                 $dropZones = $dragDropData['drop_zones'] ?? [];
@@ -230,16 +275,30 @@
     border: 1px solid #ccc !important;
     border-radius: 4px !important;
     font-size: 14px !important;
+    text-align: center !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    font-style: normal !important;
+}
+
+.inline-blank::placeholder {
+    text-align: center !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    opacity: 1 !important;
+    font-style: normal !important;
 }
 
 .inline-dropdown {
     display: inline-block !important;
     margin: 0 4px !important;
-    padding: 6px 10px !important;
+    padding: 4px 8px !important;
     border: 1px solid #ccc !important;
     border-radius: 4px !important;
-    font-size: 14px !important;
-    min-width: 120px !important;
+    font-size: 13px !important;
+    min-width: 100px !important;
+    max-width: 140px !important;
+    height: 32px !important;
 }
 
 /* Remove instruction background styling */
@@ -263,11 +322,167 @@
     margin-bottom: 0 !important;
 }
 
+/* Single Choice Options Styling */
+.single-choice-options {
+    margin: 20px 0 20px 47px;
+}
+
+.single-choice-option-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.single-choice-radio {
+    width: 20px;
+    height: 20px;
+    margin-top: 3px;
+    margin-right: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: #1f2937;
+}
+
+.single-choice-label {
+    display: flex;
+    align-items: baseline;
+    flex: 1;
+    cursor: pointer;
+    padding: 10px 16px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    background: white;
+    border: 1px solid transparent;
+}
+
+.single-choice-label:hover {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+.single-choice-radio:checked + .single-choice-label {
+    background: #f3f4f6;
+    border-color: #374151;
+}
+
+.single-choice-radio:checked + .single-choice-label .option-letter {
+    background: #1f2937;
+    color: white;
+}
+
+.single-choice-radio:checked + .single-choice-label .option-text {
+    color: #111827;
+    font-weight: 600;
+}
+
+.option-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 14px;
+    color: #374151;
+    margin-right: 12px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.option-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #1f2937;
+    transition: all 0.2s;
+}
+
+/* Single/Multiple Choice Options Styling */
+.options-list {
+    margin: 20px 0;
+    margin-left: 47px;
+}
+
+.option-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    cursor: pointer;
+    padding: 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.option-item:hover {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+.option-radio,
+.option-checkbox {
+    margin-top: 2px;
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: #1f2937;
+}
+
+.option-label {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #1f2937;
+    cursor: pointer;
+    display: flex;
+    align-items: baseline;
+}
+
+.option-label strong {
+    font-weight: 700;
+    margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+/* Selected state */
+.option-item:has(input:checked) {
+    background: #f3f4f6;
+    border: 1px solid #374151;
+    margin-left: -1px;
+    padding: 11px;
+}
+
+.option-item:has(input:checked) .option-label {
+    color: #111827;
+    font-weight: 600;
+}
+
+.option-item:has(input:checked) .option-label strong {
+    background: #1f2937;
+    color: white;
+}
+
 /* Drag and Drop Styles - Simple Layout like Image */
 
 /* Drop Zones List - No background card */
 .drag-drop-zones-list {
     margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
 }
 
 .drop-zone-row {
@@ -374,10 +589,10 @@
     flex-wrap: wrap;
     gap: 12px;
     margin: 20px 0 24px 0;
-    padding: 16px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
 }
 
 .draggable-option {

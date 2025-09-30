@@ -1106,6 +1106,10 @@
                         $dropZones = $dragDropData['drop_zones'] ?? [];
                         $dropZoneCount = count($dropZones);
                         $totalQuestionCount += ($dropZoneCount > 0 ? $dropZoneCount : 1);
+                    } elseif ($q->question_type === 'multiple_choice') {
+                        // For multiple choice, count correct answers as individual questions
+                        $correctCount = $q->options->where('is_correct', true)->count();
+                        $totalQuestionCount += ($correctCount > 1 ? $correctCount : 1);
                     } else {
                         $totalQuestionCount++;
                     }
@@ -1163,6 +1167,10 @@
                                     $dropZones = $dragDropData['drop_zones'] ?? [];
                                     $dropZoneCount = count($dropZones);
                                     $currentQuestionNumber += ($dropZoneCount > 0 ? $dropZoneCount : 1);
+                                } elseif ($question->question_type === 'multiple_choice') {
+                                    // For multiple choice, count correct answers
+                                    $correctCount = $question->options->where('is_correct', true)->count();
+                                    $currentQuestionNumber += ($correctCount > 1 ? $correctCount : 1);
                                 } else {
                                     $currentQuestionNumber++;
                                 }
@@ -1249,6 +1257,21 @@
                                 <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
                                      data-question="{{ $question->id }}"
                                      data-zone-index="{{ $i }}"
+                                     data-display-number="{{ $navQuestionNum }}"
+                                     data-part="{{ $question->part_number }}">
+                                    {{ $navQuestionNum++ }}
+                                </div>
+                            @endfor
+                        @elseif($question->question_type === 'multiple_choice')
+                            @php
+                                // For multiple choice, show buttons based on correct answer count
+                                $correctCount = $question->options->where('is_correct', true)->count();
+                                $buttonCount = $correctCount > 1 ? $correctCount : 1;
+                            @endphp
+                            @for($i = 1; $i <= $buttonCount; $i++)
+                                @php $questionIdMap[$navQuestionNum] = $question->id; @endphp
+                                <div class="number-btn {{ $navQuestionNum == 1 ? 'active' : '' }}" 
+                                     data-question="{{ $question->id }}"
                                      data-display-number="{{ $navQuestionNum }}"
                                      data-part="{{ $question->part_number }}">
                                     {{ $navQuestionNum++ }}
@@ -1565,20 +1588,45 @@
         document.querySelectorAll('input[type="radio"], input[type="checkbox"], input[type="text"], select').forEach(input => {
             input.addEventListener('change', function() {
                 const questionNumber = this.dataset.questionNumber;
-                if (questionNumber) {
-                    const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-                    if (navButton) {
-                        if (this.type === 'radio' || this.type === 'checkbox') {
-                            // For radio/checkbox, check if any option is selected
-                            const name = this.name;
-                            const isAnswered = document.querySelector(`input[name="${name}"]:checked`) !== null;
-                            if (isAnswered) {
+                
+                // Handle different input types
+                if (this.type === 'radio') {
+                    // For radio buttons, mark the specific question number as answered
+                    if (questionNumber) {
+                        const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                        if (navButton) {
+                            if (this.checked) {
                                 navButton.classList.add('answered');
-                            } else {
-                                navButton.classList.remove('answered');
                             }
-                        } else {
-                            // For text/select inputs
+                        }
+                    }
+                } else if (this.type === 'checkbox') {
+                    // For checkboxes (multiple choice), check the parent question
+                    const questionId = this.name.match(/answers\[(\d+)\]/)?.[1];
+                    if (questionId) {
+                        // Find all checkboxes for this question
+                        const allCheckboxes = document.querySelectorAll(`input[name="answers[${questionId}][]"]:checked`);
+                        const checkedCount = allCheckboxes.length;
+                        
+                        // Find all number buttons for this question
+                        const navButtons = document.querySelectorAll(`.number-btn[data-question="${questionId}"]`);
+                        
+                        if (navButtons.length > 0) {
+                            // Mark buttons as answered based on how many checkboxes are selected
+                            navButtons.forEach((btn, index) => {
+                                if (index < checkedCount) {
+                                    btn.classList.add('answered');
+                                } else {
+                                    btn.classList.remove('answered');
+                                }
+                            });
+                        }
+                    }
+                } else if (this.type === 'text' || this.tagName.toLowerCase() === 'select') {
+                    // For text/select inputs
+                    if (questionNumber) {
+                        const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                        if (navButton) {
                             if (this.value && this.value.trim()) {
                                 navButton.classList.add('answered');
                             } else {
@@ -1587,6 +1635,7 @@
                         }
                     }
                 }
+                
                 saveAllAnswers();
                 updateAnswerCount();
             });

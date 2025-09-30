@@ -89,12 +89,24 @@ window.ListeningQuestionTypes = {
     // Initialize Single Choice
     initSingleChoice(type) {
         const panel = document.getElementById('single-choice-panel');
-        if (panel) panel.style.display = 'block';
+        if (panel) {
+            panel.style.display = 'block';
+            console.log('Single choice panel shown');
+        }
+        
+        // Clear existing options first
+        const container = document.getElementById('single-choice-options-container');
+        if (container) {
+            container.innerHTML = '';
+            this.optionCounters.single = 0;
+        }
         
         // Add 4 empty options for single choice
         for (let i = 0; i < 4; i++) {
             this.addSingleChoiceOption('', i === 0);
         }
+        
+        console.log('Added', this.optionCounters.single, 'single choice options');
     },
     
     // Initialize Multiple Choice
@@ -304,7 +316,7 @@ window.ListeningQuestionTypes = {
                     <input type="text" 
                            name="blank_answers[]" 
                            value="${value}"
-                           class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded"
+                           class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded blank-answer-input"
                            placeholder="Correct answer"
                            onchange="ListeningQuestionTypes.updateBlankAnswer(${num}, this.value)"
                            required>
