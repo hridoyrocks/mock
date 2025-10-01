@@ -215,16 +215,35 @@ class FullTestController extends Controller
      */
     public function destroy(FullTest $fullTest)
     {
-        // Check if there are any attempts
-        if ($fullTest->attempts()->exists()) {
+        DB::beginTransaction();
+        
+        try {
+            // Check if there are any attempts
+            if ($fullTest->attempts()->exists()) {
+                return redirect()->back()
+                    ->with('error', 'Cannot delete this full test because it has ' . $fullTest->attempts()->count() . ' student attempts. Please deactivate it instead.');
+            }
+            
+            // Get test title for success message
+            $testTitle = $fullTest->title;
+            
+            // Detach all test sets before deleting
+            $fullTest->testSets()->detach();
+            
+            // Delete the full test
+            $fullTest->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('admin.full-tests.index')
+                ->with('success', 'Full test "' . $testTitle . '" has been deleted successfully.');
+                
+        } catch (\Exception $e) {
+            DB::rollback();
+            
             return redirect()->back()
-                ->with('error', 'Cannot delete full test with existing attempts.');
+                ->with('error', 'Failed to delete full test. Please try again or contact support if the problem persists.');
         }
-        
-        $fullTest->delete();
-        
-        return redirect()->route('admin.full-tests.index')
-            ->with('success', 'Full test deleted successfully.');
     }
 
     /**

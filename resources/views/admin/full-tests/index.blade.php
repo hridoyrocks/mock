@@ -222,8 +222,8 @@
                                     @if($fullTest->attempts()->count() === 0)
                                         <form action="{{ route('admin.full-tests.destroy', $fullTest) }}" 
                                               method="POST" 
-                                              class="inline"
-                                              onsubmit="return confirm('Are you sure you want to delete this full test?');">
+                                              class="inline delete-form"
+                                              data-test-name="{{ $fullTest->title }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" 
@@ -234,6 +234,15 @@
                                                 </svg>
                                             </button>
                                         </form>
+                                    @else
+                                        <button type="button" 
+                                                class="text-gray-400 cursor-not-allowed"
+                                                title="Cannot delete - Has {{ $fullTest->attempts()->count() }} attempts"
+                                                disabled>
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
                                     @endif
                                 </div>
                             </td>
@@ -271,8 +280,10 @@
 
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Sortable functionality
             const sortable = new Sortable(document.getElementById('sortable-tests'), {
                 handle: '.handle',
                 animation: 150,
@@ -301,6 +312,29 @@
                         }
                     });
                 }
+            });
+
+            // Delete confirmation
+            document.querySelectorAll('.delete-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const testName = this.getAttribute('data-test-name');
+                    
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        html: `You are about to delete the full test: <br><strong>${testName}</strong><br><br>This action cannot be undone!`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Yes, delete it!',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            this.submit();
+                        }
+                    });
+                });
             });
         });
     </script>
