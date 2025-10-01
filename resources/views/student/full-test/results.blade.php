@@ -40,8 +40,13 @@
             </div>
 
             <!-- Section Scores -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            @php
+                $availableSections = $fullTestAttempt->fullTest->getAvailableSections();
+                $gridCols = count($availableSections) == 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4';
+            @endphp
+            <div class="grid grid-cols-1 md:grid-cols-2 {{ $gridCols }} gap-6 mb-8">
                 <!-- Listening Score -->
+                @if(in_array('listening', $availableSections))
                 <div class="glass rounded-xl p-6 text-center">
                     <div class="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-headphones text-violet-400 text-2xl"></i>
@@ -56,8 +61,10 @@
                         </p>
                     @endif
                 </div>
+                @endif
 
                 <!-- Reading Score -->
+                @if(in_array('reading', $availableSections))
                 <div class="glass rounded-xl p-6 text-center">
                     <div class="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-book-open text-emerald-400 text-2xl"></i>
@@ -72,8 +79,10 @@
                         </p>
                     @endif
                 </div>
+                @endif
 
                 <!-- Writing Score -->
+                @if(in_array('writing', $availableSections))
                 <div class="glass rounded-xl p-6 text-center">
                     <div class="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-pen-fancy text-amber-400 text-2xl"></i>
@@ -92,8 +101,10 @@
                         </p>
                     @endif
                 </div>
+                @endif
 
                 <!-- Speaking Score -->
+                @if(in_array('speaking', $availableSections))
                 <div class="glass rounded-xl p-6 text-center">
                     <div class="w-16 h-16 rounded-full bg-rose-500/20 flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-microphone text-rose-400 text-2xl"></i>
@@ -112,6 +123,7 @@
                         </p>
                     @endif
                 </div>
+                @endif
             </div>
 
             <!-- Performance Analysis -->
@@ -123,12 +135,19 @@
                     <div>
                         <h3 class="text-lg font-semibold text-white mb-4">Score Breakdown</h3>
                         @php
-                            $scores = [
-                                'Listening' => $fullTestAttempt->listening_score,
-                                'Reading' => $fullTestAttempt->reading_score,
-                                'Writing' => $fullTestAttempt->writing_score,
-                                'Speaking' => $fullTestAttempt->speaking_score
-                            ];
+                            $scores = [];
+                            if(in_array('listening', $availableSections) && $fullTestAttempt->listening_score !== null) {
+                                $scores['Listening'] = $fullTestAttempt->listening_score;
+                            }
+                            if(in_array('reading', $availableSections) && $fullTestAttempt->reading_score !== null) {
+                                $scores['Reading'] = $fullTestAttempt->reading_score;
+                            }
+                            if(in_array('writing', $availableSections) && $fullTestAttempt->writing_score !== null) {
+                                $scores['Writing'] = $fullTestAttempt->writing_score;
+                            }
+                            if(in_array('speaking', $availableSections) && $fullTestAttempt->speaking_score !== null) {
+                                $scores['Speaking'] = $fullTestAttempt->speaking_score;
+                            }
                             $validScores = array_filter($scores, fn($score) => $score !== null);
                             $maxScore = !empty($validScores) ? max($validScores) : 0;
                             $minScore = !empty($validScores) ? min($validScores) : 0;
@@ -214,7 +233,7 @@
                 
                 <!-- View Individual Section Results -->
                 <div class="flex-1 flex gap-2 justify-end">
-                    @if($fullTestAttempt->listeningAttempt())
+                    @if(in_array('listening', $availableSections) && $fullTestAttempt->listeningAttempt())
                         <a href="{{ route('student.test.results.show', $fullTestAttempt->listeningAttempt()) }}" 
                            class="btn-secondary !px-3 !py-2 text-sm"
                            title="View Listening Results">
@@ -222,7 +241,7 @@
                         </a>
                     @endif
                     
-                    @if($fullTestAttempt->readingAttempt())
+                    @if(in_array('reading', $availableSections) && $fullTestAttempt->readingAttempt())
                         <a href="{{ route('student.test.results.show', $fullTestAttempt->readingAttempt()) }}" 
                            class="btn-secondary !px-3 !py-2 text-sm"
                            title="View Reading Results">
@@ -230,7 +249,7 @@
                         </a>
                     @endif
                     
-                    @if($fullTestAttempt->writingAttempt())
+                    @if(in_array('writing', $availableSections) && $fullTestAttempt->writingAttempt())
                         <a href="{{ route('student.test.results.show', $fullTestAttempt->writingAttempt()) }}" 
                            class="btn-secondary !px-3 !py-2 text-sm"
                            title="View Writing Results">
@@ -238,7 +257,7 @@
                         </a>
                     @endif
                     
-                    @if($fullTestAttempt->speakingAttempt())
+                    @if(in_array('speaking', $availableSections) && $fullTestAttempt->speakingAttempt())
                         <a href="{{ route('student.test.results.show', $fullTestAttempt->speakingAttempt()) }}" 
                            class="btn-secondary !px-3 !py-2 text-sm"
                            title="View Speaking Results">

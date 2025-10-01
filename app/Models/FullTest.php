@@ -86,6 +86,53 @@ class FullTest extends Model
         
         return count(array_intersect($requiredSections, $sections)) === 4;
     }
+    
+    /**
+     * Get available sections for this test.
+     */
+    public function getAvailableSections(): array
+    {
+        $sections = [];
+        
+        if ($this->listeningTestSet()) {
+            $sections[] = 'listening';
+        }
+        if ($this->readingTestSet()) {
+            $sections[] = 'reading';
+        }
+        if ($this->writingTestSet()) {
+            $sections[] = 'writing';
+        }
+        if ($this->speakingTestSet()) {
+            $sections[] = 'speaking';
+        }
+        
+        return $sections;
+    }
+    
+    /**
+     * Check if test has a specific section.
+     */
+    public function hasSection(string $section): bool
+    {
+        return in_array($section, $this->getAvailableSections());
+    }
+
+    /**
+     * Get minimum required sections count.
+     */
+    public function getMinimumSectionsCount(): int
+    {
+        return 3; // Minimum 3 sections required
+    }
+
+    /**
+     * Check if test has minimum required sections.
+     */
+    public function hasMinimumSections(): bool
+    {
+        return count($this->getAvailableSections()) >= $this->getMinimumSectionsCount();
+    }
 
     /**
      * Get active full tests.

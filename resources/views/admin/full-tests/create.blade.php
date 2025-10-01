@@ -116,7 +116,15 @@
                     </svg>
                     <h3 class="text-lg font-semibold text-gray-900">Select Test Sets for Each Section</h3>
                 </div>
-                <p class="mt-1 text-sm text-gray-500">Choose one test set for each section to create a complete IELTS test</p>
+                <p class="mt-1 text-sm text-gray-500">Choose test sets for sections. Minimum 3 sections are required to create a Full Test.</p>
+                <div class="mt-2 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                    <p class="text-sm text-amber-800">
+                        <svg class="inline h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                        <strong>Note:</strong> You can create a full test with any combination of 3 or 4 sections.
+                    </p>
+                </div>
             </div>
             
             <div class="p-6 space-y-6">
@@ -132,8 +140,7 @@
                     </div>
                     <select name="listening_test_set_id" 
                             id="listening_test_set_id" 
-                            class="block w-full rounded-lg border-purple-300 bg-white shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm"
-                            required>
+                            class="block w-full rounded-lg border-purple-300 bg-white shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm">
                         <option value="">Select a listening test set</option>
                         @foreach($testSets['listening'] ?? [] as $testSet)
                             <option value="{{ $testSet->id }}" 
@@ -159,8 +166,7 @@
                     </div>
                     <select name="reading_test_set_id" 
                             id="reading_test_set_id" 
-                            class="block w-full rounded-lg border-green-300 bg-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
-                            required>
+                            class="block w-full rounded-lg border-green-300 bg-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
                         <option value="">Select a reading test set</option>
                         @foreach($testSets['reading'] ?? [] as $testSet)
                             <option value="{{ $testSet->id }}" 
@@ -186,8 +192,7 @@
                     </div>
                     <select name="writing_test_set_id" 
                             id="writing_test_set_id" 
-                            class="block w-full rounded-lg border-blue-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            required>
+                            class="block w-full rounded-lg border-blue-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                         <option value="">Select a writing test set</option>
                         @foreach($testSets['writing'] ?? [] as $testSet)
                             <option value="{{ $testSet->id }}" 
@@ -213,8 +218,7 @@
                     </div>
                     <select name="speaking_test_set_id" 
                             id="speaking_test_set_id" 
-                            class="block w-full rounded-lg border-orange-300 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
-                            required>
+                            class="block w-full rounded-lg border-orange-300 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm">
                         <option value="">Select a speaking test set</option>
                         @foreach($testSets['speaking'] ?? [] as $testSet)
                             <option value="{{ $testSet->id }}" 
@@ -248,4 +252,59 @@
             </button>
         </div>
     </form>
+    
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const selects = {
+                listening: document.getElementById('listening_test_set_id'),
+                reading: document.getElementById('reading_test_set_id'),
+                writing: document.getElementById('writing_test_set_id'),
+                speaking: document.getElementById('speaking_test_set_id')
+            };
+            
+            form.addEventListener('submit', function(e) {
+                let selectedCount = 0;
+                
+                for (let section in selects) {
+                    if (selects[section].value) {
+                        selectedCount++;
+                    }
+                }
+                
+                if (selectedCount < 3) {
+                    e.preventDefault();
+                    alert('Please select at least 3 sections to create a full test.');
+                    return false;
+                }
+            });
+            
+            // Update UI to show section count
+            function updateSectionCount() {
+                let selectedCount = 0;
+                
+                for (let section in selects) {
+                    if (selects[section].value) {
+                        selectedCount++;
+                    }
+                }
+                
+                const submitButton = form.querySelector('button[type="submit"]');
+                if (selectedCount < 3) {
+                    submitButton.setAttribute('title', `Select ${3 - selectedCount} more section(s)`);
+                } else {
+                    submitButton.setAttribute('title', 'Create Full Test');
+                }
+            }
+            
+            // Add change listeners
+            for (let section in selects) {
+                selects[section].addEventListener('change', updateSectionCount);
+            }
+            
+            updateSectionCount();
+        });
+    </script>
+    @endpush
 </x-admin-layout>

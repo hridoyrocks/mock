@@ -46,11 +46,25 @@ class FullTestController extends Controller
             'description' => 'nullable|string',
             'is_premium' => 'boolean',
             'active' => 'boolean',
-            'listening_test_set_id' => 'required|exists:test_sets,id',
-            'reading_test_set_id' => 'required|exists:test_sets,id',
-            'writing_test_set_id' => 'required|exists:test_sets,id',
-            'speaking_test_set_id' => 'required|exists:test_sets,id',
+            'listening_test_set_id' => 'nullable|exists:test_sets,id',
+            'reading_test_set_id' => 'nullable|exists:test_sets,id',
+            'writing_test_set_id' => 'nullable|exists:test_sets,id',
+            'speaking_test_set_id' => 'nullable|exists:test_sets,id',
         ]);
+        
+        // Validate minimum 3 sections
+        $selectedSections = array_filter([
+            $validated['listening_test_set_id'] ?? null,
+            $validated['reading_test_set_id'] ?? null,
+            $validated['writing_test_set_id'] ?? null,
+            $validated['speaking_test_set_id'] ?? null,
+        ]);
+        
+        if (count($selectedSections) < 3) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Please select at least 3 sections to create a full test.');
+        }
 
         DB::beginTransaction();
         
@@ -64,20 +78,22 @@ class FullTestController extends Controller
                 'order_number' => FullTest::max('order_number') + 1
             ]);
             
-            // Attach test sets
+            // Attach test sets (only non-null ones)
             $sections = [
-                'listening' => $validated['listening_test_set_id'],
-                'reading' => $validated['reading_test_set_id'],
-                'writing' => $validated['writing_test_set_id'],
-                'speaking' => $validated['speaking_test_set_id'],
+                'listening' => $validated['listening_test_set_id'] ?? null,
+                'reading' => $validated['reading_test_set_id'] ?? null,
+                'writing' => $validated['writing_test_set_id'] ?? null,
+                'speaking' => $validated['speaking_test_set_id'] ?? null,
             ];
             
             $order = 1;
             foreach ($sections as $type => $testSetId) {
-                $fullTest->testSets()->attach($testSetId, [
-                    'section_type' => $type,
-                    'order_number' => $order++
-                ]);
+                if ($testSetId) {
+                    $fullTest->testSets()->attach($testSetId, [
+                        'section_type' => $type,
+                        'order_number' => $order++
+                    ]);
+                }
             }
             
             DB::commit();
@@ -129,11 +145,25 @@ class FullTestController extends Controller
             'description' => 'nullable|string',
             'is_premium' => 'boolean',
             'active' => 'boolean',
-            'listening_test_set_id' => 'required|exists:test_sets,id',
-            'reading_test_set_id' => 'required|exists:test_sets,id',
-            'writing_test_set_id' => 'required|exists:test_sets,id',
-            'speaking_test_set_id' => 'required|exists:test_sets,id',
+            'listening_test_set_id' => 'nullable|exists:test_sets,id',
+            'reading_test_set_id' => 'nullable|exists:test_sets,id',
+            'writing_test_set_id' => 'nullable|exists:test_sets,id',
+            'speaking_test_set_id' => 'nullable|exists:test_sets,id',
         ]);
+        
+        // Validate minimum 3 sections
+        $selectedSections = array_filter([
+            $validated['listening_test_set_id'] ?? null,
+            $validated['reading_test_set_id'] ?? null,
+            $validated['writing_test_set_id'] ?? null,
+            $validated['speaking_test_set_id'] ?? null,
+        ]);
+        
+        if (count($selectedSections) < 3) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Please select at least 3 sections to update the full test.');
+        }
 
         DB::beginTransaction();
         
@@ -150,18 +180,20 @@ class FullTestController extends Controller
             $fullTest->testSets()->detach();
             
             $sections = [
-                'listening' => $validated['listening_test_set_id'],
-                'reading' => $validated['reading_test_set_id'],
-                'writing' => $validated['writing_test_set_id'],
-                'speaking' => $validated['speaking_test_set_id'],
+                'listening' => $validated['listening_test_set_id'] ?? null,
+                'reading' => $validated['reading_test_set_id'] ?? null,
+                'writing' => $validated['writing_test_set_id'] ?? null,
+                'speaking' => $validated['speaking_test_set_id'] ?? null,
             ];
             
             $order = 1;
             foreach ($sections as $type => $testSetId) {
-                $fullTest->testSets()->attach($testSetId, [
-                    'section_type' => $type,
-                    'order_number' => $order++
-                ]);
+                if ($testSetId) {
+                    $fullTest->testSets()->attach($testSetId, [
+                        'section_type' => $type,
+                        'order_number' => $order++
+                    ]);
+                }
             }
             
             DB::commit();

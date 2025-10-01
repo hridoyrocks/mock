@@ -74,10 +74,10 @@ class FullTestController extends Controller
                 ->with('error', 'You have reached your monthly test limit. Please upgrade your plan.');
         }
         
-        // Check if test has all sections
-        if (!$fullTest->hasAllSections()) {
+        // Check if test has minimum required sections
+        if (!$fullTest->hasMinimumSections()) {
             return redirect()->route('student.full-test.index')
-                ->with('error', 'This test is not properly configured. Please try another test.');
+                ->with('error', 'This test is not properly configured. Minimum 3 sections are required.');
         }
         
         // Get any in-progress attempt
@@ -119,13 +119,17 @@ class FullTestController extends Controller
                         ->with('error', 'You have reached your monthly test limit.');
                 }
                 
+                // Get first available section
+                $availableSections = $fullTest->getAvailableSections();
+                $firstSection = $availableSections[0] ?? 'listening';
+                
                 // Create new attempt
                 $attempt = FullTestAttempt::create([
                     'user_id' => $user->id,
                     'full_test_id' => $fullTest->id,
                     'start_time' => now(),
                     'status' => 'in_progress',
-                    'current_section' => 'listening'
+                    'current_section' => $firstSection
                 ]);
                 
                 // Increment user's test count
@@ -163,6 +167,20 @@ class FullTestController extends Controller
         // Validate section
         if (!in_array($section, ['listening', 'reading', 'writing', 'speaking'])) {
             abort(404);
+        }
+        
+        // Check if this test has this section
+        if (!$fullTestAttempt->fullTest->hasSection($section)) {
+            // Skip to next available section
+            $nextSection = $fullTestAttempt->getNextSection();
+            if ($nextSection) {
+                return redirect()->route('student.full-test.section', [
+                    'fullTestAttempt' => $fullTestAttempt->id,
+                    'section' => $nextSection
+                ]);
+            } else {
+                return redirect()->route('student.full-test.results', $fullTestAttempt);
+            }
         }
         
         // Check if section already completed

@@ -171,8 +171,8 @@
                                                 ~3 hours
                                             </span>
                                             <span class="flex items-center">
-                                                <i class="fas fa-layer-group mr-1 text-[#C8102E]"></i>
-                                                4 sections
+                                            <i class="fas fa-layer-group mr-1 text-[#C8102E]"></i>
+                                            {{ $fullTest->getAvailableSections() ? count($fullTest->getAvailableSections()) : 0 }} sections
                                             </span>
                                         </div>
                                         @if($completedAttempts->count() > 0 && $completedAttempts->first()->overall_band_score)

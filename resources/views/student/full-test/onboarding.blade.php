@@ -51,31 +51,33 @@
                             <i class="fas fa-clock text-blue-400 mr-2"></i>
                             Test Duration
                         </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <div class="text-center p-2 bg-gray-900/50 rounded-lg">
-                                <i class="fas fa-headphones text-violet-400 mb-1"></i>
-                                <p class="text-xs text-gray-400">Listening</p>
-                                <p class="text-sm text-white font-medium">30 min</p>
-                            </div>
-                            <div class="text-center p-2 bg-gray-900/50 rounded-lg">
-                                <i class="fas fa-book-open text-emerald-400 mb-1"></i>
-                                <p class="text-xs text-gray-400">Reading</p>
-                                <p class="text-sm text-white font-medium">60 min</p>
-                            </div>
-                            <div class="text-center p-2 bg-gray-900/50 rounded-lg">
-                                <i class="fas fa-pen-fancy text-amber-400 mb-1"></i>
-                                <p class="text-xs text-gray-400">Writing</p>
-                                <p class="text-sm text-white font-medium">60 min</p>
-                            </div>
-                            <div class="text-center p-2 bg-gray-900/50 rounded-lg">
-                                <i class="fas fa-microphone text-rose-400 mb-1"></i>
-                                <p class="text-xs text-gray-400">Speaking</p>
-                                <p class="text-sm text-white font-medium">15 min</p>
-                            </div>
+                        @php
+                            $availableSections = $fullTest->getAvailableSections();
+                            $gridCols = count($availableSections) == 3 ? 'md:grid-cols-3' : 'md:grid-cols-4';
+                            $totalTime = 0;
+                            $sectionInfo = [
+                                'listening' => ['icon' => 'fa-headphones', 'color' => 'violet', 'time' => 30],
+                                'reading' => ['icon' => 'fa-book-open', 'color' => 'emerald', 'time' => 60],
+                                'writing' => ['icon' => 'fa-pen-fancy', 'color' => 'amber', 'time' => 60],
+                                'speaking' => ['icon' => 'fa-microphone', 'color' => 'rose', 'time' => 15]
+                            ];
+                        @endphp
+                        <div class="grid grid-cols-2 {{ $gridCols }} gap-3">
+                            @foreach($availableSections as $section)
+                                @php
+                                    $info = $sectionInfo[$section];
+                                    $totalTime += $info['time'];
+                                @endphp
+                                <div class="text-center p-2 bg-gray-900/50 rounded-lg">
+                                    <i class="fas {{ $info['icon'] }} text-{{ $info['color'] }}-400 mb-1"></i>
+                                    <p class="text-xs text-gray-400">{{ ucfirst($section) }}</p>
+                                    <p class="text-sm text-white font-medium">{{ $info['time'] }} min</p>
+                                </div>
+                            @endforeach
                         </div>
                         <p class="text-center text-indigo-400 text-sm mt-3">
                             <i class="fas fa-info-circle mr-1"></i>
-                            Total: ~3 hours (with breaks)
+                            Total: ~{{ intval($totalTime / 60) }}h {{ $totalTime % 60 }}min (with breaks)
                         </p>
                     </div>
 
@@ -104,17 +106,21 @@
                             Ready to Start?
                         </h3>
                         <div class="grid grid-cols-2 gap-2">
+                            @if(in_array('listening', $availableSections))
                             <label class="flex items-center text-xs text-gray-300 cursor-pointer p-2 rounded hover:bg-gray-700/50">
                                 <input type="checkbox" class="form-checkbox mr-2" id="check-audio">
                                 <span>Audio ready</span>
                             </label>
+                            @endif
+                            @if(in_array('speaking', $availableSections))
                             <label class="flex items-center text-xs text-gray-300 cursor-pointer p-2 rounded hover:bg-gray-700/50">
                                 <input type="checkbox" class="form-checkbox mr-2" id="check-mic">
                                 <span>Microphone ready</span>
                             </label>
+                            @endif
                             <label class="flex items-center text-xs text-gray-300 cursor-pointer p-2 rounded hover:bg-gray-700/50">
                                 <input type="checkbox" class="form-checkbox mr-2" id="check-time">
-                                <span>3 hours available</span>
+                                <span>{{ intval($totalTime / 60) }}+ hours available</span>
                             </label>
                             <label class="flex items-center text-xs text-gray-300 cursor-pointer p-2 rounded hover:bg-gray-700/50">
                                 <input type="checkbox" class="form-checkbox mr-2" id="check-understand">

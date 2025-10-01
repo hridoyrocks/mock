@@ -122,15 +122,25 @@ class FullTestAttempt extends Model
 
     /**
      * Calculate overall band score.
+     * Only calculates based on available sections.
      */
     public function calculateOverallScore(): float
     {
-        $scores = array_filter([
-            $this->listening_score,
-            $this->reading_score,
-            $this->writing_score,
-            $this->speaking_score
-        ]);
+        $scores = [];
+        
+        // Only include scores for sections that exist in the test
+        if ($this->fullTest->hasSection('listening') && $this->listening_score !== null) {
+            $scores[] = $this->listening_score;
+        }
+        if ($this->fullTest->hasSection('reading') && $this->reading_score !== null) {
+            $scores[] = $this->reading_score;
+        }
+        if ($this->fullTest->hasSection('writing') && $this->writing_score !== null) {
+            $scores[] = $this->writing_score;
+        }
+        if ($this->fullTest->hasSection('speaking') && $this->speaking_score !== null) {
+            $scores[] = $this->speaking_score;
+        }
 
         if (count($scores) === 0) {
             return 0;
@@ -160,14 +170,22 @@ class FullTestAttempt extends Model
     }
 
     /**
-     * Check if all sections have scores.
+     * Check if all available sections have scores.
      */
     public function hasAllSectionScores(): bool
     {
-        return $this->listening_score !== null
-            && $this->reading_score !== null
-            && $this->writing_score !== null
-            && $this->speaking_score !== null;
+        $availableSections = $this->fullTest->getAvailableSections();
+        $scoredSections = 0;
+        
+        foreach ($availableSections as $section) {
+            $scoreField = $section . '_score';
+            if ($this->$scoreField !== null) {
+                $scoredSections++;
+            }
+        }
+        
+        // All available sections must have scores
+        return $scoredSections === count($availableSections);
     }
 
     /**
@@ -175,10 +193,10 @@ class FullTestAttempt extends Model
      */
     public function getNextSection(): ?string
     {
-        $sections = ['listening', 'reading', 'writing', 'speaking'];
+        $availableSections = $this->fullTest->getAvailableSections();
         $completedSections = $this->sectionAttempts()->pluck('section_type')->toArray();
         
-        foreach ($sections as $section) {
+        foreach ($availableSections as $section) {
             if (!in_array($section, $completedSections)) {
                 return $section;
             }
