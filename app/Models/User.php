@@ -319,12 +319,7 @@ public function hasTrustedDevice(string $fingerprint): bool
     {
         // Use SubscriptionManager service
         $subscriptionManager = app(\App\Services\Subscription\SubscriptionManager::class);
-        $subscription = $subscriptionManager->subscribe($this, $plan, $paymentDetails);
-        
-        // Send welcome notification
-        $this->notify(new \App\Notifications\SubscriptionCreated($subscription));
-        
-        return $subscription;
+        return $subscriptionManager->subscribe($this, $plan, $paymentDetails);
     }
 
 

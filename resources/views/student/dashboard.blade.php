@@ -301,7 +301,7 @@
                             <div class="text-center py-12">
                                 <i class="fas fa-inbox text-6xl mb-4" :class="darkMode ? 'text-gray-600' : 'text-gray-300'"></i>
                                 <p :class="darkMode ? 'text-gray-400' : 'text-gray-600'">No recent activity</p>
-                                <a href="{{ route('student.index') }}" class="inline-flex items-center mt-4 text-[#C8102E] hover:text-[#A00E27]">
+                                <a href="{{ route('student.dashboard') }}" class="inline-flex items-center mt-4 text-[#C8102E] hover:text-[#A00E27]">
                                     Start your first test <i class="fas fa-arrow-right ml-2"></i>
                                 </a>
                             </div>

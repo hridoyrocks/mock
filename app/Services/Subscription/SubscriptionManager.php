@@ -86,6 +86,19 @@ class SubscriptionManager
             // Grant monthly tokens if the plan includes them
             $this->grantMonthlyTokens($user, $plan);
 
+            // Try to send notification but don't fail if it doesn't work
+            try {
+                if (class_exists(\App\Notifications\SubscriptionCreated::class)) {
+                    $user->notify(new \App\Notifications\SubscriptionCreated($subscription));
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send subscription notification', [
+                    'error' => $e->getMessage(),
+                    'user_id' => $user->id,
+                    'subscription_id' => $subscription->id
+                ]);
+            }
+
             return $subscription;
         });
     }

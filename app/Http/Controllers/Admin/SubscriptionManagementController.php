@@ -136,32 +136,70 @@ class SubscriptionManagementController extends Controller
      */
     public function grantSubscription(Request $request, User $user)
     {
-        $request->validate([
-            'plan_id' => 'required|exists:subscription_plans,id',
-            'duration_days' => 'required|integer|min:1|max:365',
-            'reason' => 'required|string|max:255',
+        \Log::info('Grant subscription request received', [
+            'user_id' => $user->id,
+            'request_data' => $request->all(),
+            'admin_id' => auth()->id()
         ]);
 
-        $plan = SubscriptionPlan::findOrFail($request->plan_id);
-
         try {
+            $validated = $request->validate([
+                'plan_id' => 'required|exists:subscription_plans,id',
+                'duration_days' => 'required|integer|min:1|max:365',
+                'reason' => 'required|string|max:255',
+            ]);
+
+            $plan = SubscriptionPlan::findOrFail($validated['plan_id']);
+            \Log::info('Plan found', ['plan_id' => $plan->id, 'plan_name' => $plan->name]);
+
             DB::beginTransaction();
 
-            // Create subscription
-            $subscription = $user->subscribeTo($plan, [
+            // Cancel any existing active subscriptions
+            $cancelledCount = UserSubscription::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                    'auto_renew' => false
+                ]);
+            
+            \Log::info('Cancelled existing subscriptions', ['count' => $cancelledCount]);
+
+            // Create new subscription directly
+            $subscription = UserSubscription::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'status' => 'active',
+                'starts_at' => now(),
+                'ends_at' => now()->addDays((int)$validated['duration_days']),
+                'auto_renew' => false,
                 'payment_method' => 'admin_granted',
                 'payment_reference' => 'ADMIN_GRANT_' . auth()->id(),
             ]);
+            
+            \Log::info('Subscription created', ['subscription_id' => $subscription->id]);
 
-            // Override duration if different
-            if ($request->duration_days != $plan->duration_days) {
-                $subscription->update([
-                    'ends_at' => now()->addDays($request->duration_days),
-                ]);
+            // Update user status
+            // Map plan slug to allowed subscription status values
+            $subscriptionStatus = 'free';
+            if (in_array($plan->slug, ['premium', 'pro'])) {
+                $subscriptionStatus = $plan->slug;
+            } elseif ($plan->price > 0) {
+                // If it's a paid plan but not premium/pro, default to premium
+                $subscriptionStatus = 'premium';
             }
+            
+            $user->update([
+                'subscription_status' => $subscriptionStatus,
+                'subscription_ends_at' => $subscription->ends_at,
+                'tests_taken_this_month' => 0,
+                'ai_evaluations_used' => 0,
+            ]);
+            
+            \Log::info('User updated', ['user_id' => $user->id]);
 
             // Create a transaction record
-            PaymentTransaction::create([
+            $transaction = PaymentTransaction::create([
                 'user_id' => $user->id,
                 'subscription_id' => $subscription->id,
                 'transaction_id' => PaymentTransaction::generateTransactionId(),
@@ -169,18 +207,66 @@ class SubscriptionManagementController extends Controller
                 'amount' => 0,
                 'currency' => 'BDT',
                 'status' => 'completed',
-                'notes' => 'Admin granted: ' . $request->reason,
+                'notes' => 'Admin granted: ' . $validated['reason'],
+                'metadata' => [
+                    'granted_by' => auth()->id(),
+                    'reason' => $validated['reason'],
+                    'duration_days' => $validated['duration_days']
+                ]
             ]);
+            
+            \Log::info('Transaction created', ['transaction_id' => $transaction->id]);
+
+            // Grant monthly tokens if plan includes them
+            try {
+                $tokenFeatureValue = $plan->getFeatureValue('evaluation_tokens_per_month');
+                if ($tokenFeatureValue && $tokenFeatureValue > 0) {
+                    $tokenRecord = \App\Models\UserEvaluationToken::getOrCreateForUser($user);
+                    $tokenRecord->addTokens($tokenFeatureValue, 'subscription_monthly');
+                    
+                    // Log token grant
+                    DB::table('token_transactions')->insert([
+                        'user_id' => $user->id,
+                        'type' => 'admin_grant',
+                        'amount' => $tokenFeatureValue,
+                        'balance_after' => $tokenRecord->available_tokens,
+                        'reason' => 'Monthly tokens from subscription grant',
+                        'admin_id' => auth()->id(),
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                    
+                    \Log::info('Tokens granted', ['amount' => $tokenFeatureValue]);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to grant tokens', ['error' => $e->getMessage()]);
+            }
 
             DB::commit();
+            
+            \Log::info('Subscription grant completed successfully');
 
             return redirect()->back()
                 ->with('success', "Subscription granted to {$user->name} successfully.");
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed', [
+                'errors' => $e->errors(),
+                'input' => $request->all()
+            ]);
+            return redirect()->back()
+                ->withErrors($e->errors())
+                ->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Failed to grant subscription', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()->back()
-                ->with('error', 'Failed to grant subscription: ' . $e->getMessage());
+                ->with('error', 'Failed to grant subscription. Please try again.');
         }
     }
 

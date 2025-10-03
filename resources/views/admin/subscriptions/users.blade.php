@@ -442,37 +442,41 @@
             
             if (grantForm) {
                 grantForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
                     console.log('Grant form submitted');
                     console.log('Form action:', this.action);
-                    console.log('Form data:', new FormData(this));
+                    console.log('Form method:', this.method);
                     
                     // Add loading state to button
                     const btn = document.getElementById('grantSubmitBtn');
                     if (btn) {
                         btn.disabled = true;
-                        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+                        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
                     }
+                    
+                    // Submit form
+                    this.submit();
                 });
             }
             
             if (revokeForm) {
                 revokeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
                     console.log('Revoke form submitted');
                     console.log('Form action:', this.action);
                     console.log('Form method:', this.method);
-                    
-                    const formData = new FormData(this);
-                    console.log('Form data:');
-                    for (let [key, value] of formData.entries()) {
-                        console.log(key + ':', value);
-                    }
                     
                     // Add loading state to button
                     const btn = document.getElementById('revokeSubmitBtn');
                     if (btn) {
                         btn.disabled = true;
-                        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
+                        btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...';
                     }
+                    
+                    // Submit form
+                    this.submit();
                 });
             }
         });
@@ -483,6 +487,7 @@
             document.getElementById('grantUserName').innerText = userName;
             const form = document.getElementById('grantForm');
             form.action = `/admin/subscriptions/grant/${userId}`;
+            form.method = 'POST';
             console.log('Form action set to:', form.action);
             const modal = document.getElementById('grantModal');
             modal.style.display = 'block';
@@ -494,6 +499,13 @@
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';
             document.getElementById('grantForm').reset();
+            
+            // Reset button state
+            const btn = document.getElementById('grantSubmitBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Grant Subscription';
+            }
         }
         
         function openRevokeModal(subscriptionId, userName) {
@@ -508,6 +520,7 @@
             document.getElementById('revokeUserName').innerText = userName;
             const form = document.getElementById('revokeForm');
             form.action = `/admin/subscriptions/revoke/${subscriptionId}`;
+            form.method = 'POST';
             console.log('Form action set to:', form.action);
             const modal = document.getElementById('revokeModal');
             modal.style.display = 'block';
@@ -519,6 +532,13 @@
             modal.style.display = 'none';
             document.body.style.overflow = 'auto';
             document.getElementById('revokeForm').reset();
+            
+            // Reset button state
+            const btn = document.getElementById('revokeSubmitBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Revoke Subscription';
+            }
         }
         
         // Close modal on ESC key
