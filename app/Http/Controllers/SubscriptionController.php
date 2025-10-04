@@ -51,9 +51,9 @@ class SubscriptionController extends Controller
         // Get user tokens
         $userTokens = \App\Models\UserEvaluationToken::firstOrCreate(
             ['user_id' => $user->id],
-            ['balance' => 0]
+            ['available_tokens' => 0, 'used_tokens' => 0]
         );
-        $tokenBalance = $userTokens->balance;
+        $tokenBalance = $userTokens->available_tokens;
 
         return view('subscription.index', compact(
             'user',
