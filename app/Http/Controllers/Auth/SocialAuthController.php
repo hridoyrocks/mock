@@ -39,6 +39,9 @@ class SocialAuthController extends Controller
                 // Existing user - just login
                 Auth::login($user);
                 
+                // Update last login time
+                $user->update(['last_login_at' => now()]);
+                
                 // Track device
                 $this->trackDevice($request, $user);
                 

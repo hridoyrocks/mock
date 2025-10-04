@@ -67,6 +67,9 @@ class OtpVerificationController extends Controller
 
         // Login user
         Auth::login($user);
+        
+        // Update last login time
+        $user->update(['last_login_at' => now()]);
 
         // Track device
         $this->trackLoginDevice($request, $user);

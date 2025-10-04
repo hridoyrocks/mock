@@ -15,12 +15,13 @@ use App\Models\PaymentTransaction;
 use App\Models\StudentAttempt;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 
 class User extends Authenticatable
 {
-   use HasApiTokens, HasFactory, Notifiable;
+   use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -55,6 +56,8 @@ class User extends Authenticatable
         'ban_type',
         'ban_expires_at',
         'banned_by',
+        'created_by',
+        'last_login_at',
     ];
 
     protected $casts = [
@@ -72,6 +75,7 @@ class User extends Authenticatable
         'successful_referrals' => 'integer',
         'banned_at' => 'datetime',
         'ban_expires_at' => 'datetime',
+        'last_login_at' => 'datetime',
     ];
 
 

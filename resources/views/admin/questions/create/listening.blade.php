@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Add Question - Listening</x-slot>
     
     <!-- Header -->
@@ -709,4 +709,4 @@
     }
     </script>
     @endpush
-</x-layout>
+</x-admin-layout>

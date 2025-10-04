@@ -570,6 +570,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
         // User Management
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('index');
+            Route::get('/system', [App\Http\Controllers\Admin\UserController::class, 'systemUsers'])->name('system');
             Route::get('/create', [App\Http\Controllers\Admin\UserController::class, 'create'])->name('create');
             Route::post('/', [App\Http\Controllers\Admin\UserController::class, 'store'])->name('store');
             Route::get('/{user}', [App\Http\Controllers\Admin\UserController::class, 'show'])->name('show');

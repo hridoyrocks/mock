@@ -56,6 +56,9 @@ class LoginController extends Controller
         RateLimiter::clear($this->throttleKey($request));
 
         $user = Auth::user();
+        
+        // Update last login time
+        $user->update(['last_login_at' => now()]);
 
         // Check email verification
         if (!$user->hasVerifiedEmail()) {

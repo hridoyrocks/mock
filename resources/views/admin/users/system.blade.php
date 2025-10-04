@@ -1,21 +1,30 @@
 <x-admin-layout>
-    <x-slot name="title">User Management</x-slot>
+    <x-slot name="title">System Users</x-slot>
 
     <!-- Page Header -->
     <div class="mb-8">
         <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
-                    <p class="mt-1 text-sm text-gray-600">Manage all registered users and their accounts</p>
+                    <h1 class="text-2xl font-bold text-gray-900">System Users</h1>
+                    <p class="mt-1 text-sm text-gray-600">All administrative and teacher accounts</p>
                 </div>
-                <a href="{{ route('admin.users.create') }}" 
-                   class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Add New User
-                </a>
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('admin.users.index') }}" 
+                       class="inline-flex items-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                        </svg>
+                        All Users
+                    </a>
+                    <a href="{{ route('admin.users.create') }}" 
+                       class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add System User
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -51,70 +60,7 @@
         </div>
     @endif
 
-    <!-- Stats Cards -->
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 transition-all hover:shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Total Users</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">{{ $users->total() }}</p>
-                </div>
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 transition-all hover:shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Active Users</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        {{ \App\Models\User::whereNull('banned_at')->count() }}
-                    </p>
-                </div>
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 transition-all hover:shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Admins</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        {{ \App\Models\User::where('is_admin', true)->count() }}
-                    </p>
-                </div>
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
-                    <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 transition-all hover:shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-gray-600">Banned</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        {{ \App\Models\User::whereNotNull('banned_at')->count() }}
-                    </p>
-                </div>
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-    </div>
+   
 
     <!-- Filters -->
     <div class="mb-6 rounded-xl bg-white shadow-sm border border-gray-200">
@@ -123,10 +69,10 @@
                 <svg class="mr-2 h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                <h3 class="text-sm font-semibold text-gray-700">Filter Users</h3>
+                <h3 class="text-sm font-semibold text-gray-700">Filter System Users</h3>
             </div>
         </div>
-        <form method="GET" action="{{ route('admin.users.index') }}" class="p-6">
+        <form method="GET" action="{{ route('admin.users.system') }}" class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -143,9 +89,8 @@
                             id="role" 
                             class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                         <option value="">All Roles</option>
-                        <option value="student" {{ request('role') === 'student' ? 'selected' : '' }}>Student</option>
-                        <option value="teacher" {{ request('role') === 'teacher' ? 'selected' : '' }}>Teacher</option>
                         <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
+                        <option value="teacher" {{ request('role') === 'teacher' ? 'selected' : '' }}>Teacher</option>
                     </select>
                 </div>
                 <div>
@@ -167,7 +112,7 @@
                         Filter
                     </button>
                     @if(request()->hasAny(['search', 'role', 'status']))
-                        <a href="{{ route('admin.users.index') }}" 
+                        <a href="{{ route('admin.users.system') }}" 
                            class="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -179,7 +124,7 @@
         </form>
     </div>
 
-    <!-- Users Table -->
+    <!-- System Users Table -->
     <div class="rounded-xl bg-white shadow-sm border border-gray-200">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -187,11 +132,10 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">User</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Role</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Subscription</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">AI Evaluations</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">Human Evaluations</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Contact</th>
                         <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Joined</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Last Login</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created</th>
                         <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
                     </tr>
                 </thead>
@@ -214,59 +158,55 @@
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
-                                    <div class="text-sm text-gray-500">{{ $user->email }}</div>
+                                    <div class="text-sm text-gray-500">ID: #{{ $user->id }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($user->is_admin)
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
-                                    Admin
+                                    <svg class="mr-1 h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    Administrator
                                 </span>
                             @elseif($user->teacher)
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    <svg class="mr-1 h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                    </svg>
                                     Teacher
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                                    Student
                                 </span>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($user->currentSubscription)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
-                                    {{ $user->currentSubscription->plan->name }}
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
-                                    Free
-                                </span>
+                            <div class="text-sm text-gray-900">{{ $user->email }}</div>
+                            @if($user->phone_number)
+                                <div class="text-sm text-gray-500">{{ $user->phone_number }}</div>
                             @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <div class="text-sm text-gray-900">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium {{ $user->ai_evaluations_count > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600' }}">
-                                    {{ $user->ai_evaluations_count ?? 0 }}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <div class="text-sm text-gray-900">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium {{ $user->human_evaluations_count > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' }}">
-                                    {{ $user->human_evaluations_count ?? 0 }}
-                                </span>
-                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($user->isBanned())
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-100 text-red-800">
+                                    <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd" />
+                                    </svg>
                                     Banned
                                 </span>
                             @else
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                                    <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
                                     Active
                                 </span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            @if($user->last_login_at)
+                                {{ $user->last_login_at->diffForHumans() }}
+                            @else
+                                Never
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -311,12 +251,18 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
+                        <td colspan="7" class="px-6 py-12 text-center">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
                             </svg>
-                            <p class="mt-4 text-sm font-medium text-gray-900">No users found</p>
-                            <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria</p>
+                            <p class="mt-4 text-sm font-medium text-gray-900">No system users found</p>
+                            <p class="mt-1 text-sm text-gray-500">System users include all administrators and teachers</p>
+                            <a href="{{ route('admin.users.create') }}" class="mt-4 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Create First System User
+                            </a>
                         </td>
                     </tr>
                     @endforelse

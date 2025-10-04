@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class StudentAttempt extends Model
 {
@@ -111,5 +112,21 @@ class StudentAttempt extends Model
         // Check if this is already the latest attempt
         $latestAttempt = self::getLatestAttempt($this->user_id, $this->test_set_id);
         return $this->id === $latestAttempt->id;
+    }
+    
+    /**
+     * Get AI evaluation jobs for this attempt
+     */
+    public function aiEvaluationJobs(): HasMany
+    {
+        return $this->hasMany(AIEvaluationJob::class, 'attempt_id');
+    }
+    
+    /**
+     * Get human evaluation request for this attempt
+     */
+    public function humanEvaluationRequest(): HasOne
+    {
+        return $this->hasOne(HumanEvaluationRequest::class, 'student_attempt_id');
     }
 }

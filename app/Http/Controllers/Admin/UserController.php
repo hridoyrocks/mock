@@ -47,11 +47,69 @@ class UserController extends Controller
         }
 
         $users = $query->with(['teacher', 'currentSubscription.plan'])
+            ->withCount([
+                'studentAttempts as human_evaluations_count' => function ($query) {
+                    $query->whereHas('humanEvaluationRequest', function ($q) {
+                        $q->where('status', 'completed');
+                    });
+                },
+                'studentAttempts as ai_evaluations_count' => function ($query) {
+                    $query->whereNotNull('ai_evaluated_at');
+                }
+            ])
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->withQueryString();
 
         return view('admin.users.index', compact('users'));
+    }
+    
+    /**
+     * Display system users (all admins and teachers, no students).
+     */
+    public function systemUsers(Request $request)
+    {
+        $query = User::query();
+
+        // Filter for system users - only admins and teachers (no students)
+        $query->where(function($q) {
+            $q->where('is_admin', true)
+              ->orWhereHas('teacher');
+        });
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by role
+        if ($request->filled('role')) {
+            if ($request->role === 'admin') {
+                $query->where('is_admin', true);
+            } elseif ($request->role === 'teacher') {
+                $query->whereHas('teacher');
+            }
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            if ($request->status === 'banned') {
+                $query->whereNotNull('banned_at');
+            } elseif ($request->status === 'active') {
+                $query->whereNull('banned_at');
+            }
+        }
+
+        $users = $query->with(['teacher'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.users.system', compact('users'));
     }
 
     /**
@@ -83,6 +141,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'is_admin' => $validated['role'] === 'admin',
             'email_verified_at' => $validated['email_verified'] ?? false ? now() : null,
+            'created_by' => 'system', // Mark as system user since created by admin
         ]);
 
         // If teacher role, create teacher record
@@ -263,11 +322,125 @@ class UserController extends Controller
         }
 
         try {
+            // Start database transaction
+            \DB::beginTransaction();
+            
             // Store user name before deletion
             $userName = $user->name;
             
-            // Delete the user
+            // Delete related records first to avoid foreign key constraints
+            
+            // Delete authentication logs if table exists
+            if (\Schema::hasTable('authentication_log')) {
+                \DB::table('authentication_log')->where('authenticatable_id', $user->id)->delete();
+            }
+            
+            // Delete student attempts and their answers
+            if ($user->studentAttempts) {
+                foreach ($user->studentAttempts as $attempt) {
+                    // Delete attempt answers
+                    $attempt->answers()->delete();
+                    
+                    // Delete AI evaluation jobs
+                    if ($attempt->aiEvaluationJobs) {
+                        $attempt->aiEvaluationJobs()->delete();
+                    }
+                    
+                    // Delete human evaluation requests
+                    if ($attempt->humanEvaluationRequest) {
+                        $attempt->humanEvaluationRequest->delete();
+                    }
+                }
+                $user->studentAttempts()->delete();
+            }
+            
+            // Delete user achievements
+            if ($user->achievements) {
+                $user->achievements()->delete();
+            }
+            
+            // Delete user goals
+            if ($user->goals) {
+                $user->goals()->delete();
+            }
+            
+            // Delete subscriptions
+            if ($user->subscriptions) {
+                $user->subscriptions()->delete();
+            }
+            
+            // Delete payment transactions
+            if ($user->transactions) {
+                $user->transactions()->delete();
+            }
+            
+            // Delete evaluation tokens
+            if ($user->evaluationTokens) {
+                $user->evaluationTokens()->delete();
+            }
+            
+            // Delete devices
+            if ($user->devices) {
+                $user->devices()->delete();
+            }
+            
+            // Delete OTP verifications
+            if ($user->otpVerifications) {
+                $user->otpVerifications()->delete();
+            }
+            
+            // Delete referrals where user is referrer
+            if ($user->referrals) {
+                $user->referrals()->delete();
+            }
+            
+            // Delete referral rewards
+            if ($user->referralRewards) {
+                $user->referralRewards()->delete();
+            }
+            
+            // Delete referral redemptions
+            if ($user->referralRedemptions) {
+                $user->referralRedemptions()->delete();
+            }
+            
+            // Delete ban appeals
+            if ($user->banAppeals) {
+                $user->banAppeals()->delete();
+            }
+            
+            // If user is a teacher, delete teacher record
+            if ($user->teacher) {
+                // Delete evaluation requests where this teacher is assigned
+                \DB::table('human_evaluation_requests')
+                    ->where('teacher_id', $user->teacher->id)
+                    ->update(['teacher_id' => null]);
+                    
+                $user->teacher()->delete();
+            }
+            
+            // Update referred_by for users who were referred by this user
+            User::where('referred_by', $user->id)->update(['referred_by' => null]);
+            
+            // Update banned_by for users who were banned by this user
+            User::where('banned_by', $user->id)->update(['banned_by' => null]);
+            
+            // Delete any other relations that might exist
+            \DB::table('full_test_attempts')->where('user_id', $user->id)->delete();
+            
+            // Delete announcements_dismissed if table exists
+            if (\Schema::hasTable('announcements_dismissed')) {
+                \DB::table('announcements_dismissed')->where('user_id', $user->id)->delete();
+            }
+            
+            \DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            \DB::table('sessions')->where('user_id', $user->id)->delete();
+            
+            // Finally delete the user
             $user->delete();
+            
+            // Commit transaction
+            \DB::commit();
 
             if (request()->ajax()) {
                 return response()->json([
@@ -278,11 +451,24 @@ class UserController extends Controller
 
             return redirect()->route('admin.users.index')
                 ->with('success', 'User deleted successfully.');
+                
         } catch (\Exception $e) {
+            // Rollback transaction
+            \DB::rollback();
+            
+            // Log the error
+            \Log::error('Failed to delete user: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             if (request()->ajax()) {
-                return response()->json(['error' => 'Failed to delete user. Please try again.'], 500);
+                return response()->json([
+                    'error' => 'Failed to delete user. ' . ($e->getMessage() ?: 'Please try again.')
+                ], 500);
             }
-            return back()->with('error', 'Failed to delete user. Please try again.');
+            return back()->with('error', 'Failed to delete user. ' . ($e->getMessage() ?: 'Please try again.'));
         }
     }
 }
