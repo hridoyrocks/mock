@@ -80,7 +80,12 @@ Route::get('/cookie-policy', function() {
 })->name('cookie-policy');
 
 // Home route
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', function() {
+    return view('welcome');
+})->name('welcome');
+
+// Alternative home route
+Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Webhook routes (outside auth middleware - MUST be outside auth)
 Route::post('/payment/webhook/{provider}', [PaymentController::class, 'webhook'])
