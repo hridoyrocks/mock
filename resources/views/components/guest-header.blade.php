@@ -3,12 +3,15 @@
     <nav class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
             <!-- Logo -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <span class="text-white font-bold text-xl">M</span>
-                </div>
-                <span class="text-gray-800 text-xl font-semibold">IELTS Mock Platform</span>
-            </div>
+            <a href="{{ route('welcome') }}" class="flex items-center">
+                @if($websiteSettings->site_logo)
+                    <img src="{{ $websiteSettings->logo_url }}" alt="{{ $websiteSettings->site_title }}" class="h-12 w-auto">
+                @else
+                    <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg">
+                        <span class="text-white font-bold text-xl">{{ substr($websiteSettings->site_title, 0, 1) }}</span>
+                    </div>
+                @endif
+            </a>
             
             <!-- Desktop Navigation -->
             <div class="hidden md:flex items-center space-x-8">

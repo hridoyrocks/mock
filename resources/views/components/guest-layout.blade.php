@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'IELTS Mock Platform') }} - {{ $title ?? 'Home' }}</title>
+    <title>{{ $websiteSettings->site_title }} - {{ $title ?? 'Home' }}</title>
+
+    <!-- Favicon -->
+    @if($websiteSettings->favicon_url)
+    <link rel="icon" type="image/x-icon" href="{{ $websiteSettings->favicon_url }}">
+    @endif
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
