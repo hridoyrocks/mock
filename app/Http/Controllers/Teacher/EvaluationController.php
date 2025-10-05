@@ -110,7 +110,8 @@ class EvaluationController extends Controller
                 'task_scores.*.feedback' => 'required|string',
                 'overall_band_score' => 'required|numeric|min:0|max:9',
                 'strengths' => 'required|array',
-                'improvements' => 'required|array'
+                'improvements' => 'required|array',
+                'error_markings' => 'nullable|json'
             ]);
         } else { // speaking
             $request->validate([
@@ -129,7 +130,7 @@ class EvaluationController extends Controller
         
         DB::transaction(function () use ($request, $evaluationRequest) {
             // Create human evaluation
-            HumanEvaluation::create([
+            $humanEvaluation = HumanEvaluation::create([
                 'evaluation_request_id' => $evaluationRequest->id,
                 'evaluator_id' => auth()->id(),
                 'task_scores' => $request->task_scores,
@@ -139,6 +140,24 @@ class EvaluationController extends Controller
                 'improvements' => $request->improvements,
                 'evaluated_at' => now()
             ]);
+            
+            // Save error markings if provided
+            if ($request->has('error_markings') && $request->error_markings) {
+                $errorMarkings = json_decode($request->error_markings, true);
+                
+                foreach ($errorMarkings as $marking) {
+                    \App\Models\EvaluationErrorMarking::create([
+                        'human_evaluation_id' => $humanEvaluation->id,
+                        'student_answer_id' => $marking['answerId'],
+                        'task_number' => $marking['taskNumber'],
+                        'marked_text' => $marking['text'],
+                        'start_position' => $marking['startOffset'],
+                        'end_position' => $marking['endOffset'],
+                        'error_type' => $marking['errorType'],
+                        'comment' => null // Can be added later if needed
+                    ]);
+                }
+            }
             
             // Mark request as completed
             $evaluationRequest->markCompleted();

@@ -411,7 +411,7 @@ class HumanEvaluationController extends Controller
             abort(403);
         }
         
-        $evaluationRequest = HumanEvaluationRequest::with('humanEvaluation.evaluator')
+        $evaluationRequest = HumanEvaluationRequest::with(['humanEvaluation.evaluator', 'humanEvaluation.errorMarkings'])
             ->where('student_attempt_id', $attempt->id)
             ->where('status', 'completed')
             ->firstOrFail();
