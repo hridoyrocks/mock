@@ -9,20 +9,13 @@ class ScoreCalculator
      * Updated IELTS conversion for 40 questions
      *
      * @param int $correctAnswers Number of correct answers
-     * @param int $totalQuestions Total questions in test
+     * @param int $totalQuestions Total questions in test (always 40 for IELTS)
      * @return float Band score
      */
     public static function calculateListeningBandScore(int $correctAnswers, int $totalQuestions): float
     {
-        // Scale to 40 questions (IELTS standard)
-        if ($totalQuestions > 0 && $totalQuestions != 40) {
-            // Calculate percentage and then scale to 40
-            $percentage = ($correctAnswers / $totalQuestions);
-            $scaledScore = round($percentage * 40);
-            $correctAnswers = $scaledScore;
-        }
-        
-        // Updated IELTS Listening band score conversion table
+        // Direct band score calculation - NO SCALING
+        // Use actual correct answers out of 40
         return match(true) {
             $correctAnswers >= 40 => 9.0,    // 40 = 9.0
             $correctAnswers >= 38 => 8.5,    // 38-39 = 8.5
@@ -38,7 +31,10 @@ class ScoreCalculator
             $correctAnswers >= 8  => 3.5,    // 9-8 = 3.5
             $correctAnswers >= 6  => 3.0,    // 7-6 = 3.0
             $correctAnswers >= 4  => 2.5,    // 5-4 = 2.5
-            default => 0.0
+            $correctAnswers >= 3  => 2.0,    // 3 = 2.0
+            $correctAnswers >= 2  => 1.5,    // 2 = 1.5
+            $correctAnswers >= 1  => 1.0,    // 1 = 1.0
+            default => 0.0                   // 0 = 0.0
         };
     }
     
@@ -47,22 +43,14 @@ class ScoreCalculator
      * Using unified scoring table for both Academic and General Training
      *
      * @param int $correctAnswers Number of correct answers
-     * @param int $totalQuestions Total questions in test
+     * @param int $totalQuestions Total questions in test (always 40 for IELTS)
      * @param string $testType 'academic' or 'general'
      * @return float Band score
      */
     public static function calculateReadingBandScore(int $correctAnswers, int $totalQuestions, string $testType = 'academic'): float
     {
-        // Scale to 40 questions (IELTS standard)
-        if ($totalQuestions > 0 && $totalQuestions != 40) {
-            // Calculate percentage and then scale to 40
-            $percentage = ($correctAnswers / $totalQuestions);
-            $scaledScore = round($percentage * 40);
-            $correctAnswers = $scaledScore;
-        }
-        
-        // Unified IELTS Reading band score conversion table
-        // Same scoring for both Academic and General Training
+        // Direct band score calculation - NO SCALING
+        // Use actual correct answers out of 40
         return match(true) {
             $correctAnswers >= 40 => 9.0,    // 40 = 9.0
             $correctAnswers >= 38 => 8.5,    // 38-39 = 8.5
@@ -78,7 +66,10 @@ class ScoreCalculator
             $correctAnswers >= 8  => 3.5,    // 9-8 = 3.5
             $correctAnswers >= 6  => 3.0,    // 7-6 = 3.0
             $correctAnswers >= 4  => 2.5,    // 5-4 = 2.5
-            default => 0.0
+            $correctAnswers >= 3  => 2.0,    // 3 = 2.0
+            $correctAnswers >= 2  => 1.5,    // 2 = 1.5
+            $correctAnswers >= 1  => 1.0,    // 1 = 1.0
+            default => 0.0                   // 0 = 0.0
         };
     }
     
