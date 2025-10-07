@@ -177,32 +177,8 @@ class ReadingTestController extends Controller
                 'matching_headings_count' => $questions->where('question_type', 'matching_headings')->count()
             ]);
             
-            // Calculate total question count INCLUDING blanks and multiple choice with multiple answers
-            $totalQuestions = 0;
-            foreach ($questions as $question) {
-                $blankCount = $question->countBlanks();
-                if ($blankCount > 0) {
-                    $totalQuestions += $blankCount; // Each blank counts as a separate question
-                } elseif ($question->question_type === 'multiple_choice') {
-                    // For multiple choice, if there are multiple correct options, count each as a question
-                    $correctCount = $question->options->where('is_correct', true)->count();
-                    if ($correctCount > 1) {
-                        $totalQuestions += $correctCount;
-                    } else {
-                        $totalQuestions += 1;
-                    }
-                } elseif ($question->question_type === 'matching_headings' && $question->isMasterMatchingHeading()) {
-                    // Master matching heading questions count based on mappings
-                    $mappingCount = count($question->section_specific_data['mappings'] ?? []);
-                    $totalQuestions += $mappingCount > 0 ? $mappingCount : 1;
-                } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
-                    // Sentence completion with multiple sentences
-                    $sentenceCount = count($question->section_specific_data['sentence_completion']['sentences'] ?? []);
-                    $totalQuestions += $sentenceCount > 0 ? $sentenceCount : 1;
-                } else {
-                    $totalQuestions += 1;
-                }
-            }
+            // IELTS standard is always 40 questions for Reading
+            $totalQuestions = 40; // Fixed for IELTS standard
             
             // Track answered questions and correct answers
             $answeredCount = 0;

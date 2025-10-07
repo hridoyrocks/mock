@@ -149,37 +149,8 @@ class ListeningTestController extends Controller
                 ->get()
                 ->keyBy('id');
             
-            // Calculate total question count including sub-questions and blanks
-            $totalQuestions = 0;
-            foreach ($questions as $question) {
-                if ($question->question_type === 'matching' && $question->matching_pairs) {
-                    $totalQuestions += count($question->matching_pairs);
-                } elseif ($question->question_type === 'form_completion' && $question->form_structure) {
-                    $totalQuestions += count($question->form_structure['fields'] ?? []);
-                } elseif ($question->question_type === 'plan_map_diagram' && $question->diagram_hotspots) {
-                    $totalQuestions += count($question->diagram_hotspots);
-                } elseif ($question->question_type === 'drag_drop') {
-                    // Count drop zones for drag & drop questions
-                    $sectionData = $question->section_specific_data ?? [];
-                    $dropZones = $sectionData['drop_zones'] ?? [];
-                    $totalQuestions += count($dropZones) > 0 ? count($dropZones) : 1;
-                } elseif ($question->question_type === 'multiple_choice') {
-                    // For multiple choice, count correct answers as separate questions
-                    $correctCount = $question->options->where('is_correct', true)->count();
-                    $totalQuestions += ($correctCount > 1 ? $correctCount : 1);
-                } elseif (in_array($question->question_type, ['fill_blanks', 'sentence_completion', 'note_completion', 'dropdown_selection'])) {
-                    // Count blanks/dropdowns for fill-in-the-gap questions
-                    $blankCount = $question->countBlanks();
-                    // Also check for dropdowns
-                    $dropdownCount = 0;
-                    if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
-                        $dropdownCount = count($question->section_specific_data['dropdown_correct']);
-                    }
-                    $totalQuestions += max($blankCount, $dropdownCount, 1);
-                } else {
-                    $totalQuestions++;
-                }
-            }
+            // IELTS standard is always 40 questions
+            $totalQuestions = 40; // Fixed for IELTS standard
             
             // Save answers and calculate score
             $correctAnswers = 0;
