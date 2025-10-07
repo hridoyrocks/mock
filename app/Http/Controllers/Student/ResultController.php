@@ -139,6 +139,7 @@ class ResultController extends Controller
         // Calculate statistics for automatically scored sections
         if (in_array($attempt->testSet->section->name, ['listening', 'reading'])) {
             $correctAnswers = 0;
+            $answeredQuestions = 0; // Track actual attempted questions
             $totalQuestions = 0;
             
             // First, count actual questions (not individual answers)
@@ -186,6 +187,7 @@ class ResultController extends Controller
                     // Handle master matching headings
                     foreach ($questionAnswers as $answer) {
                         if ($answer->answer) {
+                            $answeredQuestions++; // Count attempted sub-questions
                             $answerData = json_decode($answer->answer, true);
                             if (isset($answerData['sub_question']) && isset($answerData['selected_letter'])) {
                                 // Check if correct based on mappings
@@ -218,6 +220,7 @@ class ResultController extends Controller
                         });
                         
                         if ($sentenceAnswer && $sentenceAnswer->answer) {
+                            $answeredQuestions++; // Count this sentence as attempted
                             $answerData = json_decode($sentenceAnswer->answer, true);
                             
                             if (is_array($answerData) && isset($answerData['selected_answer'])) {
@@ -247,11 +250,22 @@ class ResultController extends Controller
                         if ($this->isJson($answer->answer)) {
                             $studentAnswers = json_decode($answer->answer, true);
                             
+                            // Count blanks attempted
+                            $blankCount = $question->countBlanks();
+                            if ($blankCount > 0) {
+                                $blankAnswers = $question->getBlankAnswersArray();
+                                foreach ($blankAnswers as $blankNum => $correctAnswer) {
+                                    if (isset($studentAnswers['blank_' . $blankNum]) && trim($studentAnswers['blank_' . $blankNum]) !== '') {
+                                        $answeredQuestions++;
+                                    }
+                                }
+                            }
+                            
                             // Count correct blanks
                             $results = $question->checkMultipleBlanks($studentAnswers);
                             $correctAnswers += $results['correct'];
                             
-                            // Count correct dropdowns
+                            // Count dropdown attempts and correct answers
                             $sectionData = $question->section_specific_data;
                             if ($sectionData && isset($sectionData['dropdown_correct'])) {
                                 foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
@@ -261,6 +275,11 @@ class ResultController extends Controller
                                         $studentDropdownAnswer = $studentAnswers['dropdown_' . $num];
                                     } elseif (isset($studentAnswers[$num])) {
                                         $studentDropdownAnswer = $studentAnswers[$num];
+                                    }
+                                    
+                                    // Count as attempted if not empty
+                                    if ($studentDropdownAnswer !== null && trim($studentDropdownAnswer) !== '') {
+                                        $answeredQuestions++;
                                     }
                                     
                                     $dropdownOptions = $sectionData['dropdown_options'][$num] ?? '';
@@ -275,8 +294,11 @@ class ResultController extends Controller
                                     }
                                 }
                             }
-                        } else if ($this->checkTextAnswer($answer)) {
-                            $correctAnswers++;
+                        } else if (trim($answer->answer) !== '') {
+                            $answeredQuestions++; // Single answer attempted
+                            if ($this->checkTextAnswer($answer)) {
+                                $correctAnswers++;
+                            }
                         }
                     }
                 } else {
@@ -285,36 +307,56 @@ class ResultController extends Controller
                     if ($answer) {
                         if ($answer->question->options->count() > 0) {
                             // Multiple choice type questions
-                            if ($answer->selectedOption && $answer->selectedOption->is_correct) {
-                                $correctAnswers++;
+                            if ($answer->selected_option_id) {
+                                $answeredQuestions++;
+                                if ($answer->selectedOption && $answer->selectedOption->is_correct) {
+                                    $correctAnswers++;
+                                }
                             }
                         } else {
                             // Text-based answers
-                            if ($this->checkTextAnswer($answer)) {
-                                $correctAnswers++;
+                            if (trim($answer->answer) !== '') {
+                                $answeredQuestions++;
+                                if ($this->checkTextAnswer($answer)) {
+                                    $correctAnswers++;
+                                }
                             }
                         }
                     }
                 }
             }
             
-            // Calculate accuracy percentage
-            $accuracy = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
-            
-            // Calculate band score
-            $bandScore = 0;
-            if ($totalQuestions > 0) {
+            // Calculate band score using partial test scoring if not all questions attempted
+            if ($answeredQuestions < $totalQuestions) {
+                $scoreData = \App\Helpers\ScoreCalculator::calculatePartialTestScore(
+                    $correctAnswers, 
+                    $answeredQuestions, 
+                    $totalQuestions, 
+                    $attempt->testSet->section->name
+                );
+                
+                $bandScore = $scoreData['band_score'] ?? 0;
+                $accuracy = $scoreData['accuracy_percentage'] ?? 0;
+                $scoreMessage = $scoreData['message'] ?? '';
+                $scoreNote = $scoreData['note'] ?? null;
+            } else {
+                // Complete test - calculate normally
+                $accuracy = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
+                
                 if ($attempt->testSet->section->name === 'listening') {
                     $bandScore = \App\Helpers\ScoreCalculator::calculateListeningBandScore($correctAnswers, $totalQuestions);
-                } else if ($attempt->testSet->section->name === 'reading') {
+                } else {
                     $bandScore = \App\Helpers\ScoreCalculator::calculateReadingBandScore($correctAnswers, $totalQuestions);
                 }
                 
-                // Update the attempt with calculated band score if not already set
-                if (!$attempt->band_score || $attempt->band_score == 0) {
-                    $attempt->band_score = $bandScore;
-                    $attempt->save();
-                }
+                $scoreMessage = "Complete test with band score {$bandScore}";
+                $scoreNote = null;
+            }
+            
+            // Update the attempt with calculated band score if not already set
+            if (!$attempt->band_score || $attempt->band_score == 0) {
+                $attempt->band_score = $bandScore;
+                $attempt->save();
             }
             
             // Get current page from request
@@ -324,12 +366,15 @@ class ResultController extends Controller
             return view('student.results.show', compact(
                 'attempt', 
                 'correctAnswers', 
-                'totalQuestions', 
+                'totalQuestions',
+                'answeredQuestions',
                 'accuracy',
                 'passages',
                 'questionsWithMarkers',
                 'currentPage',
-                'perPage'
+                'perPage',
+                'scoreMessage',
+                'scoreNote'
             ));
         }
         

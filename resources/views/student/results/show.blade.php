@@ -47,12 +47,9 @@
                                     <p class="text-gray-400 text-sm mb-1">Band Score</p>
                                     <p class="text-4xl font-bold text-white">
                                         {{ number_format($attempt->band_score, 1) }}
-                                        @if(!$attempt->is_complete_attempt)
-                                            <span class="text-lg text-purple-400">*</span>
-                                        @endif
                                     </p>
-                                    @if(!$attempt->is_complete_attempt)
-                                        <p class="text-xs text-purple-400 mt-1">Projected</p>
+                                    @if(isset($answeredQuestions) && isset($totalQuestions) && $answeredQuestions < $totalQuestions)
+                                        <p class="text-xs text-purple-400 mt-1">Based on {{ $answeredQuestions }}/{{ $totalQuestions }} questions</p>
                                     @endif
                                 </div>
                             @endif
@@ -108,11 +105,22 @@
                 <div class="glass rounded-xl p-6 text-center">
                     <i class="fas fa-tasks text-green-400 text-2xl mb-3"></i>
                     <p class="text-gray-400 text-sm">Completion</p>
-                    <p class="text-white font-semibold">{{ $attempt->completion_rate }}%</p>
-                    <div class="w-full h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" 
-                             style="width: {{ $attempt->completion_rate }}%"></div>
-                    </div>
+                    @if(isset($answeredQuestions) && isset($totalQuestions))
+                        <p class="text-white font-semibold">
+                            {{ $answeredQuestions }}/{{ $totalQuestions }}
+                            <span class="text-sm text-gray-400">({{ round(($answeredQuestions / $totalQuestions) * 100) }}%)</span>
+                        </p>
+                        <div class="w-full h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" 
+                                 style="width: {{ ($answeredQuestions / $totalQuestions) * 100 }}%"></div>
+                        </div>
+                    @else
+                        <p class="text-white font-semibold">{{ $attempt->completion_rate }}%</p>
+                        <div class="w-full h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" 
+                                 style="width: {{ $attempt->completion_rate }}%"></div>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="glass rounded-xl p-6 text-center">
@@ -314,7 +322,7 @@
                         <div class="text-center">
                             <p class="text-gray-400 text-sm mb-2">Questions Attempted</p>
                             <p class="text-2xl font-bold text-white">
-                                {{ $correctAnswers + ($totalQuestions - $correctAnswers) }}
+                                {{ $answeredQuestions }}
                                 <span class="text-lg text-gray-400">/ {{ $totalQuestions }}</span>
                             </p>
                         </div>
@@ -337,12 +345,25 @@
                             <p class="text-gray-400 text-sm mb-2">Band Score</p>
                             <p class="text-2xl font-bold text-purple-400">
                                 {{ $attempt->band_score }}
-                                @if(!$attempt->is_complete_attempt)
-                                    <span class="text-sm">*</span>
-                                @endif
                             </p>
                         </div>
                     </div>
+                    
+                    {{-- Show score message if available --}}
+                    @if(isset($scoreMessage))
+                        <div class="glass rounded-xl p-4 mb-4 border-purple-500/30">
+                            <p class="text-gray-300">{{ $scoreMessage }}</p>
+                        </div>
+                    @endif
+                    
+                    @if(isset($scoreNote))
+                        <div class="glass rounded-xl p-4 mb-4 border-yellow-500/30">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-info-circle text-yellow-400 text-lg mt-0.5"></i>
+                                <p class="text-gray-300 text-sm">{{ $scoreNote }}</p>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- Band Score Visual --}}
                     <div class="mt-6">
