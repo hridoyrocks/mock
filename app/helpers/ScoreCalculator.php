@@ -6,7 +6,7 @@ class ScoreCalculator
 {
     /**
      * Calculate IELTS Listening band score based on correct answers
-     * Official IELTS conversion for 40 questions
+     * Updated IELTS conversion for 40 questions
      *
      * @param int $correctAnswers Number of correct answers
      * @param int $totalQuestions Total questions in test
@@ -22,33 +22,29 @@ class ScoreCalculator
             $correctAnswers = $scaledScore;
         }
         
-        // Official IELTS Listening band score conversion table
-        // Based on British Council / IDP official scoring
+        // Updated IELTS Listening band score conversion table
         return match(true) {
-            $correctAnswers >= 39 => 9.0,
-            $correctAnswers >= 37 => 8.5,
-            $correctAnswers >= 35 => 8.0,
-            $correctAnswers >= 32 => 7.5,
-            $correctAnswers >= 30 => 7.0,
-            $correctAnswers >= 26 => 6.5,
-            $correctAnswers >= 23 => 6.0,
-            $correctAnswers >= 18 => 5.5,
-            $correctAnswers >= 16 => 5.0,
-            $correctAnswers >= 13 => 4.5,
-            $correctAnswers >= 10 => 4.0,  // Official: 10-12 = 4.0
-            $correctAnswers >= 8  => 3.5,  // Official: 8-9 = 3.5
-            $correctAnswers >= 6  => 3.0,  // Official: 6-7 = 3.0
-            $correctAnswers >= 4  => 2.5,  // Official: 4-5 = 2.5
-            $correctAnswers == 3  => 2.0,
-            $correctAnswers == 2  => 1.5,
-            $correctAnswers == 1  => 1.0,
+            $correctAnswers >= 40 => 9.0,    // 40 = 9.0
+            $correctAnswers >= 38 => 8.5,    // 38-39 = 8.5
+            $correctAnswers >= 36 => 8.0,    // 36-37 = 8.0
+            $correctAnswers >= 34 => 7.5,    // 34-35 = 7.5
+            $correctAnswers >= 30 => 7.0,    // 32-30 = 7.0
+            $correctAnswers >= 27 => 6.5,    // 29-27 = 6.5
+            $correctAnswers >= 23 => 6.0,    // 26-23 = 6.0
+            $correctAnswers >= 19 => 5.5,    // 22-19 = 5.5
+            $correctAnswers >= 15 => 5.0,    // 18-15 = 5.0
+            $correctAnswers >= 13 => 4.5,    // 14-13 = 4.5
+            $correctAnswers >= 10 => 4.0,    // 12-10 = 4.0
+            $correctAnswers >= 8  => 3.5,    // 9-8 = 3.5
+            $correctAnswers >= 6  => 3.0,    // 7-6 = 3.0
+            $correctAnswers >= 4  => 2.5,    // 5-4 = 2.5
             default => 0.0
         };
     }
     
     /**
      * Calculate IELTS Reading band score based on correct answers
-     * Different scoring for Academic vs General Training
+     * Using unified scoring table for both Academic and General Training
      *
      * @param int $correctAnswers Number of correct answers
      * @param int $totalQuestions Total questions in test
@@ -65,51 +61,25 @@ class ScoreCalculator
             $correctAnswers = $scaledScore;
         }
         
-        if ($testType === 'academic') {
-            // Official IELTS Academic Reading band score conversion
-            return match(true) {
-                $correctAnswers >= 39 => 9.0,   // 39-40 correct = 9.0
-                $correctAnswers >= 37 => 8.5,   // 37-38 correct = 8.5
-                $correctAnswers >= 35 => 8.0,   // 35-36 correct = 8.0
-                $correctAnswers >= 33 => 7.5,   // 33-34 correct = 7.5
-                $correctAnswers >= 30 => 7.0,   // 30-32 correct = 7.0
-                $correctAnswers >= 27 => 6.5,   // 27-29 correct = 6.5
-                $correctAnswers >= 23 => 6.0,   // 23-26 correct = 6.0
-                $correctAnswers >= 19 => 5.5,   // 19-22 correct = 5.5
-                $correctAnswers >= 15 => 5.0,   // 15-18 correct = 5.0
-                $correctAnswers >= 13 => 4.5,   // 13-14 correct = 4.5
-                $correctAnswers >= 10 => 4.0,   // 10-12 correct = 4.0
-                $correctAnswers >= 8  => 3.5,   // 8-9 correct = 3.5
-                $correctAnswers >= 6  => 3.0,   // 6-7 correct = 3.0
-                $correctAnswers >= 4  => 2.5,   // 4-5 correct = 2.5
-                $correctAnswers == 3  => 2.0,
-                $correctAnswers == 2  => 1.5,
-                $correctAnswers == 1  => 1.0,
-                default => 0.0
-            };
-        } else {
-            // Official IELTS General Training Reading band score conversion
-            return match(true) {
-                $correctAnswers == 40 => 9.0,   // 40 correct = 9.0
-                $correctAnswers == 39 => 8.5,   // 39 correct = 8.5
-                $correctAnswers >= 37 => 8.0,   // 37-38 correct = 8.0
-                $correctAnswers >= 36 => 7.5,   // 36 correct = 7.5
-                $correctAnswers >= 34 => 7.0,   // 34-35 correct = 7.0
-                $correctAnswers >= 32 => 6.5,   // 32-33 correct = 6.5
-                $correctAnswers >= 30 => 6.0,   // 30-31 correct = 6.0
-                $correctAnswers >= 27 => 5.5,   // 27-29 correct = 5.5
-                $correctAnswers >= 23 => 5.0,   // 23-26 correct = 5.0
-                $correctAnswers >= 19 => 4.5,   // 19-22 correct = 4.5
-                $correctAnswers >= 15 => 4.0,   // 15-18 correct = 4.0
-                $correctAnswers >= 12 => 3.5,   // 12-14 correct = 3.5
-                $correctAnswers >= 9  => 3.0,   // 9-11 correct = 3.0
-                $correctAnswers >= 6  => 2.5,   // 6-8 correct = 2.5
-                $correctAnswers >= 4  => 2.0,   // 4-5 correct = 2.0
-                $correctAnswers >= 2  => 1.5,   // 2-3 correct = 1.5
-                $correctAnswers == 1  => 1.0,
-                default => 0.0
-            };
-        }
+        // Unified IELTS Reading band score conversion table
+        // Same scoring for both Academic and General Training
+        return match(true) {
+            $correctAnswers >= 40 => 9.0,    // 40 = 9.0
+            $correctAnswers >= 38 => 8.5,    // 38-39 = 8.5
+            $correctAnswers >= 36 => 8.0,    // 36-37 = 8.0
+            $correctAnswers >= 34 => 7.5,    // 34-35 = 7.5
+            $correctAnswers >= 30 => 7.0,    // 32-30 = 7.0
+            $correctAnswers >= 27 => 6.5,    // 29-27 = 6.5
+            $correctAnswers >= 23 => 6.0,    // 26-23 = 6.0
+            $correctAnswers >= 19 => 5.5,    // 22-19 = 5.5
+            $correctAnswers >= 15 => 5.0,    // 18-15 = 5.0
+            $correctAnswers >= 13 => 4.5,    // 14-13 = 4.5
+            $correctAnswers >= 10 => 4.0,    // 12-10 = 4.0
+            $correctAnswers >= 8  => 3.5,    // 9-8 = 3.5
+            $correctAnswers >= 6  => 3.0,    // 7-6 = 3.0
+            $correctAnswers >= 4  => 2.5,    // 5-4 = 2.5
+            default => 0.0
+        };
     }
     
     /**
