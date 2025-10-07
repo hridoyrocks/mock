@@ -9,13 +9,20 @@ class ScoreCalculator
      * Updated IELTS conversion for 40 questions
      *
      * @param int $correctAnswers Number of correct answers
-     * @param int $totalQuestions Total questions in test (always 40 for IELTS)
+     * @param int $totalQuestions Total questions in test
      * @return float Band score
      */
     public static function calculateListeningBandScore(int $correctAnswers, int $totalQuestions): float
     {
-        // Direct band score calculation - NO SCALING
-        // Use actual correct answers out of 40
+        // Scale to 40 questions (IELTS standard)
+        if ($totalQuestions > 0 && $totalQuestions != 40) {
+            // Calculate percentage and then scale to 40
+            $percentage = ($correctAnswers / $totalQuestions);
+            $scaledScore = round($percentage * 40);
+            $correctAnswers = $scaledScore;
+        }
+        
+        // Updated IELTS Listening band score conversion table
         return match(true) {
             $correctAnswers >= 40 => 9.0,    // 40 = 9.0
             $correctAnswers >= 38 => 8.5,    // 38-39 = 8.5
@@ -31,10 +38,7 @@ class ScoreCalculator
             $correctAnswers >= 8  => 3.5,    // 9-8 = 3.5
             $correctAnswers >= 6  => 3.0,    // 7-6 = 3.0
             $correctAnswers >= 4  => 2.5,    // 5-4 = 2.5
-            $correctAnswers >= 3  => 2.0,    // 3 = 2.0
-            $correctAnswers >= 2  => 1.5,    // 2 = 1.5
-            $correctAnswers >= 1  => 1.0,    // 1 = 1.0
-            default => 0.0                   // 0 = 0.0
+            default => 0.0
         };
     }
     
@@ -43,14 +47,22 @@ class ScoreCalculator
      * Using unified scoring table for both Academic and General Training
      *
      * @param int $correctAnswers Number of correct answers
-     * @param int $totalQuestions Total questions in test (always 40 for IELTS)
+     * @param int $totalQuestions Total questions in test
      * @param string $testType 'academic' or 'general'
      * @return float Band score
      */
     public static function calculateReadingBandScore(int $correctAnswers, int $totalQuestions, string $testType = 'academic'): float
     {
-        // Direct band score calculation - NO SCALING
-        // Use actual correct answers out of 40
+        // Scale to 40 questions (IELTS standard)
+        if ($totalQuestions > 0 && $totalQuestions != 40) {
+            // Calculate percentage and then scale to 40
+            $percentage = ($correctAnswers / $totalQuestions);
+            $scaledScore = round($percentage * 40);
+            $correctAnswers = $scaledScore;
+        }
+        
+        // Unified IELTS Reading band score conversion table
+        // Same scoring for both Academic and General Training
         return match(true) {
             $correctAnswers >= 40 => 9.0,    // 40 = 9.0
             $correctAnswers >= 38 => 8.5,    // 38-39 = 8.5
@@ -66,16 +78,13 @@ class ScoreCalculator
             $correctAnswers >= 8  => 3.5,    // 9-8 = 3.5
             $correctAnswers >= 6  => 3.0,    // 7-6 = 3.0
             $correctAnswers >= 4  => 2.5,    // 5-4 = 2.5
-            $correctAnswers >= 3  => 2.0,    // 3 = 2.0
-            $correctAnswers >= 2  => 1.5,    // 2 = 1.5
-            $correctAnswers >= 1  => 1.0,    // 1 = 1.0
-            default => 0.0                   // 0 = 0.0
+            default => 0.0
         };
     }
     
     /**
      * Calculate band score for partial/incomplete tests
-     * Returns actual band score based on correct answers, not projected
+     * Returns projected band score with confidence level
      *
      * @param int $correctAnswers Number of correct answers
      * @param int $answeredQuestions Number of questions attempted
@@ -90,59 +99,38 @@ class ScoreCalculator
             return [
                 'band_score' => null,
                 'message' => 'No questions attempted',
+                'min_required' => 0,
                 'answered' => $answeredQuestions,
                 'total' => $totalQuestions,
                 'completion_percentage' => 0
             ];
         }
         
-        // Calculate band score based on ACTUAL correct answers, not projected
-        // Even if only 2 out of 40 answered, score based on those 2
+        // Calculate band score based on actual correct answers out of total questions
+        // NO PROJECTION - just use the actual correct answers
         if ($section === 'listening') {
             $bandScore = self::calculateListeningBandScore($correctAnswers, $totalQuestions);
         } else {
             $bandScore = self::calculateReadingBandScore($correctAnswers, $totalQuestions);
         }
         
-        // Calculate accuracy on attempted questions
+        // Calculate accuracy on attempted questions (for display purposes only)
         $accuracy = $answeredQuestions > 0 ? ($correctAnswers / $answeredQuestions) : 0;
         
-        // Calculate completion rate
+        // Calculate completion percentage
         $completionRate = ($answeredQuestions / $totalQuestions) * 100;
-        
-        // Determine confidence level based on how many questions were attempted
-        $confidence = match(true) {
-            $completionRate >= 90 => 'Very High',
-            $completionRate >= 75 => 'High',
-            $completionRate >= 50 => 'Medium',
-            $completionRate >= 25 => 'Low',
-            $completionRate < 25 => 'Very Low (Partial Test)'
-        };
-        
-        // Determine if this is a reliable score (only if 80%+ completed)
-        $isReliable = $completionRate >= 80;
-        
-        // Create appropriate message based on completion
-        $message = match(true) {
-            $completionRate == 100 => "Complete test with band score {$bandScore}",
-            $completionRate >= 90 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Highly reliable)",
-            $completionRate >= 75 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Reliable)",
-            $completionRate >= 50 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Moderate reliability)",
-            $completionRate >= 25 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Low reliability)",
-            default => "Band score {$bandScore} based on only {$answeredQuestions}/{$totalQuestions} questions attempted"
-        };
         
         return [
             'band_score' => $bandScore,
-            'confidence' => $confidence,
-            'is_reliable' => $isReliable,
+            'confidence' => 'Actual Score',  // Not projected anymore
+            'is_reliable' => true,  // Always reliable as it's actual score
             'answered' => $answeredQuestions,
             'total' => $totalQuestions,
             'correct' => $correctAnswers,
+            'projected_correct' => $correctAnswers,  // Same as correct now
             'accuracy_percentage' => round($accuracy * 100, 1),
             'completion_percentage' => round($completionRate, 1),
-            'message' => $message,
-            'note' => $completionRate < 50 ? 'Note: This score is based on limited data. Complete more questions for accurate assessment.' : null
+            'message' => "Band Score: {$bandScore} (Correct: {$correctAnswers}/{$totalQuestions})"
         ];
     }
 

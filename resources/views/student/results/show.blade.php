@@ -64,17 +64,20 @@
     <section class="px-4 sm:px-6 lg:px-8 pb-12 -mt-4">
         <div class="max-w-7xl mx-auto">
             {{-- Score Details Alert --}}
-            @if(session('score_details') && !session('score_details')['is_reliable'])
+            @if(isset($correctAnswers) && isset($totalQuestions) && isset($answeredQuestions) && $answeredQuestions < $totalQuestions)
                 <div class="glass rounded-xl p-4 mb-6 border-yellow-500/30">
                     <div class="flex items-start gap-3">
-                        <i class="fas fa-exclamation-triangle text-yellow-400 text-xl mt-1"></i>
+                        <i class="fas fa-info-circle text-yellow-400 text-xl mt-1"></i>
                         <div class="flex-1">
-                            <h4 class="text-yellow-400 font-semibold mb-1">Partial Test Completion</h4>
+                            <h4 class="text-yellow-400 font-semibold mb-1">Test Completion Status</h4>
                             <p class="text-gray-300 text-sm">
-                                You answered only <strong class="text-white">{{ session('score_details')['answered'] }}/{{ session('score_details')['total'] }}</strong> questions 
-                                ({{ session('score_details')['completion_percentage'] }}%)
+                                You answered <strong class="text-white">{{ $answeredQuestions }}/{{ $totalQuestions }}</strong> questions 
+                                ({{ round(($answeredQuestions / $totalQuestions) * 100, 1) }}% completion)
                             </p>
-                            <p class="text-gray-400 text-sm mt-1">{{ session('score_details')['message'] }}</p>
+                            <p class="text-gray-300 text-sm mt-1">
+                                Band Score: <strong class="text-white">{{ $attempt->band_score }}</strong> 
+                                (Based on <strong class="text-white">{{ $correctAnswers }}/{{ $totalQuestions }}</strong> correct answers)
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -124,19 +127,9 @@
                 </div>
 
                 <div class="glass rounded-xl p-6 text-center">
-                    <i class="fas fa-shield-alt text-pink-400 text-2xl mb-3"></i>
-                    <p class="text-gray-400 text-sm">Confidence</p>
-                    <p class="text-white font-semibold">{{ $attempt->confidence_level ?? 'N/A' }}</p>
-                    @if($attempt->confidence_level)
-                        <span class="inline-block mt-2 text-xs px-3 py-1 rounded-full
-                            @if($attempt->confidence_level == 'Very High') bg-green-500/20 text-green-400
-                            @elseif($attempt->confidence_level == 'High') bg-blue-500/20 text-blue-400
-                            @elseif($attempt->confidence_level == 'Medium') bg-yellow-500/20 text-yellow-400
-                            @else bg-red-500/20 text-red-400
-                            @endif">
-                            {{ $attempt->confidence_level }}
-                        </span>
-                    @endif
+                    <i class="fas fa-trophy text-pink-400 text-2xl mb-3"></i>
+                    <p class="text-gray-400 text-sm">Band Level</p>
+                    <p class="text-white font-semibold">{{ \App\Helpers\ScoreCalculator::getBandDescription($attempt->band_score ?? 0) }}</p>
                 </div>
             </div>
             
@@ -349,19 +342,13 @@
                         </div>
                     </div>
                     
-                    {{-- Show score message if available --}}
-                    @if(isset($scoreMessage))
+                    {{-- Show calculation method info --}}
+                    @if($answeredQuestions < $totalQuestions)
                         <div class="glass rounded-xl p-4 mb-4 border-purple-500/30">
-                            <p class="text-gray-300">{{ $scoreMessage }}</p>
-                        </div>
-                    @endif
-                    
-                    @if(isset($scoreNote))
-                        <div class="glass rounded-xl p-4 mb-4 border-yellow-500/30">
-                            <div class="flex items-start gap-3">
-                                <i class="fas fa-info-circle text-yellow-400 text-lg mt-0.5"></i>
-                                <p class="text-gray-300 text-sm">{{ $scoreNote }}</p>
-                            </div>
+                            <p class="text-gray-300 text-sm">
+                                <i class="fas fa-calculator text-purple-400 mr-2"></i>
+                                Band score calculated based on actual correct answers ({{ $correctAnswers }}/{{ $totalQuestions }}) according to IELTS scoring table.
+                            </p>
                         </div>
                     @endif
 
