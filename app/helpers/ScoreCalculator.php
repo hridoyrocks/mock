@@ -84,7 +84,7 @@ class ScoreCalculator
     
     /**
      * Calculate band score for partial/incomplete tests
-     * Returns projected band score with confidence level
+     * Returns actual band score based on correct answers, not projected
      *
      * @param int $correctAnswers Number of correct answers
      * @param int $answeredQuestions Number of questions attempted
@@ -94,87 +94,52 @@ class ScoreCalculator
      */
     public static function calculatePartialTestScore(int $correctAnswers, int $answeredQuestions, int $totalQuestions, string $section = 'listening'): array
     {
-        // For very small tests (practice tests), be more lenient
-        $minRequired = $totalQuestions < 10 ? 1 : ceil($totalQuestions * 0.25);
-        
         // Don't give score if no questions attempted
         if ($answeredQuestions == 0) {
             return [
                 'band_score' => null,
                 'message' => 'No questions attempted',
-                'min_required' => $minRequired,
                 'answered' => $answeredQuestions,
                 'total' => $totalQuestions,
                 'completion_percentage' => 0
             ];
         }
         
-        // For small tests, allow scoring even with few questions
-        if ($totalQuestions < 10 && $answeredQuestions < $minRequired) {
-            // Still try to give a score for practice tests
-            $minRequired = 1;
-        }
-        
-        // Don't give score if less than minimum attempted
-        if ($answeredQuestions < $minRequired) {
-            return [
-                'band_score' => null,
-                'message' => 'Insufficient questions attempted for scoring',
-                'min_required' => $minRequired,
-                'answered' => $answeredQuestions,
-                'total' => $totalQuestions,
-                'completion_percentage' => round(($answeredQuestions / $totalQuestions) * 100, 1)
-            ];
+        // Calculate band score based on ACTUAL correct answers, not projected
+        // Even if only 2 out of 40 answered, score based on those 2
+        if ($section === 'listening') {
+            $bandScore = self::calculateListeningBandScore($correctAnswers, $totalQuestions);
+        } else {
+            $bandScore = self::calculateReadingBandScore($correctAnswers, $totalQuestions);
         }
         
         // Calculate accuracy on attempted questions
         $accuracy = $answeredQuestions > 0 ? ($correctAnswers / $answeredQuestions) : 0;
         
-        // For complete tests (100% completion), use actual score
-        if ($answeredQuestions == $totalQuestions) {
-            // Use actual correct answers, not projected
-            if ($section === 'listening') {
-                $bandScore = self::calculateListeningBandScore($correctAnswers, $totalQuestions);
-            } else {
-                $bandScore = self::calculateReadingBandScore($correctAnswers, $totalQuestions);
-            }
-            
-            return [
-                'band_score' => $bandScore,
-                'confidence' => 'Complete',
-                'is_reliable' => true,
-                'answered' => $answeredQuestions,
-                'total' => $totalQuestions,
-                'correct' => $correctAnswers,
-                'projected_correct' => $correctAnswers,
-                'accuracy_percentage' => round($accuracy * 100, 1),
-                'completion_percentage' => 100.0,
-                'message' => "Complete test with band score {$bandScore}"
-            ];
-        }
-        
-        // Project score for incomplete tests
-        $projectedCorrect = round($accuracy * $totalQuestions);
-        
-        // Get appropriate band score
-        if ($section === 'listening') {
-            $bandScore = self::calculateListeningBandScore($projectedCorrect, $totalQuestions);
-        } else {
-            $bandScore = self::calculateReadingBandScore($projectedCorrect, $totalQuestions);
-        }
-        
-        // Calculate confidence level based on completion
+        // Calculate completion rate
         $completionRate = ($answeredQuestions / $totalQuestions) * 100;
+        
+        // Determine confidence level based on how many questions were attempted
         $confidence = match(true) {
             $completionRate >= 90 => 'Very High',
             $completionRate >= 75 => 'High',
             $completionRate >= 50 => 'Medium',
             $completionRate >= 25 => 'Low',
-            default => 'Very Low'
+            $completionRate < 25 => 'Very Low (Partial Test)'
         };
         
-        // Determine if this is a reliable score
+        // Determine if this is a reliable score (only if 80%+ completed)
         $isReliable = $completionRate >= 80;
+        
+        // Create appropriate message based on completion
+        $message = match(true) {
+            $completionRate == 100 => "Complete test with band score {$bandScore}",
+            $completionRate >= 90 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Highly reliable)",
+            $completionRate >= 75 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Reliable)",
+            $completionRate >= 50 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Moderate reliability)",
+            $completionRate >= 25 => "Band score {$bandScore} based on {$answeredQuestions}/{$totalQuestions} questions (Low reliability)",
+            default => "Band score {$bandScore} based on only {$answeredQuestions}/{$totalQuestions} questions attempted"
+        };
         
         return [
             'band_score' => $bandScore,
@@ -183,28 +148,13 @@ class ScoreCalculator
             'answered' => $answeredQuestions,
             'total' => $totalQuestions,
             'correct' => $correctAnswers,
-            'projected_correct' => $projectedCorrect,
             'accuracy_percentage' => round($accuracy * 100, 1),
             'completion_percentage' => round($completionRate, 1),
-            'message' => self::getScoreMessage($completionRate, $bandScore)
+            'message' => $message,
+            'note' => $completionRate < 50 ? 'Note: This score is based on limited data. Complete more questions for accurate assessment.' : null
         ];
     }
-    
-    /**
-     * Get appropriate message based on completion rate
-     */
-    private static function getScoreMessage($completionRate, $bandScore): string
-    {
-        if ($completionRate >= 90) {
-            return "Excellent! Your band score of {$bandScore} is highly reliable.";
-        } elseif ($completionRate >= 75) {
-            return "Good effort! Your projected band score is {$bandScore}. Complete all questions for the most accurate score.";
-        } elseif ($completionRate >= 50) {
-            return "Your projected band score is {$bandScore} based on {$completionRate}% completion. Try to answer more questions next time.";
-        } else {
-            return "Limited data. Your projected band score is {$bandScore}, but you need to answer more questions for an accurate assessment.";
-        }
-    }
+
 
     /**
      * Calculate overall band score from individual section scores
