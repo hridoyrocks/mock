@@ -170,7 +170,6 @@ const MatchingHeadingsEnhanced = {
         headingDiv.setAttribute('data-heading-index', index);
         
         headingDiv.innerHTML = `
-            <span class="font-semibold text-gray-700 min-w-[30px]">${letter}.</span>
             <input type="text" 
                    id="mh-heading-${index}"
                    class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
@@ -219,7 +218,7 @@ const MatchingHeadingsEnhanced = {
         headingDivs.forEach((div, index) => {
             const letter = String.fromCharCode(65 + index);
             div.setAttribute('data-heading-index', index);
-            div.querySelector('span').textContent = letter + '.';
+            // Remove letter display
             
             const input = div.querySelector('input');
             input.id = `mh-heading-${index}`;
@@ -377,7 +376,7 @@ const MatchingHeadingsEnhanced = {
                 this.headings.forEach(heading => {
                     const option = document.createElement('option');
                     option.value = heading.id;
-                    option.textContent = `${heading.id}. ${heading.text || 'Heading ' + heading.id}`;
+                    option.textContent = heading.text || 'Heading ' + heading.id;
                     select.appendChild(option);
                 });
                 

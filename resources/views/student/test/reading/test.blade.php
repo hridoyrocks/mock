@@ -448,7 +448,7 @@
                                                         <div style="font-weight: bold; margin-bottom: 10px;">List of Headings</div>
                                                         @foreach ($headingOptions as $optionIndex => $option)
                                                             <div style="margin-bottom: 5px;">
-                                                                <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                                {{ $option->content }}
                                                             </div>
                                                         @endforeach
                                                     </div>
@@ -643,7 +643,7 @@
                                                                     <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
                                                                     @foreach ($displayData['headings'] as $heading)
                                                                         <div style="margin-bottom: 5px;">
-                                                                            <strong>{{ $heading['letter'] }}.</strong> {{ $heading['text'] }}
+                                                                            {{ $heading['text'] }}
                                                                         </div>
                                                                     @endforeach
                                                                 </div>
@@ -693,7 +693,7 @@
                                                                     <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
                                                                     @foreach ($question->options->sortBy('order') as $optionIndex => $option)
                                                                         <div style="margin-bottom: 5px;">
-                                                                            <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                                                                            {{ $option->content }}
                                                                         </div>
                                                                     @endforeach
                                                                 </div>
