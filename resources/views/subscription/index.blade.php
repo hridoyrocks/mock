@@ -259,26 +259,15 @@
                             Included Features
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            @php
-                                // Get features via direct query to avoid column/relationship conflict
-                                $planFeatures = collect([]);
-                                if ($activeSubscription && $activeSubscription->plan) {
-                                    $planFeatures = \App\Models\SubscriptionFeature::query()
-                                        ->join('plan_feature', 'subscription_features.id', '=', 'plan_feature.feature_id')
-                                        ->where('plan_feature.plan_id', $activeSubscription->plan->id)
-                                        ->select('subscription_features.*', 'plan_feature.value', 'plan_feature.limit')
-                                        ->get();
-                                }
-                            @endphp
-                            @if($planFeatures->count() > 0)
-                                @foreach($planFeatures as $feature)
+                            @if($activeSubscription && $activeSubscription->plan && $activeSubscription->plan->relationLoaded('features'))
+                                @foreach($activeSubscription->plan->features as $feature)
                                     <div class="flex items-start gap-3">
                                         <i class="fas fa-check text-green-500 mt-1 flex-shrink-0"></i>
                                         <div class="flex-1">
                                             <p class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
                                                 {{ $feature->name }}
-                                                @if($feature->value && $feature->value !== 'true')
-                                                    <span class="font-semibold text-[#C8102E]">({{ $feature->value }})</span>
+                                                @if($feature->pivot && $feature->pivot->value && $feature->pivot->value !== 'true')
+                                                    <span class="font-semibold text-[#C8102E]">({{ $feature->pivot->value }})</span>
                                                 @endif
                                             </p>
                                         </div>

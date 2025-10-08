@@ -30,15 +30,18 @@ class SubscriptionController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $activeSubscription = $user->activeSubscription();
         
-        // Load plan with features relationship if active subscription exists
-        if ($activeSubscription) {
-            $activeSubscription->load('plan');
-            if ($activeSubscription->plan) {
-                $activeSubscription->plan->load('features');
-            }
-        }
+        // Eager load everything for performance
+        $activeSubscription = $user->subscriptions()
+            ->where('status', 'active')
+            ->where('ends_at', '>', now())
+            ->with(['plan' => function($query) {
+                $query->with(['features' => function($q) {
+                    $q->orderBy('subscription_features.id');
+                }]);
+            }])
+            ->latest()
+            ->first();
         
         $subscriptionHistory = $user->subscriptions()
             ->with('plan')
@@ -72,6 +75,7 @@ class SubscriptionController extends Controller
      */
     public function plans()
     {
+        // Eager load features to prevent N+1 queries
         $plans = SubscriptionPlan::active()
             ->with(['features' => function($query) {
                 $query->orderBy('subscription_features.id');

@@ -184,29 +184,16 @@
                             <!-- Features with Icons -->
                             <div class="px-8 pb-6">
                                 <div class="space-y-3">
-                                    @php
-                                        // Get features via direct query to avoid column/relationship conflict
-                                        $planFeatures = \App\Models\SubscriptionFeature::query()
-                                            ->join('plan_feature', 'subscription_features.id', '=', 'plan_feature.feature_id')
-                                            ->where('plan_feature.plan_id', $plan->id)
-                                            ->select('subscription_features.*', 'plan_feature.value', 'plan_feature.limit')
-                                            ->limit(5)
-                                            ->get();
-                                        $totalFeatures = \App\Models\SubscriptionFeature::query()
-                                            ->join('plan_feature', 'subscription_features.id', '=', 'plan_feature.feature_id')
-                                            ->where('plan_feature.plan_id', $plan->id)
-                                            ->count();
-                                    @endphp
-                                    @if($planFeatures->count() > 0)
-                                        @foreach($planFeatures as $feature)
+                                    @if($plan->relationLoaded('features') && $plan->features->count() > 0)
+                                        @foreach($plan->features->take(5) as $feature)
                                             <div class="flex items-start gap-3 group/item">
                                                 <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 group-hover/item:scale-125 transition-transform">
                                                     <i class="fas fa-check text-green-500 text-xs"></i>
                                                 </div>
                                                 <span class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
                                                     <span class="font-semibold">{{ $feature->name }}</span>
-                                                    @if($feature->value && $feature->value !== 'true')
-                                                        <span class="text-[#C8102E] font-bold ml-1">({{ $feature->value }})</span>
+                                                    @if($feature->pivot && $feature->pivot->value && $feature->pivot->value !== 'true')
+                                                        <span class="text-[#C8102E] font-bold ml-1">({{ $feature->pivot->value }})</span>
                                                     @endif
                                                 </span>
                                             </div>
@@ -218,10 +205,10 @@
                                     @endif
                                 </div>
                                 
-                                @if($totalFeatures > 5)
+                                @if($plan->relationLoaded('features') && $plan->features->count() > 5)
                                     <button @click="showAllFeatures = true" 
                                             class="mt-3 text-sm text-[#C8102E] hover:text-[#A00E27] font-semibold hover:underline">
-                                        <i class="fas fa-plus-circle mr-1"></i>View all {{ $totalFeatures }} features
+                                        <i class="fas fa-plus-circle mr-1"></i>View all {{ $plan->features->count() }} features
                                     </button>
                                 @endif
                             </div>
@@ -420,31 +407,29 @@
                                 $allFeatures = \App\Models\SubscriptionFeature::orderBy('id')->get();
                             @endphp
                             
-                            @foreach($allFeatures as $index => $feature)
+                            @foreach($allFeatures as $feature)
                             <tr class="border-b" :class="darkMode ? 'border-gray-800' : 'border-gray-100'">
                                 <td class="py-3 px-4" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
                                     {{ $feature->name }}
                                 </td>
                                 @foreach($plans->unique('name') as $plan)
                                     @php
-                                        // Direct query to avoid column/relationship conflict
-                                        $planFeature = \App\Models\SubscriptionFeature::query()
-                                            ->join('plan_feature', 'subscription_features.id', '=', 'plan_feature.feature_id')
-                                            ->where('plan_feature.plan_id', $plan->id)
-                                            ->where('subscription_features.id', $feature->id)
-                                            ->select('subscription_features.*', 'plan_feature.value', 'plan_feature.limit')
-                                            ->first();
+                                        $planFeature = $plan->relationLoaded('features') 
+                                            ? $plan->features->where('id', $feature->id)->first()
+                                            : null;
                                     @endphp
                                     <td class="text-center py-3 px-4">
                                         @if($planFeature)
-                                            @if($planFeature->value === 'true' || $planFeature->value === '1')
+                                            @if($planFeature->pivot && $planFeature->pivot->value === 'true' || $planFeature->pivot && $planFeature->pivot->value === '1')
                                                 <i class="fas fa-check-circle text-green-500 text-lg"></i>
-                                            @elseif($planFeature->value === 'false' || $planFeature->value === '0' || !$planFeature->value)
+                                            @elseif($planFeature->pivot && ($planFeature->pivot->value === 'false' || $planFeature->pivot->value === '0' || !$planFeature->pivot->value))
                                                 <i class="fas fa-times-circle text-gray-400 text-lg"></i>
-                                            @else
+                                            @elseif($planFeature->pivot && $planFeature->pivot->value)
                                                 <span class="font-bold text-[#C8102E]">
-                                                    {{ $planFeature->value }}
+                                                    {{ $planFeature->pivot->value }}
                                                 </span>
+                                            @else
+                                                <i class="fas fa-times-circle text-gray-400 text-lg"></i>
                                             @endif
                                         @else
                                             <i class="fas fa-times-circle text-gray-400 text-lg"></i>
