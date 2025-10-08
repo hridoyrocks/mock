@@ -32,9 +32,12 @@ class SubscriptionController extends Controller
         $user = auth()->user();
         $activeSubscription = $user->activeSubscription();
         
-        // Load plan relationship if active subscription exists
+        // Load plan with features relationship if active subscription exists
         if ($activeSubscription) {
-            $activeSubscription->load(['plan.features']);
+            $activeSubscription->load('plan');
+            if ($activeSubscription->plan) {
+                $activeSubscription->plan->load('features');
+            }
         }
         
         $subscriptionHistory = $user->subscriptions()

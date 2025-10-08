@@ -129,10 +129,10 @@
                                 <h2 class="text-2xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-900'">
                                     {{ $activeSubscription->plan->name }} Plan
                                 </h2>
-                                <span class="px-3 py-1 text-xs rounded-full font-medium
-                                    {{ $activeSubscription->isActive() 
-                                        ? (app('darkMode') ? 'glass text-green-400 border border-green-400/30' : 'bg-green-100 text-green-700 border border-green-200') 
-                                        : (app('darkMode') ? 'glass text-red-400 border border-red-400/30' : 'bg-red-100 text-red-700 border border-red-200') }}">
+                                <span class="px-3 py-1 text-xs rounded-full font-medium"
+                                      :class="{{ $activeSubscription->isActive() ? 'true' : 'false' }} 
+                                        ? (darkMode ? 'glass text-green-400 border border-green-400/30' : 'bg-green-100 text-green-700 border border-green-200') 
+                                        : (darkMode ? 'glass text-red-400 border border-red-400/30' : 'bg-red-100 text-red-700 border border-red-200')">
                                     <i class="fas fa-circle text-xs mr-1"></i>
                                     {{ ucfirst($activeSubscription->status) }}
                                 </span>
@@ -259,19 +259,38 @@
                             Included Features
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            @foreach($activeSubscription->plan->features as $feature)
-                                <div class="flex items-start gap-3">
-                                    <i class="fas fa-check text-green-500 mt-1 flex-shrink-0"></i>
-                                    <div class="flex-1">
-                                        <p class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
-                                            {{ $feature->name }}
-                                            @if($feature->pivot->value && $feature->pivot->value !== 'true')
-                                                <span class="font-semibold text-[#C8102E]">({{ $feature->pivot->value }})</span>
-                                            @endif
-                                        </p>
+                            @php
+                                // Get features via direct query to avoid column/relationship conflict
+                                $planFeatures = collect([]);
+                                if ($activeSubscription && $activeSubscription->plan) {
+                                    $planFeatures = \App\Models\SubscriptionFeature::query()
+                                        ->join('plan_feature', 'subscription_features.id', '=', 'plan_feature.feature_id')
+                                        ->where('plan_feature.plan_id', $activeSubscription->plan->id)
+                                        ->select('subscription_features.*', 'plan_feature.value', 'plan_feature.limit')
+                                        ->get();
+                                }
+                            @endphp
+                            @if($planFeatures->count() > 0)
+                                @foreach($planFeatures as $feature)
+                                    <div class="flex items-start gap-3">
+                                        <i class="fas fa-check text-green-500 mt-1 flex-shrink-0"></i>
+                                        <div class="flex-1">
+                                            <p class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
+                                                {{ $feature->name }}
+                                                @if($feature->value && $feature->value !== 'true')
+                                                    <span class="font-semibold text-[#C8102E]">({{ $feature->value }})</span>
+                                                @endif
+                                            </p>
+                                        </div>
                                     </div>
+                                @endforeach
+                            @else
+                                <div class="col-span-3 text-center py-4">
+                                    <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+                                        No features configured for this plan
+                                    </p>
                                 </div>
-                            @endforeach
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -334,10 +353,10 @@
                             {{ $user->ai_evaluations_used }}
                         </p>
                         <p class="text-sm mb-3" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">AI Evaluations</p>
-                        <p class="text-xs font-medium
-                            {{ $user->hasFeature('ai_writing_evaluation') || $user->hasFeature('ai_speaking_evaluation') 
+                        <p class="text-xs font-medium"
+                           :class="{{ $user->hasFeature('ai_writing_evaluation') || $user->hasFeature('ai_speaking_evaluation') ? 'true' : 'false' }}
                                 ? 'text-green-500' 
-                                : (app('darkMode') ? 'text-gray-500' : 'text-gray-400') }}">
+                                : (darkMode ? 'text-gray-500' : 'text-gray-400')">
                             <i class="fas {{ $user->hasFeature('ai_writing_evaluation') || $user->hasFeature('ai_speaking_evaluation') ? 'fa-check-circle' : 'fa-times-circle' }} mr-1"></i>
                             {{ $user->hasFeature('ai_writing_evaluation') || $user->hasFeature('ai_speaking_evaluation') 
                                 ? 'Available' 
@@ -485,14 +504,16 @@
                                                 ৳{{ number_format($transaction->amount, 0) }}
                                             </td>
                                             <td class="py-4 px-4">
-                                                <span class="px-2 py-1 text-xs rounded-full font-medium inline-flex items-center
-                                                    @if($transaction->status === 'completed') 
-                                                        {{ app('darkMode') ? 'glass text-green-400 border border-green-400/30' : 'bg-green-100 text-green-700 border border-green-200' }}
-                                                    @elseif($transaction->status === 'pending') 
-                                                        {{ app('darkMode') ? 'glass text-yellow-400 border border-yellow-400/30' : 'bg-yellow-100 text-yellow-700 border border-yellow-200' }}
-                                                    @else 
-                                                        {{ app('darkMode') ? 'glass text-red-400 border border-red-400/30' : 'bg-red-100 text-red-700 border border-red-200' }}
-                                                    @endif">
+                                                <span class="px-2 py-1 text-xs rounded-full font-medium inline-flex items-center"
+                                                      :class="darkMode ? (
+                                                        '{{ $transaction->status }}' === 'completed' ? 'glass text-green-400 border border-green-400/30' :
+                                                        '{{ $transaction->status }}' === 'pending' ? 'glass text-yellow-400 border border-yellow-400/30' :
+                                                        'glass text-red-400 border border-red-400/30'
+                                                      ) : (
+                                                        '{{ $transaction->status }}' === 'completed' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                                        '{{ $transaction->status }}' === 'pending' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+                                                        'bg-red-100 text-red-700 border border-red-200'
+                                                      )">
                                                     <i class="fas fa-circle text-xs mr-1"></i>
                                                     {{ ucfirst($transaction->status) }}
                                                 </span>
