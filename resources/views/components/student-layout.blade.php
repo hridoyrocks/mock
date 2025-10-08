@@ -729,67 +729,11 @@
         </div>
     @endif
 
-    <!-- Floating Chat Button for Mobile -->
-    <div class="lg:hidden fixed bottom-20 right-4 z-40">
-        <button onclick="toggleTawkChat()" 
-                class="w-14 h-14 rounded-full bg-[#C8102E] text-white shadow-lg shadow-[#C8102E]/30 hover:shadow-xl hover:shadow-[#C8102E]/50 transition-all duration-300 flex items-center justify-center group pulse-animation">
-            <i class="fas fa-comments text-xl group-hover:scale-110 transition-transform"></i>
-        </button>
-    </div>
+
 
     @stack('scripts')
     
-    <!-- Start of Tawk.to Script -->
-    <script type="text/javascript">
-    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-    (function(){
-    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/687a4082487057192063a83a/1j0eoo0j1';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-    })();
-    
-    // Customize Tawk.to appearance for glass effect
-    window.Tawk_API.onLoad = function(){
-        // Set custom colors to match your theme
-        window.Tawk_API.setAttributes({
-            'name': '{{ auth()->user()->name }}',
-            'email': '{{ auth()->user()->email }}',
-            'hash': '{{ hash("sha256", auth()->user()->email) }}'
-        }, function(error){});
-        
-        // Hide widget on mobile by default
-        if(window.innerWidth < 768) {
-            window.Tawk_API.hideWidget();
-        }
-    };
-    
-    // Custom styling for Tawk.to widget
-    window.Tawk_API.onChatMaximized = function(){
-        // Add glass effect class to chat widget
-        setTimeout(function() {
-            var tawkFrame = document.getElementById('tawkchat-iframe');
-            if(tawkFrame) {
-                tawkFrame.style.borderRadius = '20px';
-                tawkFrame.style.overflow = 'hidden';
-            }
-        }, 100);
-    };
-    
-    // Toggle function for mobile
-    function toggleTawkChat() {
-        if(window.Tawk_API && window.Tawk_API.getWindowType) {
-            if(window.Tawk_API.getWindowType() === 'min') {
-                window.Tawk_API.maximize();
-            } else {
-                window.Tawk_API.minimize();
-            }
-        }
-    }
-    </script>
-    <!-- End of Tawk.to Script -->
+
     
     <script>
         function layoutData() {

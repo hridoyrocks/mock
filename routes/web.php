@@ -5,6 +5,11 @@ if (file_exists(base_path('routes/test.php'))) {
     require base_path('routes/test.php');
 }
 
+// Include test features route
+if (file_exists(base_path('routes/test-features.php'))) {
+    require base_path('routes/test-features.php');
+}
+
 // Include test config route for checking AI prompts
 if (file_exists(base_path('routes/test-config.php'))) {
     require base_path('routes/test-config.php');

@@ -58,7 +58,6 @@ class SubscriptionPlanController extends Controller
             'sort_order' => $request->sort_order,
             'is_active' => $request->boolean('is_active', true),
             'is_featured' => $request->boolean('is_featured', false),
-            'features' => [] // Will be handled by pivot table
         ]);
 
         // Attach features
@@ -97,12 +96,12 @@ class SubscriptionPlanController extends Controller
      */
     public function edit(SubscriptionPlan $subscriptionPlan)
     {
-        $subscriptionPlan->load('features');
         $features = SubscriptionFeature::all();
         
         // Prepare feature values for the form
         $planFeatures = [];
-        foreach ($subscriptionPlan->features as $feature) {
+        $loadedFeatures = $subscriptionPlan->features()->get();
+        foreach ($loadedFeatures as $feature) {
             $planFeatures[$feature->id] = [
                 'enabled' => true,
                 'value' => $feature->pivot->value,

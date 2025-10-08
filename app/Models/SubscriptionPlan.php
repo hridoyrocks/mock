@@ -15,7 +15,6 @@ class SubscriptionPlan extends Model
         'discount_price',
         'duration_days',
         'description',
-        'features',
         'sort_order',
         'is_active',
         'is_free',
@@ -25,7 +24,6 @@ class SubscriptionPlan extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
-        'features' => 'array',
         'is_active' => 'boolean',
         'is_free' => 'boolean', 
         'is_featured' => 'boolean',

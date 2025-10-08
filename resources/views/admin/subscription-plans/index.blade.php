@@ -165,24 +165,26 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="max-w-xs space-y-1 text-xs">
-                                @if($plan->features && count($plan->features) > 0)
+                                @php
+                                    $planFeatures = $plan->features()->get();
+                                @endphp
+                                @if($planFeatures && count($planFeatures) > 0)
                                     @php
-                                        $featuresList = $plan->features->toArray();
-                                        $displayFeatures = array_slice($featuresList, 0, 2);
+                                        $displayFeatures = $planFeatures->take(2);
                                     @endphp
                                     @foreach($displayFeatures as $feature)
                                         <div class="flex items-center text-gray-600">
                                             <svg class="mr-1 h-3 w-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                             </svg>
-                                            <span>{{ $feature['name'] }}</span>
-                                            @if(isset($feature['pivot']['value']) && $feature['pivot']['value'] !== 'true')
-                                                <span class="ml-1 font-semibold text-indigo-600">({{ $feature['pivot']['value'] }})</span>
+                                            <span>{{ $feature->name }}</span>
+                                            @if(isset($feature->pivot->value) && $feature->pivot->value !== 'true')
+                                                <span class="ml-1 font-semibold text-indigo-600">({{ $feature->pivot->value }})</span>
                                             @endif
                                         </div>
                                     @endforeach
-                                    @if(count($featuresList) > 2)
-                                        <div class="font-medium text-indigo-600">+{{ count($featuresList) - 2 }} more</div>
+                                    @if($planFeatures->count() > 2)
+                                        <div class="font-medium text-indigo-600">+{{ $planFeatures->count() - 2 }} more</div>
                                     @endif
                                 @else
                                     <span class="italic text-gray-400">No features</span>
@@ -307,10 +309,7 @@
                         </td>
                         @foreach($plans as $plan)
                             @php
-                                $planFeature = null;
-                                if ($plan->features) {
-                                    $planFeature = $plan->features->firstWhere('id', $feature->id);
-                                }
+                                $planFeature = $plan->features()->where('subscription_features.id', $feature->id)->first();
                             @endphp
                             <td class="px-6 py-4 text-center">
                                 @if($planFeature)
