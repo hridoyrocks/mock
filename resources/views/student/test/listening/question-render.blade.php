@@ -234,8 +234,8 @@
                                          data-zone-index="' . $index . '"
                                          data-question-number="' . $zoneNumber . '"
                                          data-allow-reuse="' . ($allowReuse ? '1' : '0') . '"
-                                         style="display: inline-block; min-width: 100px; max-width: 200px; height: 36px; border: 2px dashed #9ca3af; border-radius: 4px; line-height: 36px; text-align: center; background: white; font-size: 14px; padding: 0 8px; cursor: pointer; margin: 0 4px; vertical-align: baseline;">
-                        <span class="placeholder-text" style="color: #000000; font-weight: 700; font-size: 14px;">' . $zoneNumber . '</span>
+                                         style="display: inline-flex; min-width: 150px; width: auto; height: 36px; border: 1px solid #000000; border-radius: 4px; line-height: 36px; align-items: center; justify-content: center; background: white; font-size: 14px; padding: 0 15px; cursor: pointer; margin: 0 4px; vertical-align: middle;">
+                        <span class="placeholder-text" style="color: #6b7280; font-weight: 600; font-size: 14px;">' . $zoneNumber . '</span>
                     </span>';
                     
                     $processedContent = preg_replace('/\[DRAG_' . $num . '\]/', $dropBoxHtml, $processedContent, 1);
@@ -243,14 +243,14 @@
             @endphp
             
             {{-- Draggable Options at Top --}}
-            <div class="draggable-options-grid" style="display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 20px 0; padding: 0; background: none; border: none;">
+            <div class="draggable-options-grid" style="display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 20px 0; padding: 0; background: none; border: none;">
                 @foreach($options as $optionIndex => $optionText)
                     <div class="draggable-option" 
                          draggable="true"
                          data-option-value="{{ $optionText }}"
                          data-option-letter="{{ chr(65 + $optionIndex) }}"
-                         style="padding: 10px 16px; background: white; border: 1px solid #d1d5db; border-radius: 4px; cursor: move; font-size: 14px; color: #1f2937; user-select: none; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);">
-                        {{ chr(65 + $optionIndex) }}. {{ $optionText }}
+                         style="padding: 5px 14px; background: white; border: 1px solid rgba(108, 117, 125, 0.3); border-radius: 4px; cursor: move; font-size: 14px; color: #212529; user-select: none; flex-shrink: 0; height: fit-content;">
+                        {{ $optionText }}
                     </div>
                 @endforeach
             </div>

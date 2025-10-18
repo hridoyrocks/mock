@@ -298,39 +298,45 @@
         }
         
         .drop-box {
-            width: 100%;
+            display: inline-flex !important;
+            min-width: 150px !important;
+            width: auto !important;
             height: 40px;
-            border: 2px dashed #d1d5db;
+            border: 1px solid #000000;
             border-radius: 6px;
-            display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
             background: white;
             font-size: 14px;
-            padding: 0 10px;
+            padding: 0 15px !important;
+            margin: 0 4px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            color: #1f2937;
+            text-align: center;
+            vertical-align: middle;
         }
         
         .drop-box.drag-over {
-            background: #f9fafb;
-            border-color: #9ca3af;
-            border-style: solid;
+            background: #f9fafb !important;
+            border: 1px dashed #000000 !important;
+            border-style: dashed !important;
         }
         
         .drop-box.has-answer {
-            border-style: solid;
-            border-color: #d1d5db;
+            border: 1px solid #000000;
             background: white;
             cursor: move;
+            color: #1f2937;
+            font-weight: normal;
         }
         
         .drop-box .placeholder-text {
-            color: #9ca3af;
-            font-style: italic;
-            font-size: 13px;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 14px;
         }
         
         .matching-right-section {
@@ -355,10 +361,29 @@
             gap: 8px;
         }
         
+        /* Drag & Drop Question Styles */
+        .drag-drop-question {
+            background: none;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        
+        .draggable-options-grid {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+            padding: 0 !important;
+            background: none !important;
+            border: none !important;
+            position: relative !important;
+        }
+        
         .draggable-option {
-            padding: 6px 12px;
+            padding: 5px 14px;
             background: white;
-            border: 1px solid #6b7280;
+            border: 1px solid rgba(108, 117, 125, 0.3);
             border-radius: 4px;
             cursor: move;
             transition: all 0.2s;
@@ -367,10 +392,12 @@
             color: #1f2937;
             text-align: center;
             user-select: none;
+            flex-shrink: 0 !important;
         }
         
         .draggable-option:hover:not(.placed) {
             background: #f9fafb;
+            border-color: rgba(108, 117, 125, 0.5);
         }
         
         .draggable-option.dragging {
@@ -379,7 +406,10 @@
         }
         
         .draggable-option.placed {
-            display: none !important;
+            position: absolute !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
         }
         
         /* Form Completion - Official IELTS Style */
@@ -1723,6 +1753,23 @@
         
         // ========== Submit Functionality ==========
         submitTestBtn.addEventListener('click', function() {
+            // First clean up any incorrect answered states for drag-drop
+            const dropBoxes = document.querySelectorAll('.drop-box');
+            dropBoxes.forEach(box => {
+                const questionNumber = box.dataset.questionNumber;
+                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                
+                // Only mark answered if box really has an answer
+                if (navButton) {
+                    if (box.classList.contains('has-answer')) {
+                        navButton.classList.add('answered');
+                    } else {
+                        navButton.classList.remove('answered');
+                    }
+                }
+            });
+            
+            // Now update count
             updateAnswerCount();
             submitModal.style.display = 'flex';
         });
@@ -1797,6 +1844,14 @@
                         }
                     });
                 }
+                
+                // Re-initialize answer count for drag-drop questions
+                setTimeout(() => {
+                    if (window.ListeningDragDrop && typeof window.ListeningDragDrop.initializeAnswerCount === 'function') {
+                        window.ListeningDragDrop.initializeAnswerCount();
+                    }
+                }, 200);
+                
             } catch (e) {
                 console.error('Error restoring saved answers:', e);
             }
@@ -2584,7 +2639,7 @@
                     const index = this.dataset.index;
                     
                     // Clear the box
-                    this.innerHTML = '<span class="placeholder-text">Drag answer here</span>';
+                    this.innerHTML = `<span class="placeholder-text">${questionNumber}</span>`;
                     this.classList.remove('has-answer');
                     this.draggable = false;
                     

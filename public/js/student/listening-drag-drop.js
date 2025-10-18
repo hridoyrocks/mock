@@ -8,6 +8,47 @@ window.ListeningDragDrop = {
         console.log('Initializing Listening Drag & Drop');
         this.setupDraggableOptions();
         this.setupDropZones();
+        
+        // INSTANT INITIAL COUNT
+        this.instantUpdateCount();
+    },
+    
+    instantUpdateCount() {
+        // Fast direct count
+        const totalAnswered = document.querySelectorAll('.number-btn.answered').length;
+        const answeredSpan = document.getElementById('answered-count');
+        if (answeredSpan) {
+            answeredSpan.textContent = totalAnswered;
+        }
+    },
+    
+    initializeAnswerCount() {
+        // IMPORTANT: First clear all drag-drop question answered states
+        const dropBoxes = document.querySelectorAll('.drop-box');
+        
+        dropBoxes.forEach(box => {
+            const questionNumber = box.dataset.questionNumber;
+            const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+            
+            // Check if box ACTUALLY has answer (not just placeholder)
+            const hasRealAnswer = box.classList.contains('has-answer') || 
+                                 (box.textContent && 
+                                  box.textContent.trim() !== questionNumber && 
+                                  box.textContent.trim() !== '' &&
+                                  !box.querySelector('.placeholder-text'));
+            
+            if (navButton) {
+                if (hasRealAnswer) {
+                    navButton.classList.add('answered');
+                } else {
+                    // IMPORTANT: Remove answered if no real answer
+                    navButton.classList.remove('answered');
+                }
+            }
+        });
+        
+        // INSTANT UPDATE
+        this.instantUpdateCount();
     },
 
     setupDraggableOptions() {
@@ -52,17 +93,27 @@ window.ListeningDragDrop = {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
                 box.classList.add('drag-over');
+                // Force border style change to dashed
+                box.style.borderStyle = 'dashed';
+                box.style.borderColor = '#000000';
+                console.log('Drag over - class added:', box.classList.contains('drag-over'));
             });
 
             // Dragleave event
             box.addEventListener('dragleave', () => {
                 box.classList.remove('drag-over');
+                // Reset border style to solid
+                box.style.borderStyle = 'solid';
+                box.style.borderColor = '#000000';
+                console.log('Drag leave - class removed');
             });
 
             // Drop event
             box.addEventListener('drop', (e) => {
                 e.preventDefault();
                 box.classList.remove('drag-over');
+                box.style.borderStyle = 'solid';
+                box.style.borderColor = '#000000';
 
                 const optionValue = e.dataTransfer.getData('text/plain');
                 const optionLetter = e.dataTransfer.getData('option-letter');
@@ -99,9 +150,15 @@ window.ListeningDragDrop = {
                     this.markOptionAsPlaced(optionValue);
                 }
 
-                // Save and update UI
+                // Save and update UI - INSTANT UPDATE
                 if (typeof saveAllAnswers === 'function') saveAllAnswers();
-                if (typeof updateAnswerCount === 'function') updateAnswerCount();
+                
+                // INSTANT UPDATE BOTTOM COUNT
+                const answeredButtons = document.querySelectorAll('.number-btn.answered').length;
+                const answeredSpan = document.getElementById('answered-count');
+                if (answeredSpan) {
+                    answeredSpan.textContent = answeredButtons;
+                }
             });
 
             // Setup click-to-remove on drop box
@@ -110,9 +167,11 @@ window.ListeningDragDrop = {
     },
 
     removeExistingAnswer(box, allowReuse) {
-        const answerText = box.querySelector('.answer-text');
-        if (answerText) {
-            const oldValue = answerText.textContent.replace(/^[A-Z]\.\s*/, '');
+        const answerText = box.textContent.trim();
+        const questionNumber = box.dataset.questionNumber;
+        
+        if (answerText && answerText !== questionNumber) {
+            const oldValue = answerText;
             
             if (!allowReuse) {
                 // Restore the old option
@@ -123,8 +182,19 @@ window.ListeningDragDrop = {
                     });
                 
                 if (oldOption) {
-                    oldOption.classList.remove('placed');
+                    this.restoreOption(oldValue);
                 }
+            }
+            
+            // Clear the box
+            box.innerHTML = `<span class="placeholder-text">${questionNumber}</span>`;
+            box.classList.remove('has-answer');
+            box.removeAttribute('draggable');
+            
+            // Remove answered state for this specific box
+            const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+            if (navButton) {
+                navButton.classList.remove('answered');
             }
         }
     },
@@ -142,11 +212,82 @@ window.ListeningDragDrop = {
             cleanValue = fullText ? fullText.replace(/^[A-Z]\.\s*/, '').trim() : 'Error';
         }
         
-        box.innerHTML = `
-            <span class="answer-text">${cleanValue}</span>
-            <span class="remove-answer" title="Remove answer">×</span>
-        `;
+        // Clear the box and add answer with proper width
+        box.style.display = 'inline-flex';
+        box.style.alignItems = 'center';
+        box.style.justifyContent = 'center';
+        box.style.minWidth = '150px';
+        box.style.width = 'auto';
+        box.style.padding = '0 15px';
+        
+        box.textContent = cleanValue;
         box.classList.add('has-answer');
+        box.setAttribute('draggable', 'true');
+        
+        // Add drag handlers to filled box for re-dragging
+        this.setupFilledBoxDrag(box, cleanValue, optionLetter);
+    },
+    
+    setupFilledBoxDrag(box, optionValue, optionLetter) {
+        // Make filled box draggable
+        box.addEventListener('dragstart', (e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', optionValue);
+            e.dataTransfer.setData('option-letter', optionLetter || '');
+            e.dataTransfer.setData('from-box', 'true');
+            e.dataTransfer.setData('source-box-id', box.dataset.questionId + '_' + box.dataset.zoneIndex);
+            
+            box.classList.add('dragging-from-box');
+            
+            // Clear this box after drag starts
+            setTimeout(() => {
+                const questionNumber = box.dataset.questionNumber;
+                
+                // Reset box to empty state with proper styling
+                box.style.display = 'inline-flex';
+                box.style.alignItems = 'center';
+                box.style.justifyContent = 'center';
+                box.innerHTML = `<span class="placeholder-text">${questionNumber}</span>`;
+                box.classList.remove('has-answer');
+                box.removeAttribute('draggable');
+                
+                // Clear the hidden input
+                const zoneNumber = box.dataset.zoneNumber;
+                const questionId = box.dataset.questionId;
+                const inputName = zoneNumber !== undefined 
+                    ? `answers[${questionId}][zone_${zoneNumber}]`
+                    : `answers[${questionId}][zone_${box.dataset.zoneIndex}]`;
+                
+                const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
+                if (hiddenInput) {
+                    hiddenInput.value = '';
+                    // Trigger change event to ensure save
+                    hiddenInput.dispatchEvent(new Event('change'));
+                }
+                
+                // IMPORTANT: Remove answered state from navigation button
+                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                if (navButton) {
+                    navButton.classList.remove('answered');
+                    
+                    // INSTANT BOTTOM COUNT UPDATE
+                    const totalAnswered = document.querySelectorAll('.number-btn.answered').length;
+                    const answeredSpan = document.getElementById('answered-count');
+                    if (answeredSpan) {
+                        answeredSpan.textContent = totalAnswered;
+                    }
+                }
+                
+                // Save the removal
+                if (typeof saveAllAnswers === 'function') {
+                    saveAllAnswers();
+                }
+            }, 50);
+        });
+        
+        box.addEventListener('dragend', () => {
+            box.classList.remove('dragging-from-box');
+        });
     },
 
     updateHiddenInput(box, questionId, zoneIndex, index, optionValue, questionNumber) {
@@ -173,10 +314,17 @@ window.ListeningDragDrop = {
             hiddenInput.value = optionValue;
             console.log('Updated input:', inputName, '=', optionValue);
 
-            // Update navigation button
+            // Update navigation button for THIS specific zone - INSTANT
             const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-            if (navButton) {
+            if (navButton && !navButton.classList.contains('answered')) {
                 navButton.classList.add('answered');
+                
+                // INSTANT BOTTOM COUNT UPDATE
+                const totalAnswered = document.querySelectorAll('.number-btn.answered').length;
+                const answeredSpan = document.getElementById('answered-count');
+                if (answeredSpan) {
+                    answeredSpan.textContent = totalAnswered;
+                }
             }
         } else {
             console.error('Hidden input not found:', inputName);
@@ -189,73 +337,28 @@ window.ListeningDragDrop = {
         
         if (option) {
             option.classList.add('placed');
+            option.style.opacity = '0.4';
+            option.style.visibility = 'hidden';
+            option.style.position = 'absolute';
+            option.style.width = '0';
+            option.style.height = '0';
+            option.style.overflow = 'hidden';
         }
     },
 
-    setupAnswerRemoval(box) {
-        box.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-answer')) {
-                e.stopPropagation();
-                this.removeAnswer(box);
-            }
-        });
-    },
-
-    removeAnswer(box) {
-        const answerText = box.querySelector('.answer-text');
-        if (!answerText) return;
-
-        const optionValue = answerText.textContent.replace(/^[A-Z]\.\s*/, '');
-        const allowReuse = box.dataset.allowReuse === '1';
-        const questionId = box.dataset.questionId;
-        const zoneIndex = box.dataset.zoneIndex;
-        const index = box.dataset.index;
-        const questionNumber = box.dataset.questionNumber;
-
-        console.log('Removing answer:', optionValue);
-
-        // Clear the drop box and restore question number
-        box.innerHTML = `<span class="placeholder-text">${questionNumber}</span>`;
-        box.classList.remove('has-answer');
-
-        // Clear hidden input
-        let inputName;
-        if (zoneIndex !== undefined) {
-            inputName = `answers[${questionId}][zone_${zoneIndex}]`;
-        } else if (index !== undefined) {
-            inputName = `answers[${questionId}_${index}]`;
+    restoreOption(optionValue) {
+        const option = document.querySelector(`.draggable-option[data-option-value="${optionValue}"]`) ||
+                      document.querySelector(`.draggable-option[data-option="${optionValue}"]`);
+        
+        if (option) {
+            option.classList.remove('placed');
+            option.style.opacity = '1';
+            option.style.visibility = 'visible';
+            option.style.position = 'static';
+            option.style.width = 'auto';
+            option.style.height = 'auto';
+            option.style.overflow = 'visible';
         }
-
-        const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
-        if (hiddenInput) {
-            hiddenInput.value = '';
-        }
-
-        // Restore option if not reusable
-        if (!allowReuse) {
-            const option = document.querySelector(`.draggable-option[data-option-value="${optionValue}"]`) ||
-                          document.querySelector(`.draggable-option[data-option="${optionValue}"]`);
-            
-            if (option) {
-                option.classList.remove('placed');
-            }
-        }
-
-        // Update navigation button
-        const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-        if (navButton) {
-            // Check if there are other answered inputs for this question
-            const allInputs = document.querySelectorAll(`input[data-question-number="${questionNumber}"]`);
-            const hasAnswers = Array.from(allInputs).some(input => input.value && input.value.trim());
-            
-            if (!hasAnswers) {
-                navButton.classList.remove('answered');
-            }
-        }
-
-        // Save and update UI
-        if (typeof saveAllAnswers === 'function') saveAllAnswers();
-        if (typeof updateAnswerCount === 'function') updateAnswerCount();
     }
 };
 
@@ -272,11 +375,3 @@ if (document.readyState === 'loading') {
         window.ListeningDragDrop.init();
     }
 }
-
-// Global function for remove button onclick
-window.removeDragDropAnswer = function(removeBtn) {
-    const dropBox = removeBtn.closest('.drop-box');
-    if (dropBox && window.ListeningDragDrop) {
-        window.ListeningDragDrop.removeAnswer(dropBox);
-    }
-};
