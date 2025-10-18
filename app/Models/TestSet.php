@@ -37,11 +37,29 @@ class TestSet extends Model
 
 public function getPartAudio($partNumber)
 {
+    // First check if full audio exists (part_number = 0)
+    $fullAudio = $this->partAudios()->where('part_number', 0)->first();
+    
+    // If full audio exists, return it for any part
+    if ($fullAudio) {
+        return $fullAudio;
+    }
+    
+    // Otherwise return specific part audio
     return $this->partAudios()->where('part_number', $partNumber)->first();
 }
 
 public function hasPartAudio($partNumber): bool
 {
+    // Check if full audio exists (part_number = 0)
+    $hasFullAudio = $this->partAudios()->where('part_number', 0)->exists();
+    
+    // If full audio exists, all parts have audio
+    if ($hasFullAudio) {
+        return true;
+    }
+    
+    // Otherwise check for specific part audio
     return $this->partAudios()->where('part_number', $partNumber)->exists();
 }
 

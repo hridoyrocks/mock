@@ -15,6 +15,7 @@
         "doctrine/dbal": "^4.2",
         "endroid/qr-code": "^5.0",
         "ichtrojan/laravel-otp": "^2.0",
+        "james-heinrich/getid3": "^1.9",
         "jenssegers/agent": "^2.6",
         "laravel/fortify": "^1.25",
         "laravel/framework": "^12.0",

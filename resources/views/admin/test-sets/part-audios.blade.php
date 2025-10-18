@@ -34,34 +34,158 @@
                     <h3 class="text-sm font-medium text-blue-800">How Part Audios Work</h3>
                     <div class="mt-2 text-sm text-blue-700">
                         <ul class="list-disc list-inside space-y-1">
-                            <li>Upload one audio file per part (Part 1-4)</li>
+                            <li>Upload one audio file per part (Part 1-4) OR use full audio for all parts</li>
                             <li>All questions in a part will automatically use that part's audio</li>
                             <li>No need to upload audio for individual questions anymore!</li>
                             <li>You can update or replace part audios anytime</li>
+                            <li>Files are automatically synced to R2 storage for better performance</li>
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Full Audio Upload Option -->
+        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-6 mb-6">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                        <svg class="h-6 w-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                        <h3 class="text-lg font-semibold text-purple-900">Full Audio Upload</h3>
+                    </div>
+                    <p class="text-sm text-purple-700 mb-3">
+                        Upload one complete audio file and use it for all parts. Perfect for listening tests with continuous audio.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            R2 Storage
+                        </span>
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Auto-sync
+                        </span>
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            Fast Delivery
+                        </span>
+                    </div>
+                </div>
+                <button onclick="uploadFullAudio()" 
+                        class="ml-4 inline-flex items-center px-5 py-3 border-2 border-purple-600 text-purple-600 font-semibold rounded-lg hover:bg-purple-600 hover:text-white transition-all duration-200 shadow-md hover:shadow-lg">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    Upload Full Audio
+                </button>
+            </div>
+            
+            <!-- Full Audio Status -->
+            @php
+                $fullAudio = $testSet->partAudios()->where('part_number', 0)->first();
+            @endphp
+            
+            @if($fullAudio)
+                <div class="mt-4 bg-white rounded-lg p-4 border border-purple-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="font-medium text-gray-900">Full Audio Uploaded</span>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {{ strtoupper($fullAudio->storage_disk) }}
+                        </span>
+                    </div>
+                    
+                    <!-- Warning Message -->
+                    <div class="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="flex">
+                            <svg class="h-5 w-5 text-amber-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-amber-800">Individual Part Audios Disabled</p>
+                                <p class="text-xs text-amber-700 mt-1">
+                                    All 4 parts are now using this full audio. Individual part audio uploads are disabled until you delete the full audio.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <audio controls class="w-full mb-3">
+                        <source src="{{ $fullAudio->audio_url }}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                    
+                    <div class="flex justify-between text-sm text-gray-600 mb-3">
+                        <span>Duration: {{ $fullAudio->formatted_duration }}</span>
+                        <span>Size: {{ $fullAudio->formatted_size }}</span>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="replaceFullAudio()" 
+                                class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
+                            Replace
+                        </button>
+                        <button onclick="deleteFullAudio({{ $testSet->id }})" 
+                                class="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            @endif
+        </div>
+
         <!-- Part Audio Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="part-audio-grid">
             @for($part = 1; $part <= 4; $part++)
                 @php
                     $partAudio = $partAudios[$part] ?? null;
                     $questionCount = $testSet->questions()->where('part_number', $part)->count();
+                    $fullAudio = $partAudios[0] ?? null;
                 @endphp
                 
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 part-audio-card {{ $fullAudio ? 'opacity-50 pointer-events-none' : '' }}" data-part="{{ $part }}">
                     <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-medium text-gray-900">Part {{ $part }}</h3>
-                            <span class="text-sm text-gray-500">{{ $questionCount }} questions</span>
+                            <div class="flex items-center space-x-2">
+                                @if($fullAudio)
+                                    <span class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full font-medium">
+                                        Using Full Audio
+                                    </span>
+                                @endif
+                                <span class="text-sm text-gray-500">{{ $questionCount }} questions</span>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="p-6">
-                        @if($partAudio)
+                        @if($fullAudio)
+                            <!-- Full Audio is Active - Show Notice -->
+                            <div class="text-center py-8">
+                                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 mb-4">
+                                    <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="text-sm font-medium text-gray-900 mb-1">Full Audio Active</h3>
+                                <p class="text-sm text-gray-500 mb-4">
+                                    Part {{ $part }} is using the full audio.<br>
+                                    Delete full audio to upload individual part audio.
+                                </p>
+                            </div>
+                        @elseif($partAudio)
                             <!-- Audio exists -->
                             <div class="space-y-4">
                                 <!-- Audio Player -->
@@ -193,11 +317,113 @@
         </div>
     </div>
 
+    @push('styles')
+    <style>
+        /* Disabled state for part audio cards when full audio is active */
+        .part-audio-card.opacity-50 {
+            position: relative;
+        }
+        
+        .part-audio-card.opacity-50::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, rgba(124, 58, 237, 0.03) 100%);
+            pointer-events: none;
+            border-radius: 0.5rem;
+        }
+        
+        /* Smooth transitions */
+        .part-audio-card {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        /* Upload button hover effects */
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed !important;
+        }
+    </style>
+    @endpush
+
     @push('scripts')
     <script>
         let currentPart = null;
+        let isFullAudio = false;
+        
+        // Check and toggle part audio sections based on full audio
+        function togglePartAudioSections(hasFullAudio) {
+            const partAudioCards = document.querySelectorAll('.part-audio-card');
+            
+            partAudioCards.forEach(card => {
+                if (hasFullAudio) {
+                    card.classList.add('opacity-50', 'pointer-events-none', 'select-none');
+                    card.style.cursor = 'not-allowed';
+                } else {
+                    card.classList.remove('opacity-50', 'pointer-events-none', 'select-none');
+                    card.style.cursor = 'default';
+                }
+            });
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const hasFullAudio = {{ $fullAudio ? 'true' : 'false' }};
+            togglePartAudioSections(hasFullAudio);
+        });
+        
+        function uploadFullAudio() {
+            isFullAudio = true;
+            currentPart = 0; // 0 means full audio
+            document.getElementById('upload-part-number').textContent = 'ALL (Full Audio)';
+            document.getElementById('part-number-input').value = 0;
+            document.getElementById('upload-modal').classList.remove('hidden');
+        }
+        
+        function replaceFullAudio() {
+            uploadFullAudio();
+        }
+        
+        function deleteFullAudio(testSetId) {
+            if (!confirm('Are you sure you want to delete the full audio? After deletion, you can upload individual part audios.')) {
+                return;
+            }
+            
+            fetch(`/admin/test-sets/${testSetId}/part-audios/0`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message and reload
+                    alert('Full audio deleted successfully. You can now upload individual part audios.');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Failed to delete full audio');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the full audio');
+            });
+        }
         
         function uploadAudio(partNumber) {
+            // Check if full audio exists
+            const hasFullAudio = {{ $fullAudio ? 'true' : 'false' }};
+            if (hasFullAudio) {
+                alert('Full audio is active. Please delete it first to upload individual part audios.');
+                return;
+            }
+            
+            isFullAudio = false;
             currentPart = partNumber;
             document.getElementById('upload-part-number').textContent = partNumber;
             document.getElementById('part-number-input').value = partNumber;
@@ -213,6 +439,8 @@
             document.getElementById('upload-form').reset();
             document.getElementById('file-info').textContent = '';
             document.getElementById('upload-progress').classList.add('hidden');
+            isFullAudio = false;
+            currentPart = null;
         }
         
         function deleteAudio(testSetId, partNumber) {

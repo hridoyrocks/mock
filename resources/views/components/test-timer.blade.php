@@ -295,7 +295,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const config = {
-        attemptStartTime: new Date('{{ $attemptStartTime->format('c') }}'),
+        attemptStartTime: new Date('{{ $attemptStartTime->toIso8601String() }}'),
+        serverCurrentTime: new Date('{{ now()->toIso8601String() }}'),
         testDurationMinutes: {{ $testDuration }},
         warningTime: {{ $warningTime }},
         dangerTime: {{ $dangerTime }},
@@ -304,11 +305,18 @@ document.addEventListener('DOMContentLoaded', function() {
         position: '{{ $position }}'
     };
     
+    // Calculate time offset between server and client
+    const clientTime = new Date();
+    const serverTime = config.serverCurrentTime;
+    const timeOffset = clientTime.getTime() - serverTime.getTime();
+    
     window.UniversalTimer = {
         config: config,
         testDurationMs: config.testDurationMinutes * 60 * 1000,
         timerInterval: null,
         isRunning: false,
+        timeOffset: timeOffset,
+        lastUpdate: Date.now(),
         
         // DOM Elements - support both integrated and floating
         get timerDisplay() {
@@ -329,11 +337,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.isRunning) return;
             
             this.isRunning = true;
+            this.lastUpdate = Date.now();
             this.updateTimer();
+            
+            // Use both setInterval and visibility change detection
             this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+            
+            // Handle page visibility changes for accurate timing
+            document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+            
             this.setupNavigationPrevention();
             
             console.log('Universal Timer Started for attempt:', this.config.attemptId);
+            console.log('Time offset from server:', this.timeOffset, 'ms');
+        },
+        
+        handleVisibilityChange: function() {
+            if (document.hidden) {
+                console.log('Tab became inactive');
+            } else {
+                console.log('Tab became active, updating timer');
+                // Immediately update when tab becomes visible
+                this.updateTimer();
+            }
         },
         
         stop: function() {
@@ -342,13 +368,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.timerInterval = null;
             }
             this.isRunning = false;
+            document.removeEventListener('visibilitychange', this.handleVisibilityChange);
             this.removeNavigationPrevention();
         },
         
         calculateRemainingTime: function() {
             const currentTime = new Date();
-            const elapsedMs = currentTime.getTime() - this.config.attemptStartTime.getTime();
+            // Adjust for time offset to sync with server
+            const adjustedCurrentTime = currentTime.getTime() - this.timeOffset;
+            const elapsedMs = adjustedCurrentTime - this.config.attemptStartTime.getTime();
             const remainingMs = this.testDurationMs - elapsedMs;
+            
+            // Handle tab switching delays
+            const now = Date.now();
+            if (now - this.lastUpdate > 2000) {
+                // Tab was likely inactive, recalculate
+                console.log('Timer recalibrating after tab switch');
+            }
+            this.lastUpdate = now;
+            
             return Math.max(0, Math.floor(remainingMs / 1000));
         },
         

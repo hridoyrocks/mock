@@ -364,9 +364,17 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
             // Add this helper route for checking part audio existence
             Route::get('/check-part-audio/{partNumber}', function ($testSetId, $partNumber) {
                 $testSet = \App\Models\TestSet::findOrFail($testSetId);
-
+                
+                // Check if full audio exists
+                $fullAudio = $testSet->partAudios()->where('part_number', 0)->exists();
+                
+                // Check if specific part audio exists
+                $partAudio = $testSet->partAudios()->where('part_number', $partNumber)->exists();
+                
                 return response()->json([
-                    'hasAudio' => $testSet->hasPartAudio($partNumber),
+                    'hasAudio' => $fullAudio || $partAudio,
+                    'isFullAudio' => $fullAudio,
+                    'hasPartAudio' => $partAudio,
                 ]);
             })->name('check-part-audio');
         });
