@@ -882,6 +882,33 @@
                                                             {{-- Dragula - Only Passage Drop Zones --}}
                                                             <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
                                                             <script>
+                                                                // Listen to ALL answer inputs for navigation update
+                                                                document.addEventListener('DOMContentLoaded', function() {
+                                                                    // Watch for changes in passage answer inputs
+                                                                    document.addEventListener('change', function(e) {
+                                                                        if (e.target.classList && e.target.classList.contains('passage-answer-input')) {
+                                                                            const qNum = e.target.name.match(/_q(\d+)/);
+                                                                            if (qNum && qNum[1]) {
+                                                                                const questionNumber = qNum[1];
+                                                                                const hasValue = e.target.value !== '';
+                                                                                
+                                                                                // Find button by number
+                                                                                const allButtons = document.querySelectorAll('button');
+                                                                                allButtons.forEach(btn => {
+                                                                                    if (btn.textContent.trim() === questionNumber) {
+                                                                                        if (hasValue) {
+                                                                                            btn.classList.add('answered');
+                                                                                        } else {
+                                                                                            btn.classList.remove('answered');
+                                                                                        }
+                                                                                    }
+                                                                                });
+                                                                                console.log('✅ Nav updated for Q', questionNumber, hasValue ? 'answered' : 'cleared');
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                });
+                                                                
                                                                 // Wait for drop zones to be injected, then initialize dragula
                                                                 setTimeout(function() {
                                                                     console.log('=== DRAGULA INIT START ===');
@@ -934,21 +961,78 @@
                                                                                 input.value = letter;
                                                                                 console.log('✅ Answer saved:', input.name, '=', letter);
                                                                                 
+                                                                                // Save to localStorage for restore on refresh
+                                                                                const attemptId = '{{ $attempt->id }}';
+                                                                                const storageKey = `reading_test_${attemptId}_answers`;
+                                                                                let savedAnswers = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                                                                                savedAnswers[input.name] = letter;
+                                                                                localStorage.setItem(storageKey, JSON.stringify(savedAnswers));
+                                                                                
                                                                                 // Trigger change event for answer tracking
                                                                                 const changeEvent = new Event('change', { bubbles: true });
                                                                                 input.dispatchEvent(changeEvent);
                                                                                 
                                                                                 // Update bottom navigation
                                                                                 const qNum = target.dataset.questionNumber;
-                                                                                if (qNum && window.updateQuestionStatus) {
-                                                                                    window.updateQuestionStatus(qNum, 'answered');
-                                                                                    console.log('✅ Navigation updated for Q', qNum);
+                                                                                if (qNum) {
+                                                                                    console.log('🔍 Looking for nav button with Q:', qNum);
+                                                                                    
+                                                                                    // Debug: Show ALL buttons
+                                                                                    const allButtons = document.querySelectorAll('button');
+                                                                                    console.log('Total buttons:', allButtons.length);
+                                                                                    
+                                                                                    // Show all button texts
+                                                                                    allButtons.forEach((btn, i) => {
+                                                                                        console.log(`Button ${i}: "${btn.textContent.trim()}" classes:`, btn.className);
+                                                                                    });
+                                                                                    
+                                                                                    // Find by text OR data attribute
+                                                                                    let navBtn = null;
+                                                                                    allButtons.forEach(btn => {
+                                                                                        const text = btn.textContent.trim();
+                                                                                        const dataQ = btn.getAttribute('data-question') || btn.getAttribute('data-question-number');
+                                                                                        
+                                                                                        if (text === qNum.toString() || dataQ == qNum) {
+                                                                                            console.log('🎯 MATCH:', btn);
+                                                                                            navBtn = btn;
+                                                                                        }
+                                                                                    });
+                                                                                    
+                                                                                    if (navBtn) {
+                                                                                        console.log('✅ FOUND and styling:', navBtn);
+                                                                                        navBtn.style.cssText = 'background-color: #10b981 !important; color: #ffffff !important;';
+                                                                                    } else {
+                                                                                        console.log('❌ NOT FOUND for Q', qNum);
+                                                                                    }
                                                                                 }
                                                                                 
-                                                                                // Also trigger global answer save if exists
-                                                                                if (typeof window.saveAnswer === 'function') {
-                                                                                    window.saveAnswer(input.name, letter);
-                                                                                }
+                                                                                // CRITICAL: Update answered count immediately
+                                                                                setTimeout(() => {
+                                                                                    const countEl = document.getElementById('answered-count');
+                                                                                    if (countEl) {
+                                                                                        // Count only visible inputs and passage answers with values
+                                                                                        let count = 0;
+                                                                                        
+                                                                                        // Count visible form inputs (selects, visible inputs)
+                                                                                        const visibleInputs = document.querySelectorAll('select[name^="answers"], input[name^="answers"][type="text"], textarea[name^="answers"]');
+                                                                                        visibleInputs.forEach(inp => {
+                                                                                            if (inp.value && inp.value.trim() !== '' && inp.offsetParent !== null) {
+                                                                                                count++;
+                                                                                            }
+                                                                                        });
+                                                                                        
+                                                                                        // Count passage answers (hidden inputs with class)
+                                                                                        const passageInputs = document.querySelectorAll('.passage-answer-input');
+                                                                                        passageInputs.forEach(inp => {
+                                                                                            if (inp.value && inp.value.trim() !== '') {
+                                                                                                count++;
+                                                                                            }
+                                                                                        });
+                                                                                        
+                                                                                        countEl.textContent = count;
+                                                                                        console.log('📊 Updated count to:', count);
+                                                                                    }
+                                                                                }, 100);
                                                                             }
                                                                         }
                                                                         
@@ -970,10 +1054,48 @@
                                                                                 input.dispatchEvent(changeEvent);
                                                                                 
                                                                                 // Update bottom navigation to unanswered
-                                                                                if (qNum && window.updateQuestionStatus) {
-                                                                                    window.updateQuestionStatus(qNum, 'unanswered');
-                                                                                    console.log('✅ Navigation updated (cleared) for Q', qNum);
+                                                                                if (qNum) {
+                                                                                    // Direct update
+                                                                                    const navBtn = document.querySelector(`.question-nav-btn[data-question="${qNum}"]`);
+                                                                                    if (navBtn) {
+                                                                                        navBtn.classList.remove('answered');
+                                                                                        navBtn.classList.add('unanswered');
+                                                                                        navBtn.removeAttribute('style'); // Remove inline style
+                                                                                        console.log('✅ Nav button cleared for Q', qNum);
+                                                                                    }
+                                                                                    
+                                                                                    // Also try window function
+                                                                                    if (window.updateQuestionStatus) {
+                                                                                        window.updateQuestionStatus(qNum, 'unanswered');
+                                                                                    }
                                                                                 }
+                                                                                
+                                                                                // Update count
+                                                                                setTimeout(() => {
+                                                                                    const countEl = document.getElementById('answered-count');
+                                                                                    if (countEl) {
+                                                                                        let count = 0;
+                                                                                        
+                                                                                        // Count visible inputs
+                                                                                        const visibleInputs = document.querySelectorAll('select[name^="answers"], input[name^="answers"][type="text"], textarea[name^="answers"]');
+                                                                                        visibleInputs.forEach(inp => {
+                                                                                            if (inp.value && inp.value.trim() !== '' && inp.offsetParent !== null) {
+                                                                                                count++;
+                                                                                            }
+                                                                                        });
+                                                                                        
+                                                                                        // Count passage answers
+                                                                                        const passageInputs = document.querySelectorAll('.passage-answer-input');
+                                                                                        passageInputs.forEach(inp => {
+                                                                                            if (inp.value && inp.value.trim() !== '') {
+                                                                                                count++;
+                                                                                            }
+                                                                                        });
+                                                                                        
+                                                                                        countEl.textContent = count;
+                                                                                        console.log('📊 Updated count to:', count);
+                                                                                    }
+                                                                                }, 100);
                                                                             }
                                                                         }
                                                                         
@@ -987,6 +1109,46 @@
                                                                     });
                                                                     
                                                                     console.log('=== DRAGULA READY ===');
+                                                                    
+                                                                    // CRITICAL: Restore saved answers on page load
+                                                                    setTimeout(() => {
+                                                                        console.log('🔄 Restoring passage answers from localStorage...');
+                                                                        
+                                                                        const attemptId = '{{ $attempt->id }}';
+                                                                        const storageKey = `reading_test_${attemptId}_answers`;
+                                                                        const savedAnswers = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                                                                        
+                                                                        console.log('Saved answers:', savedAnswers);
+                                                                        
+                                                                        Object.keys(savedAnswers).forEach(inputName => {
+                                                                            const letter = savedAnswers[inputName];
+                                                                            const input = document.querySelector(`input[name="${inputName}"]`);
+                                                                            
+                                                                            if (input && letter) {
+                                                                                input.value = letter;
+                                                                                
+                                                                                const dropZone = input.previousElementSibling;
+                                                                                if (dropZone && dropZone.classList.contains('passage-drop-zone')) {
+                                                                                    const heading = document.querySelector(`.mh-heading-item[data-heading="${letter}"]`);
+                                                                                    
+                                                                                    if (heading) {
+                                                                                        const empty = dropZone.querySelector('.passage-empty-state');
+                                                                                        if (empty) empty.style.display = 'none';
+                                                                                        
+                                                                                        dropZone.style.borderStyle = 'solid';
+                                                                                        dropZone.appendChild(heading);
+                                                                                        
+                                                                                        const span = heading.querySelector('span');
+                                                                                        if (span) span.style.fontWeight = '700';
+                                                                                        
+                                                                                        console.log('✅ Restored', letter, 'to', inputName);
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        });
+                                                                        
+                                                                        console.log('✅ Restore complete');
+                                                                    }, 1500);
                                                                 }, 1000); // Wait 1 second for injection
                                                             </script>
                                                         @else
@@ -1477,7 +1639,7 @@ select[name*="_q"] {
 
 /* Simple navigation button styles */
 .number-btn.answered {
-    background: #333333 !important;
+    background: #10b981 !important; /* Green for answered questions */
     color: white !important;
     font-weight: 600 !important;
 }
@@ -1546,6 +1708,122 @@ select[name*="_q"] {
     color: #111827 !important;
 }
 </style>
+
+<script>
+// CRITICAL FIX: Copy passage answer inputs to form before submission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    if (form) {
+        // Intercept form submission
+        form.addEventListener('submit', function(e) {
+            console.log('📋 Form submitting - copying passage answers...');
+            
+            // Find all passage answer inputs (outside form)
+            const passageInputs = document.querySelectorAll('.passage-answer-input');
+            console.log('Found', passageInputs.length, 'passage inputs');
+            
+            // Copy each to form
+            passageInputs.forEach(input => {
+                if (input.value && input.value !== '') {
+                    // Create a clone and append to form
+                    const clone = input.cloneNode(true);
+                    form.appendChild(clone);
+                    console.log('✅ Copied:', input.name, '=', input.value);
+                }
+            });
+            
+            console.log('📋 All passage answers copied to form');
+        });
+    }
+    
+    // Function to update answered count including passage answers
+    window.updateTotalAnsweredCount = function() {
+        let count = 0;
+        
+        // Count visible form inputs (selects, text inputs, textareas)
+        const visibleInputs = document.querySelectorAll('select[name^="answers"], input[name^="answers"][type="text"], textarea[name^="answers"]');
+        visibleInputs.forEach(inp => {
+            // Check if visible and has value
+            if (inp.value && inp.value.trim() !== '' && inp.offsetParent !== null) {
+                count++;
+            }
+        });
+        
+        // Count passage answer inputs (hidden but specific class)
+        const passageInputs = document.querySelectorAll('.passage-answer-input');
+        passageInputs.forEach(inp => {
+            if (inp.value && inp.value.trim() !== '') {
+                count++;
+            }
+        });
+        
+        console.log('📊 Total answered:', count);
+        
+        // Update display
+        const countEl = document.getElementById('answered-count');
+        if (countEl) {
+            countEl.textContent = count;
+        }
+        
+        return count;
+    };
+    
+    // CRITICAL: Function to update passage answer navigation colors
+    window.updatePassageAnswerNavigation = function() {
+        const passageInputs = document.querySelectorAll('.passage-answer-input');
+        
+        passageInputs.forEach(inp => {
+            if (inp.value && inp.value.trim() !== '') {
+                // Extract question number from name (answers[807_q1] -> 1)
+                const match = inp.name.match(/_q(\d+)/);
+                if (match) {
+                    const qNum = match[1];
+                    
+                    // Find navigation button - try multiple selectors
+                    let navBtn = document.querySelector(`.number-btn[data-display-number="${qNum}"]`);
+                    
+                    if (navBtn) {
+                        navBtn.classList.add('answered');
+                        navBtn.style.cssText = 'background-color: #10b981 !important; color: #ffffff !important;';
+                        console.log('✅ Nav colored for Q', qNum);
+                    }
+                }
+            } else {
+                // Clear color if empty
+                const match = inp.name.match(/_q(\d+)/);
+                if (match) {
+                    const qNum = match[1];
+                    const navBtn = document.querySelector(`.number-btn[data-display-number="${qNum}"]`);
+                    if (navBtn) {
+                        navBtn.classList.remove('answered');
+                        navBtn.style.cssText = '';
+                    }
+                }
+            }
+        });
+    };
+    
+    // Watch for navigation buttons to be added to DOM
+    const observer = new MutationObserver(() => {
+        window.updatePassageAnswerNavigation();
+    });
+    
+    // Start observing when DOM is ready
+    setTimeout(() => {
+        const body = document.body;
+        observer.observe(body, { childList: true, subtree: true });
+        
+        // Initial call
+        window.updatePassageAnswerNavigation();
+    }, 2000);
+    
+    // Call update every 500ms
+    setInterval(window.updateTotalAnsweredCount, 500);
+    setInterval(window.updatePassageAnswerNavigation, 1000);
+});
+</script>
+
     @endpush
     
 </x-test-layout>

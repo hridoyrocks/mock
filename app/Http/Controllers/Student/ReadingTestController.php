@@ -187,24 +187,83 @@ class ReadingTestController extends Controller
             
             // Save answers
             foreach ($request->answers as $questionId => $answer) {
-                // Check if this is a sentence completion answer (e.g., 123_q14)
+                // Check if this is a master matching headings or sentence completion (e.g., 807_q1)
                 if (str_contains($questionId, '_q')) {
                     // Extract question ID and sub-question number
                     [$actualQuestionId, $subQuestionNum] = explode('_q', $questionId);
                     $subQuestionNum = (int) $subQuestionNum;
                     
-                    \Log::info('SENTENCE COMPLETION ANSWER DETECTED', [
-                        'original_key' => $questionId,
-                        'question_id' => $actualQuestionId,
-                        'sub_question_num' => $subQuestionNum,
-                        'value' => $answer
-                    ]);
+                    $question = $questions->find($actualQuestionId);
                     
-                    if (!empty($answer)) {
-                        $question = $questions->find($actualQuestionId);
-                        if ($question && $question->question_type === 'sentence_completion') {
-                            // Save the answer
+                    // PRIORITY 1: Check if it's matching headings first
+                    if ($question && $question->question_type === 'matching_headings' && !empty($answer)) {
+                        \Log::info('MATCHING HEADING DETECTED', [
+                            'original_key' => $questionId,
+                            'question_id' => $actualQuestionId,
+                            'sub_question_num' => $subQuestionNum,
+                            'value' => $answer
+                        ]);
+                        
+                        // Find the option based on letter (A, B, C, etc.)
+                        $letter = strtoupper($answer);
+                        $optionIndex = ord($letter) - ord('A');
+                        $option = $question->options->sortBy('order')->values()->get($optionIndex);
+                        
+                        if ($option) {
                             $saved = StudentAnswer::create([
+                                'attempt_id' => $attempt->id,
+                                'question_id' => $actualQuestionId,
+                                'selected_option_id' => $option->id,
+                                'answer' => json_encode([
+                                    'sub_question' => $subQuestionNum,
+                                    'selected_letter' => $letter,
+                                    'option_id' => $option->id
+                                ]),
+                            ]);
+                            
+                            if ($saved && $saved->exists) {
+                                $matchingHeadingSaved++;
+                                \Log::info('MATCHING HEADING SAVED', [
+                                    'student_answer_id' => $saved->id,
+                                    'question_id' => $actualQuestionId,
+                                    'sub_question' => $subQuestionNum,
+                                    'letter' => $letter,
+                                    'option_id' => $option->id
+                                ]);
+                            }
+                            
+                            $answeredCount++;
+                            
+                            // Check if correct based on mappings
+                            $mappings = $question->section_specific_data['mappings'] ?? [];
+                            foreach ($mappings as $mapping) {
+                                if ($mapping['question'] == $subQuestionNum && strtoupper($mapping['correct']) == $letter) {
+                                    $correctAnswers++;
+                                    break;
+                                }
+                            }
+                        } else {
+                            \Log::warning('MATCHING HEADING OPTION NOT FOUND', [
+                                'letter' => $letter,
+                                'option_index' => $optionIndex,
+                                'total_options' => $question->options->count()
+                            ]);
+                        }
+                        
+                        continue; // Skip to next iteration
+                    }
+                    
+                    // PRIORITY 2: Check if it's sentence completion
+                    if ($question && $question->question_type === 'sentence_completion' && !empty($answer)) {
+                        \Log::info('SENTENCE COMPLETION ANSWER DETECTED', [
+                            'original_key' => $questionId,
+                            'question_id' => $actualQuestionId,
+                            'sub_question_num' => $subQuestionNum,
+                            'value' => $answer
+                        ]);
+                        
+                        // Save the answer
+                        $saved = StudentAnswer::create([
                                 'attempt_id' => $attempt->id,
                                 'question_id' => $actualQuestionId,
                                 'selected_option_id' => null,
@@ -223,17 +282,16 @@ class ReadingTestController extends Controller
                                 ]);
                             }
                             
-                            $answeredCount++;
-                            
-                            // Check if correct based on sentence completion data
-                            $sectionData = $question->section_specific_data;
-                            if (isset($sectionData['sentence_completion']['sentences'])) {
-                                foreach ($sectionData['sentence_completion']['sentences'] as $sentence) {
-                                    if ($sentence['questionNumber'] == $subQuestionNum && 
-                                        $sentence['correctAnswer'] == $answer) {
-                                        $correctAnswers++;
-                                        break;
-                                    }
+                        $answeredCount++;
+                        
+                        // Check if correct based on sentence completion data
+                        $sectionData = $question->section_specific_data;
+                        if (isset($sectionData['sentence_completion']['sentences'])) {
+                            foreach ($sectionData['sentence_completion']['sentences'] as $sentence) {
+                                if ($sentence['questionNumber'] == $subQuestionNum && 
+                                    $sentence['correctAnswer'] == $answer) {
+                                    $correctAnswers++;
+                                    break;
                                 }
                             }
                         }
