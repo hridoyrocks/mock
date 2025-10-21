@@ -617,7 +617,7 @@
                                                         @break
                                                     
                                                     @case('matching_headings')
-                                                        {{-- Master Matching Headings Implementation --}}
+                                                        {{-- DRAG & DROP Matching Headings Implementation --}}
                                                         @php
                                                             $displayData = $question->generateMatchingHeadingsDisplay();
                                                             $isFirstInGroup = true;
@@ -633,72 +633,227 @@
                                                                     }
                                                                 }
                                                             }
+                                                            
+                                                            $matchingQuestionId = 'mh-' . $question->id;
                                                         @endphp
                                                         
                                                         @if($question->isMasterMatchingHeading())
-                                                            {{-- This is a master question with multiple mappings --}}
+                                                            {{-- Drag & Drop UI for Master Matching Headings --}}
+                                                            
                                                             @if($isFirstInGroup && !empty($displayData['headings']))
-                                                                {{-- Show headings list once --}}
-                                                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
-                                                                    <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
-                                                                    @foreach ($displayData['headings'] as $heading)
-                                                                        <div style="margin-bottom: 5px;">
-                                                                            {{ $heading['text'] }}
-                                                                        </div>
-                                                                    @endforeach
+                                                                {{-- Dragula CSS (only once) --}}
+                                                                @once('dragula-css')
+                                                                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.css">
+                                                                <style>
+                                                                    /* Heading items - smooth dragging */
+                                                                    .mh-heading-item { 
+                                                                        cursor: move !important; 
+                                                                        user-select: none;
+                                                                        -webkit-user-select: none;
+                                                                        -moz-user-select: none;
+                                                                        transition: none !important;
+                                                                    }
+                                                                    
+                                                                    /* Heading inside drop zone - remove border */
+                                                                    .mh-drop-container .mh-heading-item {
+                                                                        border: none !important;
+                                                                        padding: 0 !important;
+                                                                        background: transparent !important;
+                                                                    }
+                                                                    
+                                                                    /* Mirror (the element being dragged) */
+                                                                    .mh-heading-item.gu-mirror { 
+                                                                        opacity: 0.9 !important; 
+                                                                        cursor: grabbing !important;
+                                                                        transform: rotate(3deg) !important;
+                                                                        box-shadow: 0 15px 40px rgba(0,0,0,0.4) !important;
+                                                                        pointer-events: none !important;
+                                                                        z-index: 9999 !important;
+                                                                        transition: none !important;
+                                                                    }
+                                                                    
+                                                                    /* Transit (original position placeholder) */
+                                                                    .gu-transit { 
+                                                                        opacity: 0.3 !important;
+                                                                        transition: none !important;
+                                                                    }
+                                                                    
+                                                                    /* Drop container hover */
+                                                                    .mh-drop-container.gu-over { 
+                                                                        border-color: #666666 !important; 
+                                                                        background-color: #f9fafb !important;
+                                                                        border-style: solid !important;
+                                                                        transition: all 0.15s ease !important;
+                                                                    }
+                                                                    
+                                                                    /* Drop container with item - NO background color */
+                                                                    .mh-drop-container.mh-has-item { 
+                                                                        border-color: #000000 !important; 
+                                                                        border-style: solid !important;
+                                                                        background-color: transparent !important;
+                                                                    }
+                                                                    
+                                                                    .mh-drop-container.mh-has-item .mh-empty-state { 
+                                                                        display: none !important; 
+                                                                    }
+                                                                    
+                                                                    /* Hide dragging from source */
+                                                                    .gu-hide {
+                                                                        display: none !important;
+                                                                    }
+                                                                    
+                                                                    /* Smooth cursor during drag */
+                                                                    .gu-unselectable {
+                                                                        cursor: grabbing !important;
+                                                                        user-select: none !important;
+                                                                        -webkit-user-select: none !important;
+                                                                    }
+                                                                </style>
+                                                                @endonce
+                                                                
+                                                                {{-- Headings List (Draggable) - MINIMAL with BORDER --}}
+                                                                <div style="margin-bottom: 20px;">
+                                                                    <div style="font-weight: 700; margin-bottom: 12px; font-size: 15px; color: #000000;">List of Headings</div>
+                                                                    <div id="headings-source-{{ $matchingQuestionId }}" style="display: flex; flex-direction: column; gap: 10px;">
+                                                                        @foreach ($displayData['headings'] as $heading)
+                                                                            <div class="mh-heading-item" 
+                                                                                 data-heading="{{ $heading['letter'] }}"
+                                                                                 draggable="true"
+                                                                                 style="padding: 10px 12px; cursor: move; border: 1px solid #d1d5db; border-radius: 4px; background: #ffffff;">
+                                                                                <span style="color: #000000; font-size: 14px; line-height: 1.6;">{{ $heading['text'] }}</span>
+                                                                            </div>
+                                                                        @endforeach
+                                                                    </div>
                                                                 </div>
                                                             @endif
                                                             
-                                                            {{-- Display individual questions from master --}}
-                                                            @foreach($displayData['questions'] as $qIndex => $questionData)
-                                                                @php
-                                                                    $currentDisplayNumber = isset($item['question_numbers'][$qIndex]) ? $item['question_numbers'][$qIndex] : ($item['display_number'] + $qIndex);
-                                                                    $questionNumber = isset($questionData['number']) ? $questionData['number'] : (isset($questionData['question']) ? $questionData['question'] : ($item['display_number'] + $qIndex));
-                                                                    $paragraphLabel = isset($questionData['paragraph']) ? $questionData['paragraph'] : chr(65 + $qIndex);
-                                                                    $fieldName = 'answers[' . $question->id . '_q' . $questionNumber . ']';
-                                                                @endphp
-                                                                <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
-                                                                    <span style="font-weight: 700; min-width: 30px;">{{ $currentDisplayNumber }}.</span>
-                                                                    <span style="min-width: 100px;">Paragraph {{ $paragraphLabel }}:</span>
-                                                                    <select name="{{ $fieldName }}" 
-                                                                            data-question-number="{{ $currentDisplayNumber }}" 
-                                                                            data-question-id="{{ $question->id }}"
-                                                                            data-sub-question="{{ $questionNumber }}"
-                                                                            class="matching-heading-select"
-                                                                            style="padding: 5px; border: 1px solid #ccc;">
-                                                                        <option value="">Choose</option>
-                                                                        @foreach ($displayData['headings'] as $heading)
-                                                                            <option value="{{ $heading['letter'] }}">
-                                                                                {{ $heading['letter'] }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </div>
-                                                            @endforeach
+                                                            {{-- Drop Zones for Each Question - MINIMAL --}}
+                                                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                                                @foreach($displayData['questions'] as $qIndex => $questionData)
+                                                                    @php
+                                                                        $currentDisplayNumber = isset($item['question_numbers'][$qIndex]) ? $item['question_numbers'][$qIndex] : ($item['display_number'] + $qIndex);
+                                                                        $questionNumber = isset($questionData['number']) ? $questionData['number'] : (isset($questionData['question']) ? $questionData['question'] : ($item['display_number'] + $qIndex));
+                                                                        $paragraphLabel = isset($questionData['paragraph']) ? $questionData['paragraph'] : chr(65 + $qIndex);
+                                                                        $fieldName = 'answers[' . $question->id . '_q' . $questionNumber . ']';
+                                                                    @endphp
+                                                                    
+                                                                    {{-- Drop Zone Box with Question Number --}}
+                                                                    <div style="position: relative;">
+                                                                        <div class="mh-drop-container mh-drop-{{ $matchingQuestionId }}" 
+                                                                             data-question-number="{{ $currentDisplayNumber }}"
+                                                                             data-paragraph="{{ $paragraphLabel }}"
+                                                                             style="min-height: 50px; border: 1px dashed #000000; border-radius: 4px; padding: 10px 12px; background: #ffffff; display: flex; align-items: center; justify-content: center; position: relative;">
+                                                                            
+                                                                            {{-- Question Number in Center --}}
+                                                                            <div class="mh-empty-state" style="color: #000000; font-size: 14px; font-weight: 700; pointer-events: none;">
+                                                                                {{ $currentDisplayNumber }}
+                                                                            </div>
+                                                                        </div>
+                                                                        
+                                                                        {{-- Hidden Input --}}
+                                                                        <input type="hidden" 
+                                                                                       name="{{ $fieldName }}" 
+                                                                                       class="mh-answer-input"
+                                                                                       data-question-number="{{ $currentDisplayNumber }}"
+                                                                                       value="">
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                            
+                                                            {{-- Dragula - Properly Configured --}}
+                                                            <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
+                                                            <script>
+                                                                (function() {
+                                                                    const qId = '{{ $matchingQuestionId }}';
+                                                                    const source = document.getElementById('headings-source-' + qId);
+                                                                    const drops = Array.from(document.querySelectorAll('.mh-drop-' + qId));
+                                                                    
+                                                                    if (!source || !drops.length) {
+                                                                        console.error('Containers not found');
+                                                                        return;
+                                                                    }
+                                                                    
+                                                                    console.log('Initializing dragula with', drops.length, 'drop zones');
+                                                                    
+                                                                    // Create drake with ALL containers
+                                                                    const drake = dragula([source, ...drops], {
+                                                                        accepts: function(el, target, source, sibling) {
+                                                                            // Always allow dropping back to source
+                                                                            if (target === source || target.id === 'headings-source-' + qId) {
+                                                                                return true;
+                                                                            }
+                                                                            
+                                                                            // For drop zones, only accept if empty OR if dragging from this same zone
+                                                                            if (target.classList && target.classList.contains('mh-drop-container')) {
+                                                                                const existingHeading = target.querySelector('.mh-heading-item');
+                                                                                
+                                                                                // If empty, accept
+                                                                                if (!existingHeading) {
+                                                                                    return true;
+                                                                                }
+                                                                                
+                                                                                // If dragging from this same zone, accept (rearranging)
+                                                                                if (source === target) {
+                                                                                    return true;
+                                                                                }
+                                                                                
+                                                                                // Otherwise reject (zone already has a heading)
+                                                                                return false;
+                                                                            }
+                                                                            
+                                                                            return true;
+                                                                        }
+                                                                    });
+                                                                    
+                                                                    // On drop
+                                                                    drake.on('drop', function(el, target, source, sibling) {
+                                                                        const letter = el.dataset.heading;
+                                                                        console.log('Dropped', letter, 'from', source.id || source.className, 'to', target.id || target.className);
+                                                                        
+                                                                        // If dropped in a drop zone
+                                                                        if (target.classList && target.classList.contains('mh-drop-container')) {
+                                                                            // Hide empty state (question number)
+                                                                            const empty = target.querySelector('.mh-empty-state');
+                                                                            if (empty) empty.style.display = 'none';
+                                                                            
+                                                                            // Mark as filled - NO background color
+                                                                            target.classList.add('mh-has-item');
+                                                                            target.style.borderColor = '#000000';
+                                                                            target.style.borderStyle = 'solid';
+                                                                            // Keep background transparent/white
+                                                                            
+                                                                            // Update input
+                                                                            const input = target.nextElementSibling;
+                                                                            if (input && input.classList.contains('mh-answer-input')) {
+                                                                                input.value = letter;
+                                                                                console.log('Saved answer:', letter);
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        // If source was a drop zone, clear it
+                                                                        if (source.classList && source.classList.contains('mh-drop-container')) {
+                                                                            const empty = source.querySelector('.mh-empty-state');
+                                                                            if (empty) empty.style.display = 'block';
+                                                                            
+                                                                            source.classList.remove('mh-has-item');
+                                                                            source.style.borderColor = '#000000';
+                                                                            source.style.borderStyle = 'dashed';
+                                                                            source.style.backgroundColor = 'white';
+                                                                            
+                                                                            const input = source.nextElementSibling;
+                                                                            if (input && input.classList.contains('mh-answer-input')) {
+                                                                                input.value = '';
+                                                                                console.log('Cleared answer');
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                    
+                                                                    console.log('Dragula ready');
+                                                                })();
+                                                            </script>
                                                             
                                                         @else
-                                                            {{-- Fallback to old implementation --}}
-                                                            @php
-                                                                $showHeadingsList = true;
-                                                                if ($loop->index > 0) {
-                                                                    $prevQuestion = $questions[$loop->index - 1]['question'] ?? null;
-                                                                    if ($prevQuestion && $prevQuestion->question_type === 'matching_headings' && $prevQuestion->question_group === $question->question_group) {
-                                                                        $showHeadingsList = false;
-                                                                    }
-                                                                }
-                                                            @endphp
-                                                            
-                                                            @if($showHeadingsList && count($question->options) > 0)
-                                                                <div style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd;">
-                                                                    <div style="font-weight: bold; margin-bottom: 10px;">List of Headings:</div>
-                                                                    @foreach ($question->options->sortBy('order') as $optionIndex => $option)
-                                                                        <div style="margin-bottom: 5px;">
-                                                                            {{ $option->content }}
-                                                                        </div>
-                                                                    @endforeach
-                                                                </div>
-                                                            @endif
-                                                            
+                                                            {{-- Non-master fallback (keep old dropdown) --}}
                                                             <div style="margin-left: 24px; display: flex; align-items: center; gap: 10px;">
                                                                 <select name="answers[{{ $question->id }}]" 
                                                                         data-question-number="{{ $item['display_number'] }}" 
