@@ -624,6 +624,8 @@ public function getAudioPathAttribute(): ?string
     
     // If question uses part audio
     if ($this->use_part_audio && $this->testSet) {
+        // getPartAudio already handles Full Audio (part_number = 0) fallback
+        // It checks full audio first, then specific part audio
         $partAudio = $this->testSet->getPartAudio($this->part_number);
         return $partAudio ? $partAudio->audio_path : null;
     }
