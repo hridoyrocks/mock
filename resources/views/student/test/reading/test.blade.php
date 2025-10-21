@@ -219,17 +219,143 @@
                         @if($passagesByPart->has($partNumber))
                             {{-- Part has passages --}}
                             @foreach($passagesByPart[$partNumber] as $passage)
-                                <div class="passage-content-wrapper">
-                                    @if($passage->instructions)
-                                        <h2 class="passage-title">{!! $passage->instructions !!}</h2>
-                                    @else
-                                        <h2 class="passage-title">Reading Passage {{ $partNumber }}</h2>
+                                @php
+                                    // Find matching headings questions for this part to get drop zones
+                                    $matchingHeadingQuestions = $testSet->questions
+                                        ->where('question_type', 'matching_headings')
+                                        ->where('part_number', $partNumber);
+                                    
+                                    $dropZoneData = [];
+                                    foreach($matchingHeadingQuestions as $mhQuestion) {
+                                        if ($mhQuestion->isMasterMatchingHeading()) {
+                                            $displayData = $mhQuestion->generateMatchingHeadingsDisplay();
+                                            if (isset($displayData['questions'])) {
+                                                foreach($displayData['questions'] as $qData) {
+                                                    $dropZoneData[] = [
+                                                        'question_id' => $mhQuestion->id,
+                                                        'question_number' => $qData['number'] ?? $qData['question'] ?? 0,
+                                                        'paragraph' => $qData['paragraph'] ?? 'A',
+                                                        'headings' => $displayData['headings'] ?? []
+                                                    ];
+                                                }
+                                            }
+                                        }
+                                    }
+                                @endphp
+                                
+                                <div class="passage-content-wrapper" style="position: relative;">
+                                    
+                                    @php
+                                        // Get matching headings questions for this part
+                                        $mhQuestions = $testSet->questions
+                                            ->where('question_type', 'matching_headings')
+                                            ->where('part_number', $partNumber);
+                                        
+                                        $dropZones = [];
+                                        foreach($mhQuestions as $mhQ) {
+                                            try {
+                                                if (method_exists($mhQ, 'isMasterMatchingHeading') && $mhQ->isMasterMatchingHeading()) {
+                                                    $display = $mhQ->generateMatchingHeadingsDisplay();
+                                                    if (isset($display['questions'])) {
+                                                        foreach($display['questions'] as $q) {
+                                                            $dropZones[] = [
+                                                                'qid' => $mhQ->id,
+                                                                'num' => $q['number'] ?? $q['question'] ?? 0,
+                                                                'para' => $q['paragraph'] ?? 'A'
+                                                            ];
+                                                        }
+                                                    }
+                                                }
+                                            } catch (\Exception $e) {
+                                                // Skip if error
+                                            }
+                                        }
+                                    @endphp
+                                    
+                                    {{-- Show drop zones if found --}}
+                                    @if(count($dropZones) > 0)
+                                        {{-- Drop zones will be inserted inline with paragraphs --}}
                                     @endif
                                     
-                                    @if($passage->passage_text)
-                                        <div class="passage-content">
-                                            {!! $passage->passage_text !!}
+                                    {{-- Passage content - Check both fields --}}
+                                    @php
+                                        $passageHtml = $passage->passage_text ?? $passage->content ?? '';
+                                    @endphp
+                                    
+                                    @if($passageHtml)
+                                        <div class="passage-content" id="passage-content-{{ $partNumber }}">
+                                            {!! $passageHtml !!}
                                         </div>
+                                        
+                                        {{-- Inject Drop Zones via JavaScript - DYNAMIC DATA --}}
+                                        <script>
+                                            (function() {
+                                                console.log('🔥 DROP ZONE SCRIPT - Part {{ $partNumber }}');
+                                                
+                                                // Get dynamic drop zone data for this part
+                                                const dropZones = [];
+                                                
+                                                @foreach($testSet->questions->where('question_type', 'matching_headings')->where('part_number', $partNumber) as $mhQ)
+                                                    @if($mhQ->isMasterMatchingHeading())
+                                                        @php
+                                                            $display = $mhQ->generateMatchingHeadingsDisplay();
+                                                        @endphp
+                                                        @if(isset($display['questions']))
+                                                            @foreach($display['questions'] as $q)
+                                                                dropZones.push({
+                                                                    para: '{{ $q["paragraph"] ?? "A" }}',
+                                                                    num: {{ $q['number'] ?? $q['question'] ?? 0 }},
+                                                                    qid: {{ $mhQ->id }}
+                                                                });
+                                                            @endforeach
+                                                        @endif
+                                                    @endif
+                                                @endforeach
+                                                
+                                                console.log('Drop zones for Part {{ $partNumber }}:', dropZones);
+                                                
+                                                if (dropZones.length === 0) {
+                                                    console.log('No drop zones for this part');
+                                                    return;
+                                                }
+                                                
+                                                const passageEl = document.getElementById('passage-content-{{ $partNumber }}');
+                                                
+                                                if (passageEl) {
+                                                    const allPs = passageEl.querySelectorAll('p');
+                                                    
+                                                    dropZones.forEach(dz => {
+                                                        allPs.forEach(p => {
+                                                            const strong = p.querySelector('strong');
+                                                            if (strong) {
+                                                                const text = strong.textContent.trim().replace(/\s+/g, '');
+                                                                
+                                                                if (text === dz.para) {
+                                                                    const box = document.createElement('div');
+                                                                    box.style.cssText = 'margin: 10px 20% 8px 0;';
+                                                                    box.innerHTML = `
+                                                                        <div class="passage-drop-zone passage-drop-${dz.qid}"
+                                                                             data-question-number="${dz.num}"
+                                                                             data-paragraph="${dz.para}"
+                                                                             style="width: 100%; min-height: 40px; border: 1px dashed #000000; border-radius: 4px; padding: 6px 12px; background: #ffffff; display: flex; align-items: center; justify-content: center;">
+                                                                            <div class="passage-empty-state" style="color: #000000; font-size: 13px; font-weight: 700; pointer-events: none;">
+                                                                                ${dz.num}
+                                                                            </div>
+                                                                        </div>
+                                                                        <input type="hidden" name="answers[${dz.qid}_q${dz.num}]" class="passage-answer-input" value="">
+                                                                    `;
+                                                                    
+                                                                    // Insert AFTER the paragraph (next sibling)
+                                                                    p.parentNode.insertBefore(box, p.nextSibling);
+                                                                }
+                                                            }
+                                                        });
+                                                    });
+                                                    
+                                                    console.log('✅ Drop zones injected for Part {{ $partNumber }}');
+                                                }
+                                            })();
+                                        </script>
                                     @elseif($passage->content)
                                         <div class="passage-content">
                                             {!! $passage->content !!}
@@ -651,11 +777,18 @@
                                                                         user-select: none;
                                                                         -webkit-user-select: none;
                                                                         -moz-user-select: none;
-                                                                        transition: none !important;
+                                                                        transition: box-shadow 0.2s ease, transform 0.2s ease;
                                                                     }
                                                                     
-                                                                    /* Heading inside drop zone - remove border */
-                                                                    .mh-drop-container .mh-heading-item {
+                                                                    /* Hover effect */
+                                                                    .mh-heading-item:hover {
+                                                                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                                                                        transform: translateY(-2px);
+                                                                    }
+                                                                    
+                                                                    /* Heading inside ANY drop zone - remove border */
+                                                                    .mh-drop-container .mh-heading-item,
+                                                                    .passage-drop-zone .mh-heading-item {
                                                                         border: none !important;
                                                                         padding: 0 !important;
                                                                         background: transparent !important;
@@ -678,12 +811,22 @@
                                                                         transition: none !important;
                                                                     }
                                                                     
-                                                                    /* Drop container hover */
-                                                                    .mh-drop-container.gu-over { 
+                                                                    /* Drop containers hover */
+                                                                    .mh-drop-container.gu-over,
+                                                                    .passage-drop-zone.gu-over { 
                                                                         border-color: #666666 !important; 
                                                                         background-color: #f9fafb !important;
                                                                         border-style: solid !important;
                                                                         transition: all 0.15s ease !important;
+                                                                    }
+                                                                    
+                                                                    /* Passage drop zones specific styling */
+                                                                    .passage-drop-zone {
+                                                                        transition: all 0.15s ease;
+                                                                    }
+                                                                    
+                                                                    .passage-drop-zone .passage-empty-state {
+                                                                        pointer-events: none;
                                                                     }
                                                                     
                                                                     /* Drop container with item - NO background color */
@@ -708,150 +851,144 @@
                                                                         user-select: none !important;
                                                                         -webkit-user-select: none !important;
                                                                     }
+                                                                    
+                                                                    /* Drop zone with heading - align left */
+                                                                    .passage-drop-zone:has(.mh-heading-item) {
+                                                                        justify-content: flex-start !important;
+                                                                        width: auto !important;
+                                                                        display: inline-flex !important;
+                                                                    }
                                                                 </style>
                                                                 @endonce
                                                                 
                                                                 {{-- Headings List (Draggable) - MINIMAL with BORDER --}}
                                                                 <div style="margin-bottom: 20px;">
                                                                     <div style="font-weight: 700; margin-bottom: 12px; font-size: 15px; color: #000000;">List of Headings</div>
-                                                                    <div id="headings-source-{{ $matchingQuestionId }}" style="display: flex; flex-direction: column; gap: 10px;">
+                                                                    <div id="headings-source-{{ $matchingQuestionId }}" style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
                                                                         @foreach ($displayData['headings'] as $heading)
                                                                             <div class="mh-heading-item" 
                                                                                  data-heading="{{ $heading['letter'] }}"
                                                                                  draggable="true"
-                                                                                 style="padding: 10px 12px; cursor: move; border: 1px solid #d1d5db; border-radius: 4px; background: #ffffff;">
-                                                                                <span style="color: #000000; font-size: 14px; line-height: 1.6;">{{ $heading['text'] }}</span>
+                                                                                 style="padding: 6px 10px; cursor: move; border: 1px solid #d1d5db; border-radius: 4px; background: #ffffff; display: inline-block;">
+                                                                                <span style="color: #000000; font-size: 14px; line-height: 1.4;">{{ $heading['text'] }}</span>
                                                                             </div>
                                                                         @endforeach
                                                                     </div>
                                                                 </div>
                                                             @endif
                                                             
-                                                            {{-- Drop Zones for Each Question - MINIMAL --}}
-                                                            <div style="display: flex; flex-direction: column; gap: 10px;">
-                                                                @foreach($displayData['questions'] as $qIndex => $questionData)
-                                                                    @php
-                                                                        $currentDisplayNumber = isset($item['question_numbers'][$qIndex]) ? $item['question_numbers'][$qIndex] : ($item['display_number'] + $qIndex);
-                                                                        $questionNumber = isset($questionData['number']) ? $questionData['number'] : (isset($questionData['question']) ? $questionData['question'] : ($item['display_number'] + $qIndex));
-                                                                        $paragraphLabel = isset($questionData['paragraph']) ? $questionData['paragraph'] : chr(65 + $qIndex);
-                                                                        $fieldName = 'answers[' . $question->id . '_q' . $questionNumber . ']';
-                                                                    @endphp
-                                                                    
-                                                                    {{-- Drop Zone Box with Question Number --}}
-                                                                    <div style="position: relative;">
-                                                                        <div class="mh-drop-container mh-drop-{{ $matchingQuestionId }}" 
-                                                                             data-question-number="{{ $currentDisplayNumber }}"
-                                                                             data-paragraph="{{ $paragraphLabel }}"
-                                                                             style="min-height: 50px; border: 1px dashed #000000; border-radius: 4px; padding: 10px 12px; background: #ffffff; display: flex; align-items: center; justify-content: center; position: relative;">
-                                                                            
-                                                                            {{-- Question Number in Center --}}
-                                                                            <div class="mh-empty-state" style="color: #000000; font-size: 14px; font-weight: 700; pointer-events: none;">
-                                                                                {{ $currentDisplayNumber }}
-                                                                            </div>
-                                                                        </div>
-                                                                        
-                                                                        {{-- Hidden Input --}}
-                                                                        <input type="hidden" 
-                                                                                       name="{{ $fieldName }}" 
-                                                                                       class="mh-answer-input"
-                                                                                       data-question-number="{{ $currentDisplayNumber }}"
-                                                                                       value="">
-                                                                    </div>
-                                                                @endforeach
-                                                            </div>
+                                                            {{-- NO DROP ZONES IN QUESTION PANEL - All in Passage --}}
                                                             
-                                                            {{-- Dragula - Properly Configured --}}
+                                                            {{-- Dragula - Only Passage Drop Zones --}}
                                                             <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
                                                             <script>
-                                                                (function() {
+                                                                // Wait for drop zones to be injected, then initialize dragula
+                                                                setTimeout(function() {
+                                                                    console.log('=== DRAGULA INIT START ===');
                                                                     const qId = '{{ $matchingQuestionId }}';
                                                                     const source = document.getElementById('headings-source-' + qId);
-                                                                    const drops = Array.from(document.querySelectorAll('.mh-drop-' + qId));
+                                                                    const passageDrops = Array.from(document.querySelectorAll('.passage-drop-zone'));
                                                                     
-                                                                    if (!source || !drops.length) {
-                                                                        console.error('Containers not found');
+                                                                    console.log('Source:', !!source);
+                                                                    console.log('Passage drops:', passageDrops.length);
+                                                                    
+                                                                    if (!source || passageDrops.length === 0) {
+                                                                        console.error('❌ Cannot init dragula');
                                                                         return;
                                                                     }
                                                                     
-                                                                    console.log('Initializing dragula with', drops.length, 'drop zones');
+                                                                    console.log('✅ Initializing dragula...');
                                                                     
-                                                                    // Create drake with ALL containers
-                                                                    const drake = dragula([source, ...drops], {
+                                                                    const drake = dragula([source, ...passageDrops], {
                                                                         accepts: function(el, target, source, sibling) {
-                                                                            // Always allow dropping back to source
-                                                                            if (target === source || target.id === 'headings-source-' + qId) {
-                                                                                return true;
-                                                                            }
+                                                                            if (target === source) return true;
                                                                             
-                                                                            // For drop zones, only accept if empty OR if dragging from this same zone
-                                                                            if (target.classList && target.classList.contains('mh-drop-container')) {
-                                                                                const existingHeading = target.querySelector('.mh-heading-item');
-                                                                                
-                                                                                // If empty, accept
-                                                                                if (!existingHeading) {
-                                                                                    return true;
-                                                                                }
-                                                                                
-                                                                                // If dragging from this same zone, accept (rearranging)
-                                                                                if (source === target) {
-                                                                                    return true;
-                                                                                }
-                                                                                
-                                                                                // Otherwise reject (zone already has a heading)
-                                                                                return false;
+                                                                            if (target.classList && target.classList.contains('passage-drop-zone')) {
+                                                                                const existing = target.querySelector('.mh-heading-item');
+                                                                                return !existing || source === target;
                                                                             }
                                                                             
                                                                             return true;
                                                                         }
                                                                     });
                                                                     
-                                                                    // On drop
                                                                     drake.on('drop', function(el, target, source, sibling) {
                                                                         const letter = el.dataset.heading;
-                                                                        console.log('Dropped', letter, 'from', source.id || source.className, 'to', target.id || target.className);
+                                                                        console.log('🎯 Dropped:', letter, 'into', target.dataset);
                                                                         
-                                                                        // If dropped in a drop zone
-                                                                        if (target.classList && target.classList.contains('mh-drop-container')) {
-                                                                            // Hide empty state (question number)
-                                                                            const empty = target.querySelector('.mh-empty-state');
+                                                                        // Handle drop in passage zones
+                                                                        if (target.classList && target.classList.contains('passage-drop-zone')) {
+                                                                            const empty = target.querySelector('.passage-empty-state');
                                                                             if (empty) empty.style.display = 'none';
                                                                             
-                                                                            // Mark as filled - NO background color
-                                                                            target.classList.add('mh-has-item');
-                                                                            target.style.borderColor = '#000000';
                                                                             target.style.borderStyle = 'solid';
-                                                                            // Keep background transparent/white
                                                                             
-                                                                            // Update input
+                                                                            // Make dropped heading text bold
+                                                                            const headingSpan = el.querySelector('span');
+                                                                            if (headingSpan) {
+                                                                                headingSpan.style.fontWeight = '700';
+                                                                            }
+                                                                            
                                                                             const input = target.nextElementSibling;
-                                                                            if (input && input.classList.contains('mh-answer-input')) {
+                                                                            if (input && input.classList.contains('passage-answer-input')) {
                                                                                 input.value = letter;
-                                                                                console.log('Saved answer:', letter);
+                                                                                console.log('✅ Answer saved:', input.name, '=', letter);
+                                                                                
+                                                                                // Trigger change event for answer tracking
+                                                                                const changeEvent = new Event('change', { bubbles: true });
+                                                                                input.dispatchEvent(changeEvent);
+                                                                                
+                                                                                // Update bottom navigation
+                                                                                const qNum = target.dataset.questionNumber;
+                                                                                if (qNum && window.updateQuestionStatus) {
+                                                                                    window.updateQuestionStatus(qNum, 'answered');
+                                                                                    console.log('✅ Navigation updated for Q', qNum);
+                                                                                }
+                                                                                
+                                                                                // Also trigger global answer save if exists
+                                                                                if (typeof window.saveAnswer === 'function') {
+                                                                                    window.saveAnswer(input.name, letter);
+                                                                                }
                                                                             }
                                                                         }
                                                                         
-                                                                        // If source was a drop zone, clear it
-                                                                        if (source.classList && source.classList.contains('mh-drop-container')) {
-                                                                            const empty = source.querySelector('.mh-empty-state');
+                                                                        // Clear source if it was a drop zone OR back to list
+                                                                        if (source.classList && source.classList.contains('passage-drop-zone')) {
+                                                                            const empty = source.querySelector('.passage-empty-state');
                                                                             if (empty) empty.style.display = 'block';
                                                                             
-                                                                            source.classList.remove('mh-has-item');
-                                                                            source.style.borderColor = '#000000';
                                                                             source.style.borderStyle = 'dashed';
-                                                                            source.style.backgroundColor = 'white';
                                                                             
                                                                             const input = source.nextElementSibling;
-                                                                            if (input && input.classList.contains('mh-answer-input')) {
+                                                                            if (input && input.classList.contains('passage-answer-input')) {
+                                                                                const qNum = source.dataset.questionNumber;
                                                                                 input.value = '';
-                                                                                console.log('Cleared answer');
+                                                                                console.log('✅ Answer cleared:', input.name);
+                                                                                
+                                                                                // Trigger change event
+                                                                                const changeEvent = new Event('change', { bubbles: true });
+                                                                                input.dispatchEvent(changeEvent);
+                                                                                
+                                                                                // Update bottom navigation to unanswered
+                                                                                if (qNum && window.updateQuestionStatus) {
+                                                                                    window.updateQuestionStatus(qNum, 'unanswered');
+                                                                                    console.log('✅ Navigation updated (cleared) for Q', qNum);
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        // Reset heading text weight when going back to list
+                                                                        if (target.id && target.id.includes('headings-source')) {
+                                                                            const headingSpan = el.querySelector('span');
+                                                                            if (headingSpan) {
+                                                                                headingSpan.style.fontWeight = '400';
                                                                             }
                                                                         }
                                                                     });
                                                                     
-                                                                    console.log('Dragula ready');
-                                                                })();
+                                                                    console.log('=== DRAGULA READY ===');
+                                                                }, 1000); // Wait 1 second for injection
                                                             </script>
-                                                            
                                                         @else
                                                             {{-- Non-master fallback (keep old dropdown) --}}
                                                             <div style="margin-left: 24px; display: flex; align-items: center; gap: 10px;">
