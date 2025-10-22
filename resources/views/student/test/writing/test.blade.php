@@ -595,6 +595,10 @@
                             name="answers[{{ $taskOneQuestion->id }}]" 
                             class="editor-textarea"
                             placeholder="Start writing your Task 1 response here..."
+                            spellcheck="false"
+                            autocomplete="off"
+                            autocorrect="off"
+                            autocapitalize="off"
                         >{{ old('answers.' . $taskOneQuestion->id, $taskOneAnswer->answer ?? '') }}</textarea>
                         
                         <!-- Task 2 Editor -->
@@ -604,6 +608,10 @@
                             class="editor-textarea"
                             style="display: none;"
                             placeholder="Start writing your Task 2 essay here..."
+                            spellcheck="false"
+                            autocomplete="off"
+                            autocorrect="off"
+                            autocapitalize="off"
                         >{{ old('answers.' . $taskTwoQuestion->id, $taskTwoAnswer->answer ?? '') }}</textarea>
                     </div>
                     
