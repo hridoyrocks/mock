@@ -2,37 +2,22 @@
     <x-slot:title>Choose Your Plan</x-slot>
     
     <div x-data="{ 
-        selectedDuration: 30,
         showAllFeatures: false,
         hoveredPlan: null
     }" x-init="() => { if (typeof darkMode === 'undefined') { darkMode = localStorage.getItem('darkMode') !== 'false'; } }">
     
-    <!-- Floating Header with Gradient -->
-    <section class="relative overflow-hidden py-8 mb-8">
-        <div class="absolute inset-0 bg-gradient-to-br from-[#C8102E]/10 via-[#C8102E]/5 to-transparent"></div>
-        <div class="absolute inset-0">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-[#C8102E]/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-[#A00E27]/10 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div class="relative px-4 sm:px-6 lg:px-8">
-            <div class="max-w-6xl mx-auto">
-                <!-- Animated Badge -->
-                <div class="flex justify-center mb-4">
-                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-lg animate-pulse"
-                         :class="darkMode ? 'glass border border-[#C8102E]/30' : 'bg-white/90 backdrop-blur border border-[#C8102E]/20'">
-                        <i class="fas fa-fire text-[#C8102E] animate-bounce"></i>
-                        <span class="text-sm font-semibold" :class="darkMode ? 'text-white' : 'text-gray-900'">
-                            Limited Time Offer - Save up to 20%
-                        </span>
-                    </div>
-                </div>
-                
-                <h1 class="text-3xl lg:text-4xl font-black text-center mb-3" :class="darkMode ? 'text-white' : 'text-gray-900'">
-                    Start Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#C8102E] to-[#A00E27] animate-gradient">IELTS Success</span> Journey
+    <!-- Clean Header -->
+    <section class="py-12 mb-8">
+        <div class="px-4 sm:px-6 lg:px-8">
+            <div class="max-w-6xl mx-auto text-center">
+                <h1 class="text-4xl lg:text-5xl font-bold mb-4" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                    Choose Your Perfect Plan
                 </h1>
-                <p class="text-center text-lg" :class="darkMode ? 'text-gray-300' : 'text-gray-600'">
-                    Join <span class="font-bold text-[#C8102E]">50,000+</span> students achieving their dream scores
+                <p class="text-lg lg:text-xl mb-2" :class="darkMode ? 'text-gray-300' : 'text-gray-600'">
+                    Start preparing for your IELTS exam with confidence
+                </p>
+                <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-500'">
+                    <i class="fas fa-users mr-2 text-[#C8102E]"></i>Join 50,000+ successful students
                 </p>
             </div>
         </div>
@@ -41,60 +26,11 @@
     <!-- Main Content with Visual Elements -->
     <section class="px-4 sm:px-6 lg:px-8 pb-16">
         <div class="max-w-6xl mx-auto">
-            
-            @php
-                $plans = collect($plans);
-                $plansByDuration = $plans->groupBy('duration_days');
-                $availableDurations = $plansByDuration->keys()->sort()->values();
-            @endphp
-
-            <!-- Unique Duration Selector -->
-            @if($availableDurations->count() > 1)
-            <div class="flex justify-center mb-10">
-                <div class="relative inline-flex p-1 rounded-2xl"
-                     :class="darkMode ? 'bg-gray-800/50 backdrop-blur' : 'bg-gray-100'">
-                    <!-- Sliding Background -->
-                    <div class="absolute h-full rounded-xl bg-gradient-to-r from-[#C8102E] to-[#A00E27] transition-all duration-300 shadow-lg"
-                         :style="{
-                            width: '33.33%',
-                            transform: `translateX(${selectedDuration === 30 ? '0%' : selectedDuration === 90 ? '100%' : '200%'})`
-                         }">
-                    </div>
-                    
-                    @foreach($availableDurations as $index => $duration)
-                        <button @click="selectedDuration = {{ $duration }}" 
-                                class="relative z-10 px-6 py-3 rounded-xl font-bold transition-all duration-300"
-                                :class="selectedDuration === {{ $duration }} ? 'text-white' : (darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900')">
-                            <span class="flex items-center gap-2">
-                                @if($duration == 30)
-                                    <i class="fas fa-calendar-day"></i>
-                                    Monthly
-                                @elseif($duration == 90)
-                                    <i class="fas fa-calendar-week"></i>
-                                    Quarterly
-                                    <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full">-10%</span>
-                                @elseif($duration == 365)
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Annual
-                                    <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full">-20%</span>
-                                @else
-                                    {{ $duration }} Days
-                                @endif
-                            </span>
-                        </button>
-                    @endforeach
-                </div>
-            </div>
-            @endif
 
             <!-- Unique Plans Layout -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-12">
                 @forelse($plans as $index => $plan)
-                    <div x-show="selectedDuration === {{ $plan->duration_days }}"
-                         x-transition:enter="transition ease-out duration-500"
-                         x-transition:enter-start="opacity-0 transform translate-y-4"
-                         x-transition:enter-end="opacity-100 transform translate-y-0"
-                         @mouseenter="hoveredPlan = {{ $index }}"
+                    <div @mouseenter="hoveredPlan = {{ $index }}"
                          @mouseleave="hoveredPlan = null"
                          class="relative group">
                         
@@ -104,64 +40,55 @@
                         </div>
                         
                         @if($plan->is_featured)
-                        <!-- Featured Badge -->
-                        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
-                            <div class="relative">
-                                <div class="absolute inset-0 bg-gradient-to-r from-[#C8102E] to-[#A00E27] blur animate-pulse"></div>
-                                <div class="relative px-6 py-2 bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white text-sm font-black rounded-full shadow-xl flex items-center gap-2">
-                                    <i class="fas fa-crown text-yellow-300 animate-bounce"></i>
-                                    MOST POPULAR
-                                </div>
+                        <!-- Featured Badge - Simplified -->
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
+                            <div class="px-4 py-1.5 bg-[#C8102E] text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1.5">
+                                <i class="fas fa-star text-yellow-300"></i>
+                                MOST POPULAR
                             </div>
                         </div>
                         @endif
                         
-                        <div class="relative h-full rounded-2xl overflow-hidden transition-all duration-300 transform hover:-translate-y-2"
+                        <div class="relative h-full rounded-xl overflow-hidden transition-all duration-300 transform hover:shadow-xl"
                              :class="darkMode ? 
-                                'bg-gray-800/50 backdrop-blur border {{ $plan->is_featured ? 'border-[#C8102E]/50' : 'border-gray-700' }}' : 
-                                'bg-white border-2 {{ $plan->is_featured ? 'border-[#C8102E]/30 shadow-2xl' : 'border-gray-200' }} shadow-lg'">
+                                'bg-gray-800 border-2 {{ $plan->is_featured ? 'border-[#C8102E]' : 'border-gray-700' }}' : 
+                                'bg-white border-2 {{ $plan->is_featured ? 'border-[#C8102E]' : 'border-gray-200' }} shadow-md'">
                             
-                            <!-- Plan Header with Unique Design -->
-                            <div class="relative p-8 pb-6">
-                                <!-- Background Pattern -->
-                                <div class="absolute inset-0 opacity-5">
-                                    <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23{{ $plan->is_featured ? 'C8102E' : '9CA3AF' }}" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
-                                </div>
+                            <!-- Plan Header - Simplified -->
+                            <div class="relative p-6 {{ $plan->is_featured ? 'bg-gradient-to-b from-[#C8102E]/5 to-transparent' : '' }}">
                                 
-                                <!-- Plan Icon -->
-                                <div class="relative mb-4">
-                                    <div class="w-20 h-20 mx-auto rounded-2xl rotate-3 transform transition-transform group-hover:rotate-6 group-hover:scale-110
-                                        {{ $plan->slug === 'pro' || $plan->slug === 'premium' ? 'bg-gradient-to-br from-[#C8102E] to-[#A00E27]' : 'bg-gradient-to-br from-gray-600 to-gray-700' }} 
-                                        shadow-2xl flex items-center justify-center">
-                                        <i class="fas {{ $plan->slug === 'pro' ? 'fa-crown' : ($plan->slug === 'premium' ? 'fa-gem' : 'fa-user') }} text-3xl text-white"></i>
-                                    </div>
+                                <!-- Plan Icon - Simplified -->
+                                <div class="w-16 h-16 mx-auto mb-4 rounded-lg
+                                    {{ $plan->is_featured ? 'bg-[#C8102E]' : 'bg-gray-600' }} 
+                                    flex items-center justify-center shadow-lg">
+                                    <i class="fas {{ $plan->slug === 'pro' ? 'fa-crown' : ($plan->slug === 'premium' ? 'fa-gem' : 'fa-user') }} text-2xl text-white"></i>
                                 </div>
                                 
                                 <!-- Plan Name -->
-                                <h3 class="text-2xl font-black text-center mb-2" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                                <h3 class="text-2xl font-bold text-center mb-2" :class="darkMode ? 'text-white' : 'text-gray-900'">
                                     {{ $plan->name }}
                                 </h3>
                                 <p class="text-center text-sm mb-6" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
                                     {{ $plan->description }}
                                 </p>
                                 
-                                <!-- Price with Animation -->
+                                <!-- Price - Clean Design -->
                                 <div class="text-center mb-6">
                                     @if($plan->is_free)
-                                        <div class="text-5xl font-black" :class="darkMode ? 'text-white' : 'text-gray-900'">FREE</div>
+                                        <div class="text-4xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-900'">FREE</div>
                                         <p class="text-sm mt-2" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Forever</p>
                                     @else
                                         <div class="relative">
                                             @if($plan->discount_price && $plan->discount_price < $plan->price)
-                                                <div class="absolute -top-8 left-1/2 transform -translate-x-1/2">
+                                                <div class="mb-1">
                                                     <span class="text-sm line-through" :class="darkMode ? 'text-gray-500' : 'text-gray-400'">
                                                         ৳{{ number_format($plan->price, 0) }}
                                                     </span>
                                                 </div>
                                             @endif
-                                            <div class="flex items-center justify-center gap-1">
-                                                <span class="text-3xl font-black text-[#C8102E]">৳</span>
-                                                <span class="text-5xl font-black bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-transparent bg-clip-text">
+                                            <div class="flex items-baseline justify-center gap-1">
+                                                <span class="text-3xl font-bold text-[#C8102E]">৳</span>
+                                                <span class="text-5xl font-bold text-[#C8102E]">
                                                     {{ number_format($plan->current_price, 0) }}
                                                 </span>
                                             </div>
@@ -181,19 +108,19 @@
                                 </div>
                             </div>
                             
-                            <!-- Features with Icons -->
-                            <div class="px-8 pb-6">
-                                <div class="space-y-3">
+                            <!-- Features with Simple Icons -->
+                            <div class="px-6 pb-6">
+                                <div class="space-y-2.5">
                                     @if($plan->relationLoaded('features') && $plan->features->count() > 0)
                                         @foreach($plan->features->take(5) as $feature)
-                                            <div class="flex items-start gap-3 group/item">
-                                                <div class="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 group-hover/item:scale-125 transition-transform">
-                                                    <i class="fas fa-check text-green-500 text-xs"></i>
+                                            <div class="flex items-start gap-2.5">
+                                                <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <i class="fas fa-check text-green-600 text-xs"></i>
                                                 </div>
-                                                <span class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
-                                                    <span class="font-semibold">{{ $feature->name }}</span>
+                                                <span class="text-sm leading-relaxed" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
+                                                    {{ $feature->name }}
                                                     @if($feature->pivot && $feature->pivot->value && $feature->pivot->value !== 'true')
-                                                        <span class="text-[#C8102E] font-bold ml-1">({{ $feature->pivot->value }})</span>
+                                                        <span class="text-[#C8102E] font-semibold ml-1">({{ $feature->pivot->value }})</span>
                                                     @endif
                                                 </span>
                                             </div>
@@ -207,65 +134,53 @@
                                 
                                 @if($plan->relationLoaded('features') && $plan->features->count() > 5)
                                     <button @click="showAllFeatures = true" 
-                                            class="mt-3 text-sm text-[#C8102E] hover:text-[#A00E27] font-semibold hover:underline">
-                                        <i class="fas fa-plus-circle mr-1"></i>View all {{ $plan->features->count() }} features
+                                            class="mt-4 text-sm text-[#C8102E] hover:text-[#A00E27] font-medium">
+                                        + View all {{ $plan->features->count() }} features
                                     </button>
                                 @endif
                             </div>
                             
-                            <!-- CTA Section -->
-                            <div class="p-6 bg-gradient-to-t from-black/5 to-transparent">
+                            <!-- CTA Section - Clean Design -->
+                            <div class="p-6 border-t" :class="darkMode ? 'border-gray-700' : 'border-gray-100'">
                                 @auth
                                     @if($currentPlan && $currentPlan->id === $plan->id)
-                                        <button class="w-full py-4 rounded-xl font-bold cursor-not-allowed transition-all text-base relative overflow-hidden group/btn"
-                                                :class="darkMode ? 'bg-gray-700/50 text-gray-400 border border-gray-600' : 'bg-gray-100 text-gray-400 border border-gray-300'">
-                                            <i class="fas fa-check-circle mr-2"></i>Your Current Plan
+                                        <button class="w-full py-3.5 rounded-lg font-semibold cursor-not-allowed transition-all"
+                                                :class="darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'">
+                                            <i class="fas fa-check-circle mr-2"></i>Current Plan
                                         </button>
                                     @else
                                         <form action="{{ route('subscription.subscribe', $plan) }}" method="POST" id="subscribeForm-{{ $plan->id }}">
                                             @csrf
                                             <input type="hidden" name="coupon_code" id="couponInput-{{ $plan->id }}">
                                             <button type="submit" 
-                                                    class="relative w-full py-4 rounded-xl font-black text-base transition-all transform hover:scale-105 hover:shadow-2xl overflow-hidden group/btn
+                                                    class="w-full py-3.5 rounded-lg font-semibold transition-all
                                                     {{ $plan->is_featured 
-                                                        ? 'bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white shadow-lg' 
+                                                        ? 'bg-[#C8102E] hover:bg-[#A00E27] text-white shadow-md hover:shadow-lg' 
                                                         : '' }}"
-                                                    :class="!{{ $plan->is_featured ? 'true' : 'false' }} && (darkMode ? 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600' : 'bg-white text-[#C8102E] hover:bg-gray-50 border-2 border-[#C8102E]/30')">
+                                                    :class="!{{ $plan->is_featured ? 'true' : 'false' }} && (darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'border-2 border-gray-300 hover:border-[#C8102E] text-gray-700 hover:text-[#C8102E] bg-white')">
                                                 
-                                                <!-- Animated Background -->
-                                                <span class="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity"></span>
-                                                
-                                                <!-- Button Content -->
-                                                <span class="relative flex items-center justify-center gap-2">
-                                                    @if($plan->is_free)
-                                                        <i class="fas fa-rocket"></i>
-                                                        START FREE
-                                                    @elseif($currentPlan && $currentPlan->price < $plan->price)
-                                                        <i class="fas fa-arrow-up"></i>
-                                                        UPGRADE NOW
-                                                    @else
-                                                        <i class="fas fa-bolt"></i>
-                                                        GET STARTED
-                                                    @endif
-                                                </span>
+                                                @if($plan->is_free)
+                                                    <i class="fas fa-arrow-right mr-2"></i>Start Free
+                                                @elseif($currentPlan && $currentPlan->price < $plan->price)
+                                                    <i class="fas fa-arrow-up mr-2"></i>Upgrade Plan
+                                                @else
+                                                    <i class="fas fa-check mr-2"></i>Choose Plan
+                                                @endif
                                             </button>
                                         </form>
                                         
                                         @if(!$plan->is_free)
                                             <button onclick="openCouponModal({{ $plan->id }})" 
-                                                    class="w-full mt-3 py-2 text-xs font-semibold text-[#C8102E] hover:text-[#A00E27] transition-all hover:bg-[#C8102E]/5 rounded-lg">
-                                                <i class="fas fa-tag mr-1 animate-pulse"></i>Have a discount code?
+                                                    class="w-full mt-2.5 py-2 text-xs font-medium hover:underline transition-all"
+                                                    :class="darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-[#C8102E]'">
+                                                <i class="fas fa-tag mr-1.5"></i>Have a discount code?
                                             </button>
                                         @endif
                                     @endif
                                 @else
                                     <a href="{{ route('register') }}" 
-                                       class="block relative w-full text-center py-4 rounded-xl font-black text-base bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white transition-all transform hover:scale-105 hover:shadow-2xl overflow-hidden group/btn">
-                                        <span class="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity"></span>
-                                        <span class="relative flex items-center justify-center gap-2">
-                                            <i class="fas fa-user-plus"></i>
-                                            SIGN UP TO START
-                                        </span>
+                                       class="block w-full text-center py-3.5 rounded-lg font-semibold bg-[#C8102E] hover:bg-[#A00E27] text-white transition-all shadow-md hover:shadow-lg">
+                                        <i class="fas fa-user-plus mr-2"></i>Sign Up to Start
                                     </a>
                                 @endauth
                             </div>
@@ -279,91 +194,50 @@
                 @endforelse
             </div>
 
-            <!-- Visual Feature Cards -->
+            <!-- Why Choose Us - Simple Cards -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-                <div class="relative group cursor-pointer">
-                    <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition"></div>
-                    <div class="relative p-6 rounded-2xl transition-all transform hover:scale-105"
-                         :class="darkMode ? 'bg-gray-800/50 backdrop-blur' : 'bg-white shadow-lg'">
-                        <i class="fas fa-infinity text-3xl text-blue-500 mb-3"></i>
-                        <h3 class="font-bold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">Unlimited Tests</h3>
-                        <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Practice anytime</p>
+                <div class="p-6 rounded-lg text-center transition-all hover:shadow-lg"
+                     :class="darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-infinity text-xl text-blue-600"></i>
                     </div>
+                    <h3 class="font-semibold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">Unlimited Tests</h3>
+                    <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Practice anytime you want</p>
                 </div>
                 
-                <div class="relative group cursor-pointer">
-                    <div class="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition"></div>
-                    <div class="relative p-6 rounded-2xl transition-all transform hover:scale-105"
-                         :class="darkMode ? 'bg-gray-800/50 backdrop-blur' : 'bg-white shadow-lg'">
-                        <i class="fas fa-brain text-3xl text-purple-500 mb-3"></i>
-                        <h3 class="font-bold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">AI Powered</h3>
-                        <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Smart evaluation</p>
+                <div class="p-6 rounded-lg text-center transition-all hover:shadow-lg"
+                     :class="darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="fas fa-brain text-xl text-purple-600"></i>
                     </div>
+                    <h3 class="font-semibold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">AI Evaluation</h3>
+                    <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Smart feedback system</p>
                 </div>
                 
-                <div class="relative group cursor-pointer">
-                    <div class="absolute inset-0 bg-gradient-to-r from-green-600 to-green-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition"></div>
-                    <div class="relative p-6 rounded-2xl transition-all transform hover:scale-105"
-                         :class="darkMode ? 'bg-gray-800/50 backdrop-blur' : 'bg-white shadow-lg'">
-                        <i class="fas fa-chart-line text-3xl text-green-500 mb-3"></i>
-                        <h3 class="font-bold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">Track Progress</h3>
-                        <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Real insights</p>
+                <div class="p-6 rounded-lg text-center transition-all hover:shadow-lg"
+                     :class="darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center">
+                        <i class="fas fa-chart-line text-xl text-green-600"></i>
                     </div>
+                    <h3 class="font-semibold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">Track Progress</h3>
+                    <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Monitor improvement</p>
                 </div>
                 
-                <div class="relative group cursor-pointer">
-                    <div class="absolute inset-0 bg-gradient-to-r from-amber-600 to-amber-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition"></div>
-                    <div class="relative p-6 rounded-2xl transition-all transform hover:scale-105"
-                         :class="darkMode ? 'bg-gray-800/50 backdrop-blur' : 'bg-white shadow-lg'">
-                        <i class="fas fa-award text-3xl text-amber-500 mb-3"></i>
-                        <h3 class="font-bold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">Get Certified</h3>
-                        <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Score guarantee</p>
+                <div class="p-6 rounded-lg text-center transition-all hover:shadow-lg"
+                     :class="darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 flex items-center justify-center">
+                        <i class="fas fa-certificate text-xl text-amber-600"></i>
                     </div>
+                    <h3 class="font-semibold mb-1" :class="darkMode ? 'text-white' : 'text-gray-900'">Get Certified</h3>
+                    <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Achieve your goals</p>
                 </div>
             </div>
 
-            <!-- Trust Section with Stats -->
-            <div class="relative rounded-3xl overflow-hidden mb-12"
-                 :class="darkMode ? 'bg-gradient-to-r from-gray-800 to-gray-900' : 'bg-gradient-to-r from-gray-50 to-gray-100'">
-                <div class="absolute inset-0 opacity-10">
-                    <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239CA3AF" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
-                </div>
-                
-                <div class="relative p-8 lg:p-12">
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
-                        <div class="lg:col-span-1 text-center lg:text-left">
-                            <i class="fas fa-shield-check text-5xl text-green-500 mb-4"></i>
-                            <h3 class="text-2xl font-black mb-2" :class="darkMode ? 'text-white' : 'text-gray-900'">
-                                100% Guaranteed
-                            </h3>
-                            <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
-                                30-day money back guarantee
-                            </p>
-                        </div>
-                        
-                        <div class="lg:col-span-3 grid grid-cols-3 gap-4 lg:gap-8">
-                            <div class="text-center">
-                                <div class="text-3xl lg:text-4xl font-black text-[#C8102E] mb-1">50K+</div>
-                                <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Active Students</p>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl lg:text-4xl font-black text-[#C8102E] mb-1">8.5</div>
-                                <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Avg. Score</p>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl lg:text-4xl font-black text-[#C8102E] mb-1">98%</div>
-                                <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Success Rate</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Floating FAQ Button -->
+            <!-- Help Button -->
             <div class="fixed bottom-6 right-6 z-40">
                 <a href="#" 
-                   class="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all">
-                    <i class="fas fa-headset text-xl"></i>
+                   class="flex items-center justify-center w-14 h-14 rounded-full bg-[#C8102E] hover:bg-[#A00E27] text-white shadow-lg hover:shadow-xl transition-all">
+                    <i class="fas fa-question text-lg"></i>
                 </a>
             </div>
         </div>
@@ -547,27 +421,9 @@
 
     @push('styles')
     <style>
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .animate-gradient {
-            background-size: 200% 200%;
-            animation: gradient 3s ease infinite;
-        }
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .animate-slideUp {
-            animation: slideUp 0.5s ease-out;
+        /* Simple smooth transitions */
+        * {
+            transition: all 0.2s ease;
         }
     </style>
     @endpush
