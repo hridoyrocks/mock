@@ -290,8 +290,6 @@
                                         {{-- Inject Drop Zones via JavaScript - DYNAMIC DATA --}}
                                         <script>
                                             (function() {
-                                                console.log('🔥 DROP ZONE SCRIPT - Part {{ $partNumber }}');
-                                                
                                                 // Get dynamic drop zone data for this part
                                                 const dropZones = [];
                                                 
@@ -312,10 +310,7 @@
                                                     @endif
                                                 @endforeach
                                                 
-                                                console.log('Drop zones for Part {{ $partNumber }}:', dropZones);
-                                                
                                                 if (dropZones.length === 0) {
-                                                    console.log('No drop zones for this part');
                                                     return;
                                                 }
                                                 
@@ -351,8 +346,6 @@
                                                             }
                                                         });
                                                     });
-                                                    
-                                                    console.log('✅ Drop zones injected for Part {{ $partNumber }}');
                                                 }
                                             })();
                                         </script>
@@ -959,9 +952,7 @@
                                                                             const input = target.nextElementSibling;
                                                                             if (input && input.classList.contains('passage-answer-input')) {
                                                                                 input.value = letter;
-                                                                                console.log('✅ Answer saved:', input.name, '=', letter);
-                                                                                
-                                                                                // Save to localStorage for restore on refresh
+                                                                                // Save to localStorage
                                                                                 const attemptId = '{{ $attempt->id }}';
                                                                                 const storageKey = `reading_test_${attemptId}_answers`;
                                                                                 let savedAnswers = JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -1112,13 +1103,9 @@
                                                                     
                                                                     // CRITICAL: Restore saved answers on page load
                                                                     setTimeout(() => {
-                                                                        console.log('🔄 Restoring passage answers from localStorage...');
-                                                                        
                                                                         const attemptId = '{{ $attempt->id }}';
                                                                         const storageKey = `reading_test_${attemptId}_answers`;
                                                                         const savedAnswers = JSON.parse(localStorage.getItem(storageKey) || '{}');
-                                                                        
-                                                                        console.log('Saved answers:', savedAnswers);
                                                                         
                                                                         Object.keys(savedAnswers).forEach(inputName => {
                                                                             const letter = savedAnswers[inputName];
@@ -1140,14 +1127,10 @@
                                                                                         
                                                                                         const span = heading.querySelector('span');
                                                                                         if (span) span.style.fontWeight = '700';
-                                                                                        
-                                                                                        console.log('✅ Restored', letter, 'to', inputName);
                                                                                     }
                                                                                 }
                                                                             }
                                                                         });
-                                                                        
-                                                                        console.log('✅ Restore complete');
                                                                     }, 1500);
                                                                 }, 1000); // Wait 1 second for injection
                                                             </script>
@@ -1740,25 +1723,75 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to update answered count including passage answers
     window.updateTotalAnsweredCount = function() {
         let count = 0;
+        const countedKeys = new Set();
         
-        // Count visible form inputs (selects, text inputs, textareas)
-        const visibleInputs = document.querySelectorAll('select[name^="answers"], input[name^="answers"][type="text"], textarea[name^="answers"]');
-        visibleInputs.forEach(inp => {
-            // Check if visible and has value
-            if (inp.value && inp.value.trim() !== '' && inp.offsetParent !== null) {
+        // 1. Count regular selects (multiple choice, true/false, etc)
+        document.querySelectorAll('select[name^="answers"]').forEach(inp => {
+            if (inp.value && inp.value.trim() !== '' && !countedKeys.has(inp.name)) {
+                countedKeys.add(inp.name);
                 count++;
             }
         });
         
-        // Count passage answer inputs (hidden but specific class)
-        const passageInputs = document.querySelectorAll('.passage-answer-input');
-        passageInputs.forEach(inp => {
-            if (inp.value && inp.value.trim() !== '') {
+        // 2. Count text inputs (but NOT blanks which we count separately)
+        document.querySelectorAll('input[name^="answers"][type="text"]').forEach(inp => {
+            // Skip if it's a blank (has [blank_] in name)
+            if (inp.name.includes('[blank_')) return;
+            
+            if (inp.value && inp.value.trim() !== '' && !countedKeys.has(inp.name)) {
+                countedKeys.add(inp.name);
                 count++;
             }
         });
         
-        console.log('📊 Total answered:', count);
+        // 3. Count textareas
+        document.querySelectorAll('textarea[name^="answers"]').forEach(inp => {
+            if (inp.value && inp.value.trim() !== '' && !countedKeys.has(inp.name)) {
+                countedKeys.add(inp.name);
+                count++;
+            }
+        });
+        
+        // 4. Count radio buttons (checked ones only)
+        const radioGroups = new Set();
+        document.querySelectorAll('input[name^="answers"][type="radio"]:checked').forEach(inp => {
+            if (!radioGroups.has(inp.name)) {
+                radioGroups.add(inp.name);
+                count++;
+            }
+        });
+        
+        // 5. Count checkboxes (checked ones only)
+        document.querySelectorAll('input[name^="answers"][type="checkbox"]:checked').forEach(inp => {
+            if (!countedKeys.has(inp.name)) {
+                countedKeys.add(inp.name);
+                count++;
+            }
+        });
+        
+        // 6. Count fill blanks (each blank separately)
+        document.querySelectorAll('input[name*="[blank_"]').forEach(inp => {
+            if (inp.value && inp.value.trim() !== '' && !countedKeys.has(inp.name)) {
+                countedKeys.add(inp.name);
+                count++;
+            }
+        });
+        
+        // 7. Count dropdowns in array format
+        document.querySelectorAll('select[name*="[dropdown_"]').forEach(inp => {
+            if (inp.value && inp.value.trim() !== '' && !countedKeys.has(inp.name)) {
+                countedKeys.add(inp.name);
+                count++;
+            }
+        });
+        
+        // 8. Count passage answers (matching headings)
+        document.querySelectorAll('.passage-answer-input').forEach(inp => {
+            if (inp.value && inp.value.trim() !== '' && !countedKeys.has(inp.name)) {
+                countedKeys.add(inp.name);
+                count++;
+            }
+        });
         
         // Update display
         const countEl = document.getElementById('answered-count');
@@ -1769,31 +1802,49 @@ document.addEventListener('DOMContentLoaded', function() {
         return count;
     };
     
-    // CRITICAL: Function to update passage answer navigation colors
-    window.updatePassageAnswerNavigation = function() {
+    // CRITICAL: Function to update ALL navigation colors (blanks + passage answers)
+    window.updateAllNavigationColors = function() {
+        // Update passage answers (matching headings)
         const passageInputs = document.querySelectorAll('.passage-answer-input');
-        
         passageInputs.forEach(inp => {
             if (inp.value && inp.value.trim() !== '') {
-                // Extract question number from name (answers[807_q1] -> 1)
                 const match = inp.name.match(/_q(\d+)/);
                 if (match) {
                     const qNum = match[1];
-                    
-                    // Find navigation button - try multiple selectors
-                    let navBtn = document.querySelector(`.number-btn[data-display-number="${qNum}"]`);
-                    
+                    const navBtn = document.querySelector(`.number-btn[data-display-number="${qNum}"]`);
                     if (navBtn) {
                         navBtn.classList.add('answered');
                         navBtn.style.cssText = 'background-color: #10b981 !important; color: #ffffff !important;';
-                        console.log('✅ Nav colored for Q', qNum);
                     }
                 }
             } else {
-                // Clear color if empty
                 const match = inp.name.match(/_q(\d+)/);
                 if (match) {
                     const qNum = match[1];
+                    const navBtn = document.querySelector(`.number-btn[data-display-number="${qNum}"]`);
+                    if (navBtn) {
+                        navBtn.classList.remove('answered');
+                        navBtn.style.cssText = '';
+                    }
+                }
+            }
+        });
+        
+        // Update fill blanks
+        const blankInputs = document.querySelectorAll('[name*="[blank_"]');
+        blankInputs.forEach(inp => {
+            if (inp.value && inp.value.trim() !== '') {
+                const qNum = inp.dataset.questionNumber;
+                if (qNum) {
+                    const navBtn = document.querySelector(`.number-btn[data-display-number="${qNum}"]`);
+                    if (navBtn) {
+                        navBtn.classList.add('answered');
+                        navBtn.style.cssText = 'background-color: #10b981 !important; color: #ffffff !important;';
+                    }
+                }
+            } else {
+                const qNum = inp.dataset.questionNumber;
+                if (qNum) {
                     const navBtn = document.querySelector(`.number-btn[data-display-number="${qNum}"]`);
                     if (navBtn) {
                         navBtn.classList.remove('answered');
@@ -1806,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Watch for navigation buttons to be added to DOM
     const observer = new MutationObserver(() => {
-        window.updatePassageAnswerNavigation();
+        window.updateAllNavigationColors();
     });
     
     // Start observing when DOM is ready
@@ -1815,12 +1866,12 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(body, { childList: true, subtree: true });
         
         // Initial call
-        window.updatePassageAnswerNavigation();
+        window.updateAllNavigationColors();
     }, 2000);
     
     // Call update every 500ms
     setInterval(window.updateTotalAnsweredCount, 500);
-    setInterval(window.updatePassageAnswerNavigation, 1000);
+    setInterval(window.updateAllNavigationColors, 1000);
 });
 </script>
 
