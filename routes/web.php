@@ -42,9 +42,7 @@ Route::get('/cookie-policy', function () {
 })->name('cookie-policy');
 
 // Home route
-Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+Route::get('/', [App\Http\Controllers\WelcomeController::class, 'index'])->name('welcome');
 
 // Alternative home route
 Route::get('/home', [HomeController::class, 'index'])->name('home');

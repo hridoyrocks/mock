@@ -190,6 +190,104 @@
         </div>
     </section>
 
+    <!-- Top Performers Section - Minimal & Clean -->
+    @if($topPerformers && $topPerformers->count() > 0)
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center space-x-2 mb-3">
+                    <i class="fas fa-trophy text-[#C8102E] text-xl"></i>
+                    <span class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Weekly Leaderboard</span>
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Top Performers</h2>
+                <p class="text-gray-600 max-w-xl mx-auto">See who's leading this week and get inspired to achieve your goals!</p>
+            </div>
+            
+            <!-- Leaderboard Cards -->
+            <div class="max-w-4xl mx-auto">
+                <div class="grid md:grid-cols-3 gap-6">
+                    @foreach($topPerformers as $index => $performer)
+                        @php
+                            $rank = $index + 1;
+                            $colors = [
+                                1 => ['gradient' => 'from-yellow-50 to-yellow-100', 'border' => 'border-yellow-200', 'badge' => 'bg-yellow-500', 'text' => 'text-yellow-700', 'icon' => 'text-yellow-500'],
+                                2 => ['gradient' => 'from-gray-50 to-gray-100', 'border' => 'border-gray-200', 'badge' => 'bg-gray-400', 'text' => 'text-gray-700', 'icon' => 'text-gray-400'],
+                                3 => ['gradient' => 'from-orange-50 to-orange-100', 'border' => 'border-orange-200', 'badge' => 'bg-orange-500', 'text' => 'text-orange-700', 'icon' => 'text-orange-500']
+                            ];
+                            $color = $colors[$rank];
+                            $medals = ['🥇', '🥈', '🥉'];
+                        @endphp
+                        
+                        <div class="relative {{ $rank === 1 ? 'md:-translate-y-4' : '' }}">
+                            <!-- Rank Badge -->
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                                <div class="w-10 h-10 {{ $color['badge'] }} rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+                                    <span class="text-white font-bold text-lg">{{ $rank }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Card -->
+                            <div class="bg-gradient-to-br {{ $color['gradient'] }} border-2 {{ $color['border'] }} rounded-2xl p-6 pt-8 hover:shadow-xl transition-all duration-300">
+                                <!-- Medal -->
+                                <div class="text-center mb-3">
+                                    <span class="text-4xl">{{ $medals[$index] }}</span>
+                                </div>
+                                
+                                <!-- Avatar -->
+                                <div class="flex justify-center mb-4">
+                                    @if($performer->user->avatar_url)
+                                        <img src="{{ $performer->user->avatar_url }}" 
+                                             alt="{{ $performer->user->name }}" 
+                                             class="w-16 h-16 rounded-full border-3 border-white shadow-md object-cover">
+                                    @else
+                                        <div class="w-16 h-16 bg-white rounded-full border-3 border-white shadow-md flex items-center justify-center">
+                                            <span class="text-2xl font-bold {{ $color['text'] }}">
+                                                {{ substr($performer->user->name, 0, 1) }}
+                                            </span>
+                                        </div>
+                                    @endif
+                                </div>
+                                
+                                <!-- Name -->
+                                <h3 class="text-center font-bold text-gray-900 mb-1 truncate px-2">
+                                    {{ $performer->user->name }}
+                                </h3>
+                                
+                                <!-- Band Score -->
+                                <div class="flex justify-center mb-3">
+                                    <div class="inline-flex items-center bg-white rounded-full px-4 py-1.5 shadow-sm">
+                                        <i class="fas fa-star {{ $color['icon'] }} mr-1.5 text-sm"></i>
+                                        <span class="font-bold text-gray-900">Band {{ number_format($performer->average_score, 1) }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Stats -->
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                                        {{ $performer->tests_taken }} tests completed
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                
+                <!-- CTA -->
+                <div class="text-center mt-10">
+                    <p class="text-gray-700 mb-4 font-medium">Ready to join them?</p>
+                    <a href="{{ route('register') }}" 
+                       class="inline-flex items-center px-6 py-3 bg-[#C8102E] text-white font-semibold rounded-xl hover:bg-[#A00E27] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                        Start Practicing Free
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    @endif
+
     <!-- Why Use IELTS Online Tests Section -->
     <section class="py-20 bg-gradient-to-b from-white to-gray-50">
         <div class="container mx-auto px-6">
