@@ -67,9 +67,13 @@
                                 <!-- Center Content -->
                                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                                     @if($userGoal)
-                                        <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Target Band</p>
-                                        <p class="text-4xl font-bold text-[#C8102E]">{{ $userGoal->target_band_score }}</p>
-                                        <p class="text-sm text-[#C8102E]">{{ round($userGoal->progress_percentage) }}% Complete</p>
+                                        <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Current Score</p>
+                                        <p class="text-2xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-800'">
+                                            {{ $userGoal->current_band_score ? number_format($userGoal->current_band_score, 1) : 'N/A' }}
+                                        </p>
+                                        <div class="w-8 h-px my-2" :class="darkMode ? 'bg-gray-600' : 'bg-gray-300'"></div>
+                                        <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Target Band</p>
+                                        <p class="text-3xl font-bold text-[#C8102E]">{{ number_format($userGoal->target_band_score, 1) }}</p>
                                     @else
                                         <button onclick="openGoalModal()" 
                                                 class="px-4 py-2 rounded-lg text-[#C8102E] transition-all shadow-md"
@@ -361,8 +365,8 @@
                                 Leaderboard
                             </h3>
                             <select onchange="changeLeaderboardPeriod(this.value)" 
-                                    class="text-xs rounded px-2 py-1 focus:outline-none"
-                                    :class="darkMode ? 'glass bg-transparent text-white' : 'bg-gray-50 border border-gray-200 text-gray-800'">
+                                    class="text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#C8102E]"
+                                    :class="darkMode ? 'glass bg-transparent text-white border border-white/10' : 'bg-gray-50 border border-gray-200 text-gray-800'">
                                 <option value="weekly">This Week</option>
                                 <option value="monthly">This Month</option>
                                 <option value="all_time">All Time</option>
@@ -371,39 +375,88 @@
                         
                         <div id="leaderboard-content">
                             @if($leaderboard->isNotEmpty())
-                                <div class="space-y-3">
+                                <div class="space-y-2">
                                     @foreach($leaderboard->take(5) as $entry)
-                                        <div class="flex items-center space-x-3 {{ $entry->user_id === auth()->id() ? 'rounded-lg p-2' : '' }}"
-                                             :class="darkMode ? '{{ $entry->user_id === auth()->id() ? 'glass border border-[#C8102E]/30' : '' }}' : '{{ $entry->user_id === auth()->id() ? 'bg-[#C8102E]/5 border border-[#C8102E]/20' : '' }}'">
-                                            <div class="w-8 h-8 rounded-lg {{ $loop->iteration === 1 ? 'bg-[#C8102E]' : '' }} 
-                                                flex items-center justify-center text-white font-bold text-sm"
-                                                :class="darkMode ? '{{ $loop->iteration > 1 ? 'bg-gray-700' : '' }}' : '{{ $loop->iteration > 1 ? 'bg-gray-200 text-gray-700' : '' }}'">
-                                                {{ $loop->iteration }}
+                                        <div class="flex items-center space-x-3 p-2 rounded-lg transition-all duration-200 {{ $entry->user_id === auth()->id() ? '' : 'hover:bg-white/5' }}"
+                                             :class="darkMode ? '{{ $entry->user_id === auth()->id() ? 'glass border border-[#C8102E]/30 bg-[#C8102E]/10' : '' }}' : '{{ $entry->user_id === auth()->id() ? 'bg-[#C8102E]/5 border border-[#C8102E]/20' : '' }}'">
+                                            <!-- Rank Badge -->
+                                            <div class="relative flex-shrink-0">
+                                                <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm relative overflow-hidden"
+                                                     :class="darkMode ? 
+                                                        '{{ $loop->iteration === 1 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/50' : ($loop->iteration === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-gray-800' : ($loop->iteration === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : 'bg-gray-700 text-gray-300')) }}' 
+                                                        : '{{ $loop->iteration === 1 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg shadow-yellow-500/30' : ($loop->iteration === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-gray-800' : ($loop->iteration === 3 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white' : 'bg-gray-200 text-gray-700')) }}'">
+                                                    {{ $loop->iteration }}
+                                                </div>
+                                                @if($loop->iteration <= 3)
+                                                    <div class="absolute -top-1 -right-1">
+                                                        <i class="fas fa-crown text-xs {{ $loop->iteration === 1 ? 'text-yellow-400' : ($loop->iteration === 2 ? 'text-gray-400' : 'text-orange-400') }}"></i>
+                                                    </div>
+                                                @endif
                                             </div>
-                                            <div class="flex-1">
-                                                <p class="font-medium text-sm" :class="darkMode ? 'text-white' : 'text-gray-800'">
-                                                    {{ $entry->user_id === auth()->id() ? 'You' : Str::limit($entry->user->name, 15) }}
-                                                </p>
-                                                <p class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">{{ $entry->total_points }} pts</p>
+                                            
+                                            <!-- User Avatar & Info -->
+                                            <div class="flex items-center space-x-2 flex-1 min-w-0">
+                                                @if($entry->user->avatar_url)
+                                                    <img src="{{ $entry->user->avatar_url }}" 
+                                                         alt="{{ $entry->user->name }}"
+                                                         class="w-8 h-8 rounded-lg object-cover border-2 {{ $loop->iteration === 1 ? 'border-yellow-400' : ($loop->iteration === 2 ? 'border-gray-400' : ($loop->iteration === 3 ? 'border-orange-400' : 'border-transparent')) }}">
+                                                @else
+                                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+                                                         :class="darkMode ? 'bg-gray-600' : 'bg-gray-300'">
+                                                        {{ substr($entry->user->name, 0, 1) }}
+                                                    </div>
+                                                @endif
+                                                
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="font-semibold text-sm truncate" :class="darkMode ? 'text-white' : 'text-gray-800'">
+                                                        {{ $entry->user_id === auth()->id() ? '👑 You' : $entry->user->name }}
+                                                    </p>
+                                                    <div class="flex items-center space-x-2 text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+                                                        <span>{{ $entry->tests_taken }} tests</span>
+                                                        <span>•</span>
+                                                        <span class="flex items-center">
+                                                            <i class="fas fa-trophy text-[#C8102E] mr-1"></i>
+                                                            {{ $entry->total_points }} pts
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            @if($loop->iteration <= 3)
-                                                <i class="fas fa-trophy text-{{ $loop->iteration === 1 ? '[#C8102E]' : 'gray-400' }}"></i>
-                                            @endif
+                                            
+                                            <!-- Band Score -->
+                                            <div class="text-right flex-shrink-0">
+                                                <div class="px-3 py-1 rounded-lg"
+                                                     :class="darkMode ? 'bg-[#C8102E]/20 border border-[#C8102E]/30' : 'bg-[#C8102E]/10 border border-[#C8102E]/20'">
+                                                    <p class="text-lg font-bold text-[#C8102E]">{{ number_format($entry->average_score, 1) }}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     @endforeach
                                     
-                                    @if(!$userInLeaderboard)
-                                        <div class="pt-3 border-t" :class="darkMode ? 'border-white/10' : 'border-gray-200'">
+                                    @if(!$userInLeaderboard && $leaderboard->count() >= 5)
+                                        <div class="pt-3 mt-2 border-t" :class="darkMode ? 'border-white/10' : 'border-gray-200'">
                                             <p class="text-xs text-center" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
-                                                You're not in top 5. Keep practicing!
+                                                <i class="fas fa-info-circle mr-1"></i>
+                                                You're not in top 5. Keep practicing to climb up! 💪
                                             </p>
                                         </div>
                                     @endif
+                                    
+                                    <div class="mt-4 pt-3 border-t" :class="darkMode ? 'border-white/10' : 'border-gray-200'">
+                                        <button onclick="openTop100Modal()" 
+                                                class="w-full px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                                                :class="darkMode ? 'bg-[#C8102E]/20 text-[#C8102E] hover:bg-[#C8102E]/30 border border-[#C8102E]/30' : 'bg-[#C8102E]/10 text-[#C8102E] hover:bg-[#C8102E]/20 border border-[#C8102E]/20'">
+                                            <i class="fas fa-list-ol mr-2"></i>See Top 100
+                                        </button>
+                                    </div>
                                 </div>
                             @else
-                                <div class="text-center py-6">
-                                    <i class="fas fa-users text-4xl mb-3" :class="darkMode ? 'text-gray-600' : 'text-gray-300'"></i>
-                                    <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">No leaderboard data yet</p>
+                                <div class="text-center py-8">
+                                    <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                                         :class="darkMode ? 'bg-gray-700' : 'bg-gray-100'">
+                                        <i class="fas fa-trophy text-3xl" :class="darkMode ? 'text-gray-500' : 'text-gray-400'"></i>
+                                    </div>
+                                    <p class="font-medium mb-1" :class="darkMode ? 'text-white' : 'text-gray-800'">Be the First!</p>
+                                    <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Complete a test to appear on the leaderboard</p>
                                 </div>
                             @endif
                         </div>
@@ -649,6 +702,42 @@
         </div>
     </div>
 
+    <!-- Top 100 Leaderboard Modal -->
+    <div id="top100Modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeTop100Modal()"></div>
+            
+            <div class="relative rounded-2xl w-full max-w-4xl p-6 lg:p-8 max-h-[85vh] overflow-hidden"
+                 :class="darkMode ? 'glass-dark' : 'bg-white shadow-2xl'">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-2xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-800'">
+                            <i class="fas fa-crown text-[#C8102E] mr-2"></i>
+                            Top 100 Leaderboard
+                        </h3>
+                        <p class="text-sm mt-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+                            <span id="top100-period">This Week</span> • Ranked by Average Band Score
+                        </p>
+                    </div>
+                    <button onclick="closeTop100Modal()" :class="darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-800'">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="top100-loading" class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#C8102E]"></div>
+                    <p class="mt-4" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Loading top 100...</p>
+                </div>
+                
+                <!-- Content Container -->
+                <div id="top100-content" class="hidden overflow-y-auto max-h-[65vh] pr-2">
+                    <!-- Will be populated via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script>
         // Copy Referral Code Function
@@ -750,11 +839,140 @@
                 });
         }
         
+        // Top 100 Modal Functions
+        let currentTop100Period = 'weekly';
+        
+        function openTop100Modal() {
+            console.log('Opening Top 100 Modal...');
+            const modal = document.getElementById('top100Modal');
+            if (!modal) {
+                console.error('Modal element not found!');
+                return;
+            }
+            modal.classList.remove('hidden');
+            loadTop100Data(currentTop100Period);
+        }
+        
+        function closeTop100Modal() {
+            console.log('Closing Top 100 Modal...');
+            document.getElementById('top100Modal').classList.add('hidden');
+        }
+        
+        function loadTop100Data(period) {
+            console.log('Loading top 100 data for period:', period);
+            currentTop100Period = period;
+            const loading = document.getElementById('top100-loading');
+            const content = document.getElementById('top100-content');
+            const periodText = document.getElementById('top100-period');
+            
+            // Update period text
+            const periodNames = {
+                'weekly': 'This Week',
+                'monthly': 'This Month',
+                'all_time': 'All Time'
+            };
+            periodText.textContent = periodNames[period] || 'This Week';
+            
+            // Show loading
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+            
+            // Fetch top 100 data
+            const url = `/student/leaderboard/top100/${period}`;
+            console.log('Fetching from:', url);
+            
+            fetch(url)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Received data:', data);
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                    renderTop100(data.leaderboard, data.currentUser);
+                })
+                .catch(error => {
+                    console.error('Error loading top 100:', error);
+                    loading.innerHTML = `<p class="text-red-500">Failed to load leaderboard: ${error.message}</p>`;
+                });
+        }
+        
+        function renderTop100(leaderboard, currentUserId) {
+            const content = document.getElementById('top100-content');
+            const darkMode = document.documentElement.classList.contains('dark');
+            
+            if (leaderboard.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-trophy text-6xl mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-300'}"></i>
+                        <p class="${darkMode ? 'text-gray-400' : 'text-gray-600'}">No data available yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="space-y-2">';
+            
+            leaderboard.forEach((entry, index) => {
+                const isCurrentUser = entry.user_id === currentUserId;
+                const rank = index + 1;
+                const medalClass = rank === 1 ? 'from-yellow-400 to-yellow-600' : 
+                                  rank === 2 ? 'from-gray-300 to-gray-400' : 
+                                  rank === 3 ? 'from-orange-400 to-orange-600' : 
+                                  (darkMode ? 'bg-gray-700' : 'bg-gray-200');
+                
+                const crownIcon = rank <= 3 ? `<div class="absolute -top-1 -right-1">
+                    <i class="fas fa-crown text-xs ${rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-400' : 'text-orange-400'}"></i>
+                </div>` : '';
+                
+                html += `
+                    <div class="flex items-center space-x-3 p-3 rounded-lg transition-all ${isCurrentUser ? (darkMode ? 'glass border border-[#C8102E]/30 bg-[#C8102E]/10' : 'bg-[#C8102E]/5 border border-[#C8102E]/20') : ''}">
+                        <div class="relative flex-shrink-0">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${rank <= 3 ? 'bg-gradient-to-br ' + medalClass + ' text-white shadow-lg' : medalClass + (darkMode ? ' text-gray-300' : ' text-gray-700')}">
+                                ${rank}
+                            </div>
+                            ${crownIcon}
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 flex-1 min-w-0">
+                            ${entry.user.avatar_url ? 
+                                `<img src="${entry.user.avatar_url}" alt="${entry.user.name}" class="w-8 h-8 rounded-lg object-cover">` :
+                                `<div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}">${entry.user.name.charAt(0)}</div>`
+                            }
+                            
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-sm truncate ${darkMode ? 'text-white' : 'text-gray-800'}">
+                                    ${isCurrentUser ? '👑 You' : entry.user.name}
+                                </p>
+                                <div class="flex items-center space-x-2 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}">
+                                    <span>${entry.tests_taken} tests</span>
+                                    <span>•</span>
+                                    <span><i class="fas fa-trophy text-[#C8102E] mr-1"></i>${entry.total_points} pts</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="px-3 py-1 rounded-lg ${darkMode ? 'bg-[#C8102E]/20 border border-[#C8102E]/30' : 'bg-[#C8102E]/10 border border-[#C8102E]/20'}">
+                            <p class="text-lg font-bold text-[#C8102E]">${parseFloat(entry.average_score).toFixed(1)}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            content.innerHTML = html;
+        }
+        
         // Close modals on outside click
         window.onclick = function(event) {
             if (event.target.classList.contains('fixed') && event.target.classList.contains('inset-0')) {
                 closeGoalModal();
                 closeAchievementsModal();
+                closeTop100Modal();
             }
         }
     </script>

@@ -40,13 +40,18 @@ class DashboardController extends Controller
             ->get();
 
         // Get student statistics
+        $averageBandScore = $user->attempts()
+            ->whereNotNull('band_score')
+            ->avg('band_score');
+        
+        // Round to nearest 0.5 (IELTS official format)
+        $averageBandScore = $averageBandScore ? round($averageBandScore * 2) / 2 : null;
+        
         $stats = [
             'total_attempts' => $user->attempts()->count(),
             'completed_attempts' => $user->attempts()->where('status', 'completed')->count(),
             'in_progress_attempts' => $user->attempts()->where('status', 'in_progress')->count(),
-            'average_band_score' => $user->attempts()
-                ->whereNotNull('band_score')
-                ->avg('band_score'),
+            'average_band_score' => $averageBandScore,
         ];
 
         // Get section-wise performance
@@ -56,11 +61,18 @@ class DashboardController extends Controller
                   ->whereNotNull('band_score');
         }])->get()->map(function($section) {
             $attempts = $section->testSets->flatMap->attempts;
+            $averageScore = $attempts->avg('band_score');
+            $bestScore = $attempts->max('band_score');
+            
+            // Round to nearest 0.5 (IELTS official format)
+            $averageScore = $averageScore ? round($averageScore * 2) / 2 : null;
+            $bestScore = $bestScore ? round($bestScore * 2) / 2 : null;
+            
             return [
                 'name' => $section->name,
                 'attempts_count' => $attempts->count(),
-                'average_score' => $attempts->avg('band_score'),
-                'best_score' => $attempts->max('band_score'),
+                'average_score' => $averageScore,
+                'best_score' => $bestScore,
             ];
         });
 
@@ -105,6 +117,14 @@ class DashboardController extends Controller
         // Check if user is in top 10
         $userInLeaderboard = $leaderboard->where('user_id', $user->id)->isNotEmpty();
 
+        // Section icons for display
+        $icons = [
+            'listening' => 'fa-headphones',
+            'reading' => 'fa-book-open',
+            'writing' => 'fa-pen-fancy',
+            'speaking' => 'fa-microphone',
+        ];
+
         return view('student.dashboard', compact(
             'recentAttempts',
             'stats',
@@ -116,7 +136,8 @@ class DashboardController extends Controller
             'userAchievements',
             'progressToNext',
             'leaderboard',
-            'userInLeaderboard'
+            'userInLeaderboard',
+            'icons'
         ));
     }
 
@@ -154,6 +175,45 @@ class DashboardController extends Controller
         $userInLeaderboard = $leaderboard->where('user_id', auth()->id())->isNotEmpty();
 
         return view('partials.leaderboard-content', compact('leaderboard', 'userInLeaderboard'));
+    }
+
+    /**
+     * Get top 100 leaderboard data for modal
+     */
+    public function getTop100Leaderboard($period = 'weekly')
+    {
+        $validPeriods = ['daily', 'weekly', 'monthly', 'all_time'];
+        $period = in_array($period, $validPeriods) ? $period : 'weekly';
+
+        // Update leaderboard data
+        LeaderboardEntry::updateLeaderboard($period, 'overall');
+
+        // Get leaderboard entries
+        $startDate = match($period) {
+            'daily' => now()->startOfDay(),
+            'weekly' => now()->startOfWeek(),
+            'monthly' => now()->startOfMonth(),
+            'all_time' => null,
+        };
+
+        $query = LeaderboardEntry::where('period', $period)
+            ->where('category', 'overall');
+            
+        if ($startDate) {
+            $query->where('period_start', $startDate);
+        }
+
+        $leaderboard = $query->with('user')
+            ->orderBy('rank')
+            ->take(100)
+            ->get();
+
+        return response()->json([
+            'leaderboard' => $leaderboard,
+            'currentUser' => auth()->id(),
+            'period' => $period,
+            'total' => $leaderboard->count()
+        ]);
     }
 
     /**

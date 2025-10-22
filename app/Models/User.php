@@ -58,6 +58,10 @@ class User extends Authenticatable
         'banned_by',
         'created_by',
         'last_login_at',
+        'achievement_points',
+        'study_streak_days',
+        'last_study_date',
+        'show_on_leaderboard',
     ];
 
     protected $casts = [
@@ -76,6 +80,10 @@ class User extends Authenticatable
         'banned_at' => 'datetime',
         'ban_expires_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'achievement_points' => 'integer',
+        'study_streak_days' => 'integer',
+        'last_study_date' => 'date',
+        'show_on_leaderboard' => 'boolean',
     ];
 
 

@@ -69,9 +69,14 @@ class LeaderboardEntry extends Model
 
         $users = $query->get()->map(function($user) {
             $attempts = $user->attempts;
+            $averageScore = $attempts->avg('band_score') ?: 0;
+            
+            // Round to IELTS official format (0.5 increments)
+            $averageScore = $averageScore ? round($averageScore * 2) / 2 : 0;
+            
             return [
                 'user_id' => $user->id,
-                'average_score' => $attempts->avg('band_score') ?: 0,
+                'average_score' => $averageScore,
                 'tests_taken' => $attempts->count(),
                 'total_points' => $user->achievement_points,
             ];

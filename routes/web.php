@@ -197,6 +197,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
         Route::get('/achievements/{badge}', [App\Http\Controllers\Student\DashboardController::class, 'getAchievementDetails'])->name('achievements.details');
 
         // Leaderboard
+        Route::get('/leaderboard/top100/{period?}', [App\Http\Controllers\Student\DashboardController::class, 'getTop100Leaderboard'])->name('leaderboard.top100');
         Route::get('/leaderboard/{period?}', [App\Http\Controllers\Student\DashboardController::class, 'getLeaderboard'])->name('leaderboard');
 
         // Announcements

@@ -266,22 +266,43 @@ class PaymentController extends Controller
     protected function processBkashTokenPayment($gateway, $paymentData, $package)
     {
         try {
-            // Create bKash payment
-            $result = $gateway->createPayment($paymentData);
+            // Create bKash payment (same as subscription)
+            $result = $gateway->processPayment($paymentData);
             
-            if (isset($result['payment_url'])) {
-                // Store payment info in session for callback
-                session([
-                    'token_payment' => [
-                        'payment_id' => $result['payment_id'],
+            Log::info('bKash token payment initiated', [
+                'result' => $result,
+                'package_id' => $package->id
+            ]);
+            
+            if (isset($result['redirect_url'])) {
+                $user = auth()->user();
+                
+                // Store payment info in database (not session, as bKash redirect loses session)
+                $pendingTransaction = PaymentTransaction::create([
+                    'user_id' => $user->id,
+                    'subscription_id' => null,
+                    'transaction_id' => $result['payment_id'],
+                    'amount' => $paymentData['amount'],
+                    'discount_amount' => 0,
+                    'currency' => $user->currency ?? 'BDT',
+                    'payment_method' => 'bkash',
+                    'status' => 'pending',
+                    'gateway_response' => $result,
+                    'metadata' => [
+                        'type' => 'token_package',
                         'package_id' => $package->id,
-                        'amount' => $paymentData['amount'],
-                        'payment_method' => 'bkash',
-                    ]
+                        'package_name' => $package->name,
+                        'tokens' => $package->total_tokens,
+                    ],
+                ]);
+                
+                Log::info('Pending transaction created', [
+                    'transaction_id' => $pendingTransaction->id,
+                    'payment_id' => $result['payment_id']
                 ]);
                 
                 // Redirect to bKash payment page
-                return redirect($result['payment_url']);
+                return redirect($result['redirect_url']);
             }
             
             return back()->with('error', 'Failed to initiate bKash payment.');
@@ -329,35 +350,61 @@ class PaymentController extends Controller
         }
     }
     
-    protected function handleSuccessfulTokenPayment($paymentResult, $package, $paymentMethod)
+    protected function handleSuccessfulTokenPayment($paymentResult, $package, $paymentMethod, $transaction = null)
     {
         DB::beginTransaction();
         
         try {
             $user = auth()->user();
             
-            // Create payment transaction for token purchase
-            $transaction = PaymentTransaction::create([
+            Log::info('Processing successful token payment', [
                 'user_id' => $user->id,
-                'subscription_id' => null,
-                'transaction_id' => $paymentResult['transaction_id'],
-                'amount' => $paymentResult['amount'],
-                'discount_amount' => 0,
-                'currency' => $paymentResult['currency'] ?? 'BDT',
-                'payment_method' => $paymentMethod,
-                'status' => 'completed',
-                'gateway_response' => $paymentResult,
-                'metadata' => [
-                    'type' => 'token_package',
-                    'package_id' => $package->id,
-                    'package_name' => $package->name,
-                    'tokens' => $package->total_tokens,
-                ],
+                'package_id' => $package->id,
+                'tokens' => $package->total_tokens,
+                'amount' => $paymentResult['amount']
             ]);
+            
+            // Update existing transaction or create new one
+            if ($transaction) {
+                $transaction->update([
+                    'status' => 'completed',
+                    'gateway_response' => array_merge($transaction->gateway_response ?? [], $paymentResult)
+                ]);
+                
+                Log::info('Transaction updated', ['transaction_id' => $transaction->id]);
+            } else {
+                $transaction = PaymentTransaction::create([
+                    'user_id' => $user->id,
+                    'subscription_id' => null,
+                    'transaction_id' => $paymentResult['transaction_id'],
+                    'amount' => $paymentResult['amount'],
+                    'discount_amount' => 0,
+                    'currency' => $paymentResult['currency'] ?? 'BDT',
+                    'payment_method' => $paymentMethod,
+                    'status' => 'completed',
+                    'gateway_response' => $paymentResult,
+                    'metadata' => [
+                        'type' => 'token_package',
+                        'package_id' => $package->id,
+                        'package_name' => $package->name,
+                        'tokens' => $package->total_tokens,
+                    ],
+                ]);
+                
+                Log::info('New transaction created', ['transaction_id' => $transaction->id]);
+            }
 
             // Add tokens to user account
             $tokenBalance = UserEvaluationToken::getOrCreateForUser($user);
+            $oldBalance = $tokenBalance->available_tokens;
+            
             $tokenBalance->addTokens($package->total_tokens, 'purchase');
+            
+            Log::info('Tokens added to user', [
+                'old_balance' => $oldBalance,
+                'added' => $package->total_tokens,
+                'new_balance' => $tokenBalance->available_tokens
+            ]);
             
             // Log token transaction
             DB::table('token_transactions')->insert([
@@ -373,22 +420,25 @@ class PaymentController extends Controller
 
             DB::commit();
 
-            // Clear sessions
-            session()->forget(['token_payment']);
+            Log::info('Token purchase completed successfully', [
+                'user_id' => $user->id,
+                'final_balance' => $tokenBalance->available_tokens
+            ]);
 
             return redirect()->route('student.tokens.purchase')
-                ->with('success', "Successfully purchased {$package->total_tokens} tokens!");
+                ->with('success', "Payment successful! {$package->total_tokens} tokens added to your account.");
                 
         } catch (\Exception $e) {
             DB::rollBack();
             
             Log::error('Failed to process successful token payment', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'payment_result' => $paymentResult
             ]);
             
             return redirect()->route('payment.failed')
-                ->with('error', 'Payment was successful but token activation failed. Please contact support.');
+                ->with('error', 'Payment was successful but token activation failed. Please contact support with transaction ID: ' . ($paymentResult['transaction_id'] ?? 'N/A'));
         }
     }
 
@@ -556,7 +606,17 @@ class PaymentController extends Controller
 
     public function success(Request $request)
     {
-        // Check for bKash payment callback
+        Log::info('Payment success callback', [
+            'all_params' => $request->all()
+        ]);
+        
+        // Check if it's a token payment callback FIRST (before subscription check)
+        $type = $request->input('type');
+        if ($type === 'token_package') {
+            return $this->handleTokenPaymentCallback($request);
+        }
+        
+        // Check for bKash payment callback (subscription)
         if ($request->has('paymentID')) {
             $paymentId = $request->input('paymentID');
             $status = $request->input('status');
@@ -607,14 +667,8 @@ class PaymentController extends Controller
         
         // Handle other payment methods callback
         $paymentMethod = $request->input('payment_method');
-        $type = $request->input('type');
         
         try {
-            // Check if it's a token payment callback
-            if ($type === 'token_package') {
-                return $this->handleTokenPaymentCallback($request);
-            }
-            
             switch ($paymentMethod) {
                 case 'nagad':
                     return $this->handleNagadCallback($request);
@@ -634,37 +688,92 @@ class PaymentController extends Controller
     
     protected function handleTokenPaymentCallback(Request $request)
     {
-        $tokenPayment = session('token_payment');
+        Log::info('Token payment callback received', [
+            'all_params' => $request->all(),
+            'has_paymentID' => $request->has('paymentID')
+        ]);
         
-        if (!$tokenPayment) {
-            return redirect()->route('student.tokens.purchase')
-                ->with('error', 'Payment session expired.');
-        }
-        
-        $paymentMethod = $tokenPayment['payment_method'] ?? $request->input('payment_method');
-        
-        // Verify payment based on method
-        switch ($paymentMethod) {
-            case 'bkash':
+        // Check for bKash payment callback
+        if ($request->has('paymentID')) {
+            $paymentId = $request->input('paymentID');
+            $status = $request->input('status');
+            
+            Log::info('bKash callback detected', [
+                'payment_id' => $paymentId,
+                'status' => $status
+            ]);
+            
+            // Check if payment was cancelled
+            if ($status === 'cancel' || $status === 'failure') {
+                return redirect()->route('student.tokens.purchase')
+                    ->with('error', 'Payment was cancelled.');
+            }
+            
+            // Get payment info from database (not session)
+            $transaction = PaymentTransaction::where('transaction_id', $paymentId)
+                ->where('status', 'pending')
+                ->where('payment_method', 'bkash')
+                ->first();
+            
+            if (!$transaction) {
+                Log::error('Token payment transaction not found', [
+                    'payment_id' => $paymentId,
+                    'user_id' => auth()->id()
+                ]);
+                
+                return redirect()->route('student.tokens.purchase')
+                    ->with('error', 'Payment transaction not found. Please contact support if money was deducted.');
+            }
+            
+            // Verify and execute payment with bKash
+            try {
                 $gateway = $this->gatewayFactory->make('bkash');
-                $result = $gateway->verifyPayment($tokenPayment['payment_id']);
-                break;
+                $result = $gateway->verifyPayment($paymentId);
                 
-            case 'nagad':
-                $gateway = $this->gatewayFactory->make('nagad');
-                $result = $gateway->verifyPayment($tokenPayment['payment_id']);
-                break;
+                Log::info('Payment verification result', ['result' => $result]);
                 
-            default:
-                return redirect()->route('payment.failed');
+                if ($result['status'] === 'completed') {
+                    $packageId = $transaction->metadata['package_id'] ?? null;
+                    
+                    if (!$packageId) {
+                        throw new \Exception('Package ID not found in transaction metadata');
+                    }
+                    
+                    $package = TokenPackage::find($packageId);
+                    
+                    if (!$package) {
+                        throw new \Exception('Package not found');
+                    }
+                    
+                    // Update transaction with verified details
+                    $transaction->update([
+                        'transaction_id' => $result['transaction_id'], // Update with bKash trx ID
+                        'gateway_response' => array_merge($transaction->gateway_response ?? [], $result)
+                    ]);
+                    
+                    return $this->handleSuccessfulTokenPayment($result, $package, 'bkash', $transaction);
+                }
+                
+                // Payment failed
+                $transaction->update(['status' => 'failed']);
+                
+                return redirect()->route('payment.failed')
+                    ->with('error', $result['message'] ?? 'Payment verification failed');
+                    
+            } catch (\Exception $e) {
+                Log::error('bKash token payment verification failed', [
+                    'error' => $e->getMessage(),
+                    'payment_id' => $paymentId,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                return redirect()->route('payment.failed')
+                    ->with('error', 'Payment verification failed: ' . $e->getMessage());
+            }
         }
         
-        if ($result['status'] === 'completed') {
-            $package = TokenPackage::find($tokenPayment['package_id']);
-            return $this->handleSuccessfulTokenPayment($result, $package, $paymentMethod);
-        }
-        
-        return redirect()->route('payment.failed');
+        return redirect()->route('student.tokens.purchase')
+            ->with('error', 'Invalid payment callback.');
     }
 
     public function failed(Request $request)

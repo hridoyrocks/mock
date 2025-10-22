@@ -47,6 +47,16 @@ class BkashGateway implements PaymentGatewayInterface
 
             $result = $response->json();
 
+            // Log the full response for debugging
+            Log::info('bKash payment creation response', [
+                'status_code' => $response->status(),
+                'response' => $result,
+                'request_data' => [
+                    'amount' => $data['amount'],
+                    'callback' => $data['success_url']
+                ]
+            ]);
+
             if ($response->successful() && isset($result['bkashURL'])) {
                 return [
                     'status' => 'pending',
@@ -62,7 +72,15 @@ class BkashGateway implements PaymentGatewayInterface
                 return $this->processPayment($data); // Retry with new token
             }
 
-            throw new Exception('bKash payment creation failed');
+            // Log error details
+            Log::error('bKash payment creation failed', [
+                'status_code' => $response->status(),
+                'response' => $result,
+                'error_message' => $result['statusMessage'] ?? ($result['errorMessage'] ?? 'Unknown error'),
+                'error_code' => $result['statusCode'] ?? ($result['errorCode'] ?? 'N/A')
+            ]);
+
+            throw new Exception('bKash payment creation failed: ' . ($result['statusMessage'] ?? ($result['errorMessage'] ?? 'Unknown error')));
 
         } catch (\Exception $e) {
             throw new Exception('bKash payment failed: ' . $e->getMessage());

@@ -398,7 +398,7 @@
 
             <!-- Sidebar Footer -->
             <div class="p-4 border-t" :class="darkMode ? 'border-white/10' : 'border-gray-200'">
-                <div class="rounded-xl p-4 mb-4" 
+                <div class="rounded-xl p-4" 
                      :class="darkMode ? 'glass' : 'bg-gray-50 border border-gray-200'">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-xs" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Monthly Tests</span>
@@ -412,14 +412,6 @@
                              style="width: {{ auth()->user()->getTestUsagePercentage() }}%"></div>
                     </div>
                 </div>
-                
-                @if(auth()->user()->subscription_status === 'free')
-                    <a href="{{ route('subscription.plans') }}" 
-                       class="block w-full text-center py-3 rounded-xl font-medium transition-all duration-200"
-                       :class="darkMode ? 'bg-[#C8102E] text-white hover:bg-[#A00E27] shadow-lg shadow-[#C8102E]/30 hover:shadow-[#C8102E]/50' : 'bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white hover:from-[#A00E27] hover:to-[#8A0C20] shadow-md hover:shadow-lg'">
-                        <i class="fas fa-rocket mr-2"></i>Upgrade to Pro
-                    </a>
-                @endif
             </div>
         </div>
 
@@ -437,38 +429,31 @@
                                 <i class="fas fa-bars text-xl"></i>
                             </button>
 
-                            <!-- Greeting & Time -->
+                            <!-- Greeting -->
                             <div class="hidden sm:block">
                                 <h1 class="text-xl font-semibold" :class="darkMode ? 'text-white' : 'text-gray-800'">
                                     Good <span id="greeting-time">{{ now()->format('A') === 'AM' ? 'Morning' : (now()->format('H') < 17 ? 'Afternoon' : 'Evening') }}</span>, {{ explode(' ', auth()->user()->name)[0] }}! 👋
                                 </h1>
-                                <p class="text-xs mt-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
-                                    <i class="far fa-clock mr-1"></i>
-                                    <span id="current-time">{{ now()->format('h:i A') }}</span> • <span id="current-date">{{ now()->format('l, F j') }}</span>
-                                    @if(auth()->user()->city || auth()->user()->country_name)
-                                        <span class="ml-2">
-                                            <i class="fas fa-map-marker-alt mr-1"></i>
-                                            {{ auth()->user()->city ? auth()->user()->city . ', ' : '' }}{{ auth()->user()->country_name }}
-                                        </span>
-                                    @endif
-                                </p>
                             </div>
                         </div>
 
                         <!-- Right Section -->
                         <div class="flex items-center space-x-3">
+                            <!-- Upgrade to Pro Button (Only for free users) -->
+                            @if(auth()->user()->subscription_status === 'free')
+                                <a href="{{ route('subscription.plans') }}" 
+                                   class="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                                   :class="darkMode ? 'bg-[#C8102E] text-white hover:bg-[#A00E27] shadow-lg shadow-[#C8102E]/30 hover:shadow-[#C8102E]/50' : 'bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white hover:from-[#A00E27] hover:to-[#8A0C20] shadow-md hover:shadow-lg'">
+                                    <i class="fas fa-rocket"></i>
+                                    <span>Upgrade to Pro</span>
+                                </a>
+                            @endif
+                            
                             <!-- Theme Toggle -->
                             <button @click="darkMode = !darkMode" 
                                     class="w-10 h-10 rounded-lg glass flex items-center justify-center hover:border-[#C8102E]/50 transition-all duration-200"
                                     :class="darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-[#C8102E]'">
                                 <i class="fas" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>
-                            </button>
-                            
-                            <!-- Search Button -->
-                            <button @click="searchOpen = true" 
-                                    class="w-10 h-10 rounded-lg glass flex items-center justify-center hover:border-[#C8102E]/50 transition-all duration-200"
-                                    :class="darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-[#C8102E]'">
-                                <i class="fas fa-search"></i>
                             </button>
 
                             <!-- Notifications -->
