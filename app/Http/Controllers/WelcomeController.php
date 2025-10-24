@@ -9,9 +9,16 @@ class WelcomeController extends Controller
 {
     public function index()
     {
-        // Get top 3 performers from this week
+        // Update leaderboard data first
+        LeaderboardEntry::updateLeaderboard('weekly', 'overall');
+        
+        // Get current week's start date
+        $startDate = now()->startOfWeek();
+        
+        // Get top 3 performers from this week (unique users)
         $topPerformers = LeaderboardEntry::where('period', 'weekly')
             ->where('category', 'overall')
+            ->where('period_start', $startDate)
             ->with('user')
             ->orderBy('rank')
             ->take(3)
