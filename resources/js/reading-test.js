@@ -1,6 +1,43 @@
 // Simplified Reading Test System - Clean & Simple
 // No extra features, just essential functionality
 
+// ========== Security & Copy Protection ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', function(e) {
+        // Allow in annotation areas but prevent browser menu
+        const isAnnotationArea = e.target.closest('.passage-content') || e.target.closest('.question-text');
+        if (isAnnotationArea) {
+            e.preventDefault();
+            return false;
+        }
+        e.preventDefault();
+        return false;
+    });
+    
+    // Disable Ctrl+A (Select All)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable Ctrl+C (Copy)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable copy event
+    document.addEventListener('copy', function(e) {
+        e.preventDefault();
+        return false;
+    });
+});
+
 // ========== Global Variables ==========
 let currentColorPicker = null;
 let selectedTextRange = null;
@@ -746,6 +783,12 @@ const SubmitHandler = {
 
         if (confirmSubmitBtn) {
             confirmSubmitBtn.addEventListener('click', () => {
+                // CRITICAL: Remove beforeunload listener to prevent "Leave site?" dialog
+                if (SubmitHandler.preventLeaveHandler) {
+                    window.removeEventListener('beforeunload', SubmitHandler.preventLeaveHandler);
+                }
+                window.onbeforeunload = null;
+                
                 // Stop timer if exists
                 if (window.UniversalTimer) {
                     window.UniversalTimer.stop();
@@ -787,14 +830,17 @@ const SubmitHandler = {
     },
 
     setupWarnings() {
-        // Warn before leaving page
-        window.addEventListener('beforeunload', (e) => {
+        // Store the function reference so we can remove it later
+        this.preventLeaveHandler = (e) => {
             const unansweredCount = document.querySelectorAll('.number-btn:not(.answered)').length;
             if (unansweredCount > 0) {
                 e.preventDefault();
                 e.returnValue = 'You have unanswered questions. Are you sure you want to leave?';
             }
-        });
+        };
+        
+        // Warn before leaving page
+        window.addEventListener('beforeunload', this.preventLeaveHandler);
     }
 };
 
@@ -1264,7 +1310,45 @@ const SimpleAnnotationSystem = {
     },
 
     setupAnnotationHandlers() {
-        // Text selection handler - Now works on both passage and questions
+        // Allow annotation in text areas including option text - but NOT in input controls
+        const ALLOWED_SELECTORS = [
+            '.passage-content',      // Passage text
+            '.questions-section',    // Questions section ⭐ CRITICAL
+            '.question-text',        // Question text
+            '.question-instruction', // Instructions
+            '.question-instructions',// Instructions (alternate class)
+            '.part-instruction',     // Part instructions
+            '.question-item',        // Question items
+            '.ielts-question-item',  // IELTS question items ⭐ CRITICAL
+            '.question-content',     // Question content area
+            '.matching-question',    // Matching questions text
+            '.form-label',           // Form labels
+            '.question-group-header',// Group headers
+            '.radio-option',         // Radio option TEXT (not the input)
+            '.checkbox-option',      // Checkbox option TEXT (not the input)
+            '.option-text',          // Option text
+            '.option-label',         // Option labels
+            '.option-item',          // Option items
+            '.part-questions',       // Part questions container ⭐ NEW
+            '.part-questions-inner'  // Inner questions container ⭐ NEW
+        ];
+        
+        // ONLY block actual input controls - NOT their text content
+        const FORBIDDEN_SELECTORS = [
+            'input[type="radio"]',   // The radio button itself
+            'input[type="checkbox"]',// The checkbox itself
+            'input[type="text"]',    // Text input fields
+            'select',                // Dropdown menus
+            'textarea',              // Text areas
+            'button',                // Buttons
+            '.drop-box',             // Drop zones
+            '.draggable-option',     // Draggable items
+            '.number-btn',           // Navigation buttons
+            '.answer-input',         // Answer input areas
+            '.passage-answer-input'  // Passage answer inputs ⭐ NEW
+        ];
+        
+        // Text selection handler - Works on passage AND question text areas
         document.addEventListener('mouseup', (e) => {
             // Skip if clicking on annotation menu or modal
             if (e.target.closest('#annotation-menu') ||
@@ -1284,45 +1368,36 @@ const SimpleAnnotationSystem = {
 
                 if (selectedText && selectedText.length >= 3) {
                     const range = selection.getRangeAt(0);
+                    const container = range.commonAncestorContainer;
+                    const element = container.nodeType === 3 ? container.parentElement : container;
 
-                    // Allow annotation in both passage content AND questions section
-                    const passageContent = e.target.closest('.passage-content');
-                    const questionsSection = e.target.closest('.questions-section');
+                    // Check if selection is DIRECTLY on a forbidden element (actual input/button)
+                    const isForbidden = FORBIDDEN_SELECTORS.some(selector => {
+                        return element.matches(selector);
+                    });
 
-                    if (passageContent || questionsSection) {
-                        const rect = range.getBoundingClientRect();
-                        this.currentRange = range;
-                        this.showMenu(rect, selectedText);
+                    if (isForbidden) {
+                        this.hideMenu();
+                        return;
                     }
+
+                    // Check if selection is in allowed area
+                    const isAllowed = ALLOWED_SELECTORS.some(selector => {
+                        return element.closest(selector) !== null;
+                    });
+
+                    if (!isAllowed) {
+                        this.hideMenu();
+                        return;
+                    }
+
+                    const rect = range.getBoundingClientRect();
+                    this.currentRange = range;
+                    this.showMenu(rect, selectedText);
                 } else {
                     this.hideMenu();
                 }
             }, 10);
-        });
-
-        // Right-click context menu
-        document.addEventListener('contextmenu', (e) => {
-            // Check if right-click is in passage or questions section
-            const passageContent = e.target.closest('.passage-content');
-            const questionsSection = e.target.closest('.questions-section');
-            
-            if (passageContent || questionsSection) {
-                e.preventDefault();
-                
-                // Get selected text if any
-                const selection = window.getSelection();
-                const selectedText = selection.toString().trim();
-                
-                if (selectedText && selectedText.length >= 3) {
-                    // If text is selected, use the selection range
-                    const range = selection.getRangeAt(0);
-                    this.currentRange = range;
-                    this.showContextMenu(e.clientX, e.clientY, selectedText);
-                } else {
-                    // If no text selected, show menu at cursor position
-                    this.showContextMenu(e.clientX, e.clientY, null);
-                }
-            }
         });
 
         // Hide menu on document click
@@ -1436,33 +1511,38 @@ const SimpleAnnotationSystem = {
 
     applyHighlight(color) {
         if (this.currentRange) {
+            const selectedText = this.currentRange.toString().trim(); // Trim spaces
+            
+            // Don't highlight if empty or just spaces
+            if (!selectedText) {
+                this.hideMenu();
+                return;
+            }
+            
             const span = document.createElement('span');
             span.style.backgroundColor = color.value;
             span.style.cursor = 'pointer';
-            span.style.padding = '1px 2px';
             span.style.borderRadius = '2px';
-            span.textContent = this.currentRange.toString();
+            span.style.padding = '0'; // NO padding to avoid extra space
+            span.style.margin = '0'; // NO margin to avoid extra space
+            span.style.display = 'inline'; // Keep inline
+            span.style.lineHeight = 'inherit'; // Inherit line height
+            span.textContent = selectedText;
             span.dataset.highlight = color.name;
-            span.title = `${color.name} highlight - Click to remove`;
+            span.title = 'Click to remove';
 
+            // DIRECT removal without confirmation
             span.onclick = function (evt) {
                 evt.stopPropagation();
-                if (confirm('Remove this highlight?')) {
-                    const text = this.textContent;
-                    this.style.transition = 'background-color 0.3s ease';
-                    this.style.backgroundColor = 'transparent';
-
-                    setTimeout(() => {
-                        this.replaceWith(document.createTextNode(text));
-                        SimpleAnnotationSystem.removeAnnotation('highlight', text);
-                    }, 300);
-                }
+                const text = this.textContent;
+                this.replaceWith(document.createTextNode(text));
+                SimpleAnnotationSystem.removeAnnotation('highlight', selectedText);
             };
 
             try {
                 this.currentRange.deleteContents();
                 this.currentRange.insertNode(span);
-                this.saveAnnotation('highlight', span.textContent, color.name);
+                this.saveAnnotation('highlight', selectedText, color.name);
             } catch (error) {
                 console.error('Error applying highlight:', error);
             }

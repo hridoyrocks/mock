@@ -35,7 +35,7 @@
                         <li><strong>Task 2:</strong> Write at least 250 words (suggested time: 40 minutes)</li>
                         <li>Task 2 carries more weight in marking than Task 1.</li>
                         <li>You will be penalized if your answer is too short.</li>
-                        <li>Your writing will be evaluated by qualified IELTS examiners.</li>
+                
                     </ul>
                     
                     <div class="flex items-center justify-center text-blue-600 mb-8">

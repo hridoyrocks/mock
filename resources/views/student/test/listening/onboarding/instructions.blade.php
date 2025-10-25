@@ -38,7 +38,7 @@
                         
                         <h2 class="text-xl font-bold mb-4">INFORMATION FOR CANDIDATES</h2>
                         <ul class="list-disc pl-8 mb-6 space-y-2">
-                            <li>There are {{ $testSet->questions->count() }} questions in this test.</li>
+                            <li>There are 40 questions in this test.</li>
                             <li>Each question carries one mark.</li>
                             <li>The test will have four parts.</li>
                             <li>You will hear each part once.</li>

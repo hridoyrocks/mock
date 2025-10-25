@@ -865,10 +865,13 @@
         /* ========== HIGHLIGHT & NOTES STYLES ========== */
         .highlighted-text {
             background-color: #fde047;
-            padding: 1px 2px;
             border-radius: 2px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background-color 0.2s ease;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: inline;
+            line-height: inherit;
         }
         
         .highlighted-text:hover {
@@ -878,9 +881,12 @@
         .note-text {
             background-color: #fee2e2;
             border-bottom: 1px solid #dc2626;
-            padding: 1px 2px;
             border-radius: 2px;
             cursor: pointer;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: inline;
+            line-height: inherit;
         }
         
         /* Annotation Menu */
@@ -1415,8 +1421,30 @@
     
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // ========== Disable Right Click ==========
+        // ========== Disable Right Click, Copy, Select All ==========
         document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Disable Ctrl+A (Select All)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Disable Ctrl+C (Copy)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Disable copy event
+        document.addEventListener('copy', function(e) {
             e.preventDefault();
             return false;
         });
@@ -2031,6 +2059,37 @@
         },
         
         setupAnnotationHandlers() {
+                // Allow annotation in text areas including option text - but NOT in input controls
+                const ALLOWED_SELECTORS = [
+                    '.question-text',        // Question text
+                    '.part-instruction',     // Part instructions
+                    '.question-instruction', // Question instructions
+                    '.question-group-header',// Group headers
+                    '.matching-question',    // Matching questions text
+                    '.form-label',           // Form labels
+                    '.question-item',        // Question items
+                    '.question-content',     // Question content area
+                    '.radio-option',         // Radio option TEXT (not the input)
+                    '.checkbox-option',      // Checkbox option TEXT (not the input)
+                    '.option-text',          // Option text
+                    '.option-label',         // Option labels
+                    '.option-item'           // Option items
+                ];
+                
+                // ONLY block actual input controls - NOT their text content
+                const FORBIDDEN_SELECTORS = [
+                    'input[type="radio"]',   // The radio button itself
+                    'input[type="checkbox"]',// The checkbox itself
+                    'input[type="text"]',    // Text input fields
+                    'select',                // Dropdown menus
+                    'textarea',              // Text areas
+                    'button',                // Buttons
+                    '.draggable-option',     // Draggable items (for drag-drop)
+                    '.drop-box',             // Drop zones
+                    '.number-btn',           // Navigation buttons
+                    '.answer-input'          // Answer input areas
+                ];
+                
                 document.addEventListener('mouseup', (e) => {
                     // Skip if clicking on annotation menu, note modal, or notes panel
                     if (e.target.closest('#annotation-menu') || 
@@ -2050,14 +2109,37 @@
                         
                         if (selectedText && selectedText.length >= 3) {
                             const range = selection.getRangeAt(0);
-                    const rect = range.getBoundingClientRect();
-                this.currentRange = range;
-                this.showMenu(rect, selectedText);
-            } else {
-                    this.hideMenu();
-                }
-            }, 10);
-        });
+                            const container = range.commonAncestorContainer;
+                            const element = container.nodeType === 3 ? container.parentElement : container;
+                            
+                            // Check if selection is DIRECTLY on a forbidden element (actual input/button)
+                            const isForbidden = FORBIDDEN_SELECTORS.some(selector => {
+                                return element.matches(selector);
+                            });
+                            
+                            if (isForbidden) {
+                                this.hideMenu();
+                                return;
+                            }
+                            
+                            // Check if selection is in allowed area
+                            const isAllowed = ALLOWED_SELECTORS.some(selector => {
+                                return element.closest(selector) !== null;
+                            });
+                            
+                            if (!isAllowed) {
+                                this.hideMenu();
+                                return;
+                            }
+                            
+                            const rect = range.getBoundingClientRect();
+                            this.currentRange = range;
+                            this.showMenu(rect, selectedText);
+                        } else {
+                            this.hideMenu();
+                        }
+                    }, 10);
+                });
         
         // Hide menu on scroll
         document.addEventListener('scroll', () => {
@@ -2192,27 +2274,28 @@
         
         highlightText() {
             if (this.currentRange) {
-                const selectedText = this.currentRange.toString();
+                const selectedText = this.currentRange.toString().trim(); // Trim spaces
                 
-                // Apply highlight styling
+                // Don't highlight if empty or just spaces
+                if (!selectedText) {
+                    this.hideMenu();
+                    return;
+                }
+                
+                // Apply highlight styling - NO padding/margin to avoid extra space
                 const span = document.createElement('span');
                 span.className = 'highlighted-text';
                 span.textContent = selectedText;
-                span.title = 'Click to remove highlight';
+                span.title = 'Click to remove';
+                span.style.cssText = 'background-color: #fde047; cursor: pointer; border-radius: 2px; transition: background-color 0.2s;';
                 
-                // Add click handler for removal
+                // Add click handler for DIRECT removal (NO confirmation)
                 span.onclick = (e) => {
                     e.stopPropagation();
-                    if (confirm('Remove this highlight?')) {
-                        const text = span.textContent;
-                        span.style.transition = 'background-color 0.3s ease';
-                        span.style.backgroundColor = 'transparent';
-                        
-                        setTimeout(() => {
-                            span.replaceWith(document.createTextNode(text));
-                            this.removeAnnotation('highlight', selectedText);
-                        }, 300);
-                    }
+                    // Direct removal without confirmation
+                    const text = span.textContent;
+                    span.replaceWith(document.createTextNode(text));
+                    this.removeAnnotation('highlight', selectedText);
                 };
                 
                 try {
@@ -2673,6 +2756,16 @@
         
         // ========== Initialize ==========
         
+        // Remove beforeunload handler when form is submitted
+        const listeningForm = document.getElementById('listening-form');
+        if (listeningForm) {
+            listeningForm.addEventListener('submit', function(e) {
+                window.removeEventListener('beforeunload', preventLeave);
+                window.onbeforeunload = null;
+                console.log('✅ beforeunload handler removed - form submitted');
+            });
+        }
+        
         // Play first part audio
         playPartAudio('1');
         
@@ -2694,6 +2787,56 @@
         // Update answer count
         updateAnswerCount();
     });
+    </script>
+    
+    {{-- Disable Ctrl+F Find During Listening Test --}}
+    <script>
+    // ====================================
+    // AGGRESSIVE Ctrl+F Find Disabler
+    // ====================================
+    
+    // Method 1: keydown event (Primary)
+    document.addEventListener('keydown', function(e) {
+        // Cmd+F (Mac) or Ctrl+F (Windows)
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.warn('❌ Find disabled - Cmd+F blocked');
+            return false;
+        }
+    }, true);
+    
+    // Method 2: keyup event (Backup)
+    document.addEventListener('keyup', function(e) {
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.warn('❌ Find disabled - Cmd+F blocked (keyup)');
+            return false;
+        }
+    }, true);
+    
+    // Method 3: Check for keyboard event with code
+    document.addEventListener('keydown', function(e) {
+        // F keyCode: 70, MetaLeft: 91, ControlLeft: 17
+        if ((e.metaKey || e.ctrlKey) && e.keyCode === 70) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, true);
+    
+    // Method 4: Disable via window object
+    window.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.keyCode === 70)) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
     </script>
     @endpush
 </x-test-layout>

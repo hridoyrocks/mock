@@ -1491,6 +1491,53 @@
 
     @push('scripts')
     <script>
+    // ====================================
+    // AGGRESSIVE Ctrl+F Find Disabler
+    // ====================================
+    
+    // Method 1: keydown event (Primary)
+    document.addEventListener('keydown', function(e) {
+        // Cmd+F (Mac) or Ctrl+F (Windows)
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.warn('❌ Find disabled - Cmd+F blocked');
+            return false;
+        }
+    }, true);
+    
+    // Method 2: keyup event (Backup)
+    document.addEventListener('keyup', function(e) {
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.warn('❌ Find disabled - Cmd+F blocked (keyup)');
+            return false;
+        }
+    }, true);
+    
+    // Method 3: Check for keyboard event with code
+    document.addEventListener('keydown', function(e) {
+        // F keyCode: 70, MetaLeft: 91, ControlLeft: 17
+        if ((e.metaKey || e.ctrlKey) && e.keyCode === 70) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, true);
+    
+    // Method 4: Disable via window object
+    window.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.keyCode === 70)) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
+
     window.testConfig = {
         attemptId: {{ $attempt->id }},
         testSetId: {{ $testSet->id }},
@@ -1701,6 +1748,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Intercept form submission
         form.addEventListener('submit', function(e) {
             console.log('📋 Form submitting - copying passage answers...');
+            
+            // ⭐ REMOVE beforeunload listener to prevent "Leave page?" popup
+            window.removeEventListener('beforeunload', preventLeave);
+            window.onbeforeunload = null;
             
             // Find all passage answer inputs (outside form)
             const passageInputs = document.querySelectorAll('.passage-answer-input');

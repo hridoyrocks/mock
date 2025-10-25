@@ -31,11 +31,11 @@
                     
                     <h2 class="text-xl font-bold mb-4">INFORMATION FOR CANDIDATES</h2>
                     <ul class="list-disc pl-8 mb-6 space-y-2">
-                        <li>There are {{ $testSet->questions->where('question_type', '!=', 'passage')->count() }} questions in this test.</li>
+                        <li>There are 40 questions in this test.</li>
                         <li>Each question carries one mark.</li>
                         <li>The test will have three passages with questions.</li>
                         <li>You should spend about 20 minutes on each passage.</li>
-                        <li>The passages will increase in difficulty.</li>
+                        
                     </ul>
                     
                     <div class="flex items-center justify-center text-blue-600 mb-8">

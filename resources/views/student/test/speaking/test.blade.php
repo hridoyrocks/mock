@@ -1323,5 +1323,36 @@
         document.getElementById('submit-modal').style.display = 'flex';
     }
     </script>
+    
+    {{-- Disable Ctrl+F Find During Speaking Test --}}
+    <script>
+    // AGGRESSIVE Ctrl+F Find Disabler for Speaking Test
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
+    
+    document.addEventListener('keyup', function(e) {
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
+    
+    window.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.keyCode === 70)) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
+    </script>
     @endpush
 </x-test-layout>

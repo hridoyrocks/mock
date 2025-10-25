@@ -879,5 +879,36 @@
         });
     }
     </script>
+    
+    {{-- Disable Ctrl+F Find During Writing Test --}}
+    <script>
+    // AGGRESSIVE Ctrl+F Find Disabler for Writing Test
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
+    
+    document.addEventListener('keyup', function(e) {
+        if ((e.ctrlKey === true || e.metaKey === true) && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
+    
+    window.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.keyCode === 70)) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+        }
+    }, true);
+    </script>
     @endpush
 </x-test-layout>
