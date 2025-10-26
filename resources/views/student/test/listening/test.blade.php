@@ -867,6 +867,29 @@
             border-color: #3b82f6;
         }
         
+        .part-btn.locked {
+            background: #e5e7eb;
+            color: #9ca3af;
+            border-color: #d1d5db;
+            cursor: not-allowed;
+            position: relative;
+        }
+        
+        .part-btn.locked:hover {
+            background: #e5e7eb;
+            color: #9ca3af;
+            border-color: #d1d5db;
+        }
+        
+        .part-btn.locked::after {
+            content: '\1F512';
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+        }
+        
         .nav-numbers {
             display: flex;
             flex-wrap: wrap;
@@ -924,6 +947,21 @@
             background: #f59e0b;
             border-radius: 50%;
             border: 2px solid white;
+        }
+        
+        .number-btn.locked {
+            background: #e5e7eb !important;
+            color: #9ca3af !important;
+            border-color: #d1d5db !important;
+            cursor: not-allowed !important;
+            opacity: 0.6;
+        }
+        
+        .number-btn.locked:hover {
+            background: #e5e7eb !important;
+            color: #9ca3af !important;
+            border-color: #d1d5db !important;
+            transform: none !important;
         }
         
         .number-btn.hidden-part {
@@ -2069,10 +2107,80 @@
         // Initialize with first part header
         updateFixedPartHeader('1');
         
-        // ========== Part Navigation ==========
+        // ========== Part Navigation with Locking ==========
+        let highestPartReached = 1; // Track highest part reached
+        
+        // Load saved progress
+        const savedProgress = localStorage.getItem(`partProgress_${testConfig.attemptId}`);
+        if (savedProgress) {
+            highestPartReached = parseInt(savedProgress);
+            updatePartLocks();
+        }
+        
+        function updatePartLocks() {
+            partButtons.forEach((button, index) => {
+                const partNum = parseInt(button.dataset.part);
+                
+                // Lock parts that have been passed
+                if (partNum < highestPartReached) {
+                    button.classList.add('locked');
+                    button.setAttribute('title', 'This part is locked');
+                } else {
+                    button.classList.remove('locked');
+                    button.removeAttribute('title');
+                }
+            });
+            
+            // Also update number buttons for locked parts
+            numberButtons.forEach(numBtn => {
+                const btnPart = parseInt(numBtn.dataset.part);
+                if (btnPart < highestPartReached) {
+                    numBtn.classList.add('locked');
+                    numBtn.setAttribute('title', 'This question is in a locked part');
+                } else {
+                    numBtn.classList.remove('locked');
+                    numBtn.removeAttribute('title');
+                }
+            });
+            
+            // Disable inputs in locked parts
+            document.querySelectorAll('.part-section').forEach(section => {
+                const sectionPart = parseInt(section.dataset.part);
+                if (sectionPart < highestPartReached) {
+                    // Disable all inputs in this part
+                    section.querySelectorAll('input, select, textarea').forEach(input => {
+                        input.disabled = true;
+                        input.style.cursor = 'not-allowed';
+                        input.style.opacity = '0.6';
+                    });
+                }
+            });
+        }
+        
         partButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const targetPart = this.dataset.part;
+            button.addEventListener('click', function(e) {
+                const targetPart = parseInt(this.dataset.part);
+                
+                // Check if part is locked
+                if (this.classList.contains('locked')) {
+                    e.preventDefault();
+                    alert('This part is locked. You cannot go back to previous parts.');
+                    return;
+                }
+                
+                // Check if trying to skip ahead
+                if (targetPart > highestPartReached + 1) {
+                    e.preventDefault();
+                    alert('Please complete Part ' + highestPartReached + ' before moving to Part ' + targetPart + '.');
+                    return;
+                }
+                
+                // Update highest part reached automatically when moving to next part
+                if (targetPart > highestPartReached) {
+                    highestPartReached = targetPart;
+                    localStorage.setItem(`partProgress_${testConfig.attemptId}`, highestPartReached);
+                    updatePartLocks();
+                }
                 
                 // Update active button
                 partButtons.forEach(btn => btn.classList.remove('active'));
@@ -2081,25 +2189,33 @@
                 // Show target part
                 partSections.forEach(section => {
                     section.classList.remove('active');
-                    if (section.dataset.part === targetPart) {
+                    if (section.dataset.part === String(targetPart)) {
                         section.classList.add('active');
                     }
                 });
                 
                 // Update fixed part header
-                updateFixedPartHeader(targetPart);
+                updateFixedPartHeader(String(targetPart));
                 
                 // Update number buttons visibility
-                updateNumberButtonsVisibility(targetPart);
+                updateNumberButtonsVisibility(String(targetPart));
                 
                 // Play audio for this part
-                playPartAudio(targetPart);
+                playPartAudio(String(targetPart));
             });
         });
         
         // ========== Question Navigation ==========
         numberButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                // Check if button is from locked part
+                const btnPart = parseInt(this.dataset.part);
+                if (btnPart < highestPartReached) {
+                    e.preventDefault();
+                    alert('This question is in a locked part. You cannot go back.');
+                    return;
+                }
+                
                 // Update active button
                 numberButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
@@ -2115,7 +2231,7 @@
                     const currentActivePart = document.querySelector('.part-btn.active');
                     if (currentActivePart && currentActivePart.dataset.part !== partNumber) {
                         const partBtn = document.querySelector(`.part-btn[data-part="${partNumber}"]`);
-                        if (partBtn) {
+                        if (partBtn && !partBtn.classList.contains('locked')) {
                             partBtn.click();
                             // Update fixed header when switching parts
                             updateFixedPartHeader(partNumber);
