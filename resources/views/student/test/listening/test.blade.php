@@ -2048,6 +2048,72 @@
         
         // Current Audio
         let currentAudio = null;
+        let isAudioPlaying = false;
+        let audioStarted = false;
+        
+        // ========== Continuous Audio Management ==========
+        function setupContinuousAudio() {
+            // Get all audio elements
+            const allAudioElements = [];
+            for (let i = 1; i <= 4; i++) {
+                const audio = document.getElementById(`test-audio-${i}`);
+                if (audio) {
+                    allAudioElements.push({
+                        part: i,
+                        element: audio,
+                        duration: 0
+                    });
+                }
+            }
+            
+            // Setup event listeners for seamless playback
+            allAudioElements.forEach((audioObj, index) => {
+                const audio = audioObj.element;
+                
+                // Get duration when metadata loads
+                audio.addEventListener('loadedmetadata', function() {
+                    audioObj.duration = audio.duration;
+                });
+                
+                // Handle when audio ends - play next part
+                audio.addEventListener('ended', function() {
+                    console.log(`Part ${audioObj.part} audio ended`);
+                    
+                    // Play next audio if exists
+                    const nextAudioObj = allAudioElements[index + 1];
+                    if (nextAudioObj) {
+                        console.log(`Starting Part ${nextAudioObj.part} audio`);
+                        currentAudio = nextAudioObj.element;
+                        
+                        // Apply volume
+                        if (volumeSlider) {
+                            currentAudio.volume = volumeSlider.value / 100;
+                        }
+                        
+                        currentAudio.play().catch(e => {
+                            console.error('Audio playback failed:', e);
+                        });
+                    } else {
+                        console.log('All audio parts completed');
+                        isAudioPlaying = false;
+                        audioStarted = false;
+                    }
+                });
+                
+                // Handle play/pause events
+                audio.addEventListener('play', function() {
+                    isAudioPlaying = true;
+                });
+                
+                audio.addEventListener('pause', function() {
+                    isAudioPlaying = false;
+                });
+            });
+            
+            return allAudioElements;
+        }
+        
+        const audioSequence = setupContinuousAudio();
         
         // ========== Fullscreen Functionality ==========
         fullscreenBtn.addEventListener('click', function() {
@@ -2350,71 +2416,66 @@
         
         // ========== Audio Controls ==========
         function playPartAudio(partNumber) {
-            // Stop current audio
-            if (currentAudio) {
-                currentAudio.pause();
+            // If audio already started and playing, don't interrupt
+            if (audioStarted && isAudioPlaying) {
+                console.log('Audio already playing continuously, not interrupting');
+                return;
             }
             
-            // Get audio for this part
-            const audio = document.getElementById(`test-audio-${partNumber}`);
-            if (audio) {
-                currentAudio = audio;
-                
-                // Set volume
-                if (volumeSlider) {
-                    audio.volume = volumeSlider.value / 100;
-                }
-                
-                // Add error handling
-                audio.addEventListener('error', function(e) {
-                    console.error('Audio error:', e);
-                    const target = e.target;
-                    let errorMsg = 'Audio playback error';
+            // If first time starting audio
+            if (!audioStarted) {
+                // Start from Part 1 always for continuous playback
+                const firstAudio = document.getElementById('test-audio-1');
+                if (firstAudio) {
+                    currentAudio = firstAudio;
                     
-                    // Determine error type
-                    if (target.error) {
-                        switch(target.error.code) {
-                            case target.error.MEDIA_ERR_ABORTED:
-                                errorMsg = 'Audio playback aborted';
-                                break;
-                            case target.error.MEDIA_ERR_NETWORK:
-                                errorMsg = 'Network error while loading audio';
-                                break;
-                            case target.error.MEDIA_ERR_DECODE:
-                                errorMsg = 'Audio decoding error';
-                                break;
-                            case target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                                errorMsg = 'Audio format not supported';
-                                break;
-                        }
+                    // Set volume
+                    if (volumeSlider) {
+                        firstAudio.volume = volumeSlider.value / 100;
                     }
                     
-                    // Check source URLs
-                    console.log('Audio sources:');
-                    const sources = audio.querySelectorAll('source');
-                    sources.forEach(source => {
-                        console.log('Source URL:', source.src);
+                    // Add error handling
+                    firstAudio.addEventListener('error', function(e) {
+                        console.error('Audio error:', e);
+                        const target = e.target;
+                        let errorMsg = 'Audio playback error';
+                        
+                        // Determine error type
+                        if (target.error) {
+                            switch(target.error.code) {
+                                case target.error.MEDIA_ERR_ABORTED:
+                                    errorMsg = 'Audio playback aborted';
+                                    break;
+                                case target.error.MEDIA_ERR_NETWORK:
+                                    errorMsg = 'Network error while loading audio';
+                                    break;
+                                case target.error.MEDIA_ERR_DECODE:
+                                    errorMsg = 'Audio decoding error';
+                                    break;
+                                case target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                                    errorMsg = 'Audio format not supported';
+                                    break;
+                            }
+                        }
+                        
+                        alert(`${errorMsg}. Please refresh the page or contact support if the problem persists.`);
                     });
                     
-                    alert(`${errorMsg}. Please refresh the page or contact support if the problem persists.`);
-                });
-                
-                // Add loadeddata event to confirm audio is ready
-                audio.addEventListener('loadeddata', function() {
-                    console.log(`Audio for Part ${partNumber} loaded successfully`);
-                });
-                
-                // Auto-play audio (like real IELTS test)
-                audio.play().catch(e => {
-                    console.error('Audio playback failed:', e);
-                    // In real IELTS, audio plays automatically, so we show a prominent message
-                    alert('Audio playback failed. The test audio should play automatically. Please refresh the page and ensure autoplay is enabled in your browser.');
-                });
-            } else {
-                // Check if no audio message exists
-                const noAudioMsg = document.getElementById(`no-audio-${partNumber}`);
-                if (noAudioMsg) {
-                    console.warn(noAudioMsg.dataset.message);
+                    // Add loadeddata event to confirm audio is ready
+                    firstAudio.addEventListener('loadeddata', function() {
+                        console.log('Audio loaded successfully for continuous playback');
+                    });
+                    
+                    // Auto-play audio (like real IELTS test)
+                    firstAudio.play().then(() => {
+                        audioStarted = true;
+                        isAudioPlaying = true;
+                        console.log('Started continuous audio playback from Part 1');
+                    }).catch(e => {
+                        console.error('Audio playback failed:', e);
+                        // In real IELTS, audio plays automatically, so we show a prominent message
+                        alert('Audio playback failed. The test audio should play automatically. Please refresh the page and ensure autoplay is enabled in your browser.');
+                    });
                 }
             }
         }
@@ -2422,9 +2483,17 @@
         // Volume control
         if (volumeSlider) {
             volumeSlider.addEventListener('input', function() {
+                const volume = this.value / 100;
+                
+                // Apply to current audio if playing
                 if (currentAudio) {
-                    currentAudio.volume = this.value / 100;
+                    currentAudio.volume = volume;
                 }
+                
+                // Apply to all audio elements for future playback
+                audioSequence.forEach(audioObj => {
+                    audioObj.element.volume = volume;
+                });
             });
         }
         
@@ -3531,8 +3600,10 @@
             });
         }
         
-        // Play first part audio
-        playPartAudio('1');
+        // Play first part audio automatically when page loads
+        setTimeout(() => {
+            playPartAudio('1');
+        }, 1000);
         
         // Update initial visibility
         updateNumberButtonsVisibility('1');
