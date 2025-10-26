@@ -221,6 +221,162 @@
         
         /* Options will be styled by external CSS */
         
+        /* ========== TINYMCE CONTENT STYLES ========== */
+        /* Tables from TinyMCE Editor */
+        .question-text table,
+        .question-instruction table,
+        .part-instruction table,
+        .question-item table,
+        .question-content table {
+            width: auto !important;
+            max-width: 60% !important;
+            min-width: 250px !important;
+            border-collapse: collapse !important;
+            margin: 15px 0 !important;
+            font-size: 14px !important;
+            background: white !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+            display: inline-table !important;
+        }
+        
+        .question-text table th,
+        .question-instruction table th,
+        .part-instruction table th,
+        .question-item table th,
+        .question-content table th {
+            background-color: #f3f4f6 !important;
+            padding: 6px 10px !important;
+            text-align: left !important;
+            font-weight: 600 !important;
+            border: 1px solid #e5e7eb !important;
+            color: #111827 !important;
+            font-size: 14px !important;
+        }
+        
+        .question-text table td,
+        .question-instruction table td,
+        .part-instruction table td,
+        .question-item table td,
+        .question-content table td {
+            padding: 4px 8px !important;
+            border: 1px solid #e5e7eb !important;
+            color: #374151 !important;
+            background: white !important;
+            font-size: 14px !important;
+        }
+        
+        .question-text table tr:nth-child(even) td,
+        .question-instruction table tr:nth-child(even) td,
+        .part-instruction table tr:nth-child(even) td,
+        .question-item table tr:nth-child(even) td,
+        .question-content table tr:nth-child(even) td {
+            background-color: #f9fafb !important;
+        }
+        
+        .question-text table tr:hover td,
+        .question-instruction table tr:hover td,
+        .part-instruction table tr:hover td,
+        .question-item table tr:hover td,
+        .question-content table tr:hover td {
+            background-color: #f3f4f6 !important;
+        }
+        
+        /* Lists from TinyMCE */
+        .question-text ul,
+        .question-text ol,
+        .question-instruction ul,
+        .question-instruction ol,
+        .question-content ul,
+        .question-content ol {
+            margin: 10px 0 10px 20px !important;
+            padding-left: 20px !important;
+        }
+        
+        .question-text ul li,
+        .question-text ol li,
+        .question-instruction ul li,
+        .question-instruction ol li,
+        .question-content ul li,
+        .question-content ol li {
+            margin-bottom: 5px !important;
+            line-height: 1.6 !important;
+        }
+        
+        /* Images from TinyMCE */
+        .question-text img,
+        .question-instruction img,
+        .part-instruction img,
+        .question-content img {
+            max-width: 100% !important;
+            height: auto !important;
+            margin: 10px 0 !important;
+            border-radius: 4px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+        
+        /* Bold, Italic, Underline from TinyMCE */
+        .question-text strong,
+        .question-instruction strong,
+        .question-content strong {
+            font-weight: 600 !important;
+            color: #111827 !important;
+        }
+        
+        .question-text em,
+        .question-instruction em,
+        .question-content em {
+            font-style: italic !important;
+        }
+        
+        .question-text u,
+        .question-instruction u,
+        .question-content u {
+            text-decoration: underline !important;
+        }
+        
+        /* Paragraphs from TinyMCE */
+        .question-text p,
+        .question-instruction p,
+        .question-content p {
+            margin: 8px 0 !important;
+            line-height: 1.6 !important;
+        }
+        
+        /* Links from TinyMCE */
+        .question-text a,
+        .question-instruction a,
+        .question-content a {
+            color: #3b82f6 !important;
+            text-decoration: underline !important;
+        }
+        
+        .question-text a:hover,
+        .question-instruction a:hover,
+        .question-content a:hover {
+            color: #2563eb !important;
+        }
+        
+        /* Code blocks from TinyMCE */
+        .question-text pre,
+        .question-instruction pre,
+        .question-content pre {
+            background: #f3f4f6 !important;
+            padding: 10px !important;
+            border-radius: 4px !important;
+            overflow-x: auto !important;
+            margin: 10px 0 !important;
+        }
+        
+        .question-text code,
+        .question-instruction code,
+        .question-content code {
+            background: #f3f4f6 !important;
+            padding: 2px 4px !important;
+            border-radius: 3px !important;
+            font-family: monospace !important;
+            font-size: 13px !important;
+        }
+        
         /* ========== INPUT FIELDS ========== */
         .answer-input {
             margin-left: 47px;
@@ -252,6 +408,43 @@
         .text-input::placeholder {
             color: #999;
             font-style: italic;
+        }
+        
+        /* ========== DISABLE ALL BROWSER ASSISTS FOR EXAM INTEGRITY ========== */
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select,
+        .text-input,
+        .inline-blank,
+        .inline-dropdown {
+            /* Disable spell check */
+            spellcheck: false;
+            
+            /* Disable autocomplete */
+            autocomplete: off;
+            
+            /* Disable autocorrect (iOS) */
+            autocorrect: off;
+            
+            /* Disable autocapitalize (iOS) */
+            autocapitalize: off;
+            
+            /* Disable password managers */
+            -webkit-credentials-auto-fill-button: none !important;
+            
+            /* Disable Chrome's autofill */
+            -webkit-box-shadow: 0 0 0 1000px #f5f5f5 inset !important;
+        }
+        
+        /* Override Chrome autofill background */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 1000px #f5f5f5 inset !important;
+            -webkit-text-fill-color: #000 !important;
+            transition: background-color 5000s ease-in-out 0s;
         }
         
         /* ========== SPECIAL QUESTION TYPES STYLES ========== */
@@ -1059,6 +1252,247 @@
                 transform: translateY(0);
             }
         }
+        
+        /* ========== PROFESSIONAL MULTIPLE CHOICE STYLES ========== */
+        .options-list {
+            margin: 24px 0 24px 47px;
+        }
+        
+        .option-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            cursor: pointer;
+            padding: 14px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            border: 1.5px solid #e5e7eb;
+            background: white;
+            position: relative;
+        }
+        
+        .option-item:hover {
+            background: #fafafa;
+            border-color: #9ca3af;
+            transform: translateX(4px);
+        }
+        
+        .option-radio,
+        .option-checkbox {
+            margin-top: 3px;
+            margin-right: 14px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+            accent-color: #111827;
+            position: relative;
+        }
+        
+        /* Custom Radio Button */
+        .option-radio {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            background: white;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .option-radio:checked {
+            border-color: #111827;
+            background: #111827;
+        }
+        
+        .option-radio:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+        }
+        
+        /* Custom Checkbox */
+        .option-checkbox {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .option-checkbox:checked {
+            border-color: #111827;
+            background: #111827;
+        }
+        
+        .option-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        .option-label {
+            flex: 1;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #374151;
+            cursor: pointer;
+            display: flex;
+            align-items: baseline;
+        }
+        
+        .option-label strong {
+            font-weight: 600;
+            margin-right: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #374151;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        
+        /* Selected state */
+        .option-item:has(input:checked) {
+            background: #fafafa;
+            border-color: #111827;
+            border-width: 2px;
+            padding: 13px 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .option-item:has(input:checked) .option-label {
+            color: #111827;
+            font-weight: 500;
+        }
+        
+        .option-item:has(input:checked) .option-label strong {
+            background: #111827;
+            color: white;
+            border-color: #111827;
+        }
+        
+        /* Mobile responsive for options */
+        @media (max-width: 768px) {
+            .options-list {
+                margin-left: 16px;
+            }
+            
+            .option-item {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .option-label {
+                font-size: 14px;
+            }
+        }
+        
+        /* ========== TOAST NOTIFICATION ANIMATIONS ========== */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        #toast-notification.error {
+            background: #dc2626;
+        }
+        
+        #toast-notification.warning {
+            background: #f59e0b;
+        }
+        
+        #toast-notification.success {
+            background: #10b981;
+        }
+        
+        #toast-notification.info {
+            background: #3b82f6;
+        }
+        /* ========== MAKE ANSWER AREAS UNSELECTABLE ========== */
+        .answer-input,
+        .options-list,
+        .option-item,
+        .option-label,
+        .single-choice-options,
+        .single-choice-option-item,
+        .single-choice-label,
+        .matching-container,
+        .form-completion-container,
+        .diagram-answers,
+        .drop-box,
+        .draggable-option,
+        input,
+        select,
+        textarea {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Allow text selection ONLY in question areas */
+        .question-text,
+        .part-instruction,
+        .question-instruction,
+        .question-group-header {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        
+        /* Ensure input fields are still editable */
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
     </style>
 
     
@@ -1365,6 +1799,45 @@
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast-notification" style="
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        background: #1f2937;
+        color: white;
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        align-items: center;
+        gap: 12px;
+        z-index: 99999;
+        min-width: 300px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    ">
+        <svg id="toast-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div style="flex: 1;">
+            <div id="toast-message" style="font-size: 14px; line-height: 1.5;"></div>
+        </div>
+        <button onclick="hideToast()" style="
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+    
     <!-- Hidden Audio Elements -->
 @foreach($groupedQuestions->keys() as $partNumber)
     @php
@@ -1420,6 +1893,66 @@
     <script src="{{ asset('js/student/listening-drag-drop.js') }}"></script>
     
     <script>
+    // ========== Toast Notification Functions ==========
+    let toastTimeout;
+    
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast-notification');
+        const messageEl = document.getElementById('toast-message');
+        const icon = document.getElementById('toast-icon');
+        
+        // Clear any existing timeout
+        if (toastTimeout) {
+            clearTimeout(toastTimeout);
+        }
+        
+        // Set message
+        messageEl.textContent = message;
+        
+        // Remove all type classes
+        toast.classList.remove('error', 'warning', 'success', 'info');
+        
+        // Add appropriate class and icon
+        toast.classList.add(type);
+        
+        // Set appropriate icon based on type
+        switch(type) {
+            case 'error':
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                break;
+            case 'warning':
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>';
+                break;
+            case 'success':
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                break;
+            default:
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+        }
+        
+        // Show toast
+        toast.style.display = 'flex';
+        toast.style.animation = 'slideIn 0.3s ease-out';
+        
+        // Auto hide after 5 seconds
+        toastTimeout = setTimeout(() => {
+            hideToast();
+        }, 5000);
+    }
+    
+    function hideToast() {
+        const toast = document.getElementById('toast-notification');
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 300);
+        
+        if (toastTimeout) {
+            clearTimeout(toastTimeout);
+        }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         // ========== Disable Right Click, Copy, Select All ==========
         document.addEventListener('contextmenu', function(e) {
@@ -2059,36 +2592,50 @@
         },
         
         setupAnnotationHandlers() {
-                // Allow annotation in text areas including option text - but NOT in input controls
+                // Allow annotation ONLY in question text areas
                 const ALLOWED_SELECTORS = [
-                    '.question-text',        // Question text
+                    '.question-text',        // Main question text
                     '.part-instruction',     // Part instructions
                     '.question-instruction', // Question instructions
                     '.question-group-header',// Group headers
-                    '.matching-question',    // Matching questions text
-                    '.form-label',           // Form labels
-                    '.question-item',        // Question items
-                    '.question-content',     // Question content area
-                    '.radio-option',         // Radio option TEXT (not the input)
-                    '.checkbox-option',      // Checkbox option TEXT (not the input)
-                    '.option-text',          // Option text
-                    '.option-label',         // Option labels
-                    '.option-item'           // Option items
                 ];
                 
-                // ONLY block actual input controls - NOT their text content
+                // STRICTLY FORBIDDEN - Any answer areas
                 const FORBIDDEN_SELECTORS = [
-                    'input[type="radio"]',   // The radio button itself
-                    'input[type="checkbox"]',// The checkbox itself
-                    'input[type="text"]',    // Text input fields
-                    'select',                // Dropdown menus
+                    'input',                 // All input types
+                    'select',                // Dropdowns
                     'textarea',              // Text areas
                     'button',                // Buttons
-                    '.draggable-option',     // Draggable items (for drag-drop)
-                    '.drop-box',             // Drop zones
-                    '.number-btn',           // Navigation buttons
-                    '.answer-input'          // Answer input areas
+                    '.inline-blank',         // Fill in blanks inputs
+                    '.inline-dropdown',      // Inline dropdowns
+                    '.drop-box',             // Drag drop zones
+                    '.draggable-option',     // Draggable items
+                    '.answer-input',         // Answer input container
+                    '.options-list',         // Multiple choice container
+                    '.option-item',          // Individual options
+                    '.option-label',         // Option labels
+                    '.radio-option',         // Radio options
+                    '.checkbox-option',      // Checkbox options
+                    '.single-choice-options',// Single choice container
+                    '.matching-container',   // Matching questions
+                    '.form-completion-container', // Form questions
+                    '.diagram-answers',      // Diagram answer area
                 ];
+                
+                // Prevent text selection in answer areas
+                document.addEventListener('selectstart', (e) => {
+                    const target = e.target;
+                    
+                    // Check if selecting in forbidden area
+                    const isForbidden = FORBIDDEN_SELECTORS.some(selector => {
+                        return target.matches(selector) || target.closest(selector);
+                    });
+                    
+                    if (isForbidden) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
                 
                 document.addEventListener('mouseup', (e) => {
                     // Skip if clicking on annotation menu, note modal, or notes panel
@@ -2112,13 +2659,15 @@
                             const container = range.commonAncestorContainer;
                             const element = container.nodeType === 3 ? container.parentElement : container;
                             
-                            // Check if selection is DIRECTLY on a forbidden element (actual input/button)
+                            // Check if selection is in forbidden area
                             const isForbidden = FORBIDDEN_SELECTORS.some(selector => {
-                                return element.matches(selector);
+                                return element.closest(selector) !== null;
                             });
                             
                             if (isForbidden) {
                                 this.hideMenu();
+                                window.getSelection().removeAllRanges();
+                                showToast('Cannot highlight answer areas. Please select question text only.', 'info');
                                 return;
                             }
                             
@@ -2129,6 +2678,16 @@
                             
                             if (!isAllowed) {
                                 this.hideMenu();
+                                window.getSelection().removeAllRanges();
+                                return;
+                            }
+                            
+                            // Additional check for inline elements
+                            const hasInlineElements = range.cloneContents().querySelectorAll('input, select, .inline-blank, .inline-dropdown, .drop-box').length > 0;
+                            if (hasInlineElements) {
+                                this.hideMenu();
+                                window.getSelection().removeAllRanges();
+                                showToast('Your selection includes answer fields. Please select only the question text.', 'warning');
                                 return;
                             }
                             
@@ -2246,6 +2805,18 @@
             if (noteText && this.currentRange) {
                 const selectedText = this.currentRange.toString();
                 
+                // Check if selection contains input elements
+                const container = this.currentRange.commonAncestorContainer;
+                const parentElement = container.nodeType === 3 ? container.parentElement : container;
+                
+                // Check if parent contains inputs
+                if (parentElement.querySelector('input, select, textarea, .inline-blank, .inline-dropdown, .drop-box')) {
+                    showToast('Cannot add note to text that contains input fields. Please select only plain text.', 'warning');
+                    this.closeNoteModal();
+                    window.getSelection().removeAllRanges();
+                    return;
+                }
+                
                 // Apply note styling
                 const span = document.createElement('span');
                 span.className = 'note-text';
@@ -2262,6 +2833,7 @@
                     this.currentRange.insertNode(span);
                 } catch (error) {
                     console.error('Error applying note:', error);
+                    showToast('Cannot add note to this selection. Please try selecting only plain text.', 'error');
                 }
                 
                 // Save to localStorage
@@ -2279,6 +2851,18 @@
                 // Don't highlight if empty or just spaces
                 if (!selectedText) {
                     this.hideMenu();
+                    return;
+                }
+                
+                // Check if selection contains input elements
+                const container = this.currentRange.commonAncestorContainer;
+                const parentElement = container.nodeType === 3 ? container.parentElement : container;
+                
+                // Check if parent contains inputs
+                if (parentElement.querySelector('input, select, textarea, .inline-blank, .inline-dropdown, .drop-box')) {
+                    showToast('Cannot highlight text that contains input fields. Please select only plain text.', 'warning');
+                    this.hideMenu();
+                    window.getSelection().removeAllRanges();
                     return;
                 }
                 
@@ -2303,6 +2887,7 @@
                     this.currentRange.insertNode(span);
                 } catch (error) {
                     console.error('Error applying highlight:', error);
+                    showToast('Cannot highlight this selection. Please try selecting only plain text.', 'error');
                 }
                 
                 // Save to localStorage
@@ -2415,7 +3000,38 @@
             const walker = document.createTreeWalker(
                 container,
                 NodeFilter.SHOW_TEXT,
-                null,
+                {
+                    acceptNode: function(node) {
+                        // Skip if parent is already highlighted or contains input/select elements
+                        const parent = node.parentElement;
+                        if (!parent) return NodeFilter.FILTER_REJECT;
+                        
+                        // Skip if parent is already a highlight or note
+                        if (parent.classList.contains('note-text') || 
+                            parent.classList.contains('highlighted-text')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        
+                        // Skip if parent contains input elements or is an input itself
+                        if (parent.tagName === 'INPUT' || 
+                            parent.tagName === 'SELECT' || 
+                            parent.tagName === 'TEXTAREA' ||
+                            parent.tagName === 'BUTTON' ||
+                            parent.classList.contains('inline-blank') ||
+                            parent.classList.contains('inline-dropdown') ||
+                            parent.classList.contains('drop-box') ||
+                            parent.classList.contains('draggable-option')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        
+                        // Skip if parent contains inputs/selects as children
+                        if (parent.querySelector('input, select, textarea, .inline-blank, .inline-dropdown, .drop-box')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                },
                 false
             );
             
@@ -2424,16 +3040,20 @@
                 const text = node.textContent;
                 const index = text.indexOf(searchText);
                 
-                if (index !== -1 && !node.parentElement.classList.contains('note-text') && 
-                    !node.parentElement.classList.contains('highlighted-text')) {
-                    const span = document.createElement('span');
+                if (index !== -1) {
                     const parent = node.parentNode;
+                    
+                    // Double check - don't modify if parent has inputs
+                    if (parent.querySelector('input, select, textarea, .inline-blank, .inline-dropdown')) {
+                        continue;
+                    }
                     
                     // Split the text node
                     const before = document.createTextNode(text.substring(0, index));
                     const after = document.createTextNode(text.substring(index + searchText.length));
                     
                     // Apply styling
+                    const span = document.createElement('span');
                     span.textContent = searchText;
                     styleCallback(span);
                     
@@ -2755,6 +3375,35 @@
         initializeDragAndDrop();
         
         // ========== Initialize ==========
+        
+        // Disable all browser assists on load
+        document.querySelectorAll('input[type="text"], input[type="number"], textarea, select').forEach(input => {
+            input.setAttribute('autocomplete', 'off');
+            input.setAttribute('autocorrect', 'off');
+            input.setAttribute('autocapitalize', 'off');
+            input.setAttribute('spellcheck', 'false');
+            
+            // Disable right-click on input fields
+            input.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                showToast('Right-click is disabled during the test', 'info');
+                return false;
+            });
+            
+            // Disable paste
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                showToast('Paste is not allowed during the test', 'warning');
+                return false;
+            });
+            
+            // Disable cut
+            input.addEventListener('cut', function(e) {
+                e.preventDefault();
+                showToast('Cut is not allowed during the test', 'warning');
+                return false;
+            });
+        });
         
         // Remove beforeunload handler when form is submitted
         const listeningForm = document.getElementById('listening-form');

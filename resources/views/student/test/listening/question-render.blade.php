@@ -30,7 +30,11 @@
                                             class="text-input inline-blank" 
                                             placeholder="' . $blankNumber . '"
                                             data-question-number="' . $blankNumber . '"
-                                            style="width: 150px; display: inline-block; margin: 0 4px;">';
+                                            style="width: 150px; display: inline-block; margin: 0 4px;"
+                                            autocomplete="off"
+                                            autocorrect="off"
+                                            autocapitalize="off"
+                                            spellcheck="false">';
                         
                         $processedContent = str_replace('[____' . $i . '____]', $inputHtml, $processedContent);
                         $blankNumber++;
@@ -77,7 +81,11 @@
                            class="text-input" 
                            placeholder="Type your answer"
                            maxlength="50"
-                           data-question-number="{{ $displayNumber }}">
+                           data-question-number="{{ $displayNumber }}"
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false">
                 </div>
             @endif
         </div>
@@ -135,7 +143,11 @@
                            class="text-input" 
                            placeholder="Type your answer"
                            maxlength="50"
-                           data-question-number="{{ $displayNumber }}">
+                           data-question-number="{{ $displayNumber }}"
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false">
                 </div>
             @endif
         </div>
@@ -163,7 +175,10 @@
                         $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $i . ']" 
                                               class="select-input inline-dropdown" 
                                               data-question-number="' . $dropdownNumber . '"
-                                              style="display: inline-block; margin: 0 4px;">
+                                              style="display: inline-block; margin: 0 4px;"
+                                              autocomplete="off"
+                                              autocorrect="off"
+                                              spellcheck="false">
                                         <option value="">Select...</option>';
                         
                         foreach ($options as $option) {
@@ -282,7 +297,11 @@
                        class="text-input" 
                        placeholder="Type your answer"
                        maxlength="50"
-                       data-question-number="{{ $displayNumber }}">
+                       data-question-number="{{ $displayNumber }}"
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false">
             </div>
         </div>
         @break
