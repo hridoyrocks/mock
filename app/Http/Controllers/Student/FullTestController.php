@@ -291,11 +291,7 @@ class FullTestController extends Controller
         // Load all related data
         $fullTestAttempt->load([
             'fullTest',
-            'sectionAttempts.studentAttempt.testSet.section',
-            'listeningAttempt',
-            'readingAttempt',
-            'writingAttempt',
-            'speakingAttempt'
+            'sectionAttempts.studentAttempt.testSet.section'
         ]);
         
         // Ensure test is completed
