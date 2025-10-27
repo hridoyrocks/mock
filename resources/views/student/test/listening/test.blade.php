@@ -235,7 +235,7 @@
             margin: 15px 0 !important;
             font-size: 14px !important;
             background: white !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+            box-shadow: none !important;
             display: inline-table !important;
         }
         
@@ -248,7 +248,7 @@
             padding: 6px 10px !important;
             text-align: left !important;
             font-weight: 600 !important;
-            border: 1px solid #e5e7eb !important;
+            border: 1px solid #000000 !important;
             color: #111827 !important;
             font-size: 14px !important;
         }
@@ -259,28 +259,13 @@
         .question-item table td,
         .question-content table td {
             padding: 4px 8px !important;
-            border: 1px solid #e5e7eb !important;
+            border: 1px solid #000000 !important;
             color: #374151 !important;
             background: white !important;
             font-size: 14px !important;
         }
         
-        .question-text table tr:nth-child(even) td,
-        .question-instruction table tr:nth-child(even) td,
-        .part-instruction table tr:nth-child(even) td,
-        .question-item table tr:nth-child(even) td,
-        .question-content table tr:nth-child(even) td {
-            background-color: #f9fafb !important;
-        }
-        
-        .question-text table tr:hover td,
-        .question-instruction table tr:hover td,
-        .part-instruction table tr:hover td,
-        .question-item table tr:hover td,
-        .question-content table tr:hover td {
-            background-color: #f3f4f6 !important;
-        }
-        
+
         /* Lists from TinyMCE */
         .question-text ul,
         .question-text ol,
