@@ -204,10 +204,12 @@
                                             @endif
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <a href="{{ route('admin.attempts.show', $attempt) }}" 
-                                               class="text-indigo-600 hover:text-indigo-900 text-sm">
-                                                View Details
-                                            </a>
+                                            <div class="flex space-x-2">
+                                                <a href="/admin/full-tests/user/{{ $attempt->user->id }}/attempts" 
+                                                   class="text-indigo-600 hover:text-indigo-900 text-sm">
+                                                    View All Attempts
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach

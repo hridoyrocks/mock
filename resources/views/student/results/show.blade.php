@@ -449,92 +449,173 @@
                                             }
                                         }
                                     } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
-                                    // Handle sentence completion questions
-                                    $scData = $question->section_specific_data['sentence_completion'];
-                                    $sentences = $scData['sentences'] ?? [];
-                                    
-                                    foreach ($sentences as $sentenceIndex => $sentence) {
-                                        // Find answer for this specific sentence based on questionNumber
-                                        $questionNumber = $sentence['questionNumber'] ?? ($sentenceIndex + 1);
+                                        // Handle sentence completion questions
+                                        $scData = $question->section_specific_data['sentence_completion'];
+                                        $sentences = $scData['sentences'] ?? [];
                                         
-                                        $specificAnswer = $attempt->answers->first(function($ans) use ($question, $questionNumber) {
-                                            if ($ans->question_id != $question->id) return false;
+                                        foreach ($sentences as $sentenceIndex => $sentence) {
+                                            // Find answer for this specific sentence based on questionNumber
+                                            $questionNumber = $sentence['questionNumber'] ?? ($sentenceIndex + 1);
                                             
-                                            $answerData = json_decode($ans->answer, true);
-                                            if (is_array($answerData) && isset($answerData['sub_question'])) {
-                                                return (int)$answerData['sub_question'] === $questionNumber;
-                                            }
-                                            return false;
-                                        });
-                                        
-                                        $displayQuestions[] = [
-                                            'number' => $currentNumber,
-                                            'question' => $question,
-                                            'content' => $sentence['text'] ?? "Sentence " . ($sentenceIndex + 1),
-                                            'answer' => $specificAnswer,
-                                            'is_sentence_completion' => true,
-                                            'sentence_index' => $sentenceIndex,
-                                            'question_number' => $questionNumber,
-                                            'correct_answer' => $sentence['correctAnswer'] ?? $sentence['correct_answer'] ?? null
-                                        ];
-                                        $currentNumber++;
-                                    }
-                                    } else {
-                                        // Check if this is a dropdown question
-                                        if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
-                                            $dropdownCount = count($question->section_specific_data['dropdown_correct']);
-                                            $answer = $attempt->answers->where('question_id', $question->id)->first();
-                                            
-                                            if ($dropdownCount > 1) {
-                                                // Multiple dropdown question - create separate display for each
-                                                // Extract the base content without HTML tags
-                                                $baseContent = strip_tags($question->content);
-                                                // Remove the dropdown placeholders from the content for cleaner display
-                                                $cleanContent = preg_replace('/\[DROPDOWN_\d+\]/', '________', $baseContent);
+                                            $specificAnswer = $attempt->answers->first(function($ans) use ($question, $questionNumber) {
+                                                if ($ans->question_id != $question->id) return false;
                                                 
-                                                for ($i = 1; $i <= $dropdownCount; $i++) {
-                                                    $displayQuestions[] = [
-                                                        'number' => $currentNumber,
-                                                        'question' => $question,
-                                                        'content' => $cleanContent,
-                                                        'answer' => $answer,
-                                                        'is_master_sub' => false,
-                                                        'dropdown_index' => $i,
-                                                        'is_dropdown' => true
-                                                    ];
-                                                    $currentNumber++;
+                                                $answerData = json_decode($ans->answer, true);
+                                                if (is_array($answerData) && isset($answerData['sub_question'])) {
+                                                    return (int)$answerData['sub_question'] === $questionNumber;
                                                 }
-                                            } else {
-                                                // Single dropdown question
-                                                $baseContent = strip_tags($question->content);
-                                                $cleanContent = preg_replace('/\[DROPDOWN_\d+\]/', '________', $baseContent);
+                                                return false;
+                                            });
+                                            
+                                            $displayQuestions[] = [
+                                                'number' => $currentNumber,
+                                                'question' => $question,
+                                                'content' => $sentence['text'] ?? "Sentence " . ($sentenceIndex + 1),
+                                                'answer' => $specificAnswer,
+                                                'is_sentence_completion' => true,
+                                                'sentence_index' => $sentenceIndex,
+                                                'question_number' => $questionNumber,
+                                                'correct_answer' => $sentence['correctAnswer'] ?? $sentence['correct_answer'] ?? null
+                                            ];
+                                            $currentNumber++;
+                                        }
+                                    } elseif ($question->question_type === 'drag_drop') {
+                                        // Handle drag & drop questions
+                                        $dragDropData = $question->section_specific_data ?? [];
+                                        $dropZones = $dragDropData['drop_zones'] ?? [];
+                                        $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                        
+                                        foreach ($dropZones as $zoneIndex => $zone) {
+                                            $displayQuestions[] = [
+                                                'number' => $currentNumber,
+                                                'question' => $question,
+                                                'content' => $zone['text'] ?? "Drop Zone " . ($zoneIndex + 1),
+                                                'answer' => $answer,
+                                                'is_drag_drop' => true,
+                                                'zone_index' => $zoneIndex,
+                                                'correct_answer' => $zone['correct_answer'] ?? null
+                                            ];
+                                            $currentNumber++;
+                                        }
+                                    } elseif ($question->question_type === 'fill_blanks') {
+                                        // Handle fill in the blanks questions
+                                        $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                        
+                                        // Count blanks in content
+                                        preg_match_all('/\[____\d+____\]/', $question->content, $matches);
+                                        $blankCount = count($matches[0]);
+                                        
+                                        if ($blankCount > 1) {
+                                            // Multiple blanks - create separate display for each
+                                            foreach ($matches[0] as $match) {
+                                                preg_match('/\d+/', $match, $numberMatch);
+                                                $blankNum = $numberMatch[0] ?? $currentNumber;
+                                                
+                                                $cleanContent = str_replace($match, '[blank]', $question->content);
+                                                $cleanContent = strip_tags($cleanContent);
                                                 
                                                 $displayQuestions[] = [
                                                     'number' => $currentNumber,
                                                     'question' => $question,
                                                     'content' => $cleanContent,
                                                     'answer' => $answer,
-                                                    'is_master_sub' => false,
-                                                    'dropdown_index' => 1,
-                                                    'is_dropdown' => true
+                                                    'is_fill_blank' => true,
+                                                    'blank_number' => $blankNum
                                                 ];
                                                 $currentNumber++;
                                             }
                                         } else {
-                                            // Regular question
-                                            $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                            // Single blank
                                             $displayQuestions[] = [
                                                 'number' => $currentNumber,
                                                 'question' => $question,
-                                                'content' => $question->content,
+                                                'content' => strip_tags($question->content),
                                                 'answer' => $answer,
-                                                'is_master_sub' => false
+                                                'is_fill_blank' => true,
+                                                'blank_number' => 1
                                             ];
-                                            
-                                            // Count blanks for numbering
-                                            $blankCount = $question->countBlanks();
-                                            $currentNumber += $blankCount > 0 ? $blankCount : 1;
+                                            $currentNumber++;
                                         }
+                                    } elseif ($question->question_type === 'dropdown_selection') {
+                                        // Handle dropdown selection questions
+                                        $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                        
+                                        // Count dropdowns in content
+                                        preg_match_all('/\[DROPDOWN_\d+\]/', $question->content, $matches);
+                                        $dropdownCount = count($matches[0]);
+                                        
+                                        if ($dropdownCount > 1) {
+                                            // Multiple dropdowns - create separate display for each
+                                            foreach ($matches[0] as $match) {
+                                                preg_match('/\d+/', $match, $numberMatch);
+                                                $dropdownNum = $numberMatch[0] ?? $currentNumber;
+                                                
+                                                $cleanContent = str_replace($match, '[dropdown]', $question->content);
+                                                $cleanContent = strip_tags($cleanContent);
+                                                
+                                                $displayQuestions[] = [
+                                                    'number' => $currentNumber,
+                                                    'question' => $question,
+                                                    'content' => $cleanContent,
+                                                    'answer' => $answer,
+                                                    'is_dropdown' => true,
+                                                    'dropdown_index' => $dropdownNum
+                                                ];
+                                                $currentNumber++;
+                                            }
+                                        } else {
+                                            // Single dropdown
+                                            $displayQuestions[] = [
+                                                'number' => $currentNumber,
+                                                'question' => $question,
+                                                'content' => strip_tags(preg_replace('/\[DROPDOWN_\d+\]/', '[dropdown]', $question->content)),
+                                                'answer' => $answer,
+                                                'is_dropdown' => true,
+                                                'dropdown_index' => 1
+                                            ];
+                                            $currentNumber++;
+                                        }
+                                    } elseif ($question->question_type === 'multiple_choice') {
+                                        // Handle multiple choice with potentially multiple correct answers
+                                        $correctCount = $question->options->where('is_correct', true)->count();
+                                        $answers = $attempt->answers->where('question_id', $question->id);
+                                        
+                                        if ($correctCount > 1) {
+                                            // Multiple correct answers - each gets its own number
+                                            for ($i = 1; $i <= $correctCount; $i++) {
+                                                $displayQuestions[] = [
+                                                    'number' => $currentNumber,
+                                                    'question' => $question,
+                                                    'content' => strip_tags($question->content),
+                                                    'answer' => $answers->skip($i-1)->first(),
+                                                    'is_multiple_choice' => true,
+                                                    'choice_index' => $i
+                                                ];
+                                                $currentNumber++;
+                                            }
+                                        } else {
+                                            // Single correct answer
+                                            $displayQuestions[] = [
+                                                'number' => $currentNumber,
+                                                'question' => $question,
+                                                'content' => strip_tags($question->content),
+                                                'answer' => $answers->first(),
+                                                'is_multiple_choice' => true,
+                                                'choice_index' => 1
+                                            ];
+                                            $currentNumber++;
+                                        }
+                                    } else {
+                                        // Regular question
+                                        $answer = $attempt->answers->where('question_id', $question->id)->first();
+                                        $displayQuestions[] = [
+                                            'number' => $currentNumber,
+                                            'question' => $question,
+                                            'content' => strip_tags($question->content),
+                                            'answer' => $answer,
+                                            'is_regular' => true
+                                        ];
+                                        $currentNumber++;
                                     }
                                 }
                             @endphp
@@ -555,7 +636,34 @@
                                     $displayAnswer = 'No answer';
                                     
                                     // Handle dropdown-specific display
-                                    if (isset($item['dropdown_index']) && $isAnswered && $answer) {
+                                    if (isset($item['is_drag_drop']) && $item['is_drag_drop'] && $isAnswered && $answer) {
+                                        // Handle drag & drop questions
+                                        $answerData = @json_decode($answer->answer, true);
+                                        if (is_array($answerData)) {
+                                            $zoneIndex = $item['zone_index'];
+                                            $zoneKey = 'zone_' . $zoneIndex;
+                                            $studentAnswer = $answerData[$zoneKey] ?? null;
+                                            
+                                            if ($studentAnswer !== null) {
+                                                $displayAnswer = $studentAnswer;
+                                                $correctAnswer = $item['correct_answer'];
+                                                $isCorrect = ($correctAnswer && $studentAnswer === $correctAnswer);
+                                            }
+                                        }
+                                    } elseif (isset($item['is_fill_blank']) && $item['is_fill_blank'] && $isAnswered && $answer) {
+                                        // Handle fill in the blanks
+                                        $answerData = @json_decode($answer->answer, true);
+                                        if (is_array($answerData)) {
+                                            $blankNum = $item['blank_number'];
+                                            $studentAnswer = $answerData['blank_' . $blankNum] ?? null;
+                                            
+                                            if ($studentAnswer !== null) {
+                                                $displayAnswer = $studentAnswer;
+                                                $isCorrect = $question->checkBlankAnswer($blankNum, $studentAnswer);
+                                            }
+                                        }
+                                    } elseif (isset($item['dropdown_index']) && isset($item['is_dropdown']) && $item['is_dropdown'] && $isAnswered && $answer) {
+                                        // Handle dropdown selection
                                         $answerData = @json_decode($answer->answer, true);
                                         if (is_array($answerData)) {
                                             $dropdownNum = $item['dropdown_index'];
@@ -713,7 +821,16 @@
                                                     <p class="text-gray-400 mt-1">
                                                         Correct answer: 
                                                         <span class="text-green-400">
-                                                            @if(isset($item['dropdown_index']))
+                                                            @if(isset($item['is_drag_drop']) && $item['is_drag_drop'])
+                                                                {{ $item['correct_answer'] ?? 'N/A' }}
+                                                            @elseif(isset($item['is_fill_blank']) && $item['is_fill_blank'])
+                                                                @php
+                                                                    $blankNum = $item['blank_number'];
+                                                                    $blankAnswers = $question->getBlankAnswersArray();
+                                                                    $correctAnswer = $blankAnswers[$blankNum] ?? 'N/A';
+                                                                @endphp
+                                                                {{ $correctAnswer }}
+                                                            @elseif(isset($item['dropdown_index']) && isset($item['is_dropdown']) && $item['is_dropdown'])
                                                                 @php
                                                                     $dropdownNum = $item['dropdown_index'];
                                                                     $correctIndex = $question->section_specific_data['dropdown_correct'][$dropdownNum] ?? null;

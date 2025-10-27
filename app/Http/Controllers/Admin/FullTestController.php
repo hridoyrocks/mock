@@ -275,4 +275,48 @@ class FullTestController extends Controller
         
         return response()->json(['success' => true]);
     }
+
+    /**
+     * Display all full test attempts for a specific user.
+     */
+    public function userAttempts(Request $request, $userId)
+    {
+        $user = \App\Models\User::findOrFail($userId);
+        
+        $query = \App\Models\FullTestAttempt::with(['fullTest', 'user'])
+            ->where('user_id', $user->id);
+        
+        // Filter by status
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+        
+        // Filter by full test
+        if ($request->has('full_test') && $request->full_test !== '') {
+            $query->where('full_test_id', $request->full_test);
+        }
+        
+        $attempts = $query->latest()->paginate(15);
+        
+        // Get full tests for filtering
+        $fullTests = FullTest::orderBy('title')->get();
+        
+        // Get stats for this user
+        $stats = [
+            'total_attempts' => $user->fullTestAttempts()->count(),
+            'completed_attempts' => $user->fullTestAttempts()->where('status', 'completed')->count(),
+            'in_progress_attempts' => $user->fullTestAttempts()->where('status', 'in_progress')->count(),
+            'abandoned_attempts' => $user->fullTestAttempts()->where('status', 'abandoned')->count(),
+            'average_overall_score' => $user->fullTestAttempts()
+                ->where('status', 'completed')
+                ->whereNotNull('overall_band_score')
+                ->avg('overall_band_score'),
+            'best_overall_score' => $user->fullTestAttempts()
+                ->where('status', 'completed')
+                ->whereNotNull('overall_band_score')
+                ->max('overall_band_score'),
+        ];
+        
+        return view('admin.full-tests.user-attempts', compact('attempts', 'user', 'fullTests', 'stats'));
+    }
 }

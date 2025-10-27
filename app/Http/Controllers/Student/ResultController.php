@@ -145,186 +145,17 @@ class ResultController extends Controller
             // First, count actual questions (not individual answers)
             $questions = $attempt->testSet->questions()
                 ->where('question_type', '!=', 'passage')
+                ->orderBy('part_number')
+                ->orderBy('order_number')
                 ->get();
             
-            // Calculate total question count INCLUDING blanks and master questions
-            $totalQuestions = 0;
-            foreach ($questions as $question) {
-                if ($question->isMasterMatchingHeading()) {
-                    // Count individual sub-questions
-                    $totalQuestions += $question->getActualQuestionCount();
-                } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
-                    // Handle sentence completion questions
-                    $scData = $question->section_specific_data['sentence_completion'];
-                    $sentenceCount = isset($scData['sentences']) ? count($scData['sentences']) : 0;
-                    $totalQuestions += $sentenceCount > 0 ? $sentenceCount : 1;
-                } else {
-                    // Count blanks and dropdowns
-                    $blankCount = $question->countBlanks();
-                    
-                    // Also count dropdowns if they exist
-                    $dropdownCount = 0;
-                    if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
-                        $dropdownCount = count($question->section_specific_data['dropdown_correct']);
-                    }
-                    
-                    $totalCount = max($blankCount, $dropdownCount);
-                    if ($totalCount > 0) {
-                        $totalQuestions += $totalCount;
-                    } else {
-                        $totalQuestions += 1;
-                    }
-                }
-            }
+            // Calculate total question count INCLUDING all sub-questions
+            $totalQuestions = $this->calculateTotalQuestions($questions);
             
-            // Group answers by question for master matching headings
-            $answersByQuestion = $attempt->answers->groupBy('question_id');
-            
-            foreach ($questions as $question) {
-                $questionAnswers = $answersByQuestion->get($question->id, collect());
-                
-                if ($question->isMasterMatchingHeading()) {
-                    // Handle master matching headings
-                    foreach ($questionAnswers as $answer) {
-                        if ($answer->answer) {
-                            $answeredQuestions++; // Count attempted sub-questions
-                            $answerData = json_decode($answer->answer, true);
-                            if (isset($answerData['sub_question']) && isset($answerData['selected_letter'])) {
-                                // Check if correct based on mappings
-                                $mappings = $question->section_specific_data['mappings'] ?? [];
-                                foreach ($mappings as $mapping) {
-                                    if ($mapping['question'] == $answerData['sub_question'] && 
-                                        $mapping['correct'] == $answerData['selected_letter']) {
-                                        $correctAnswers++;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
-                    // Handle sentence completion questions
-                    $scData = $question->section_specific_data['sentence_completion'];
-                    $sentences = $scData['sentences'] ?? [];
-                    $options = $scData['options'] ?? [];
-                    
-                    // Count correct answers for each sentence
-                    foreach ($sentences as $sentenceIndex => $sentence) {
-                        // Look for answer with this sentence index
-                        $sentenceAnswer = $questionAnswers->first(function($ans) use ($sentenceIndex) {
-                            $answerData = json_decode($ans->answer, true);
-                            if (is_array($answerData) && isset($answerData['sub_question'])) {
-                                return (int)$answerData['sub_question'] === ($sentenceIndex + 1);
-                            }
-                            return false;
-                        });
-                        
-                        if ($sentenceAnswer && $sentenceAnswer->answer) {
-                            $answeredQuestions++; // Count this sentence as attempted
-                            $answerData = json_decode($sentenceAnswer->answer, true);
-                            
-                            if (is_array($answerData) && isset($answerData['selected_answer'])) {
-                                $studentAnswer = $answerData['selected_answer'];
-                                
-                                // Check both formats for correct answer
-                                $correctAnswer = null;
-                                if (isset($sentence['correctAnswer'])) {
-                                    $correctAnswer = $sentence['correctAnswer'];
-                                } elseif (isset($sentence['correct_answer'])) {
-                                    $correctAnswer = $sentence['correct_answer'];
-                                } elseif (isset($sentence['correct'])) {
-                                    $correctAnswer = $sentence['correct'];
-                                }
-                                
-                                if ($correctAnswer && $studentAnswer === $correctAnswer) {
-                                    $correctAnswers++;
-                                }
-                            }
-                        }
-                    }
-                } elseif ($question->countBlanks() > 0 || 
-                         ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct']))) {
-                    // Handle fill-in-the-blanks and dropdowns
-                    $answer = $questionAnswers->first();
-                    if ($answer && $answer->answer) {
-                        if ($this->isJson($answer->answer)) {
-                            $studentAnswers = json_decode($answer->answer, true);
-                            
-                            // Count blanks attempted
-                            $blankCount = $question->countBlanks();
-                            if ($blankCount > 0) {
-                                $blankAnswers = $question->getBlankAnswersArray();
-                                foreach ($blankAnswers as $blankNum => $correctAnswer) {
-                                    if (isset($studentAnswers['blank_' . $blankNum]) && trim($studentAnswers['blank_' . $blankNum]) !== '') {
-                                        $answeredQuestions++;
-                                    }
-                                }
-                            }
-                            
-                            // Count correct blanks
-                            $results = $question->checkMultipleBlanks($studentAnswers);
-                            $correctAnswers += $results['correct'];
-                            
-                            // Count dropdown attempts and correct answers
-                            $sectionData = $question->section_specific_data;
-                            if ($sectionData && isset($sectionData['dropdown_correct'])) {
-                                foreach ($sectionData['dropdown_correct'] as $num => $correctIndex) {
-                                    $studentDropdownAnswer = null;
-                                    
-                                    if (isset($studentAnswers['dropdown_' . $num])) {
-                                        $studentDropdownAnswer = $studentAnswers['dropdown_' . $num];
-                                    } elseif (isset($studentAnswers[$num])) {
-                                        $studentDropdownAnswer = $studentAnswers[$num];
-                                    }
-                                    
-                                    // Count as attempted if not empty
-                                    if ($studentDropdownAnswer !== null && trim($studentDropdownAnswer) !== '') {
-                                        $answeredQuestions++;
-                                    }
-                                    
-                                    $dropdownOptions = $sectionData['dropdown_options'][$num] ?? '';
-                                    
-                                    if ($dropdownOptions) {
-                                        $options = array_map('trim', explode(',', $dropdownOptions));
-                                        $correctOption = $options[$correctIndex] ?? '';
-                                        
-                                        if ($this->compareAnswers($studentDropdownAnswer ?? '', $correctOption)) {
-                                            $correctAnswers++;
-                                        }
-                                    }
-                                }
-                            }
-                        } else if (trim($answer->answer) !== '') {
-                            $answeredQuestions++; // Single answer attempted
-                            if ($this->checkTextAnswer($answer)) {
-                                $correctAnswers++;
-                            }
-                        }
-                    }
-                } else {
-                    // Regular questions
-                    $answer = $questionAnswers->first();
-                    if ($answer) {
-                        if ($answer->question->options->count() > 0) {
-                            // Multiple choice type questions
-                            if ($answer->selected_option_id) {
-                                $answeredQuestions++;
-                                if ($answer->selectedOption && $answer->selectedOption->is_correct) {
-                                    $correctAnswers++;
-                                }
-                            }
-                        } else {
-                            // Text-based answers
-                            if (trim($answer->answer) !== '') {
-                                $answeredQuestions++;
-                                if ($this->checkTextAnswer($answer)) {
-                                    $correctAnswers++;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            // Calculate answers and corrections with improved counting
+            $calculationResult = $this->calculateAnswersAndCorrections($questions, $attempt);
+            $correctAnswers = $calculationResult['correct'];
+            $answeredQuestions = $calculationResult['attempted'];
             
             // Calculate band score using partial test scoring if not all questions attempted
             if ($answeredQuestions < $totalQuestions) {
@@ -391,6 +222,268 @@ class ResultController extends Controller
         $perPage = 10;
         
         return view('student.results.show', compact('attempt', 'passages', 'humanEvaluationRequest', 'currentPage', 'perPage'));
+    }
+    
+    /**
+     * Calculate total questions for a test (handles all question types)
+     */
+    private function calculateTotalQuestions($questions): int
+    {
+        $totalQuestions = 0;
+        
+        foreach ($questions as $question) {
+            if ($question->isMasterMatchingHeading()) {
+                // Count individual sub-questions from mappings
+                $mappings = $question->section_specific_data['mappings'] ?? [];
+                $totalQuestions += count($mappings);
+            } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
+                // Handle enhanced sentence completion questions
+                $scData = $question->section_specific_data['sentence_completion'];
+                $sentences = $scData['sentences'] ?? [];
+                $totalQuestions += count($sentences);
+            } elseif ($question->question_type === 'drag_drop') {
+                // Handle drag & drop questions
+                $dragDropData = $question->section_specific_data ?? [];
+                $dropZones = $dragDropData['drop_zones'] ?? [];
+                $totalQuestions += max(count($dropZones), 1);
+            } elseif ($question->question_type === 'multiple_choice') {
+                // For multiple choice, count correct answers as individual questions
+                $correctCount = $question->options->where('is_correct', true)->count();
+                $totalQuestions += max($correctCount, 1);
+            } else {
+                // Count blanks and dropdowns for other question types
+                $blankCount = 0;
+                
+                // Count content-based blanks and dropdowns
+                $content = $question->content;
+                preg_match_all('/\[____\d+____\]/', $content, $blankMatches);
+                preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownMatches);
+                $blankCount = count($blankMatches[0]) + count($dropdownMatches[0]);
+                
+                // Count section_specific_data dropdowns
+                $dropdownCount = 0;
+                if ($question->section_specific_data && isset($question->section_specific_data['dropdown_correct'])) {
+                    $dropdownCount = count($question->section_specific_data['dropdown_correct']);
+                }
+                
+                // Count fill_blanks placeholders
+                if ($question->question_type === 'fill_blanks') {
+                    preg_match_all('/\[____\d+____\]/', $content, $fillBlankMatches);
+                    $fillBlankCount = count($fillBlankMatches[0]);
+                    $blankCount = max($blankCount, $fillBlankCount);
+                }
+                
+                // Count dropdown_selection placeholders
+                if ($question->question_type === 'dropdown_selection') {
+                    preg_match_all('/\[DROPDOWN_\d+\]/', $content, $dropdownSelectionMatches);
+                    $dropdownSelectionCount = count($dropdownSelectionMatches[0]);
+                    $blankCount = max($blankCount, $dropdownSelectionCount);
+                }
+                
+                $totalCount = max($blankCount, $dropdownCount);
+                $totalQuestions += max($totalCount, 1);
+            }
+        }
+        
+        return $totalQuestions;
+    }
+    
+    /**
+     * Calculate answered questions and correct answers (handles all question types)
+     */
+    private function calculateAnswersAndCorrections($questions, $attempt): array
+    {
+        $correctAnswers = 0;
+        $answeredQuestions = 0;
+        
+        // Group answers by question ID
+        $answersByQuestion = $attempt->answers->groupBy('question_id');
+        
+        foreach ($questions as $question) {
+            $questionAnswers = $answersByQuestion->get($question->id, collect());
+            
+            if ($question->isMasterMatchingHeading()) {
+                // Handle master matching headings - each answer is a sub-question
+                $mappings = $question->section_specific_data['mappings'] ?? [];
+                foreach ($questionAnswers as $answer) {
+                    if ($answer->answer) {
+                        $answeredQuestions++;
+                        $answerData = json_decode($answer->answer, true);
+                        if (isset($answerData['sub_question']) && isset($answerData['selected_letter'])) {
+                            // Check if correct based on mappings
+                            foreach ($mappings as $mapping) {
+                                if ($mapping['question'] == $answerData['sub_question'] && 
+                                    $mapping['correct'] == $answerData['selected_letter']) {
+                                    $correctAnswers++;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif ($question->question_type === 'sentence_completion' && isset($question->section_specific_data['sentence_completion'])) {
+                // Handle enhanced sentence completion questions
+                $scData = $question->section_specific_data['sentence_completion'];
+                $sentences = $scData['sentences'] ?? [];
+                
+                foreach ($sentences as $sentenceIndex => $sentence) {
+                    $questionNumber = $sentence['questionNumber'] ?? ($sentenceIndex + 1);
+                    
+                    // Find answer for this specific sentence
+                    $sentenceAnswer = $questionAnswers->first(function($ans) use ($questionNumber) {
+                        $answerData = json_decode($ans->answer, true);
+                        if (is_array($answerData) && isset($answerData['sub_question'])) {
+                            return (int)$answerData['sub_question'] === $questionNumber;
+                        }
+                        return false;
+                    });
+                    
+                    if ($sentenceAnswer && $sentenceAnswer->answer) {
+                        $answeredQuestions++;
+                        $answerData = json_decode($sentenceAnswer->answer, true);
+                        
+                        if (is_array($answerData) && isset($answerData['selected_answer'])) {
+                            $studentAnswer = $answerData['selected_answer'];
+                            $correctAnswer = $sentence['correctAnswer'] ?? $sentence['correct_answer'] ?? $sentence['correct'] ?? null;
+                            
+                            if ($correctAnswer && $studentAnswer === $correctAnswer) {
+                                $correctAnswers++;
+                            }
+                        }
+                    }
+                }
+            } elseif ($question->question_type === 'drag_drop') {
+                // Handle drag & drop questions
+                $answer = $questionAnswers->first();
+                if ($answer && $answer->answer) {
+                    $answerData = json_decode($answer->answer, true);
+                    if (is_array($answerData)) {
+                        $dragDropData = $question->section_specific_data ?? [];
+                        $dropZones = $dragDropData['drop_zones'] ?? [];
+                        
+                        foreach ($dropZones as $zoneIndex => $zone) {
+                            $zoneKey = 'zone_' . $zoneIndex;
+                            if (isset($answerData[$zoneKey]) && !empty($answerData[$zoneKey])) {
+                                $answeredQuestions++;
+                                $correctAnswer = $zone['correct_answer'] ?? null;
+                                if ($correctAnswer && $answerData[$zoneKey] === $correctAnswer) {
+                                    $correctAnswers++;
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif ($question->question_type === 'multiple_choice') {
+                // Handle multiple choice with multiple correct answers
+                $correctOptions = $question->options->where('is_correct', true);
+                $selectedAnswers = $questionAnswers->where('selected_option_id', '!=', null);
+                
+                foreach ($selectedAnswers as $answer) {
+                    $answeredQuestions++;
+                    if ($answer->selectedOption && $answer->selectedOption->is_correct) {
+                        $correctAnswers++;
+                    }
+                }
+            } elseif ($question->question_type === 'fill_blanks') {
+                // Handle fill in the blanks
+                $answer = $questionAnswers->first();
+                if ($answer && $answer->answer) {
+                    if ($this->isJson($answer->answer)) {
+                        $studentAnswers = json_decode($answer->answer, true);
+                        
+                        // Count each blank separately
+                        preg_match_all('/\[____\d+____\]/', $question->content, $matches);
+                        foreach ($matches[0] as $match) {
+                            preg_match('/\d+/', $match, $numberMatch);
+                            $blankNum = $numberMatch[0] ?? null;
+                            
+                            if ($blankNum && isset($studentAnswers['blank_' . $blankNum])) {
+                                $studentAnswer = trim($studentAnswers['blank_' . $blankNum]);
+                                if ($studentAnswer !== '') {
+                                    $answeredQuestions++;
+                                    if ($question->checkBlankAnswer($blankNum, $studentAnswer)) {
+                                        $correctAnswers++;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Single blank answer
+                        if (trim($answer->answer) !== '') {
+                            $answeredQuestions++;
+                            if ($this->checkTextAnswer($answer)) {
+                                $correctAnswers++;
+                            }
+                        }
+                    }
+                }
+            } elseif ($question->question_type === 'dropdown_selection') {
+                // Handle dropdown selection
+                $answer = $questionAnswers->first();
+                if ($answer && $answer->answer) {
+                    if ($this->isJson($answer->answer)) {
+                        $studentAnswers = json_decode($answer->answer, true);
+                        
+                        // Count each dropdown separately
+                        preg_match_all('/\[DROPDOWN_\d+\]/', $question->content, $matches);
+                        foreach ($matches[0] as $match) {
+                            preg_match('/\d+/', $match, $numberMatch);
+                            $dropdownNum = $numberMatch[0] ?? null;
+                            
+                            if ($dropdownNum && isset($studentAnswers['dropdown_' . $dropdownNum])) {
+                                $studentAnswer = trim($studentAnswers['dropdown_' . $dropdownNum]);
+                                if ($studentAnswer !== '') {
+                                    $answeredQuestions++;
+                                    
+                                    // Check if correct
+                                    $sectionData = $question->section_specific_data;
+                                    if ($sectionData && isset($sectionData['dropdown_correct'][$dropdownNum])) {
+                                        $correctIndex = $sectionData['dropdown_correct'][$dropdownNum];
+                                        $dropdownOptions = $sectionData['dropdown_options'][$dropdownNum] ?? '';
+                                        
+                                        if ($dropdownOptions) {
+                                            $options = array_map('trim', explode(',', $dropdownOptions));
+                                            $correctOption = $options[$correctIndex] ?? '';
+                                            
+                                            if ($this->compareAnswers($studentAnswer, $correctOption)) {
+                                                $correctAnswers++;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Handle regular questions (single choice, text answers, etc.)
+                $answer = $questionAnswers->first();
+                if ($answer) {
+                    if ($answer->question->options->count() > 0) {
+                        // Multiple/single choice questions
+                        if ($answer->selected_option_id) {
+                            $answeredQuestions++;
+                            if ($answer->selectedOption && $answer->selectedOption->is_correct) {
+                                $correctAnswers++;
+                            }
+                        }
+                    } else {
+                        // Text-based answers
+                        if ($answer->answer && trim($answer->answer) !== '') {
+                            $answeredQuestions++;
+                            if ($this->checkTextAnswer($answer)) {
+                                $correctAnswers++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return [
+            'correct' => $correctAnswers,
+            'attempted' => $answeredQuestions
+        ];
     }
     
     /**
@@ -580,6 +673,9 @@ class ResultController extends Controller
      */
     private function isJson($string): bool
     {
+        if (!is_string($string)) {
+            return false;
+        }
         json_decode($string);
         return (json_last_error() == JSON_ERROR_NONE);
     }

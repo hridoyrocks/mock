@@ -172,9 +172,16 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                                    {{ $fullTest->attempts()->count() }} attempts
-                                </span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $fullTest->attempts()->count() }} attempts
+                                    </span>
+                                    @if($fullTest->attempts()->count() > 0)
+                                        <a href="{{ route('admin.full-tests.show', $fullTest) }}" class="text-xs text-indigo-600 hover:text-indigo-900">
+                                            View details
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($fullTest->active)
@@ -337,6 +344,30 @@
                 });
             });
         });
+
+        // Delete confirmation
+        document.querySelectorAll('.delete-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const testName = this.getAttribute('data-test-name');
+                
+                Swal.fire({
+                    title: 'Are you sure?',
+                    html: `You are about to delete the full test: <br><strong>${testName}</strong><br><br>This action cannot be undone!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.submit();
+                    }
+                });
+            });
+        });
+    });
     </script>
     @endpush
 </x-admin-layout>

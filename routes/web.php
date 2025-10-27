@@ -350,6 +350,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
         Route::resource('full-tests', App\Http\Controllers\Admin\FullTestController::class);
         Route::patch('/full-tests/{fullTest}/toggle-status', [App\Http\Controllers\Admin\FullTestController::class, 'toggleStatus'])->name('full-tests.toggle-status');
         Route::post('/full-tests/reorder', [App\Http\Controllers\Admin\FullTestController::class, 'reorder'])->name('full-tests.reorder');
+        Route::get('/full-tests/user/{userId}/attempts', [App\Http\Controllers\Admin\FullTestController::class, 'userAttempts'])->name('full-tests.user-attempts');
 
         // Add these NEW routes for Part Audio Management
         Route::prefix('test-sets/{testSet}')->name('test-sets.')->group(function () {

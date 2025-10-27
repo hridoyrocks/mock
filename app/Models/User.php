@@ -129,6 +129,14 @@ public function hasTrustedDevice(string $fingerprint): bool
         return $this->hasMany(StudentAttempt::class);
     }
 
+    /**
+     * Get user's full test attempts.
+     */
+    public function fullTestAttempts(): HasMany
+    {
+        return $this->hasMany(FullTestAttempt::class);
+    }
+
 
     protected static function boot()
     {
