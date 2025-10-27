@@ -1,4 +1,4 @@
-<x-layout>
+<x-test-layout>
     <x-slot:title>Microphone Check - IELTS Speaking Test</x-slot>
     
     <div class="min-h-screen bg-blue-50">
@@ -122,4 +122,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-test-layout>

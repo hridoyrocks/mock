@@ -181,8 +181,8 @@ class ReadingTestController extends Controller
                 'matching_headings_count' => $questions->where('question_type', 'matching_headings')->count()
             ]);
             
-            // IELTS standard is always 40 questions for Reading
-            $totalQuestions = 40; // Fixed for IELTS standard
+            // Get actual total questions from the test
+            $totalQuestions = $questions->count();
             
             // Track answered questions and correct answers
             $answeredCount = 0;
@@ -630,12 +630,15 @@ class ReadingTestController extends Controller
             // INCREMENT TEST COUNT
             auth()->user()->incrementTestCount();
             
-            // Use the new partial test score calculation
+            // Use the new partial test score calculation with actual question count
+            // Pass the test type for Reading (academic/general)
+            $testType = $attempt->testSet->test_type ?? 'academic';
             $scoreData = \App\Helpers\ScoreCalculator::calculatePartialTestScore(
                 $correctAnswers, 
                 $answeredCount, 
                 $totalQuestions,
-                'reading'
+                'reading',
+                $testType
             );
             
             // Log for debugging

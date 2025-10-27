@@ -149,8 +149,8 @@ class ListeningTestController extends Controller
                 ->get()
                 ->keyBy('id');
             
-            // IELTS standard is always 40 questions
-            $totalQuestions = 40; // Fixed for IELTS standard
+            // Get actual total questions from the test
+            $totalQuestions = $questions->count();
             
             // Save answers and calculate score
             $correctAnswers = 0;
@@ -377,7 +377,7 @@ class ListeningTestController extends Controller
             // INCREMENT TEST COUNT
             auth()->user()->incrementTestCount();
             
-            // Use the new partial test score calculation
+            // Use the new partial test score calculation with actual question count
             $scoreData = \App\Helpers\ScoreCalculator::calculatePartialTestScore(
                 $correctAnswers, 
                 $answeredCount, 

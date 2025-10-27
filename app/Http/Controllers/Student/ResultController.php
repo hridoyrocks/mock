@@ -157,32 +157,29 @@ class ResultController extends Controller
             $correctAnswers = $calculationResult['correct'];
             $answeredQuestions = $calculationResult['attempted'];
             
-            // Calculate band score using partial test scoring if not all questions attempted
-            if ($answeredQuestions < $totalQuestions) {
-                $scoreData = \App\Helpers\ScoreCalculator::calculatePartialTestScore(
-                    $correctAnswers, 
-                    $answeredQuestions, 
-                    $totalQuestions, 
-                    $attempt->testSet->section->name
-                );
-                
-                $bandScore = $scoreData['band_score'] ?? 0;
-                $accuracy = $scoreData['accuracy_percentage'] ?? 0;
-                $scoreMessage = $scoreData['message'] ?? '';
-                $scoreNote = $scoreData['note'] ?? null;
+            // Calculate accuracy based on attempted questions only
+            // Accuracy = (Correct / Attempted) * 100
+            if ($answeredQuestions > 0) {
+                $accuracy = ($correctAnswers / $answeredQuestions) * 100;
             } else {
-                // Complete test - calculate normally
-                $accuracy = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
-                
-                if ($attempt->testSet->section->name === 'listening') {
-                    $bandScore = \App\Helpers\ScoreCalculator::calculateListeningBandScore($correctAnswers, $totalQuestions);
-                } else {
-                    $bandScore = \App\Helpers\ScoreCalculator::calculateReadingBandScore($correctAnswers, $totalQuestions);
-                }
-                
-                $scoreMessage = "Complete test with band score {$bandScore}";
-                $scoreNote = null;
+                $accuracy = 0;
             }
+            
+            // Calculate band score using official IELTS scoring
+            // Band score is based on correct answers out of total questions
+            $testType = $attempt->testSet->test_type ?? 'academic';
+            
+            $scoreData = \App\Helpers\ScoreCalculator::calculatePartialTestScore(
+                $correctAnswers, 
+                $answeredQuestions, 
+                $totalQuestions, 
+                $attempt->testSet->section->name,
+                $testType
+            );
+            
+            $bandScore = $scoreData['band_score'] ?? 0;
+            $performanceLevel = $scoreData['performance_level'] ?? 'Not Attempted';
+            $scoreMessage = $scoreData['message'] ?? '';
             
             // Update the attempt with calculated band score if not already set
             if (!$attempt->band_score || $attempt->band_score == 0) {
@@ -200,12 +197,13 @@ class ResultController extends Controller
                 'totalQuestions',
                 'answeredQuestions',
                 'accuracy',
+                'bandScore',
+                'performanceLevel',
                 'passages',
                 'questionsWithMarkers',
                 'currentPage',
                 'perPage',
-                'scoreMessage',
-                'scoreNote'
+                'scoreMessage'
             ));
         }
         
