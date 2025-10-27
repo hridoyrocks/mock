@@ -1503,8 +1503,78 @@ const SimpleAnnotationSystem = {
             this.applyHighlight({ name: 'Yellow', value: '#fef3c7' });
         };
 
+        // Copy Text button
+        const copyBtn = document.createElement('button');
+        copyBtn.innerHTML = `
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+            Copy
+        `;
+        copyBtn.style.cssText = `
+            padding: 6px 12px;
+            border: none;
+            background: #10b981;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        `;
+
+        copyBtn.onmouseover = () => { copyBtn.style.background = '#059669'; };
+        copyBtn.onmouseout = () => { copyBtn.style.background = '#10b981'; };
+
+        copyBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Copy text to clipboard
+            navigator.clipboard.writeText(selectedText).then(() => {
+                // Show success feedback
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = `
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Copied!
+                `;
+                copyBtn.style.background = '#059669';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.background = '#10b981';
+                    this.hideMenu();
+                }, 1000);
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+                // Fallback method
+                const textarea = document.createElement('textarea');
+                textarea.value = selectedText;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                copyBtn.innerHTML = `
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Copied!
+                `;
+                setTimeout(() => {
+                    this.hideMenu();
+                }, 1000);
+            });
+        };
+
         menu.appendChild(noteBtn);
         menu.appendChild(highlightBtn);
+        menu.appendChild(copyBtn);
         document.body.appendChild(menu);
         this.currentMenu = menu;
     },
