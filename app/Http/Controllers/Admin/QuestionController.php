@@ -1304,4 +1304,58 @@ class QuestionController extends Controller
             default => 45
         };
     }
+    
+    /**
+     * Handle image upload from TinyMCE editor
+     */
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:10240' // 10MB max
+        ]);
+        
+        try {
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+                
+                // Generate unique filename
+                $filename = 'tinymce_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                
+                // Store to R2 (Cloudflare) storage
+                $path = $image->storeAs('questions/images', $filename, 'r2');
+                
+                // Generate full URL
+                $baseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+                $url = $baseUrl . '/' . ltrim($path, '/');
+                
+                \Log::info('TinyMCE image uploaded', [
+                    'path' => $path,
+                    'url' => $url,
+                    'filename' => $filename
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'url' => $url,
+                    'location' => $url // TinyMCE expects 'location' key
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'No image file provided'
+            ], 400);
+            
+        } catch (\Exception $e) {
+            \Log::error('TinyMCE image upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Image upload failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

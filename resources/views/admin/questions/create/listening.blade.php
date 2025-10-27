@@ -252,10 +252,69 @@
             selector: '.tinymce-editor-simple',
             height: 150,
             menubar: false,
-            plugins: ['lists', 'link', 'charmap', 'code', 'table'],
-            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link | table | removeformat code',
+            plugins: ['lists', 'link', 'charmap', 'code', 'table', 'image', 'media'],
+            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link image | table | removeformat code',
             font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
             content_css: '//www.tiny.cloud/css/codepen.min.css',
+            // Image upload configuration for instructions
+            images_upload_url: '/admin/questions/upload-image',
+            images_upload_base_path: '/',
+            images_upload_credentials: true,
+            automatic_uploads: true,
+            file_picker_types: 'image',
+            images_upload_handler: function (blobInfo, success, failure, progress) {
+                return new Promise(function(resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.withCredentials = false;
+                    xhr.open('POST', '/admin/questions/upload-image');
+                    
+                    // Get CSRF token from meta tag
+                    const token = document.querySelector('meta[name="csrf-token"]');
+                    if (token) {
+                        xhr.setRequestHeader('X-CSRF-TOKEN', token.content);
+                    }
+                    
+                    xhr.upload.onprogress = function (e) {
+                        progress(e.loaded / e.total * 100);
+                    };
+                    
+                    xhr.onload = function() {
+                        if (xhr.status < 200 || xhr.status >= 300) {
+                            reject('HTTP Error: ' + xhr.status);
+                            failure('Upload failed: ' + xhr.status);
+                            return;
+                        }
+                        
+                        try {
+                            const json = JSON.parse(xhr.responseText);
+                            console.log('Upload response:', json);
+                            
+                            if (!json || !json.success) {
+                                reject('Upload failed: ' + (json.message || 'Unknown error'));
+                                failure('Upload failed: ' + (json.message || 'Unknown error'));
+                                return;
+                            }
+                            
+                            // Return the URL directly
+                            resolve(json.url);
+                            success(json.url);
+                        } catch (e) {
+                            reject('Invalid JSON response: ' + xhr.responseText);
+                            failure('Invalid server response');
+                        }
+                    };
+                    
+                    xhr.onerror = function () {
+                        reject('Image upload failed due to a network error.');
+                        failure('Image upload failed due to a network error.');
+                    };
+                    
+                    const formData = new FormData();
+                    formData.append('image', blobInfo.blob(), blobInfo.filename());
+                    
+                    xhr.send(formData);
+                });
+            },
             setup: function(editor) {
                 editor.on('change', function() {
                     editor.save();
@@ -272,7 +331,7 @@
                 'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
                 'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
             ],
-            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | link image | removeformat code',
+            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | link image media | removeformat code',
             font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
             content_css: '//www.tiny.cloud/css/codepen.min.css',
             table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
@@ -282,6 +341,65 @@
             },
             table_default_attributes: {
                 border: '1'
+            },
+            // Image upload configuration
+            images_upload_url: '/admin/questions/upload-image',
+            images_upload_base_path: '/',
+            images_upload_credentials: true,
+            automatic_uploads: true,
+            file_picker_types: 'image',
+            images_upload_handler: function (blobInfo, success, failure, progress) {
+                return new Promise(function(resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.withCredentials = false;
+                    xhr.open('POST', '/admin/questions/upload-image');
+                    
+                    // Get CSRF token from meta tag
+                    const token = document.querySelector('meta[name="csrf-token"]');
+                    if (token) {
+                        xhr.setRequestHeader('X-CSRF-TOKEN', token.content);
+                    }
+                    
+                    xhr.upload.onprogress = function (e) {
+                        progress(e.loaded / e.total * 100);
+                    };
+                    
+                    xhr.onload = function() {
+                        if (xhr.status < 200 || xhr.status >= 300) {
+                            reject('HTTP Error: ' + xhr.status);
+                            failure('Upload failed: ' + xhr.status);
+                            return;
+                        }
+                        
+                        try {
+                            const json = JSON.parse(xhr.responseText);
+                            console.log('Upload response:', json);
+                            
+                            if (!json || !json.success) {
+                                reject('Upload failed: ' + (json.message || 'Unknown error'));
+                                failure('Upload failed: ' + (json.message || 'Unknown error'));
+                                return;
+                            }
+                            
+                            // Return the URL directly
+                            resolve(json.url);
+                            success(json.url);
+                        } catch (e) {
+                            reject('Invalid JSON response: ' + xhr.responseText);
+                            failure('Invalid server response');
+                        }
+                    };
+                    
+                    xhr.onerror = function () {
+                        reject('Image upload failed due to a network error.');
+                        failure('Image upload failed due to a network error.');
+                    };
+                    
+                    const formData = new FormData();
+                    formData.append('image', blobInfo.blob(), blobInfo.filename());
+                    
+                    xhr.send(formData);
+                });
             },
             setup: function(editor) {
                 contentEditor = editor;

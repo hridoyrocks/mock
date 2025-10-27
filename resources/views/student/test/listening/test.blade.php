@@ -302,7 +302,7 @@
             line-height: 1.6 !important;
         }
         
-        /* Images from TinyMCE */
+        /* Images from TinyMCE - Minimal style, no shadow */
         .question-text img,
         .question-instruction img,
         .part-instruction img,
@@ -310,8 +310,10 @@
             max-width: 100% !important;
             height: auto !important;
             margin: 10px 0 !important;
-            border-radius: 4px !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            display: block !important;
         }
         
         /* Bold, Italic, Underline from TinyMCE */
