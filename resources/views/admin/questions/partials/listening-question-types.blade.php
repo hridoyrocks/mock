@@ -172,17 +172,6 @@
                 <!-- Draggable options will be added here -->
             </div>
         </div>
-
-        {{-- Options Reusability --}}
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="allow-reuse" name="drag_drop_allow_reuse" value="1" 
-                       class="h-4 w-4 text-indigo-600 rounded" checked>
-                <span class="ml-2 text-sm text-gray-700">
-                    <strong>Allow options to be reused</strong> - Students can drag the same option to multiple zones
-                </span>
-            </label>
-        </div>
     </div>
 </div>
 

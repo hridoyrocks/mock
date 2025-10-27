@@ -149,6 +149,16 @@ window.ListeningDragDrop = {
                 if (!allowReuse) {
                     this.markOptionAsPlaced(optionValue);
                 }
+                
+                // Mark that drag was successful - don't clear on dragend
+                if (e.dataTransfer.getData('from-box') === 'true') {
+                    const sourceBoxId = e.dataTransfer.getData('source-box-id');
+                    const [qId, zIndex] = sourceBoxId.split('_');
+                    const sourceBox = document.querySelector(`.drop-box[data-question-id="${qId}"][data-zone-index="${zIndex}"]`);
+                    if (sourceBox) {
+                        delete sourceBox.dataset.shouldClear;
+                    }
+                }
 
                 // Save and update UI - INSTANT UPDATE
                 if (typeof saveAllAnswers === 'function') saveAllAnswers();
@@ -239,9 +249,18 @@ window.ListeningDragDrop = {
             
             box.classList.add('dragging-from-box');
             
-            // Clear this box after drag starts
-            setTimeout(() => {
+            // Mark box for clearing on drag end
+            box.dataset.shouldClear = 'true';
+        });
+        
+        box.addEventListener('dragend', () => {
+            box.classList.remove('dragging-from-box');
+            
+            // Check if we should clear this box (it was dragged but not successfully dropped elsewhere)
+            if (box.dataset.shouldClear === 'true') {
                 const questionNumber = box.dataset.questionNumber;
+                const zoneNumber = box.dataset.zoneNumber;
+                const questionId = box.dataset.questionId;
                 
                 // Reset box to empty state with proper styling
                 box.style.display = 'inline-flex';
@@ -250,10 +269,9 @@ window.ListeningDragDrop = {
                 box.innerHTML = `<span class="placeholder-text">${questionNumber}</span>`;
                 box.classList.remove('has-answer');
                 box.removeAttribute('draggable');
+                delete box.dataset.shouldClear;
                 
                 // Clear the hidden input
-                const zoneNumber = box.dataset.zoneNumber;
-                const questionId = box.dataset.questionId;
                 const inputName = zoneNumber !== undefined 
                     ? `answers[${questionId}][zone_${zoneNumber}]`
                     : `answers[${questionId}][zone_${box.dataset.zoneIndex}]`;
@@ -261,11 +279,10 @@ window.ListeningDragDrop = {
                 const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
                 if (hiddenInput) {
                     hiddenInput.value = '';
-                    // Trigger change event to ensure save
                     hiddenInput.dispatchEvent(new Event('change'));
                 }
                 
-                // IMPORTANT: Remove answered state from navigation button
+                // Remove answered state from navigation button
                 const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
                 if (navButton) {
                     navButton.classList.remove('answered');
@@ -278,15 +295,14 @@ window.ListeningDragDrop = {
                     }
                 }
                 
+                // Restore the option to the draggable list
+                this.restoreOption(optionValue);
+                
                 // Save the removal
                 if (typeof saveAllAnswers === 'function') {
                     saveAllAnswers();
                 }
-            }, 50);
-        });
-        
-        box.addEventListener('dragend', () => {
-            box.classList.remove('dragging-from-box');
+            }
         });
     },
 
@@ -332,32 +348,40 @@ window.ListeningDragDrop = {
     },
 
     markOptionAsPlaced(optionValue) {
-        const option = document.querySelector(`.draggable-option[data-option-value="${optionValue}"]`) ||
-                      document.querySelector(`.draggable-option[data-option="${optionValue}"]`);
+        const options = document.querySelectorAll(`.draggable-option[data-option-value="${optionValue}"]`);
         
-        if (option) {
-            option.classList.add('placed');
-            option.style.opacity = '0.4';
-            option.style.visibility = 'hidden';
-            option.style.position = 'absolute';
-            option.style.width = '0';
-            option.style.height = '0';
-            option.style.overflow = 'hidden';
+        if (options.length === 0) {
+            // Try alternative selector
+            const altOptions = document.querySelectorAll(`.draggable-option[data-option="${optionValue}"]`);
+            altOptions.forEach(option => {
+                option.classList.add('placed');
+                option.setAttribute('style', 'display: none !important;');
+            });
+        } else {
+            options.forEach(option => {
+                option.classList.add('placed');
+                option.setAttribute('style', 'display: none !important;');
+            });
         }
     },
 
     restoreOption(optionValue) {
-        const option = document.querySelector(`.draggable-option[data-option-value="${optionValue}"]`) ||
-                      document.querySelector(`.draggable-option[data-option="${optionValue}"]`);
+        const options = document.querySelectorAll(`.draggable-option[data-option-value="${optionValue}"]`);
         
-        if (option) {
-            option.classList.remove('placed');
-            option.style.opacity = '1';
-            option.style.visibility = 'visible';
-            option.style.position = 'static';
-            option.style.width = 'auto';
-            option.style.height = 'auto';
-            option.style.overflow = 'visible';
+        if (options.length === 0) {
+            // Try alternative selector
+            const altOptions = document.querySelectorAll(`.draggable-option[data-option="${optionValue}"]`);
+            altOptions.forEach(option => {
+                option.classList.remove('placed');
+                option.style.display = '';
+                option.removeAttribute('style');
+            });
+        } else {
+            options.forEach(option => {
+                option.classList.remove('placed');
+                option.style.display = '';
+                option.removeAttribute('style');
+            });
         }
     }
 };
