@@ -67,7 +67,6 @@
                                    id="option-{{ $question->id }}-{{ $option->id }}"
                                    data-question-number="{{ $displayNumber }}">
                             <label for="option-{{ $question->id }}-{{ $option->id }}" class="single-choice-label">
-                                <span class="option-letter">{{ chr(65 + $optionIndex) }}</span>
                                 <span class="option-text">{{ $option->content }}</span>
                             </label>
                         </div>
@@ -92,8 +91,8 @@
         @break
         
     @case('multiple_choice')
-        {{-- Single/Multiple Choice Question --}}
-        <div class="question-item" id="question-{{ $question->id }}">
+        {{-- Multiple Choice Question --}}
+        <div class="question-item multiple-choice-question" id="question-{{ $question->id }}">
             <div class="question-content">
                 @php
                     // Check if multiple correct answers
@@ -111,28 +110,28 @@
             </div>
             
             @if($question->options && $question->options->count() > 0)
-                <div class="options-list">
+                <div class="multiple-choice-options">
                     @foreach ($question->options as $optionIndex => $option)
-                        <label class="option-item">
+                        <div class="multiple-choice-option-item">
                             @if($isMultipleChoice)
                                 <input type="checkbox" 
                                        name="answers[{{ $question->id }}][]" 
                                        value="{{ $option->id }}" 
-                                       class="option-checkbox"
+                                       class="multiple-choice-checkbox"
                                        id="option-{{ $option->id }}"
                                        data-question-number="{{ $displayNumber }}">
                             @else
                                 <input type="radio" 
                                        name="answers[{{ $question->id }}]" 
                                        value="{{ $option->id }}" 
-                                       class="option-radio"
+                                       class="multiple-choice-radio"
                                        id="option-{{ $option->id }}"
                                        data-question-number="{{ $displayNumber }}">
                             @endif
-                            <label for="option-{{ $option->id }}" class="option-label">
-                                <strong>{{ chr(65 + $optionIndex) }}.</strong> {{ $option->content }}
+                            <label for="option-{{ $option->id }}" class="multiple-choice-label">
+                                <span class="option-text">{{ $option->content }}</span>
                             </label>
-                        </label>
+                        </div>
                     @endforeach
                 </div>
             @else
@@ -363,7 +362,7 @@
     margin-bottom: 0 !important;
 }
 
-/* Single Choice Options Styling */
+/* Single Choice Options Styling - Clean Design with Black Text */
 .single-choice-options {
     margin: 20px 0 20px 47px;
 }
@@ -371,76 +370,116 @@
 .single-choice-option-item {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     position: relative;
 }
 
 .single-choice-radio {
-    width: 20px;
-    height: 20px;
-    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    margin-top: 4px;
     margin-right: 12px;
     cursor: pointer;
     flex-shrink: 0;
-    accent-color: #1f2937;
+    accent-color: #3b82f6;
 }
 
 .single-choice-label {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     flex: 1;
     cursor: pointer;
-    padding: 10px 16px;
+    padding: 8px 16px;
     border-radius: 6px;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     background: white;
-    border: 1px solid transparent;
+    border: none;
+    margin: 0;
 }
 
 .single-choice-label:hover {
-    background: #f9fafb;
-    border-color: #e5e7eb;
+    background: #f8fafc;
 }
 
 .single-choice-radio:checked + .single-choice-label {
-    background: #f3f4f6;
-    border-color: #374151;
+    background: #dbeafe !important;
+    border: none !important;
 }
 
-.single-choice-radio:checked + .single-choice-label .option-letter {
-    background: #1f2937;
-    color: white;
+.single-choice-label .option-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #1f2937;
+    transition: all 0.2s ease;
+    flex: 1;
 }
 
 .single-choice-radio:checked + .single-choice-label .option-text {
-    color: #111827;
-    font-weight: 600;
+    color: #000000;       /* Keep black text */
+    font-weight: 500;     /* Medium font weight */
 }
 
-.option-letter {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 28px;
-    height: 28px;
-    background: #f3f4f6;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 14px;
-    color: #374151;
+/* Multiple Choice Options Styling - Same as Single Choice */
+.multiple-choice-options {
+    margin: 20px 0 20px 47px;
+}
+
+.multiple-choice-option-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.multiple-choice-checkbox,
+.multiple-choice-radio {
+    width: 18px;
+    height: 18px;
+    margin-top: 4px;
     margin-right: 12px;
+    cursor: pointer;
     flex-shrink: 0;
-    transition: all 0.2s;
+    accent-color: #3b82f6;
 }
 
-.option-text {
+.multiple-choice-label {
+    display: flex;
+    align-items: flex-start;
+    flex: 1;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    background: white;
+    border: none;
+    margin: 0;
+}
+
+.multiple-choice-label:hover {
+    background: #f8fafc;
+}
+
+.multiple-choice-checkbox:checked + .multiple-choice-label,
+.multiple-choice-radio:checked + .multiple-choice-label {
+    background: #dbeafe !important;
+    border: none !important;
+}
+
+.multiple-choice-label .option-text {
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.5;
     color: #1f2937;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    flex: 1;
 }
 
-/* Single/Multiple Choice Options Styling */
+.multiple-choice-checkbox:checked + .multiple-choice-label .option-text,
+.multiple-choice-radio:checked + .multiple-choice-label .option-text {
+    color: #000000;       /* Keep black text */
+    font-weight: 500;     /* Medium font weight */
+}
+
+/* Legacy Options Styling (Remove these in future) */
 .options-list {
     margin: 20px 0;
     margin-left: 47px;

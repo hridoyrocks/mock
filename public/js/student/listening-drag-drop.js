@@ -60,19 +60,27 @@ window.ListeningDragDrop = {
             console.log('Option data:', {
                 optionValue: option.dataset.optionValue,
                 optionLetter: option.dataset.optionLetter,
-                innerHTML: option.innerHTML
+                innerHTML: option.innerHTML,
+                textContent: option.textContent
             });
             
             option.addEventListener('dragstart', (e) => {
-                const optionValue = option.dataset.optionValue || option.textContent.replace(/^[A-Z]\.\s*/, '');
+                // Get the actual text value from the element - clean up whitespace
+                const optionValue = option.dataset.optionValue || option.textContent.trim().replace(/\s+/g, ' ');
                 const optionLetter = option.dataset.optionLetter || '';
                 
-                console.log('Drag started:', { optionValue, optionLetter });
+                console.log('🚀 Drag started from option list:', { 
+                    optionValue, 
+                    optionLetter,
+                    textContent: option.textContent.trim(),
+                    dataset: option.dataset 
+                });
                 
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', optionValue);
                 e.dataTransfer.setData('option-letter', optionLetter);
                 e.dataTransfer.setData('full-text', option.innerHTML);
+                e.dataTransfer.setData('clean-text', optionValue); // Add clean text as backup
                 
                 option.classList.add('dragging');
             });
@@ -115,9 +123,17 @@ window.ListeningDragDrop = {
                 box.style.borderStyle = 'solid';
                 box.style.borderColor = '#000000';
 
-                const optionValue = e.dataTransfer.getData('text/plain');
+                // Get option value with fallbacks
+                let optionValue = e.dataTransfer.getData('text/plain');
                 const optionLetter = e.dataTransfer.getData('option-letter');
                 const fullText = e.dataTransfer.getData('full-text');
+                const cleanText = e.dataTransfer.getData('clean-text');
+                const fromBox = e.dataTransfer.getData('from-box') === 'true';
+                
+                // Use fallbacks if optionValue is undefined or empty
+                if (!optionValue || optionValue === 'undefined') {
+                    optionValue = cleanText || fullText?.trim()?.replace(/\s+/g, ' ') || 'Error';
+                }
                 
                 const questionId = box.dataset.questionId;
                 const zoneIndex = box.dataset.zoneIndex;
@@ -125,8 +141,11 @@ window.ListeningDragDrop = {
                 const questionNumber = box.dataset.questionNumber;
                 const allowReuse = box.dataset.allowReuse === '1';
 
-                console.log('Drop event:', {
+                console.log('📍 Drop event:', {
                     optionValue,
+                    cleanText,
+                    fullText,
+                    fromBox,
                     questionId,
                     zoneIndex,
                     index,
@@ -134,7 +153,7 @@ window.ListeningDragDrop = {
                     questionNumber
                 });
 
-                // Handle existing answer
+                // Handle existing answer - this will restore old option to drag list
                 if (box.classList.contains('has-answer')) {
                     this.removeExistingAnswer(box, allowReuse);
                 }
@@ -145,18 +164,20 @@ window.ListeningDragDrop = {
                 // Update hidden input
                 this.updateHiddenInput(box, questionId, zoneIndex, index, optionValue, questionNumber);
 
-                // Handle option visibility
-                if (!allowReuse) {
-                    this.markOptionAsPlaced(optionValue);
-                }
+                // Always hide option after placing (to avoid confusion)
+                // Student can drag from drop box to reuse if needed
+                this.markOptionAsPlaced(optionValue);
                 
-                // Mark that drag was successful - don't clear on dragend
-                if (e.dataTransfer.getData('from-box') === 'true') {
+                // Mark that drag was successful - cancel clearing of source box if from another box
+                if (fromBox) {
                     const sourceBoxId = e.dataTransfer.getData('source-box-id');
-                    const [qId, zIndex] = sourceBoxId.split('_');
-                    const sourceBox = document.querySelector(`.drop-box[data-question-id="${qId}"][data-zone-index="${zIndex}"]`);
-                    if (sourceBox) {
-                        delete sourceBox.dataset.shouldClear;
+                    if (sourceBoxId) {
+                        const [qId, zIndex] = sourceBoxId.split('_');
+                        const sourceBox = document.querySelector(`.drop-box[data-question-id="${qId}"][data-zone-index="${zIndex}"]`);
+                        if (sourceBox) {
+                            delete sourceBox.dataset.shouldClear;
+                            console.log('✅ Cancelled clearing of source box - successful drop');
+                        }
                     }
                 }
 
@@ -180,32 +201,27 @@ window.ListeningDragDrop = {
         const answerText = box.textContent.trim();
         const questionNumber = box.dataset.questionNumber;
         
-        if (answerText && answerText !== questionNumber) {
+        // Check if there's actually an existing answer (not just placeholder)
+        if (answerText && answerText !== questionNumber && !box.querySelector('.placeholder-text')) {
             const oldValue = answerText;
             
-            if (!allowReuse) {
-                // Restore the old option
-                const oldOption = Array.from(document.querySelectorAll('.draggable-option'))
-                    .find(opt => {
-                        const optVal = opt.dataset.optionValue || opt.dataset.option;
-                        return optVal === oldValue || opt.textContent.includes(oldValue);
-                    });
-                
-                if (oldOption) {
-                    this.restoreOption(oldValue);
-                }
-            }
+            console.log('🔄 REPLACING existing answer:', oldValue, 'in drop zone:', questionNumber);
+            
+            // Always restore the old option to make it available again
+            this.restoreOption(oldValue);
             
             // Clear the box
             box.innerHTML = `<span class="placeholder-text">${questionNumber}</span>`;
             box.classList.remove('has-answer');
             box.removeAttribute('draggable');
             
-            // Remove answered state for this specific box
+            // Remove answered state for this specific box temporarily (will be re-added when new answer is placed)
             const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
             if (navButton) {
                 navButton.classList.remove('answered');
             }
+            
+            console.log('✅ Old answer restored to drag list:', oldValue);
         }
     },
 
@@ -213,7 +229,7 @@ window.ListeningDragDrop = {
         const questionNumber = box.dataset.questionNumber;
         
         // Debug logging
-        console.log('Adding answer to box:', { optionValue, optionLetter, fullText });
+        console.log('✅ Adding answer to box:', { optionValue, optionLetter, fullText });
         
         // Clean the option value - remove letter prefix if present
         let cleanValue = optionValue;
@@ -241,26 +257,34 @@ window.ListeningDragDrop = {
     setupFilledBoxDrag(box, optionValue, optionLetter) {
         // Make filled box draggable
         box.addEventListener('dragstart', (e) => {
+            console.log('🚀 Dragging FROM drop box:', optionValue);
+            
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', optionValue);
             e.dataTransfer.setData('option-letter', optionLetter || '');
+            e.dataTransfer.setData('full-text', optionValue);
+            e.dataTransfer.setData('clean-text', optionValue);
             e.dataTransfer.setData('from-box', 'true');
             e.dataTransfer.setData('source-box-id', box.dataset.questionId + '_' + box.dataset.zoneIndex);
             
             box.classList.add('dragging-from-box');
             
-            // Mark box for clearing on drag end
+            // Mark box for clearing - it WILL be cleared regardless of where it's dropped
             box.dataset.shouldClear = 'true';
         });
         
-        box.addEventListener('dragend', () => {
+        box.addEventListener('dragend', (e) => {
+            console.log('🏁 Drag ended from drop box:', optionValue);
             box.classList.remove('dragging-from-box');
             
-            // Check if we should clear this box (it was dragged but not successfully dropped elsewhere)
+            // ALWAYS clear the box when dragged from it (regardless of where dropped)
+            // The only exception is if it was successfully dropped in another drop zone
             if (box.dataset.shouldClear === 'true') {
                 const questionNumber = box.dataset.questionNumber;
                 const zoneNumber = box.dataset.zoneNumber;
                 const questionId = box.dataset.questionId;
+                
+                console.log('🔄 Clearing drop box and restoring option:', optionValue);
                 
                 // Reset box to empty state with proper styling
                 box.style.display = 'inline-flex';
@@ -295,13 +319,15 @@ window.ListeningDragDrop = {
                     }
                 }
                 
-                // Restore the option to the draggable list
+                // ALWAYS restore the option to the draggable list
                 this.restoreOption(optionValue);
                 
                 // Save the removal
                 if (typeof saveAllAnswers === 'function') {
                     saveAllAnswers();
                 }
+                
+                console.log('✅ Option restored to drag list:', optionValue);
             }
         });
     },
@@ -328,7 +354,7 @@ window.ListeningDragDrop = {
         const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
         if (hiddenInput) {
             hiddenInput.value = optionValue;
-            console.log('Updated input:', inputName, '=', optionValue);
+            console.log('💾 Updated input:', inputName, '=', optionValue);
 
             // Update navigation button for THIS specific zone - INSTANT
             const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
@@ -348,41 +374,177 @@ window.ListeningDragDrop = {
     },
 
     markOptionAsPlaced(optionValue) {
-        const options = document.querySelectorAll(`.draggable-option[data-option-value="${optionValue}"]`);
+        // Find and hide all options with this value
+        const options = document.querySelectorAll(`.draggable-option`);
+        console.log('🔍 markOptionAsPlaced called with:', optionValue);
+        console.log('🔍 Found draggable options:', options.length);
         
-        if (options.length === 0) {
-            // Try alternative selector
-            const altOptions = document.querySelectorAll(`.draggable-option[data-option="${optionValue}"]`);
-            altOptions.forEach(option => {
-                option.classList.add('placed');
-                option.setAttribute('style', 'display: none !important;');
+        let foundMatch = false;
+        
+        options.forEach((option, index) => {
+            const optVal = option.dataset.optionValue || option.dataset.option || option.textContent.trim().replace(/\s+/g, ' ');
+            console.log(`🔍 Option ${index}:`, {
+                optVal,
+                textContent: option.textContent.trim(),
+                dataset: option.dataset,
+                comparing: optionValue
             });
-        } else {
-            options.forEach(option => {
+            
+            // Exact match with the option value
+            if (optVal === optionValue || option.textContent.trim().replace(/\s+/g, ' ') === optionValue) {
+                console.log('✅ HIDING option:', optVal);
+                foundMatch = true;
+                
+                // Multiple methods to ensure hiding
                 option.classList.add('placed');
-                option.setAttribute('style', 'display: none !important;');
-            });
+                option.style.cssText = 'display: none !important; visibility: hidden !important; position: absolute !important; left: -9999px !important; opacity: 0 !important; pointer-events: none !important;';
+                option.setAttribute('hidden', 'true');
+                option.remove(); // Completely remove from DOM
+            }
+        });
+        
+        if (!foundMatch) {
+            console.log('❌ No matching option found for:', optionValue);
         }
     },
 
     restoreOption(optionValue) {
-        const options = document.querySelectorAll(`.draggable-option[data-option-value="${optionValue}"]`);
+        console.log('🔄 restoreOption called with:', optionValue);
         
-        if (options.length === 0) {
-            // Try alternative selector
-            const altOptions = document.querySelectorAll(`.draggable-option[data-option="${optionValue}"]`);
-            altOptions.forEach(option => {
-                option.classList.remove('placed');
-                option.style.display = '';
-                option.removeAttribute('style');
-            });
-        } else {
-            options.forEach(option => {
-                option.classList.remove('placed');
-                option.style.display = '';
-                option.removeAttribute('style');
-            });
+        // Check if option already exists in the DOM
+        const existingOption = Array.from(document.querySelectorAll('.draggable-option')).find(opt => {
+            const optVal = opt.dataset.optionValue || opt.textContent.trim().replace(/\s+/g, ' ');
+            return optVal === optionValue;
+        });
+        
+        if (existingOption) {
+            console.log('🔄 Option already exists, making visible:', optionValue);
+            existingOption.classList.remove('placed');
+            existingOption.style.cssText = '';
+            existingOption.removeAttribute('hidden');
+            return;
         }
+        
+        // Option was removed from DOM, need to recreate it
+        const optionsContainer = document.querySelector('.draggable-options-grid');
+        if (optionsContainer) {
+            console.log('🔄 RECREATING option in drag list:', optionValue);
+            
+            // Create new option element with all proper attributes and styles
+            const newOption = document.createElement('div');
+            newOption.className = 'draggable-option';
+            newOption.draggable = true;
+            newOption.dataset.optionValue = optionValue;
+            newOption.textContent = optionValue;
+            
+            // Apply the exact same styles as original options
+            newOption.style.cssText = `
+                padding: 5px 14px;
+                background: white;
+                border: 1px solid rgba(108, 117, 125, 0.3);
+                border-radius: 4px;
+                cursor: move;
+                font-size: 14px;
+                color: #212529;
+                user-select: none;
+                flex-shrink: 0;
+                height: fit-content;
+                transition: all 0.2s;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            `;
+            
+            // Add hover effects
+            newOption.addEventListener('mouseenter', () => {
+                if (!newOption.classList.contains('placed')) {
+                    newOption.style.background = '#f9fafb';
+                    newOption.style.borderColor = '#3b82f6';
+                    newOption.style.transform = 'translateY(-2px)';
+                    newOption.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                }
+            });
+            
+            newOption.addEventListener('mouseleave', () => {
+                if (!newOption.classList.contains('placed')) {
+                    newOption.style.background = 'white';
+                    newOption.style.borderColor = 'rgba(108, 117, 125, 0.3)';
+                    newOption.style.transform = '';
+                    newOption.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                }
+            });
+            
+            // Add complete drag event listeners
+            newOption.addEventListener('dragstart', (e) => {
+                const optVal = newOption.dataset.optionValue || newOption.textContent.trim().replace(/\s+/g, ' ');
+                const optLetter = newOption.dataset.optionLetter || '';
+                
+                console.log('🚀 Drag started from restored option:', optVal);
+                
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', optVal);
+                e.dataTransfer.setData('option-letter', optLetter);
+                e.dataTransfer.setData('full-text', newOption.innerHTML);
+                e.dataTransfer.setData('clean-text', optVal);
+                
+                newOption.classList.add('dragging');
+            });
+            
+            newOption.addEventListener('dragend', () => {
+                newOption.classList.remove('dragging');
+            });
+            
+            // Add to container at the end
+            optionsContainer.appendChild(newOption);
+            
+            console.log('✅ Successfully restored option to drag list:', optionValue);
+        } else {
+            console.error('❌ Could not find options container to restore option');
+        }
+    },
+
+    setupAnswerRemoval(box) {
+        // Allow click to remove answer from drop box
+        box.addEventListener('click', (e) => {
+            if (box.classList.contains('has-answer') && e.target === box) {
+                const optionValue = box.textContent.trim();
+                const questionNumber = box.dataset.questionNumber;
+                const questionId = box.dataset.questionId;
+                
+                console.log('👆 Click to remove answer:', optionValue);
+                
+                // Restore the option
+                this.restoreOption(optionValue);
+                
+                // Clear the box
+                box.innerHTML = `<span class="placeholder-text">${questionNumber}</span>`;
+                box.classList.remove('has-answer');
+                box.removeAttribute('draggable');
+                
+                // Clear hidden input
+                const zoneNumber = box.dataset.zoneNumber;
+                const zoneIndex = box.dataset.zoneIndex;
+                const inputName = zoneNumber !== undefined 
+                    ? `answers[${questionId}][zone_${zoneNumber}]`
+                    : `answers[${questionId}][zone_${zoneIndex}]`;
+                
+                const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
+                if (hiddenInput) {
+                    hiddenInput.value = '';
+                }
+                
+                // Remove answered state
+                const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+                if (navButton) {
+                    navButton.classList.remove('answered');
+                }
+                
+                // Update counts
+                this.instantUpdateCount();
+                
+                if (typeof saveAllAnswers === 'function') {
+                    saveAllAnswers();
+                }
+            }
+        });
     }
 };
 
