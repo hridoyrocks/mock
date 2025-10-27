@@ -214,6 +214,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
                 Route::get('/{fullTest}/onboarding', [App\Http\Controllers\Student\FullTestController::class, 'onboarding'])->name('onboarding');
                 Route::post('/{fullTest}/start', [App\Http\Controllers\Student\FullTestController::class, 'start'])->name('start');
                 Route::get('/attempt/{fullTestAttempt}/section/{section}', [App\Http\Controllers\Student\FullTestController::class, 'section'])->name('section');
+                Route::get('/attempt/{fullTestAttempt}/section-completed/{section}', [App\Http\Controllers\Student\FullTestController::class, 'sectionCompleted'])->name('section-completed');
                 Route::post('/attempt/{fullTestAttempt}/complete-section', [App\Http\Controllers\Student\FullTestController::class, 'completeSection'])->name('complete-section');
                 Route::get('/attempt/{fullTestAttempt}/results', [App\Http\Controllers\Student\FullTestController::class, 'results'])->name('results');
                 Route::post('/attempt/{fullTestAttempt}/abandon', [App\Http\Controllers\Student\FullTestController::class, 'abandon'])->name('abandon');

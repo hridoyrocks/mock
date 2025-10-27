@@ -224,35 +224,50 @@ class SpeakingTestController extends Controller
      * Submit the speaking test.
      */
     public function submit(Request $request, StudentAttempt $attempt): RedirectResponse
-{
-    // Verify the attempt belongs to the current user and is not already completed
-    if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
-        return redirect()->route('student.speaking.index')
-            ->with('error', 'Invalid attempt or test already submitted.');
+    {
+        // Verify the attempt belongs to the current user and is not already completed
+        if ($attempt->user_id !== auth()->id() || $attempt->status === 'completed') {
+            return redirect()->route('student.speaking.index')
+                ->with('error', 'Invalid attempt or test already submitted.');
+        }
+        
+        // Check if this is part of a full test
+        $fullTestSectionAttempt = \App\Models\FullTestSectionAttempt::where('student_attempt_id', $attempt->id)->first();
+        $isPartOfFullTest = $fullTestSectionAttempt !== null;
+        
+        // Calculate completion rate
+        $totalQuestions = $attempt->testSet->questions()->count();
+        $recordedAnswers = $attempt->answers()
+            ->whereHas('speakingRecording')
+            ->count();
+        
+        $completionRate = $totalQuestions > 0 ? round(($recordedAnswers / $totalQuestions) * 100, 2) : 0;
+        
+        // Mark attempt as completed
+        $attempt->update([
+            'end_time' => now(),
+            'status' => 'completed',
+            'completion_rate' => $completionRate,
+            'total_questions' => $totalQuestions,
+            'answered_questions' => $recordedAnswers,
+            'is_complete_attempt' => ($completionRate >= 80),
+        ]);
+        
+        // INCREMENT TEST COUNT
+        auth()->user()->incrementTestCount();
+        
+        // If part of full test, redirect to section completed screen
+        if ($isPartOfFullTest && $fullTestSectionAttempt) {
+            $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
+            
+            return redirect()->route('student.full-test.section-completed', [
+                'fullTestAttempt' => $fullTestAttempt->id,
+                'section' => 'speaking'
+            ])->with('success', 'Speaking section completed successfully!');
+        }
+        
+        // Regular test completion
+        return redirect()->route('student.results.show', $attempt)
+            ->with('success', 'Test submitted successfully!');
     }
-    
-    // Calculate completion rate
-    $totalQuestions = $attempt->testSet->questions()->count();
-    $recordedAnswers = $attempt->answers()
-        ->whereHas('speakingRecording')
-        ->count();
-    
-    $completionRate = $totalQuestions > 0 ? round(($recordedAnswers / $totalQuestions) * 100, 2) : 0;
-    
-    // Mark attempt as completed
-    $attempt->update([
-        'end_time' => now(),
-        'status' => 'completed',
-        'completion_rate' => $completionRate,
-        'total_questions' => $totalQuestions,
-        'answered_questions' => $recordedAnswers,
-        'is_complete_attempt' => ($completionRate >= 80),
-    ]);
-    
-    // INCREMENT TEST COUNT
-    auth()->user()->incrementTestCount();
-    
-    return redirect()->route('student.results.show', $attempt)
-        ->with('success', 'Test submitted successfully!');
-}
 }

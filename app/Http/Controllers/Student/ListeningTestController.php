@@ -437,22 +437,14 @@ class ListeningTestController extends Controller
             }
         });
         
-        // If part of full test, redirect to next section
+        // If part of full test, redirect to section completed screen
         if ($isPartOfFullTest && $fullTestSectionAttempt) {
             $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
-            $nextSection = $fullTestAttempt->getNextSection();
             
-            if ($nextSection) {
-                return redirect()->route('student.full-test.section', [
-                    'fullTestAttempt' => $fullTestAttempt->id,
-                    'section' => $nextSection
-                ])->with('success', 'Listening section completed! Moving to the next section.');
-            } else {
-                // All sections completed
-                $fullTestAttempt->markAsCompleted();
-                return redirect()->route('student.full-test.results', $fullTestAttempt)
-                    ->with('success', 'Congratulations! You have completed the full test.');
-            }
+            return redirect()->route('student.full-test.section-completed', [
+                'fullTestAttempt' => $fullTestAttempt->id,
+                'section' => 'listening'
+            ])->with('success', 'Listening section completed successfully!');
         }
         
         // Regular test completion

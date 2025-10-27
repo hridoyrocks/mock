@@ -161,12 +161,16 @@ class ReadingTestController extends Controller
                 ->with('error', 'Invalid attempt or test already submitted.');
         }
         
+        // Check if this is part of a full test
+        $fullTestSectionAttempt = \App\Models\FullTestSectionAttempt::where('student_attempt_id', $attempt->id)->first();
+        $isPartOfFullTest = $fullTestSectionAttempt !== null;
+        
         // Validate the submission
         $request->validate([
             'answers' => 'required|array',
         ]);
         
-        DB::transaction(function () use ($request, $attempt) {
+        DB::transaction(function () use ($request, $attempt, $isPartOfFullTest, $fullTestSectionAttempt) {
             // Get all questions (excluding passages)
             $questions = $attempt->testSet->questions()
                 ->where('question_type', '!=', 'passage')
@@ -675,9 +679,30 @@ class ReadingTestController extends Controller
             // Store score data in session for display
             session()->flash('score_details', $scoreData);
             
+            // If part of full test, update full test attempt
+            if ($isPartOfFullTest && $fullTestSectionAttempt) {
+                $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
+                // Ensure we have a valid band score before updating
+                $bandScore = $scoreData['band_score'] ?? 0.0;
+                if (is_numeric($bandScore)) {
+                    $fullTestAttempt->updateSectionScore('reading', (float)$bandScore);
+                }
+            }
+            
             \Log::info('=== READING TEST SUBMISSION COMPLETE ===');
         });
         
+        // If part of full test, redirect to section completed screen
+        if ($isPartOfFullTest && $fullTestSectionAttempt) {
+            $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
+            
+            return redirect()->route('student.full-test.section-completed', [
+                'fullTestAttempt' => $fullTestAttempt->id,
+                'section' => 'reading'
+            ])->with('success', 'Reading section completed successfully!');
+        }
+        
+        // Regular test completion
         return redirect()->route('student.results.show', $attempt)
             ->with('success', 'Test submitted successfully!');
     }

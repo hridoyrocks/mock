@@ -324,4 +324,63 @@ class FullTestController extends Controller
         return redirect()->route('student.full-test.index')
             ->with('info', 'Test has been abandoned. You can start a new attempt anytime.');
     }
+    
+    /**
+     * Show section completed screen.
+     */
+    public function sectionCompleted(FullTestAttempt $fullTestAttempt, string $section)
+    {
+        // Validate user owns this attempt
+        if ($fullTestAttempt->user_id !== auth()->id()) {
+            abort(403);
+        }
+        
+        // Validate section name
+        if (!in_array($section, ['listening', 'reading', 'writing', 'speaking'])) {
+            abort(404);
+        }
+        
+        // Store completed section name
+        $completedSection = $section;
+        
+        // Load full test with sections
+        $fullTestAttempt->load('fullTest', 'sectionAttempts');
+        
+        // Get section score if available
+        $sectionScore = null;
+        if (in_array($completedSection, ['listening', 'reading'])) {
+            $scoreField = $completedSection . '_score';
+            $sectionScore = $fullTestAttempt->$scoreField;
+        }
+        
+        // Get available sections and completed sections
+        $availableSections = $fullTestAttempt->fullTest->getAvailableSections();
+        $completedSectionsList = $fullTestAttempt->sectionAttempts->pluck('section_type')->toArray();
+        
+        // Calculate progress
+        $completedSections = count($completedSectionsList);
+        $totalSections = count($availableSections);
+        $progressPercentage = $totalSections > 0 ? round(($completedSections / $totalSections) * 100) : 0;
+        
+        // Get next section
+        $nextSection = $fullTestAttempt->getNextSection();
+        $hasNextSection = $nextSection !== null;
+        
+        // Full test attempt ID
+        $fullTestAttemptId = $fullTestAttempt->id;
+        
+        return view('student.full-test.section-completed', compact(
+            'fullTestAttempt',
+            'completedSection',
+            'sectionScore',
+            'availableSections',
+            'completedSectionsList',
+            'completedSections',
+            'totalSections',
+            'progressPercentage',
+            'nextSection',
+            'hasNextSection',
+            'fullTestAttemptId'
+        ));
+    }
 }

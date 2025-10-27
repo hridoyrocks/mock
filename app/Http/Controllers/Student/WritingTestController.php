@@ -264,13 +264,17 @@ class WritingTestController extends Controller
                 ->with('error', 'Invalid attempt or test already submitted.');
         }
         
+        // Check if this is part of a full test
+        $fullTestSectionAttempt = \App\Models\FullTestSectionAttempt::where('student_attempt_id', $attempt->id)->first();
+        $isPartOfFullTest = $fullTestSectionAttempt !== null;
+        
         // Validate the submission
         $request->validate([
             'answers' => 'required|array',
             'answers.*' => 'required|string',
         ]);
         
-        DB::transaction(function () use ($request, $attempt) {
+        DB::transaction(function () use ($request, $attempt, $isPartOfFullTest, $fullTestSectionAttempt) {
             $totalQuestions = 0;
             $answeredQuestions = 0;
             
@@ -314,8 +318,27 @@ class WritingTestController extends Controller
 
             // Increment test count
             auth()->user()->incrementTestCount();
+            
+            // If part of full test, update full test attempt with placeholder score
+            // Writing needs human evaluation, so we'll set a placeholder score of 0
+            if ($isPartOfFullTest && $fullTestSectionAttempt) {
+                $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
+                // Set placeholder score - will be updated after evaluation
+                $fullTestAttempt->updateSectionScore('writing', 0.0);
+            }
         });
         
+        // If part of full test, redirect to section completed screen
+        if ($isPartOfFullTest && $fullTestSectionAttempt) {
+            $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
+            
+            return redirect()->route('student.full-test.section-completed', [
+                'fullTestAttempt' => $fullTestAttempt->id,
+                'section' => 'writing'
+            ])->with('success', 'Writing section completed successfully!');
+        }
+        
+        // Regular test completion
         return redirect()->route('student.results.show', $attempt)
             ->with('success', 'Test submitted successfully!');
     }
