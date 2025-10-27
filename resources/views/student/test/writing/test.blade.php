@@ -579,9 +579,7 @@
                             <div class="word-count">
                                 Word count: <span class="word-count-number" id="current-word-count">0</span>
                             </div>
-                            <div class="word-requirement" id="word-requirement">
-                                Minimum: {{ $taskOneQuestion->word_limit ?? 150 }} words
-                            </div>
+                            
                         </div>
                         <div class="autosave-status" id="autosave-status">
                             <span id="save-text"></span>
