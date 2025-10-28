@@ -52,8 +52,10 @@
         {{-- Single Choice Question --}}
         <div class="question-item single-choice-question" id="question-{{ $question->id }}">
             <div class="question-content">
-                <span class="question-number">{{ $displayNumber }}</span>
-                <div class="question-text">{!! $question->content !!}</div>
+                <div style="display: flex; align-items: flex-start;">
+                    <span class="question-number" style="margin-right: 15px;">{{ $displayNumber }}</span>
+                    <div class="question-text" style="flex: 1;">{!! $question->content !!}</div>
+                </div>
             </div>
             
             @if($question->options && $question->options->count() > 0)
@@ -100,13 +102,15 @@
                     $hasMultipleCorrect = $correctCount > 1;
                 @endphp
                 
-                @if($hasMultipleCorrect)
-                    <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + $correctCount - 1 }}</span>
-                @else
-                    <span class="question-number">{{ $displayNumber }}</span>
-                @endif
-                
-                <div class="question-text">{!! $question->content !!}</div>
+                <div style="display: flex; align-items: flex-start;">
+                    @if($hasMultipleCorrect)
+                        <span class="question-number" style="margin-right: 15px;">{{ $displayNumber }}-{{ $displayNumber + $correctCount - 1 }}</span>
+                    @else
+                        <span class="question-number" style="margin-right: 15px;">{{ $displayNumber }}</span>
+                    @endif
+                    
+                    <div class="question-text" style="flex: 1;">{!! $question->content !!}</div>
+                </div>
             </div>
             
             @if($question->options && $question->options->count() > 0)
@@ -171,31 +175,33 @@
                                   ? explode(',', $dropdownData['dropdown_options'][$i]) 
                                   : [];
                         
-                        $selectHtml = '<select name="answers[' . $question->id . '][dropdown_' . $i . ']" 
+                        $selectHtml = '<span style="display: inline-flex; align-items: center; vertical-align: middle;">' .
+                                      '<span style="display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; background: #e8e8e8; border: 1px solid #999; border-radius: 3px; font-weight: 700; color: #000; font-size: 14px; margin-right: 8px;">' . $dropdownNumber . '</span>' .
+                                      '<select name="answers[' . $question->id . '][dropdown_' . $i . ']" 
                                               class="select-input inline-dropdown" 
                                               data-question-number="' . $dropdownNumber . '"
-                                              style="display: inline-block; margin: 0 4px;"
+                                              style="display: inline-block; margin: 0 4px; vertical-align: middle; text-align: center; text-align-last: center;"
                                               autocomplete="off"
                                               autocorrect="off"
-                                              spellcheck="false">
-                                        <option value="">Select...</option>';
+                                              spellcheck="false">';
                         
+                        $firstOption = true;
                         foreach ($options as $option) {
-                            $selectHtml .= '<option value="' . trim($option) . '">' . trim($option) . '</option>';
+                            $trimmedOption = trim($option);
+                            if ($firstOption) {
+                                $selectHtml .= '<option value="' . $trimmedOption . '" selected>' . $trimmedOption . '</option>';
+                                $firstOption = false;
+                            } else {
+                                $selectHtml .= '<option value="' . $trimmedOption . '">' . $trimmedOption . '</option>';
+                            }
                         }
                         
-                        $selectHtml .= '</select>';
+                        $selectHtml .= '</select></span>';
                         
                         $processedContent = str_replace('[DROPDOWN_' . $i . ']', $selectHtml, $processedContent);
                         $dropdownNumber++;
                     }
                 @endphp
-                
-                @if($dropdownCount > 1)
-                    <span class="question-number">{{ $displayNumber }}-{{ $displayNumber + $dropdownCount - 1 }}</span>
-                @else
-                    <span class="question-number">{{ $displayNumber }}</span>
-                @endif
                 
                 <div class="question-text">{!! $processedContent !!}</div>
             </div>
@@ -248,7 +254,7 @@
                                          data-zone-index="' . $index . '"
                                          data-question-number="' . $zoneNumber . '"
                                          data-allow-reuse="' . ($allowReuse ? '1' : '0') . '"
-                                         style="display: inline-flex; min-width: 150px; width: auto; height: 36px; border: 1px solid #000000; border-radius: 4px; line-height: 36px; align-items: center; justify-content: center; background: white; font-size: 14px; padding: 0 15px; cursor: pointer; margin: 0 4px; vertical-align: middle;">
+                                         style="display: inline-flex; min-width: 150px; width: auto; height: 40px; border: 1px solid #000000; border-radius: 6px; line-height: 40px; align-items: center; justify-content: center; background: white; font-size: 14px; padding: 0 15px; cursor: pointer; margin: 0 4px; vertical-align: middle;">
                         <span class="placeholder-text" style="color: #6b7280; font-weight: 600; font-size: 14px;">' . $zoneNumber . '</span>
                     </span>';
                     
@@ -286,8 +292,10 @@
         {{-- Fallback for any other type - treat as text input --}}
         <div class="question-item" id="question-{{ $question->id }}">
             <div class="question-content">
-                <span class="question-number">{{ $displayNumber }}</span>
-                <div class="question-text">{!! $question->content !!}</div>
+                <div style="display: flex; align-items: flex-start;">
+                    <span class="question-number" style="margin-right: 15px;">{{ $displayNumber }}</span>
+                    <div class="question-text" style="flex: 1;">{!! $question->content !!}</div>
+                </div>
             </div>
             
             <div class="answer-input">
@@ -339,6 +347,8 @@
     min-width: 100px !important;
     max-width: 140px !important;
     height: 32px !important;
+    text-align: center !important;
+    text-align-last: center !important;
 }
 
 /* Remove instruction background styling */
@@ -364,7 +374,7 @@
 
 /* Single Choice Options Styling - Clean Design with Black Text */
 .single-choice-options {
-    margin: 20px 0 20px 47px;
+    margin: 12px 0 20px 47px;
 }
 
 .single-choice-option-item {
@@ -421,7 +431,7 @@
 
 /* Multiple Choice Options Styling - Same as Single Choice */
 .multiple-choice-options {
-    margin: 20px 0 20px 47px;
+    margin: 12px 0 20px 47px;
 }
 
 .multiple-choice-option-item {
@@ -559,116 +569,76 @@
 
 /* Drop box styles - now inline in text */
 .drop-box {
-    display: inline-block;
-    min-width: 100px;
-    max-width: 200px;
-    height: 36px;
-    border: 2px dashed #9ca3af;
-    border-radius: 4px;
-    line-height: 36px;
-    text-align: center;
+    display: inline-flex !important;
+    min-width: 150px !important;
+    width: auto !important;
+    height: 40px;
+    border: 1px solid #000000;
+    border-radius: 6px;
+    line-height: 40px;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s;
     background: white;
     font-size: 14px;
-    padding: 0 8px;
+    padding: 0 15px !important;
     cursor: pointer;
-    position: relative;
     margin: 0 4px;
-    vertical-align: baseline;
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.drop-box.drag-over {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    border-style: solid;
-}
-
-.drop-box.has-answer {
-    border-style: solid;
-    border-color: #10b981;
-    background: #ecfdf5;
-    color: #065f46;
-    font-weight: 500;
-    cursor: move;
-    padding-right: 28px;
-}
-
-.drop-box .placeholder-text {
-    color: #000000;
-    font-style: normal;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.drop-box .answer-text {
-    color: #065f46;
-    font-weight: 500;
-    font-size: 12px;
-    line-height: 36px;
-    display: inline-block;
-    max-width: 100%;
+    vertical-align: middle;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    vertical-align: baseline;
 }
 
-.drop-box .remove-answer {
-    position: absolute;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #ef4444;
-    color: white;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 11px;
-    line-height: 18px;
+.drop-box.drag-over {
+    background: #f9fafb !important;
+    border: 1px dashed #000000 !important;
+    border-style: dashed !important;
 }
 
-.drop-box.has-answer:hover .remove-answer {
-    display: flex;
+.drop-box.has-answer {
+    border: 1px solid #000000;
+    background: white;
+    cursor: move;
+    color: #1f2937;
+    font-weight: normal;
+}
+
+.drop-box .placeholder-text {
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 /* Draggable Options - Above content */
 .draggable-options-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin: 16px 0 20px 0;
-    padding: 0;
-    background: none;
-    border: none;
-    border-radius: 0;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+    position: relative !important;
 }
 
 .draggable-option {
-    padding: 10px 16px;
+    padding: 5px 14px;
     background: white;
-    border: 1px solid #d1d5db;
+    border: 1px solid rgba(108, 117, 125, 0.3);
     border-radius: 4px;
     cursor: move;
     transition: all 0.2s;
-    font-size: 14px;
-    font-weight: normal;
+    font-size: 13px;
+    font-weight: 500;
     color: #1f2937;
+    text-align: center;
     user-select: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0 !important;
 }
 
 .draggable-option:hover:not(.placed) {
     background: #f9fafb;
-    border-color: #3b82f6;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-color: rgba(108, 117, 125, 0.5);
 }
 
 .draggable-option.dragging {
@@ -677,9 +647,7 @@
 }
 
 .draggable-option.placed {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: #f3f4f6;
-    border-color: #d1d5db;
+    display: none !important;
+    visibility: hidden !important;
 }
 </style>

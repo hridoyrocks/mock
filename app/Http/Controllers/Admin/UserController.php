@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Response;
 
 class UserController extends Controller
 {
@@ -17,32 +18,52 @@ class UserController extends Controller
     {
         $query = User::query();
 
-        // Search functionality
+        // Search functionality - trim and lowercase for better matching
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
+                    ->orWhereRaw('LOWER(email) LIKE ?', ['%' . strtolower($search) . '%'])
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
-        // Filter by role
+        // Filter by role - Fixed the logic
         if ($request->filled('role')) {
-            if ($request->role === 'admin') {
-                $query->where('is_admin', true);
-            } elseif ($request->role === 'teacher') {
-                $query->whereHas('teacher');
-            } elseif ($request->role === 'student') {
-                $query->where('is_admin', false)->doesntHave('teacher');
+            switch ($request->role) {
+                case 'admin':
+                    $query->where('is_admin', true);
+                    break;
+                case 'teacher':
+                    $query->whereHas('teacher')
+                          ->where('is_admin', false); // Teachers are not admins
+                    break;
+                case 'student':
+                    $query->where('is_admin', false)
+                          ->whereDoesntHave('teacher');
+                    break;
             }
         }
 
-        // Filter by status
+        // Filter by status - Fixed to handle ban expiry
         if ($request->filled('status')) {
             if ($request->status === 'banned') {
-                $query->whereNotNull('banned_at');
+                $query->whereNotNull('banned_at')
+                      ->where(function ($q) {
+                          $q->where('ban_type', 'permanent')
+                            ->orWhere(function ($q2) {
+                                $q2->where('ban_type', 'temporary')
+                                   ->where('ban_expires_at', '>', now());
+                            });
+                      });
             } elseif ($request->status === 'active') {
-                $query->whereNull('banned_at');
+                $query->where(function ($q) {
+                    $q->whereNull('banned_at')
+                      ->orWhere(function ($q2) {
+                          $q2->where('ban_type', 'temporary')
+                             ->where('ban_expires_at', '<=', now());
+                      });
+                });
             }
         }
 
@@ -309,26 +330,122 @@ class UserController extends Controller
     }
 
     /**
-     * Remove the specified user from storage.
+     * Export selected users to CSV
      */
-    public function destroy(User $user)
+    public function export(Request $request)
     {
-        // Prevent deleting own account
-        if ($user->id === auth()->id()) {
-            if (request()->ajax()) {
-                return response()->json(['error' => 'You cannot delete your own account.'], 403);
-            }
-            return back()->with('error', 'You cannot delete your own account.');
-        }
-
-        try {
-            // Start database transaction
-            \DB::beginTransaction();
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id'
+        ]);
+        
+        $users = User::whereIn('id', $validated['user_ids'])
+            ->with(['teacher', 'currentSubscription.plan'])
+            ->get();
+        
+        $filename = 'users_export_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+        
+        $columns = ['ID', 'Name', 'Email', 'Phone', 'Role', 'Status', 'Subscription', 'Email Verified', 'Referral Code', 'Referral Balance', 'AI Evaluations', 'Tests Taken', 'Created At', 'Last Login'];
+        
+        $callback = function() use ($users, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
             
+            foreach ($users as $user) {
+                $row = [
+                    $user->id,
+                    $user->name,
+                    $user->email,
+                    $user->phone ?? 'N/A',
+                    $user->is_admin ? 'Admin' : ($user->teacher ? 'Teacher' : 'Student'),
+                    $user->isBanned() ? 'Banned' : 'Active',
+                    $user->currentSubscription ? $user->currentSubscription->plan->name : 'Free',
+                    $user->email_verified_at ? 'Yes' : 'No',
+                    $user->referral_code,
+                    $user->referral_balance,
+                    $user->ai_evaluations_used,
+                    $user->tests_taken_this_month,
+                    $user->created_at->format('Y-m-d H:i:s'),
+                    $user->last_login_at ? $user->last_login_at->format('Y-m-d H:i:s') : 'Never'
+                ];
+                
+                fputcsv($file, $row);
+            }
+            
+            fclose($file);
+        };
+        
+        return Response::stream($callback, 200, $headers);
+    }
+    
+    /**
+     * Bulk delete users
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id'
+        ]);
+        
+        // Remove current user from the list if present
+        $userIds = array_filter($validated['user_ids'], function($id) {
+            return $id != auth()->id();
+        });
+        
+        if (empty($userIds)) {
+            return back()->with('error', 'No valid users selected for deletion.');
+        }
+        
+        $deletedCount = 0;
+        $failedCount = 0;
+        $errors = [];
+        
+        foreach ($userIds as $userId) {
+            try {
+                $user = User::find($userId);
+                if ($user && $user->id !== auth()->id()) {
+                    $this->deleteUserAndRelatedData($user);
+                    $deletedCount++;
+                }
+            } catch (\Exception $e) {
+                $failedCount++;
+                $errors[] = "Failed to delete user ID {$userId}: " . $e->getMessage();
+                \Log::error('Bulk delete failed for user: ' . $userId, ['error' => $e->getMessage()]);
+            }
+        }
+        
+        $message = "Successfully deleted {$deletedCount} user(s).";
+        if ($failedCount > 0) {
+            $message .= " Failed to delete {$failedCount} user(s).";
+            if (!empty($errors)) {
+                session()->flash('errors', $errors);
+            }
+            return back()->with('warning', $message);
+        }
+        
+        return redirect()->route('admin.users.index')
+            ->with('success', $message);
+    }
+    
+    /**
+     * Delete user and all related data (extracted for reuse)
+     */
+    private function deleteUserAndRelatedData(User $user)
+    {
+        \DB::beginTransaction();
+        
+        try {
             // Store user name before deletion
             $userName = $user->name;
-            
-            // Delete related records first to avoid foreign key constraints
             
             // Delete authentication logs if table exists
             if (\Schema::hasTable('authentication_log')) {
@@ -439,8 +556,31 @@ class UserController extends Controller
             // Finally delete the user
             $user->delete();
             
-            // Commit transaction
             \DB::commit();
+            
+            return true;
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw $e;
+        }
+    }
+    
+    /**
+     * Remove the specified user from storage.
+     */
+    public function destroy(User $user)
+    {
+        // Prevent deleting own account
+        if ($user->id === auth()->id()) {
+            if (request()->ajax()) {
+                return response()->json(['error' => 'You cannot delete your own account.'], 403);
+            }
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        try {
+            $userName = $user->name; // Store name before deletion
+            $this->deleteUserAndRelatedData($user);
 
             if (request()->ajax()) {
                 return response()->json([

@@ -18,29 +18,49 @@ class StudentAttemptController extends Controller
     {
         $query = StudentAttempt::with(['user', 'testSet', 'testSet.section']);
         
-        // Filter by section
-        if ($request->has('section')) {
+        // Filter by section - Fixed to properly handle the filter
+        if ($request->filled('section') && $request->section !== '') {
             $query->whereHas('testSet.section', function ($q) use ($request) {
                 $q->where('name', $request->section);
             });
         }
         
-        // Filter by status
-        if ($request->has('status')) {
+        // Filter by status - Fixed to properly handle the filter
+        if ($request->filled('status') && $request->status !== '') {
             $query->where('status', $request->status);
         }
         
-        // Filter by user
-        if ($request->has('user')) {
+        // Filter by user - Fixed to properly handle the filter
+        if ($request->filled('user') && $request->user !== '') {
             $query->where('user_id', $request->user);
         }
         
-        $attempts = $query->latest()->paginate(15);
+        // Calculate statistics
+        $totalAttempts = StudentAttempt::count();
+        $completedCount = StudentAttempt::where('status', 'completed')->count();
+        $inProgressCount = StudentAttempt::where('status', 'in_progress')->count();
+        $needsEvaluationCount = StudentAttempt::where('status', 'completed')
+            ->whereNull('band_score')
+            ->whereHas('testSet.section', function ($q) {
+                $q->whereIn('name', ['writing', 'speaking']);
+            })
+            ->count();
+        
+        $attempts = $query->latest()->paginate(15)->withQueryString();
         
         // Get users for filtering
-        $users = User::where('is_admin', false)->get();
+        $users = User::where('is_admin', false)
+            ->orderBy('name')
+            ->get();
         
-        return view('admin.attempts.index', compact('attempts', 'users'));
+        return view('admin.attempts.index', compact(
+            'attempts', 
+            'users', 
+            'totalAttempts', 
+            'completedCount', 
+            'inProgressCount', 
+            'needsEvaluationCount'
+        ));
     }
 
     /**
@@ -82,6 +102,45 @@ class StudentAttemptController extends Controller
             ->with('success', 'Attempt evaluated successfully.');
     }
 
+    /**
+     * Bulk delete student attempts.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'attempt_ids' => 'required|array',
+            'attempt_ids.*' => 'exists:student_attempts,id'
+        ]);
+        
+        $deletedCount = 0;
+        $failedCount = 0;
+        
+        foreach ($request->attempt_ids as $attemptId) {
+            try {
+                $attempt = StudentAttempt::find($attemptId);
+                if ($attempt) {
+                    // Delete related answers
+                    $attempt->answers()->delete();
+                    // Delete the attempt
+                    $attempt->delete();
+                    $deletedCount++;
+                }
+            } catch (\Exception $e) {
+                $failedCount++;
+                \Log::error('Failed to delete attempt: ' . $attemptId, ['error' => $e->getMessage()]);
+            }
+        }
+        
+        $message = "Successfully deleted {$deletedCount} attempt(s).";
+        if ($failedCount > 0) {
+            $message .= " Failed to delete {$failedCount} attempt(s).";
+            return back()->with('warning', $message);
+        }
+        
+        return redirect()->route('admin.attempts.index')
+            ->with('success', $message);
+    }
+    
     /**
      * Remove the specified student attempt from storage.
      */
