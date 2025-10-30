@@ -105,7 +105,7 @@ class LoginController extends Controller
             }
 
             // Store device info in session
-            session(['device_id' => $device->id]);
+            session(['device_id' => $device->id, 'device_fingerprint' => $device->device_fingerprint]);
         } catch (\Exception $e) {
             // Don't fail login if device tracking fails
             \Log::error('Device tracking error: ' . $e->getMessage());

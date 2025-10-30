@@ -112,19 +112,27 @@ class OtpVerificationController extends Controller
 
     private function trackLoginDevice(Request $request, User $user)
     {
-        $locationData = $this->locationService->getLocation($request->ip());
-        $device = UserDevice::createFromRequest($request, $user->id, $locationData);
+        try {
+            $locationData = $this->locationService->getLocation($request->ip());
+            $device = UserDevice::createFromRequest($request, $user->id, $locationData);
 
-        // Check if this is a new device
-        if ($device->wasRecentlyCreated) {
-            // Send new device notification
-            $user->notify(new \App\Notifications\NewDeviceNotification($device));
-        } else {
-            // Update last activity
-            $device->updateActivity();
+            // Check if this is a new device
+            if ($device->wasRecentlyCreated) {
+                // Send new device notification only if the class exists
+                if (class_exists('\App\Notifications\NewDeviceNotification')) {
+                    $user->notify(new \App\Notifications\NewDeviceNotification($device));
+                }
+            } else {
+                // Update last activity
+                $device->updateActivity();
+            }
+
+            // Store device fingerprint in session
+            session(['device_fingerprint' => $device->device_fingerprint]);
+        } catch (\Exception $e) {
+            // Log the error but don't fail the login
+            \Log::error('Device tracking failed during OTP verification: ' . $e->getMessage());
+            // Continue without device tracking
         }
-
-        // Store device fingerprint in session
-        session(['device_fingerprint' => $device->device_fingerprint]);
     }
 }
