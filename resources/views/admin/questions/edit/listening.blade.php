@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Edit Question - Listening</x-slot>
     
     <!-- Header -->
@@ -23,7 +23,27 @@
     </div>
 
     <div class="bg-gray-50 min-h-screen">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            
+            <!-- Question Info Box -->
+            <div class="bg-white border-l-4 border-purple-500 rounded-lg shadow-sm p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Editing Question</h2>
+                        <p class="text-sm text-gray-600 mt-1">
+                            <span class="font-medium text-purple-600">#{{ $question->order_number }}</span>
+                            <span class="mx-2">•</span>
+                            <span>{{ ucfirst(str_replace('_', ' ', $question->question_type)) }}</span>
+                            <span class="mx-2">•</span>
+                            <span>Part {{ $question->part_number }}</span>
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-purple-600">#{{ $question->order_number }}</p>
+                        <p class="text-xs text-gray-500">Question Number</p>
+                    </div>
+                </div>
+            </div>
             
             <form action="{{ route('admin.questions.update', $question) }}" method="POST" enctype="multipart/form-data" id="questionForm">
                 @csrf
@@ -38,104 +58,139 @@
                         </div>
                         
                         <div class="p-4 sm:p-6">
-                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-                                <div class="space-y-4 sm:space-y-6">
-                                    <!-- Instructions -->
-                                    <div>
-                                        <div class="flex items-center justify-between mb-2">
-                                            <label class="block text-sm font-medium text-gray-700">Instructions</label>
-                                            <button type="button" onclick="showTemplates()" class="text-sm text-purple-600 hover:text-purple-700">
-                                                Use Template
-                                            </button>
-                                        </div>
-                                        <textarea id="instructions" name="instructions" rows="3" 
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
-                                                  placeholder="e.g., Questions 1-5: Complete the form below. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.">{{ old('instructions', $question->instructions) }}</textarea>
-                                    </div>
-                                    
-                                    <!-- Question Content -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Question <span class="text-red-500">*</span>
-                                        </label>
-                                        <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
-                                            <button type="button" onclick="insertListeningBlank()" class="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 transition-colors">
-                                                Insert Blank
-                                            </button>
-                                            <span class="text-xs text-gray-500 flex items-center">
-                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
-                                            </span>
-                                        </div>
-                                        <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
-                                            <button type="button" onclick="insertListeningDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
-                                                Insert Dropdown
-                                            </button>
-                                            <span class="text-xs text-gray-500 flex items-center">
-                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
-                                            </span>
-                                        </div>
-                                        <div class="border border-gray-300 rounded-md overflow-hidden" style="height: 350px;">
-                                            <textarea id="content" name="content" class="tinymce">{{ old('content', $question->content) }}</textarea>
-                                        </div>
-                                    </div>
+                            <!-- Top Settings Row - 4 Columns -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                                <!-- Type -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Type <span class="text-red-500">*</span></label>
+                                    <select id="question_type" name="question_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" required>
+                                        <option value="">Select type...</option>
+                                        <option value="fill_blanks" {{ old('question_type', $question->question_type) == 'fill_blanks' ? 'selected' : '' }}>Fill in the Blanks</option>
+                                        <option value="single_choice" {{ old('question_type', $question->question_type) == 'single_choice' ? 'selected' : '' }}>Single Choice (Radio)</option>
+                                        <option value="multiple_choice" {{ old('question_type', $question->question_type) == 'multiple_choice' ? 'selected' : '' }}>Multiple Choice (Checkbox)</option>
+                                        <option value="dropdown_selection" {{ old('question_type', $question->question_type) == 'dropdown_selection' ? 'selected' : '' }}>Dropdown Selection</option>
+                                        <option value="drag_drop" {{ old('question_type', $question->question_type) == 'drag_drop' ? 'selected' : '' }}>Drag & Drop</option>
+                                    </select>
+                                </div>
+
+                                <!-- Number -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Number <span class="text-red-500">*</span></label>
+                                    <input type="number" name="order_number" value="{{ old('order_number', $question->order_number) }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" min="0" required>
+                                </div>
+
+                                <!-- Part -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Part <span class="text-red-500">*</span></label>
+                                    <select name="part_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" required>
+                                        <option value="1" {{ old('part_number', $question->part_number) == 1 ? 'selected' : '' }}>Part 1 (Social)</option>
+                                        <option value="2" {{ old('part_number', $question->part_number) == 2 ? 'selected' : '' }}>Part 2 (Monologue)</option>
+                                        <option value="3" {{ old('part_number', $question->part_number) == 3 ? 'selected' : '' }}>Part 3 (Discussion)</option>
+                                        <option value="4" {{ old('part_number', $question->part_number) == 4 ? 'selected' : '' }}>Part 4 (Lecture)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Marks -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Marks</label>
+                                    <input type="number" name="marks" value="{{ old('marks', $question->marks) }}" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" min="0" max="40">
+                                </div>
+                            </div>
+
+                            <!-- Audio Transcript - Full Width -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Audio Transcript</label>
+                                <textarea name="audio_transcript" rows="4" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
+                                          placeholder="Enter the transcript of the audio...">{{ old('audio_transcript', $question->audio_transcript) }}</textarea>
+                            </div>
+                            
+                            <!-- Instructions -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
+                                <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions', $question->instructions) }}</textarea>
+                            </div>
+                            
+                            <!-- Question Content -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Question <span class="text-red-500">*</span>
+                                </label>
+                                
+                                <!-- Insert Buttons -->
+                                <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
+                                    <button type="button" onclick="insertListeningBlank()" class="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 transition-colors">
+                                        Insert Blank
+                                    </button>
+                                    <span class="text-xs text-gray-500 flex items-center">
+                                        <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
+                                    </span>
                                 </div>
                                 
-                                <div class="space-y-4 sm:space-y-6">
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <!-- Question Type -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Type <span class="text-red-500">*</span></label>
-                                            <select id="question_type" name="question_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
-                                                <option value="">Select type...</option>
-                                                @foreach([
-                                                    'fill_blanks' => 'Fill in the Blanks',
-                                                    'single_choice' => 'Single Choice (Radio)',
-                                                    'multiple_choice' => 'Multiple Choice (Checkbox)',
-                                                    'dropdown_selection' => 'Dropdown Selection'
-                                                ] as $key => $type)
-                                                    <option value="{{ $key }}" {{ old('question_type', $question->question_type) == $key ? 'selected' : '' }}>
-                                                        {{ $type }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        
-                                        <!-- Question Number -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Number <span class="text-red-500">*</span></label>
-                                            <input type="number" name="order_number" value="{{ old('order_number', $question->order_number) }}" 
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500" min="0" required>
-                                        </div>
-                                        
-                                        <!-- Part Selection -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Part <span class="text-red-500">*</span></label>
-                                            <select name="part_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500" required>
-                                                @for($i = 1; $i <= 4; $i++)
-                                                    <option value="{{ $i }}" {{ old('part_number', $question->part_number) == $i ? 'selected' : '' }}>
-                                                        Part {{ $i }}
-                                                    </option>
-                                                @endfor
-                                            </select>
-                                        </div>
-                                        
-                                        <!-- Marks -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Marks</label>
-                                            <input type="number" name="marks" value="{{ old('marks', $question->marks) }}" 
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
-                                                   min="0" max="40">
+                                <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
+                                    <button type="button" onclick="insertListeningDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
+                                        Insert Dropdown
+                                    </button>
+                                    <span class="text-xs text-gray-500 flex items-center">
+                                        <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-3 flex flex-wrap gap-2" id="drag-zone-buttons" style="display: none;">
+                                    <button type="button" onclick="insertDragZone()" class="px-3 py-1 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors">
+                                        Insert Drag Zone
+                                    </button>
+                                    <span class="text-xs text-gray-500 flex items-center">
+                                        <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+G</kbd>
+                                    </span>
+                                </div>
+                                
+                                <textarea id="content" name="content" class="tinymce-editor">{{ old('content', $question->content) }}</textarea>
+                            </div>
+
+                            <!-- Blanks Manager -->
+                            <div id="blanks-manager-listening" class="hidden mb-6">
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <h4 class="text-sm font-medium text-gray-900">Fill in the Blanks Configuration</h4>
+                                            <span id="blank-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">0</span>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Audio Transcript -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Audio Transcript
-                                        </label>
-                                        <textarea name="audio_transcript" rows="4" 
-                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
-                                                  placeholder="Enter the transcript of the audio...">{{ old('audio_transcript', $question->audio_transcript) }}</textarea>
+                                    <div id="blanks-list-listening" class="space-y-2 max-h-64 overflow-y-auto">
+                                        <!-- Dynamically populated -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Dropdown Manager -->
+                            <div id="dropdown-manager-listening" class="hidden mb-6">
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <h4 class="text-sm font-medium text-gray-900">Dropdown Configuration</h4>
+                                            <span id="dropdown-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">0</span>
+                                        </div>
+                                    </div>
+                                    <div id="dropdown-list-listening" class="space-y-3">
+                                        <!-- Dynamically populated -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Drag Zones Manager -->
+                            <div id="drag-zones-manager" class="hidden mb-6">
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <h4 class="text-sm font-medium text-gray-900">Drag Zones Configuration</h4>
+                                            <span id="drag-zone-counter" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">0</span>
+                                        </div>
+                                    </div>
+                                    <div id="drag-zones-list" class="space-y-3 max-h-96 overflow-y-auto">
+                                        <!-- Dynamically populated -->
                                     </div>
                                 </div>
                             </div>
@@ -145,34 +200,28 @@
                     {{-- Include listening question type panels --}}
                     @include('admin.questions.partials.listening-question-types')
                     
-
-                    
                     {{-- Type-specific panels --}}
                     <div id="type-specific-panels">
-                        {{-- Listening question types will be handled by listening-question-types.js --}}
+                        {{-- Existing panels will be handled by respective handlers --}}
                     </div>
                     
-                    <!-- Audio Upload -->
+                    <!-- Audio Management -->
                     <div class="bg-white rounded-lg shadow-sm overflow-hidden">
                         <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-purple-50">
-                            <h3 class="text-base sm:text-lg font-medium text-gray-900">
-                                Audio Upload
-                            </h3>
+                            <h3 class="text-base sm:text-lg font-medium text-gray-900">Audio Settings</h3>
                         </div>
                         
                         <div class="p-4 sm:p-6">
-                            @if($question->media_path && !in_array($question->question_type, ['plan_map_diagram']))
-                                <div class="mb-4">
+                            @if($question->media_path)
+                                <div class="mb-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Current Audio:</label>
-                                    <audio controls class="w-full">
+                                    <audio controls class="w-full mb-3">
                                         <source src="{{ asset('storage/' . $question->media_path) }}" type="audio/mpeg">
                                         Your browser does not support the audio element.
                                     </audio>
-                                    <div class="mt-2">
-                                        <label class="inline-flex items-center">
-                                            <input type="checkbox" name="remove_media" value="1" class="form-checkbox">
-                                            <span class="ml-2 text-sm text-red-600">Remove current audio</span>
-                                        </label>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" name="remove_media" value="1" id="remove_media" class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500">
+                                        <label for="remove_media" class="ml-2 text-sm text-red-600 font-medium cursor-pointer">Remove current audio</label>
                                     </div>
                                 </div>
                             @endif
@@ -194,6 +243,8 @@
                             <div id="media-preview" class="mt-4 hidden">
                                 <!-- Preview will be shown here -->
                             </div>
+                            
+                            <div id="part-audio-status" class="mt-4"></div>
                         </div>
                     </div>
                     
@@ -218,24 +269,13 @@
     
     @push('styles')
     <style>
-        /* Same styles as create view */
         .drag-over {
             border-color: #9333EA !important;
             background-color: #FAF5FF !important;
         }
         
-        .blank-placeholder {
-            background-color: #E9D5FF;
-            padding: 2px 8px;
-            margin: 0 4px;
-            border-bottom: 2px solid #9333EA;
-            border-radius: 2px;
-            font-weight: 500;
-            color: #581C87;
-            cursor: not-allowed;
-            user-select: none;
-            display: inline-block;
-            min-width: 60px;
+        .type-specific-panel {
+            transition: all 0.3s ease;
         }
     </style>
     @endpush
@@ -243,33 +283,21 @@
     @push('scripts')
     <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
     <script src="{{ asset('js/admin/listening-question-types.js') }}"></script>
-    
+    <script src="{{ asset('js/student/listening-drag-drop.js') }}"></script>
+
     <script>
     let contentEditor = null;
     
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize TinyMCE
+        // Initialize TinyMCE - Instructions
         tinymce.init({
-            selector: '.tinymce',
-            height: 350,
+            selector: '.tinymce-editor-simple',
+            height: 120,
             menubar: false,
-            plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
-                'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-            ],
-            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | link image media | removeformat code',
+            plugins: ['lists', 'link', 'charmap', 'code', 'table', 'image', 'media'],
+            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link image | table | removeformat code',
             font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
             content_css: '//www.tiny.cloud/css/codepen.min.css',
-            table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
-            table_default_styles: {
-                'border-collapse': 'collapse',
-                'width': '100%'
-            },
-            table_default_attributes: {
-                border: '1'
-            },
-            // Image upload configuration
             images_upload_url: '/admin/questions/upload-image',
             images_upload_base_path: '/',
             images_upload_credentials: true,
@@ -281,7 +309,6 @@
                     xhr.withCredentials = false;
                     xhr.open('POST', '/admin/questions/upload-image');
                     
-                    // Get CSRF token from meta tag
                     const token = document.querySelector('meta[name="csrf-token"]');
                     if (token) {
                         xhr.setRequestHeader('X-CSRF-TOKEN', token.content);
@@ -300,15 +327,11 @@
                         
                         try {
                             const json = JSON.parse(xhr.responseText);
-                            console.log('Upload response:', json);
-                            
                             if (!json || !json.success) {
                                 reject('Upload failed: ' + (json.message || 'Unknown error'));
                                 failure('Upload failed: ' + (json.message || 'Unknown error'));
                                 return;
                             }
-                            
-                            // Return the URL directly
                             resolve(json.url);
                             success(json.url);
                         } catch (e) {
@@ -324,7 +347,86 @@
                     
                     const formData = new FormData();
                     formData.append('image', blobInfo.blob(), blobInfo.filename());
+                    xhr.send(formData);
+                });
+            },
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                });
+            }
+        });
+        
+        // Initialize TinyMCE - Question Content
+        tinymce.init({
+            selector: '.tinymce-editor',
+            height: 500,
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table | link image media | removeformat code',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+            content_css: '//www.tiny.cloud/css/codepen.min.css',
+            table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+            table_default_styles: {
+                'border-collapse': 'collapse',
+                'width': '100%'
+            },
+            table_default_attributes: {
+                border: '1'
+            },
+            images_upload_url: '/admin/questions/upload-image',
+            images_upload_base_path: '/',
+            images_upload_credentials: true,
+            automatic_uploads: true,
+            file_picker_types: 'image',
+            images_upload_handler: function (blobInfo, success, failure, progress) {
+                return new Promise(function(resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.withCredentials = false;
+                    xhr.open('POST', '/admin/questions/upload-image');
                     
+                    const token = document.querySelector('meta[name="csrf-token"]');
+                    if (token) {
+                        xhr.setRequestHeader('X-CSRF-TOKEN', token.content);
+                    }
+                    
+                    xhr.upload.onprogress = function (e) {
+                        progress(e.loaded / e.total * 100);
+                    };
+                    
+                    xhr.onload = function() {
+                        if (xhr.status < 200 || xhr.status >= 300) {
+                            reject('HTTP Error: ' + xhr.status);
+                            failure('Upload failed: ' + xhr.status);
+                            return;
+                        }
+                        
+                        try {
+                            const json = JSON.parse(xhr.responseText);
+                            if (!json || !json.success) {
+                                reject('Upload failed: ' + (json.message || 'Unknown error'));
+                                failure('Upload failed: ' + (json.message || 'Unknown error'));
+                                return;
+                            }
+                            resolve(json.url);
+                            success(json.url);
+                        } catch (e) {
+                            reject('Invalid JSON response: ' + xhr.responseText);
+                            failure('Invalid server response');
+                        }
+                    };
+                    
+                    xhr.onerror = function () {
+                        reject('Image upload failed due to a network error.');
+                        failure('Image upload failed due to a network error.');
+                    };
+                    
+                    const formData = new FormData();
+                    formData.append('image', blobInfo.blob(), blobInfo.filename());
                     xhr.send(formData);
                 });
             },
@@ -333,15 +435,18 @@
                 editor.on('change', function() {
                     editor.save();
                     
-                    // Update blanks/dropdowns based on question type
                     const questionType = document.getElementById('question_type')?.value;
-                    if (questionType === 'fill_blanks') {
+                    if (['fill_blanks', 'note_completion', 'sentence_completion'].includes(questionType)) {
                         if (window.ListeningQuestionTypes) {
                             window.ListeningQuestionTypes.updateBlanks();
                         }
-                    } else if (questionType === 'dropdown_selection') {
+                    } else if (['dropdown_selection', 'form_completion'].includes(questionType)) {
                         if (window.ListeningQuestionTypes) {
                             window.ListeningQuestionTypes.updateDropdowns();
+                        }
+                    } else if (questionType === 'drag_drop') {
+                        if (window.ListeningQuestionTypes) {
+                            window.ListeningQuestionTypes.updateDragZones();
                         }
                     }
                 });
@@ -353,35 +458,49 @@
         if (questionTypeSelect) {
             questionTypeSelect.addEventListener('change', function() {
                 const selectedType = this.value;
-                console.log('Question type changed to:', selectedType);
                 
-                // Hide all type-specific panels first
                 document.querySelectorAll('.type-specific-panel').forEach(panel => {
                     panel.style.display = 'none';
                 });
                 
-                // Initialize ListeningQuestionTypes handler
                 if (window.ListeningQuestionTypes) {
                     window.ListeningQuestionTypes.init(selectedType);
                 }
                 
-                // Show/hide blank and dropdown buttons based on type
-                if (selectedType === 'fill_blanks') {
-                    document.getElementById('blank-buttons').style.display = 'flex';
-                    document.getElementById('dropdown-buttons').style.display = 'none';
-                } else if (selectedType === 'dropdown_selection') {
-                    document.getElementById('blank-buttons').style.display = 'none';
-                    document.getElementById('dropdown-buttons').style.display = 'flex';
-                } else {
-                    document.getElementById('blank-buttons').style.display = 'none';
-                    document.getElementById('dropdown-buttons').style.display = 'none';
+                const blankButtons = document.getElementById('blank-buttons');
+                const dropdownButtons = document.getElementById('dropdown-buttons');
+                const dragZoneButtons = document.getElementById('drag-zone-buttons');
+                
+                if (blankButtons) blankButtons.style.display = 'none';
+                if (dropdownButtons) dropdownButtons.style.display = 'none';
+                if (dragZoneButtons) dragZoneButtons.style.display = 'none';
+                
+                if (selectedType === 'fill_blanks' && blankButtons) {
+                    blankButtons.style.display = 'flex';
+                } else if (selectedType === 'dropdown_selection' && dropdownButtons) {
+                    dropdownButtons.style.display = 'flex';
+                } else if (selectedType === 'drag_drop' && dragZoneButtons) {
+                    dragZoneButtons.style.display = 'flex';
                 }
             });
             
-            // Initialize on load if type is already selected
             if (questionTypeSelect.value) {
                 questionTypeSelect.dispatchEvent(new Event('change'));
             }
+        }
+        
+        // Form submission
+        const questionForm = document.getElementById('questionForm');
+        if (questionForm) {
+            questionForm.addEventListener('submit', function(e) {
+                if (typeof tinymce !== 'undefined') {
+                    tinymce.triggerSave();
+                }
+                
+                if (window.ListeningQuestionTypes) {
+                    window.ListeningQuestionTypes.prepareSubmissionData();
+                }
+            });
         }
         
         // File upload handling
@@ -432,6 +551,29 @@
             preview.classList.remove('hidden');
         }
         
+        // Part audio check
+        function checkPartAudio(partNumber) {
+            fetch(`/admin/test-sets/{{ $testSet->id }}/check-part-audio/${partNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('part-audio-status');
+                    if (data.hasAudio) {
+                        statusDiv.innerHTML = '<div class="text-green-600">✅ Audio available</div>';
+                    } else {
+                        statusDiv.innerHTML = '<div class="text-red-600">❌ No audio uploaded</div>';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        const partSelect = document.querySelector('[name="part_number"]');
+        if (partSelect) {
+            checkPartAudio(partSelect.value || 1);
+            partSelect.addEventListener('change', function() {
+                checkPartAudio(this.value);
+            });
+        }
+        
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.altKey) {
@@ -446,18 +588,37 @@
                     e.preventDefault();
                     insertListeningDropdown();
                 }
+                
+                if (questionType === 'drag_drop' && (e.key === 'g' || e.key === 'G')) {
+                    e.preventDefault();
+                    insertDragZone();
+                }
             }
         });
+        
+        // Load existing question data
+        const questionData = {
+            question_type: '{{ $question->question_type }}',
+            listening_data: @json($question->listening_data),
+            order_number: {{ $question->order_number }},
+            part_number: {{ $question->part_number }}
+        };
+        
+        // Wait for ListeningQuestionTypes to be available and load data
+        const loadDataInterval = setInterval(() => {
+            if (window.ListeningQuestionTypes && tinymce.activeEditor) {
+                clearInterval(loadDataInterval);
+                console.log('Loading existing question data...');
+                window.ListeningQuestionTypes.loadExistingData(questionData);
+            }
+        }, 200);
     });
     
     // Global functions
     window.insertListeningBlank = function() {
         if (window.ListeningQuestionTypes) {
             const editor = window.contentEditor || tinymce.activeEditor;
-            if (!editor) {
-                console.error('No editor found');
-                return;
-            }
+            if (!editor) return;
             
             if (!window.listeningBlankCounter) {
                 window.listeningBlankCounter = 0;
@@ -467,7 +628,6 @@
             const blankText = `[____${window.listeningBlankCounter}____]`;
             editor.insertContent(blankText);
             
-            console.log('Inserted blank:', blankText);
             setTimeout(() => window.ListeningQuestionTypes.updateBlanks(), 100);
         }
     }
@@ -480,6 +640,23 @@
             }
         }
     }
+    
+    window.insertDragZone = function() {
+        if (window.ListeningQuestionTypes) {
+            const editor = window.contentEditor || tinymce.activeEditor;
+            if (!editor) return;
+            
+            if (!window.dragZoneCounter) {
+                window.dragZoneCounter = 0;
+            }
+            
+            window.dragZoneCounter++;
+            const dragZoneText = `[DRAG_${window.dragZoneCounter}]`;
+            editor.insertContent(dragZoneText);
+            
+            setTimeout(() => window.ListeningQuestionTypes.updateDragZones(), 100);
+        }
+    }
     </script>
     @endpush
-</x-layout>
+</x-admin-layout>

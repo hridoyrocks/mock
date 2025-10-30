@@ -293,24 +293,33 @@ window.ListeningQuestionTypes = {
         const content = editor.getContent({ format: 'text' });
         const blankMatches = content.match(/\[____\d+____\]/g) || [];
         
+        console.log('updateBlanks called');
+        console.log('Editor content:', content.substring(0, 200));
         console.log('Found blanks:', blankMatches);
+        console.log('Current blank answers:', this.blankAnswers);
         
         const blanksList = document.getElementById('blanks-list-listening');
         const blanksManager = document.getElementById('blanks-manager-listening');
         const counter = document.getElementById('blank-counter-listening');
         
         if (!blanksList || !blanksManager) {
-            console.error('Blanks manager elements not found');
+            console.error('Blanks manager elements not found', {
+                blanksList: !!blanksList,
+                blanksManager: !!blanksManager
+            });
             return;
         }
         
         if (blankMatches.length > 0) {
+            console.log('Showing blanks manager with', blankMatches.length, 'blanks');
             blanksManager.classList.remove('hidden');
             blanksList.innerHTML = '';
             
             blankMatches.forEach(match => {
                 const num = match.match(/\d+/)[0];
                 const value = this.blankAnswers[num] || '';
+                
+                console.log(`Creating input for Blank ${num} with value:`, value);
                 
                 const blankDiv = document.createElement('div');
                 blankDiv.className = 'flex items-center gap-2';
@@ -328,12 +337,17 @@ window.ListeningQuestionTypes = {
                 blanksList.appendChild(blankDiv);
             });
             
-            if (counter) counter.textContent = blankMatches.length;
+            if (counter) {
+                counter.textContent = blankMatches.length;
+                console.log('Updated counter to:', blankMatches.length);
+            }
             
             // Update blank counter to highest number
             const highestNum = Math.max(...blankMatches.map(m => parseInt(m.match(/\d+/)[0])));
             window.listeningBlankCounter = highestNum;
+            console.log('Set blank counter to:', highestNum);
         } else {
+            console.log('No blanks found, hiding manager');
             blanksManager.classList.add('hidden');
         }
     },
@@ -771,6 +785,292 @@ window.ListeningQuestionTypes = {
         }
         
         return data;
+    },
+    
+    // Load existing question data for editing
+    loadExistingData(questionData) {
+        console.log('Loading existing question data:', questionData);
+        
+        if (!questionData) return;
+        
+        const questionType = questionData.question_type;
+        
+        // Wait for TinyMCE to be ready
+        const waitForEditor = setInterval(() => {
+            const editor = window.contentEditor || tinymce.activeEditor;
+            if (editor) {
+                clearInterval(waitForEditor);
+                
+                console.log('Editor ready, loading data for type:', questionType);
+                
+                // Don't call init() again - just load the data
+                // The question type change event already called init()
+                
+                // Load type-specific data after a delay
+                setTimeout(() => {
+                    if (questionType === 'fill_blanks') {
+                        this.loadFillBlanksData(questionData);
+                    } else if (questionType === 'single_choice') {
+                        this.loadSingleChoiceData(questionData);
+                    } else if (questionType === 'multiple_choice') {
+                        this.loadMultipleChoiceData(questionData);
+                    } else if (questionType === 'dropdown_selection') {
+                        this.loadDropdownData(questionData);
+                    } else if (questionType === 'drag_drop') {
+                        this.loadDragDropData(questionData);
+                    }
+                }, 800);
+            }
+        }, 100);
+    },
+    
+    // Load Fill Blanks Data
+    loadFillBlanksData(questionData) {
+        console.log('Loading fill blanks data');
+        
+        // Parse blank answers from listening_data
+        if (questionData.listening_data) {
+            try {
+                const data = typeof questionData.listening_data === 'string' 
+                    ? JSON.parse(questionData.listening_data) 
+                    : questionData.listening_data;
+                    
+                console.log('Parsed listening data:', data);
+                
+                if (data && data.blanks) {
+                    this.blankAnswers = data.blanks;
+                    console.log('Loaded blank answers:', this.blankAnswers);
+                }
+            } catch (e) {
+                console.error('Error parsing listening data:', e);
+            }
+        }
+        
+        // Trigger update to show blanks with longer delay
+        setTimeout(() => {
+            console.log('Calling updateBlanks...');
+            this.updateBlanks();
+        }, 500);
+    },
+    
+    // Load Single Choice Data
+    loadSingleChoiceData(questionData) {
+        console.log('========== LOADING SINGLE CHOICE ==========');
+        console.log('Full question data:', questionData);
+        console.log('listening_data type:', typeof questionData.listening_data);
+        console.log('listening_data value:', questionData.listening_data);
+        
+        const container = document.getElementById('single-choice-options-container');
+        if (!container) {
+            console.error('Single choice container not found');
+            return;
+        }
+        
+        // Parse options from listening_data
+        let options = [];
+        let correctOption = 0;
+        
+        if (questionData.listening_data) {
+            try {
+                const data = typeof questionData.listening_data === 'string' 
+                    ? JSON.parse(questionData.listening_data) 
+                    : questionData.listening_data;
+                    
+                console.log('Parsed listening data:', data);
+                console.log('Data structure:', JSON.stringify(data, null, 2));
+                
+                // Try different possible data structures
+                if (data && data.options) {
+                    options = data.options;
+                    correctOption = parseInt(data.correct_option) || 0;
+                } else if (Array.isArray(data)) {
+                    // Maybe options are stored as array
+                    options = data;
+                }
+                
+                console.log('Found options:', options);
+                console.log('Correct option index:', correctOption);
+            } catch (e) {
+                console.error('Error parsing listening data:', e);
+            }
+        }
+        
+        // Clear and reload
+        container.innerHTML = '';
+        this.optionCounters.single = 0;
+        
+        // Add loaded options or default empty ones
+        if (options && options.length > 0) {
+            console.log('Adding', options.length, 'loaded options');
+            options.forEach((option, index) => {
+                // Handle both string and object format
+                let content = '';
+                if (typeof option === 'string') {
+                    content = option;
+                } else if (option && option.content) {
+                    content = option.content;
+                } else if (option && option.text) {
+                    content = option.text;
+                }
+                
+                const isCorrect = index === correctOption;
+                console.log(`  Option ${index}: "${content}" - Correct: ${isCorrect}`);
+                this.addSingleChoiceOption(content, isCorrect);
+            });
+        } else {
+            console.log('No options found, adding 4 default empty options');
+            for (let i = 0; i < 4; i++) {
+                this.addSingleChoiceOption('', i === 0);
+            }
+        }
+        
+        console.log('========== END LOADING SINGLE CHOICE ==========');
+    },
+    
+    // Load Multiple Choice Data
+    loadMultipleChoiceData(questionData) {
+        console.log('========== LOADING MULTIPLE CHOICE ==========');
+        console.log('Full question data:', questionData);
+        console.log('listening_data type:', typeof questionData.listening_data);
+        console.log('listening_data value:', questionData.listening_data);
+        
+        const container = document.getElementById('multiple-choice-options-container');
+        if (!container) {
+            console.error('Multiple choice container not found');
+            return;
+        }
+        
+        // Parse options from listening_data
+        let options = [];
+        let correctOptions = [];
+        
+        if (questionData.listening_data) {
+            try {
+                const data = typeof questionData.listening_data === 'string' 
+                    ? JSON.parse(questionData.listening_data) 
+                    : questionData.listening_data;
+                    
+                console.log('Parsed listening data:', data);
+                console.log('Data structure:', JSON.stringify(data, null, 2));
+                
+                // Try different possible data structures
+                if (data && data.options) {
+                    options = data.options;
+                    correctOptions = data.correct_options || [];
+                } else if (Array.isArray(data)) {
+                    options = data;
+                }
+                
+                console.log('Found options:', options);
+                console.log('Correct options:', correctOptions);
+            } catch (e) {
+                console.error('Error parsing listening data:', e);
+            }
+        }
+        
+        // Clear and reload
+        container.innerHTML = '';
+        this.optionCounters.multiple = 0;
+        
+        // Add loaded options or default empty ones
+        if (options && options.length > 0) {
+            console.log('Adding', options.length, 'loaded options');
+            options.forEach((option, index) => {
+                // Handle both string and object format
+                let content = '';
+                if (typeof option === 'string') {
+                    content = option;
+                } else if (option && option.content) {
+                    content = option.content;
+                } else if (option && option.text) {
+                    content = option.text;
+                }
+                
+                const isCorrect = correctOptions.includes(index) || correctOptions.includes(index.toString());
+                console.log(`  Option ${index}: "${content}" - Correct: ${isCorrect}`);
+                this.addMultipleChoiceOption(content, isCorrect);
+            });
+        } else {
+            console.log('No options found, adding 4 default empty options');
+            for (let i = 0; i < 4; i++) {
+                this.addMultipleChoiceOption('', false);
+            }
+        }
+        
+        console.log('========== END LOADING MULTIPLE CHOICE ==========');
+    },
+    
+    // Load Dropdown Data
+    loadDropdownData(questionData) {
+        console.log('Loading dropdown data');
+        
+        // Parse dropdown data from listening_data
+        if (questionData.listening_data) {
+            try {
+                const data = JSON.parse(questionData.listening_data);
+                if (data.dropdowns) {
+                    this.dropdownData = data.dropdowns;
+                    console.log('Loaded dropdown data:', this.dropdownData);
+                }
+            } catch (e) {
+                console.error('Error parsing listening data:', e);
+            }
+        }
+        
+        // Trigger update to show dropdowns
+        setTimeout(() => this.updateDropdowns(), 200);
+    },
+    
+    // Load Drag Drop Data
+    loadDragDropData(questionData) {
+        console.log('Loading drag drop data');
+        
+        // Parse drag drop data from listening_data
+        if (questionData.listening_data) {
+            try {
+                const data = JSON.parse(questionData.listening_data);
+                if (data.dragDrop) {
+                    this.dragDropData = data.dragDrop;
+                    
+                    // Load drag zones
+                    if (data.dragZones) {
+                        this.dragZoneData = data.dragZones;
+                    }
+                    
+                    console.log('Loaded drag drop data:', this.dragDropData);
+                    console.log('Loaded drag zone data:', this.dragZoneData);
+                }
+            } catch (e) {
+                console.error('Error parsing listening data:', e);
+            }
+        }
+        
+        // Load draggable options
+        const optionsContainer = document.getElementById('draggable-options-container');
+        if (optionsContainer && this.dragDropData.options) {
+            optionsContainer.innerHTML = '';
+            this.dragDropData.options = [];
+            
+            // Re-add options from loaded data
+            const savedOptions = this.dragDropData.options || [];
+            savedOptions.forEach(option => {
+                this.addDraggableOption();
+            });
+            
+            // Set values
+            setTimeout(() => {
+                const inputs = optionsContainer.querySelectorAll('input[name="drag_drop_options[]"]');
+                inputs.forEach((input, index) => {
+                    if (savedOptions[index]) {
+                        input.value = savedOptions[index];
+                        this.dragDropData.options[index] = savedOptions[index];
+                    }
+                });
+                
+                // Trigger update to show drag zones
+                this.updateDragZones();
+            }, 300);
+        }
     }
 };
 
