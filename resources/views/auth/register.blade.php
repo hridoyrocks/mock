@@ -41,7 +41,7 @@
                     </div>
                 @endif
                 <h1 class="text-4xl font-bold mb-4">Join {{ $siteName }}</h1>
-                <p class="text-lg opacity-90">Start your journey to success with 50,000+ students</p>
+                <p class="text-lg opacity-90">Start your journey to success with 10,000+ students</p>
             </div>
         </div>
 

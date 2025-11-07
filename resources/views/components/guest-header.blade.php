@@ -16,7 +16,7 @@
             <!-- Desktop Navigation -->
             <div class="hidden md:flex items-center space-x-8">
                 <a href="{{ route('welcome') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Home</a>
-                <a href="#about" class="text-gray-700 hover:text-red-600 transition-colors font-medium">About</a>
+                <a href="{{ route('about') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium">About</a>
                 <a href="#tests" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Mock Tests</a>
                 <a href="{{ route('help-center') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Help Center</a>
                 <a href="{{ route('contact') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Contact</a>
@@ -53,7 +53,7 @@
         <div id="mobileMenu" class="hidden md:hidden mt-4 py-4 border-t border-white/20">
             <div class="flex flex-col space-y-3">
                 <a href="{{ route('welcome') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Home</a>
-                <a href="#about" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">About</a>
+                <a href="{{ route('about') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">About</a>
                 <a href="#tests" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Mock Tests</a>
                 <a href="{{ route('help-center') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Help Center</a>
                 <a href="{{ route('contact') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Contact</a>

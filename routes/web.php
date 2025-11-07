@@ -47,6 +47,11 @@ Route::get('/', [App\Http\Controllers\WelcomeController::class, 'index'])->name(
 // Alternative home route
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+// About Page
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+
 // Contact Page
 Route::get('/contact', function () {
     return view('contact');

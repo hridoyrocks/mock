@@ -91,7 +91,7 @@
             <div>
                 <h3 class="text-gray-800 font-semibold text-lg mb-4">Quick Links</h3>
                 <ul class="space-y-3">
-                    <li><a href="#" class="text-gray-600 hover:text-red-600 transition-colors">About Us</a></li>
+                    <li><a href="{{ route('about') }}" class="text-gray-600 hover:text-red-600 transition-colors">About Us</a></li>
                     <li><a href="#" class="text-gray-600 hover:text-red-600 transition-colors">Mock Tests</a></li>
                     <li><a href="#" class="text-gray-600 hover:text-red-600 transition-colors">Study Materials</a></li>
                     <li><a href="#" class="text-gray-600 hover:text-red-600 transition-colors">Success Stories</a></li>
