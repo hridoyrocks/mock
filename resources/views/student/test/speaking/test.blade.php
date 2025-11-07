@@ -740,7 +740,7 @@
                         <!-- Question Display -->
                         <div class="question-display">
                             <div class="question-text">
-                                {!! nl2br(e($question->content)) !!}
+                                {!! $question->content !!}
                             </div>
 
                             <!-- Part 2 Cue Card Points -->
