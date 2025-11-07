@@ -47,6 +47,16 @@ Route::get('/', [App\Http\Controllers\WelcomeController::class, 'index'])->name(
 // Alternative home route
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+// Contact Page
+Route::get('/contact', function () {
+    return view('contact');
+})->name('contact');
+
+// Help Center Page
+Route::get('/help-center', function () {
+    return view('help-center');
+})->name('help-center');
+
 // Webhook routes (outside auth middleware - MUST be outside auth)
 Route::post('/payment/webhook/{provider}', [PaymentController::class, 'webhook'])
     ->name('payment.webhook')

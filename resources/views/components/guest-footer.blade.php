@@ -103,9 +103,9 @@
             <div>
                 <h3 class="text-gray-800 font-semibold text-lg mb-4">Support</h3>
                 <ul class="space-y-3">
-                    <li><a href="#" class="text-gray-600 hover:text-red-600 transition-colors">Help Center</a></li>
-                    <li><a href="#" class="text-gray-600 hover:text-red-600 transition-colors">Contact Us</a></li>
-                    <li><a href="#" class="text-gray-600 hover:text-red-600 transition-colors">FAQ</a></li>
+                    <li><a href="{{ route('help-center') }}" class="text-gray-600 hover:text-red-600 transition-colors">Help Center</a></li>
+                    <li><a href="{{ route('contact') }}" class="text-gray-600 hover:text-red-600 transition-colors">Contact Us</a></li>
+                    <li><a href="{{ route('help-center') }}" class="text-gray-600 hover:text-red-600 transition-colors">FAQ</a></li>
                     <li><a href="{{ route('privacy-policy') }}" class="text-gray-600 hover:text-red-600 transition-colors">Privacy Policy</a></li>
                     <li><a href="{{ route('terms-of-service') }}" class="text-gray-600 hover:text-red-600 transition-colors">Terms of Service</a></li>
                 </ul>

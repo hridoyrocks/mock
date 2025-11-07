@@ -18,8 +18,8 @@
                 <a href="{{ route('welcome') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Home</a>
                 <a href="#about" class="text-gray-700 hover:text-red-600 transition-colors font-medium">About</a>
                 <a href="#tests" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Mock Tests</a>
-                <a href="#pricing" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Pricing</a>
-                <a href="#contact" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Contact</a>
+                <a href="{{ route('help-center') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Help Center</a>
+                <a href="{{ route('contact') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium">Contact</a>
             </div>
             
             <!-- Auth Buttons -->
@@ -55,8 +55,8 @@
                 <a href="{{ route('welcome') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Home</a>
                 <a href="#about" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">About</a>
                 <a href="#tests" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Mock Tests</a>
-                <a href="#pricing" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Pricing</a>
-                <a href="#contact" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Contact</a>
+                <a href="{{ route('help-center') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Help Center</a>
+                <a href="{{ route('contact') }}" class="text-gray-700 hover:text-red-600 transition-colors font-medium py-2">Contact</a>
                 
                 <div class="pt-4 space-y-3 border-t border-white/20">
                     @guest
