@@ -1,0 +1,6 @@
+        // Announcements
+        Route::prefix('announcements')->name('announcements.')->group(function () {
+            Route::get('/active', [App\Http\Controllers\Student\AnnouncementController::class, 'getActiveAnnouncements'])->name('active');
+            Route::post('/{announcement}/dismiss', [App\Http\Controllers\Student\AnnouncementController::class, 'dismiss'])->name('dismiss');
+            Route::post('/{announcement}/track', [App\Http\Controllers\Student\AnnouncementController::class, 'trackAction'])->name('track');
+        });

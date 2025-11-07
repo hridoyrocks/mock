@@ -146,7 +146,148 @@
                     $sectionName = $evaluationRequest->studentAttempt->testSet->section->name;
                 @endphp
                 
-                @if($sectionName === 'writing')
+                @if($sectionName === 'speaking')
+                    <!-- Speaking Tasks -->
+                    @foreach($evaluationRequest->studentAttempt->answers as $index => $answer)
+                        <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+                            <!-- Task Header -->
+                            <div class="bg-gray-50 px-6 py-4 border-b">
+                                <h3 class="font-semibold text-gray-900 flex items-center">
+                                    <span class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold mr-3">
+                                        {{ $index + 1 }}
+                                    </span>
+                                    Question {{ $answer->question->order_number }} (Part {{ $answer->question->part_number }})
+                                </h3>
+                            </div>
+                            
+                            <div class="p-6">
+                                <!-- Question -->
+                                <div class="mb-4">
+                                    <p class="text-sm font-medium text-gray-700 mb-2">Question</p>
+                                    <div class="bg-gray-50 rounded-lg p-4 text-gray-700 text-sm">
+                                        {!! $answer->question->content !!}
+                                    </div>
+                                </div>
+                                
+                                <!-- Audio Recording -->
+                                <div class="mb-6">
+                                    <p class="text-sm font-medium text-gray-700 mb-2">Student's Recording</p>
+                                    
+                                    @if($answer->speakingRecording)
+                                        @php
+                                            $recording = $answer->speakingRecording;
+                                            $audioUrl = $recording->file_url ?? $recording->getFileUrlAttribute();
+                                            $mimeType = $recording->mime_type ?? 'audio/webm';
+                                        @endphp
+                                        
+                                        <div class="audio-player-container">
+                                            <audio controls preload="metadata" class="w-full">
+                                                <source src="{{ $audioUrl }}" type="{{ $mimeType }}">
+                                                Your browser does not support the audio element.
+                                            </audio>
+                                            
+                                            <div class="audio-meta">
+                                                <span>
+                                                    <i class="fas fa-database"></i>
+                                                    {{ strtoupper($recording->storage_disk ?? 'public') }}
+                                                </span>
+                                                @if($recording->file_size)
+                                                    <span>
+                                                        <i class="fas fa-file"></i>
+                                                        {{ $recording->formatted_size }}
+                                                    </span>
+                                                @endif
+                                                <span>
+                                                    <i class="fas fa-music"></i>
+                                                    {{ strtoupper(str_replace('audio/', '', $mimeType)) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="no-recording">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            No recording available
+                                        </div>
+                                    @endif
+                                </div>
+                                
+                                <!-- Scoring Grid for Speaking -->
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <p class="text-sm font-medium text-gray-700 mb-3">Band Score Criteria</p>
+                                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Overall</label>
+                                            <select name="task_scores[{{ $index }}][score]" 
+                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    required>
+                                                <option value="">-</option>
+                                                @for($i = 0; $i <= 9; $i += 0.5)
+                                                    <option value="{{ $i }}">{{ $i }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Fluency & Coherence</label>
+                                            <select name="task_scores[{{ $index }}][fluency_coherence]" 
+                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    required>
+                                                <option value="">-</option>
+                                                @for($i = 0; $i <= 9; $i += 0.5)
+                                                    <option value="{{ $i }}">{{ $i }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Lexical Resource</label>
+                                            <select name="task_scores[{{ $index }}][lexical_resource]" 
+                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    required>
+                                                <option value="">-</option>
+                                                @for($i = 0; $i <= 9; $i += 0.5)
+                                                    <option value="{{ $i }}">{{ $i }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Grammar</label>
+                                            <select name="task_scores[{{ $index }}][grammar]" 
+                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    required>
+                                                <option value="">-</option>
+                                                @for($i = 0; $i <= 9; $i += 0.5)
+                                                    <option value="{{ $i }}">{{ $i }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-gray-600 mb-1">Pronunciation</label>
+                                            <select name="task_scores[{{ $index }}][pronunciation]" 
+                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    required>
+                                                <option value="">-</option>
+                                                @for($i = 0; $i <= 9; $i += 0.5)
+                                                    <option value="{{ $i }}">{{ $i }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Feedback -->
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Detailed Feedback
+                                    </label>
+                                    <textarea name="task_scores[{{ $index }}][feedback]" 
+                                              rows="3"
+                                              class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                              placeholder="Provide specific feedback for this question..."
+                                              required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                @elseif($sectionName === 'writing')
                     <!-- Writing Tasks -->
                     @foreach($evaluationRequest->studentAttempt->answers as $index => $answer)
                         <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
@@ -412,6 +553,45 @@
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
         
+        /* Audio Player Styles */
+        .audio-player-container {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+        
+        .audio-player-container audio {
+            width: 100%;
+            height: 40px;
+            outline: none;
+        }
+        
+        .audio-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .audio-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .no-recording {
+            padding: 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            color: #991b1b;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
         /* Modal styles */
         #errorTypeModal {
             position: fixed !important;
@@ -534,6 +714,19 @@
             // Text selection handlers
             document.querySelectorAll('.text-marking-container').forEach(container => {
                 container.addEventListener('mouseup', handleTextSelection);
+            });
+            
+            // Audio error handling
+            const audioElements = document.querySelectorAll('audio');
+            audioElements.forEach(audio => {
+                audio.addEventListener('error', function(e) {
+                    console.error('Audio error:', e);
+                    const container = audio.closest('.audio-player-container');
+                    if (container) {
+                        container.style.borderColor = '#fca5a5';
+                        container.style.backgroundColor = '#fef2f2';
+                    }
+                });
             });
             
             // Progress tracking

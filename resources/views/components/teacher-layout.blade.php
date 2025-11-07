@@ -328,16 +328,45 @@
                                 <div x-show="notificationOpen"
                                      x-cloak
                                      x-transition
-                                     class="absolute right-0 mt-2 w-80 glass rounded-xl overflow-hidden">
+                                     class="absolute right-0 mt-2 w-80 glass rounded-xl overflow-hidden shadow-2xl">
                                     <div class="p-4 border-b border-white/10">
-                                        <h3 class="text-white font-semibold">Notifications</h3>
+                                        <div class="flex items-center justify-between">
+                                            <h3 class="text-white font-semibold">Notifications</h3>
+                                            @if(auth()->user()->unreadNotifications->count() > 0)
+                                                <span class="text-xs text-gray-400">{{ auth()->user()->unreadNotifications->count() }} new</span>
+                                            @endif
+                                        </div>
                                     </div>
                                     <div class="max-h-96 overflow-y-auto">
-                                        @forelse(auth()->user()->unreadNotifications->take(5) as $notification)
-                                            <div class="p-4 hover:bg-white/5 transition-colors cursor-pointer border-b border-white/5">
-                                                <p class="text-sm text-white">{{ $notification->data['message'] ?? 'New notification' }}</p>
-                                                <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
-                                            </div>
+                                        @forelse(auth()->user()->unreadNotifications->take(10) as $notification)
+                                            @php
+                                                $evaluationId = $notification->data['evaluation_request_id'] ?? null;
+                                                $evaluationUrl = $evaluationId ? route('teacher.evaluations.show', $evaluationId) : '#';
+                                            @endphp
+                                            <a href="{{ $evaluationUrl }}" 
+                                               class="block p-4 hover:bg-white/5 transition-colors border-b border-white/5 group">
+                                                <div class="flex items-start space-x-3">
+                                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                                                        <i class="fas fa-clipboard-check text-white"></i>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-sm text-white font-medium group-hover:text-emerald-400 transition-colors">
+                                                            {{ $notification->data['title'] ?? 'New Evaluation Request' }}
+                                                        </p>
+                                                        <p class="text-xs text-gray-400 mt-1">
+                                                            {{ $notification->data['message'] ?? 'You have a new evaluation to complete' }}
+                                                        </p>
+                                                        <p class="text-xs text-gray-500 mt-1">
+                                                            <i class="fas fa-clock mr-1"></i>{{ $notification->created_at->diffForHumans() }}
+                                                        </p>
+                                                    </div>
+                                                    @if($evaluationId)
+                                                        <div class="flex-shrink-0">
+                                                            <i class="fas fa-chevron-right text-gray-600 group-hover:text-emerald-500 transition-colors"></i>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </a>
                                         @empty
                                             <div class="p-8 text-center">
                                                 <i class="fas fa-bell-slash text-4xl text-gray-600 mb-3"></i>
@@ -345,6 +374,13 @@
                                             </div>
                                         @endforelse
                                     </div>
+                                    @if(auth()->user()->unreadNotifications->count() > 0)
+                                        <div class="p-3 border-t border-white/10 text-center">
+                                            <a href="{{ route('teacher.evaluations.pending') }}" class="text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
+                                                View all evaluations
+                                            </a>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 
