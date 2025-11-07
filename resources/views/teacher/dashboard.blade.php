@@ -6,7 +6,6 @@
     <div class="flex justify-between items-center mb-8">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">Teacher Dashboard</h1>
-            <p class="text-gray-600 mt-2">Welcome back, {{ auth()->user()->name }}</p>
         </div>
         <div class="flex items-center space-x-4">
             <div class="text-right">

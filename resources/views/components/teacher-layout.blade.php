@@ -39,62 +39,82 @@
     <style>
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #0f0f23;
+            background: #f8fafc;
         }
         
         [x-cloak] { display: none !important; }
         
-        /* Modern Glassmorphism */
-        .glass {
-            background: rgba(255, 255, 255, 0.05);
+        /* Light Mode Glass Effect */
+        .glass-light {
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         
-        .glass-dark {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* Card Shadows */
+        .card-shadow {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
         }
         
-        /* Neon Glow Effects for Teacher Theme */
-        .neon-emerald {
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5),
-                        0 0 40px rgba(16, 185, 129, 0.3),
-                        0 0 60px rgba(16, 185, 129, 0.1);
+        .card-shadow-hover:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         
-        .neon-teal {
-            box-shadow: 0 0 20px rgba(20, 184, 166, 0.5),
-                        0 0 40px rgba(20, 184, 166, 0.3),
-                        0 0 60px rgba(20, 184, 166, 0.1);
+        /* Emerald Gradient for Teacher Theme */
+        .emerald-gradient {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
         
-        /* Custom Scrollbar */
+        .emerald-gradient-subtle {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        }
+        
+        /* Custom Scrollbar - Light */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
         
         ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
+            background: #f1f5f9;
         }
         
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(to bottom, #10b981, #14b8a6);
+            background: #cbd5e1;
             border-radius: 10px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(to bottom, #059669, #0d9488);
+            background: #94a3b8;
+        }
+        
+        /* Active Navigation Item */
+        .nav-active {
+            background: #ecfdf5;
+            border-left: 3px solid #10b981;
+        }
+        
+        /* Notification Badge Pulse */
+        @keyframes pulse-emerald {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        
+        .pulse-emerald {
+            animation: pulse-emerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
     </style>
     
     @stack('styles')
 </head>
-<body class="antialiased overflow-hidden">
+<body class="antialiased bg-gray-50">
     <div x-data="layoutData()" 
-         class="relative z-10 flex h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 overflow-hidden">
+         class="relative z-10 flex h-screen bg-gray-50 overflow-hidden">
         
         <!-- Mobile Menu Overlay -->
         <div x-show="sidebarOpen" 
@@ -106,38 +126,38 @@
              x-transition:leave="transition-opacity ease-linear duration-300"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 z-40 bg-black bg-opacity-50 backdrop-blur-sm lg:hidden"></div>
+             class="fixed inset-0 z-40 bg-gray-900 bg-opacity-50 backdrop-blur-sm lg:hidden"></div>
 
         <!-- Teacher Sidebar -->
         <div :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}"
-             class="fixed inset-y-0 left-0 z-50 w-72 h-full glass-dark transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen flex flex-col flex-shrink-0">
+             class="fixed inset-y-0 left-0 z-50 w-72 h-full bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen flex flex-col flex-shrink-0 shadow-sm">
             
             <!-- Logo Section -->
-            <div class="p-6 border-b border-white/10">
+            <div class="p-6 border-b border-gray-200 bg-white">
                 <div class="flex items-center justify-between">
                     <a href="{{ route('teacher.dashboard') }}" class="flex items-center">
                         @if($settings->site_logo)
                             <img src="{{ $settings->logo_url }}" alt="{{ $settings->site_title }}" class="h-12 w-auto">
                         @else
                             <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center neon-emerald">
+                                <div class="w-12 h-12 rounded-xl emerald-gradient flex items-center justify-center shadow-md">
                                     <i class="fas fa-chalkboard-teacher text-white text-xl"></i>
                                 </div>
                                 <div>
-                                    <h2 class="text-xl font-bold text-white">Teacher Portal</h2>
-                                    <p class="text-xs text-gray-400">{{ $settings->site_title }}</p>
+                                    <h2 class="text-xl font-bold text-gray-900">Teacher Portal</h2>
+                                    <p class="text-xs text-gray-500">{{ $settings->site_title }}</p>
                                 </div>
                             </div>
                         @endif
                     </a>
-                    <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white">
+                    <button @click="sidebarOpen = false" class="lg:hidden text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Teacher Stats -->
-            <div class="p-6 border-b border-white/10">
+            <div class="p-6 border-b border-gray-200 bg-gray-50">
                 @php
                     $teacher = \App\Models\Teacher::where('user_id', auth()->id())->first();
                 @endphp
@@ -145,29 +165,29 @@
                     <div class="relative">
                         @if(auth()->user()->avatar_url)
                             <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" 
-                                 class="w-16 h-16 rounded-xl object-cover border-2 border-emerald-500">
+                                 class="w-16 h-16 rounded-xl object-cover border-2 border-emerald-400 shadow-sm">
                         @else
-                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center text-white font-bold text-xl">
+                            <div class="w-16 h-16 rounded-xl emerald-gradient flex items-center justify-center text-white font-bold text-xl shadow-md">
                                 {{ substr(auth()->user()->name, 0, 1) }}
                             </div>
                         @endif
                         @if($teacher && $teacher->is_available)
-                            <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-slate-900"></div>
+                            <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-sm"></div>
                         @else
-                            <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-500 rounded-full border-2 border-slate-900"></div>
+                            <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-400 rounded-full border-2 border-white shadow-sm"></div>
                         @endif
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-white font-semibold">{{ auth()->user()->name }}</h3>
+                        <h3 class="text-gray-900 font-semibold">{{ auth()->user()->name }}</h3>
                         <div class="flex items-center space-x-2 mt-1">
                             @if($teacher)
                                 <div class="flex items-center">
-                                    <span class="text-yellow-400">
+                                    <span class="text-yellow-500">
                                         @for($i = 1; $i <= 5; $i++)
                                             <i class="fas fa-star {{ $i <= $teacher->rating ? '' : 'opacity-30' }} text-xs"></i>
                                         @endfor
                                     </span>
-                                    <span class="text-xs text-gray-400 ml-1">{{ number_format($teacher->rating, 1) }}</span>
+                                    <span class="text-xs text-gray-600 ml-1">{{ number_format($teacher->rating, 1) }}</span>
                                 </div>
                             @endif
                         </div>
@@ -177,46 +197,45 @@
                 <!-- Quick Stats -->
                 @if($teacher)
                 <div class="mt-4 grid grid-cols-2 gap-2">
-                    <div class="glass rounded-lg p-2 text-center">
-                        <p class="text-xs text-gray-400">Completed</p>
-                        <p class="text-lg font-bold text-white">{{ $teacher->total_evaluations_done }}</p>
+                    <div class="bg-white rounded-lg p-3 text-center border border-gray-200 shadow-sm">
+                        <p class="text-xs text-gray-600 font-medium">Completed</p>
+                        <p class="text-lg font-bold text-gray-900 mt-1">{{ $teacher->total_evaluations_done }}</p>
                     </div>
-                    <div class="glass rounded-lg p-2 text-center">
-                        <p class="text-xs text-gray-400">Avg Time</p>
-                        <p class="text-lg font-bold text-white">{{ $teacher->average_turnaround_hours }}h</p>
+                    <div class="bg-white rounded-lg p-3 text-center border border-gray-200 shadow-sm">
+                        <p class="text-xs text-gray-600 font-medium">Avg Time</p>
+                        <p class="text-lg font-bold text-gray-900 mt-1">{{ $teacher->average_turnaround_hours }}h</p>
                     </div>
                 </div>
                 @endif
             </div>
 
             <!-- Navigation Menu -->
-            <nav class="flex-1 overflow-y-auto py-4">
+            <nav class="flex-1 overflow-y-auto py-4 bg-white">
                 <!-- Main Section -->
                 <div class="px-4 mb-6">
-                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Main</h4>
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">Main</h4>
                     
                     <a href="{{ route('teacher.dashboard') }}" 
                        class="group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mb-2
-                              {{ request()->routeIs('teacher.dashboard') ? 'glass bg-gradient-to-r from-emerald-600/20 to-teal-600/20 border-emerald-500/50' : 'hover:glass' }}">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center
-                                    {{ request()->routeIs('teacher.dashboard') ? 'neon-emerald' : '' }}">
+                              {{ request()->routeIs('teacher.dashboard') ? 'nav-active shadow-sm' : 'hover:bg-gray-50' }}">
+                        <div class="w-10 h-10 rounded-lg emerald-gradient flex items-center justify-center shadow-sm">
                             <i class="fas fa-home text-white"></i>
                         </div>
-                        <span class="text-white font-medium">Dashboard</span>
+                        <span class="text-gray-900 font-medium">Dashboard</span>
                     </a>
 
                     <a href="{{ route('teacher.evaluations.pending') }}" 
                        class="group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mb-2
-                              {{ request()->routeIs('teacher.evaluations.pending') ? 'glass bg-gradient-to-r from-amber-600/20 to-orange-600/20 border-amber-500/50' : 'hover:glass' }}">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                              {{ request()->routeIs('teacher.evaluations.pending') ? 'nav-active shadow-sm' : 'hover:bg-gray-50' }}">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-sm">
                             <i class="fas fa-clock text-white"></i>
                         </div>
                         <div class="flex-1">
-                            <span class="text-white font-medium block">Pending</span>
-                            <span class="text-xs text-gray-400">Evaluations to complete</span>
+                            <span class="text-gray-900 font-medium block">Pending</span>
+                            <span class="text-xs text-gray-500">Evaluations to complete</span>
                         </div>
                         @if($teacher && $teacher->evaluationRequests()->where('status', 'assigned')->count() > 0)
-                            <span class="px-2 py-1 bg-amber-500 text-white text-xs rounded-full">
+                            <span class="px-2 py-1 bg-amber-500 text-white text-xs rounded-full shadow-sm pulse-emerald">
                                 {{ $teacher->evaluationRequests()->where('status', 'assigned')->count() }}
                             </span>
                         @endif
@@ -224,64 +243,64 @@
 
                     <a href="{{ route('teacher.evaluations.completed') }}" 
                        class="group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 mb-2
-                              {{ request()->routeIs('teacher.evaluations.completed') ? 'glass bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-500/50' : 'hover:glass' }}">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                              {{ request()->routeIs('teacher.evaluations.completed') ? 'nav-active shadow-sm' : 'hover:bg-gray-50' }}">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-sm">
                             <i class="fas fa-check-circle text-white"></i>
                         </div>
-                        <span class="text-white font-medium">Completed</span>
+                        <span class="text-gray-900 font-medium">Completed</span>
                     </a>
                 </div>
 
                 <!-- Resources -->
                 <div class="px-4 mb-6">
-                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Resources</h4>
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">Resources</h4>
                     
-                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:glass transition-all duration-200 mb-2">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-sm">
                             <i class="fas fa-book text-white"></i>
                         </div>
-                        <span class="text-white font-medium">Evaluation Guide</span>
+                        <span class="text-gray-900 font-medium">Evaluation Guide</span>
                     </a>
 
-                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:glass transition-all duration-200 mb-2">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <a href="#" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-sm">
                             <i class="fas fa-chart-bar text-white"></i>
                         </div>
-                        <span class="text-white font-medium">Statistics</span>
+                        <span class="text-gray-900 font-medium">Statistics</span>
                     </a>
                 </div>
 
                 <!-- Settings -->
                 <div class="px-4 mb-6">
-                    <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Settings</h4>
+                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">Settings</h4>
                     
-                    <a href="{{ route('profile.edit') }}" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:glass transition-all duration-200 mb-2">
-                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
+                    <a href="{{ route('profile.edit') }}" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 mb-2">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center shadow-sm">
                             <i class="fas fa-user-cog text-white"></i>
                         </div>
-                        <span class="text-white font-medium">Profile Settings</span>
+                        <span class="text-gray-900 font-medium">Profile Settings</span>
                     </a>
                 </div>
             </nav>
 
             <!-- Sidebar Footer -->
-            <div class="p-4 border-t border-white/10">
+            <div class="p-4 border-t border-gray-200 bg-gray-50">
                 @if($teacher)
-                <div class="glass rounded-xl p-4 mb-4">
+                <div class="bg-white rounded-xl p-4 mb-4 border border-gray-200 shadow-sm">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs text-gray-400">Availability Status</span>
+                        <span class="text-xs text-gray-600 font-medium">Availability Status</span>
                         <form action="{{ route('teacher.toggle-availability') }}" method="POST" class="inline">
                             @csrf
                             @method('PATCH')
                             <button type="submit" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                                {{ $teacher->is_available ? 'bg-emerald-600' : 'bg-gray-600' }}">
+                                {{ $teacher->is_available ? 'bg-emerald-600' : 'bg-gray-300' }}">
                                 <span class="sr-only">Toggle availability</span>
-                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm
                                     {{ $teacher->is_available ? 'translate-x-6' : 'translate-x-1' }}"></span>
                             </button>
                         </form>
                     </div>
-                    <p class="text-xs text-gray-300">
+                    <p class="text-xs text-gray-600">
                         {{ $teacher->is_available ? 'Available for new evaluations' : 'Not accepting new evaluations' }}
                     </p>
                 </div>
@@ -292,13 +311,13 @@
         <!-- Main Content Area -->
         <div class="flex-1 flex flex-col relative z-20">
             <!-- Top Bar -->
-            <header class="glass-dark border-b border-white/10 z-30 flex-shrink-0 relative">
+            <header class="bg-white border-b border-gray-200 z-30 flex-shrink-0 relative shadow-sm">
                 <div class="px-4 sm:px-6 lg:px-8 py-4">
                     <div class="flex items-center justify-between">
                         <!-- Left Section -->
                         <div class="flex items-center space-x-4">
                             <!-- Mobile Menu Button -->
-                            <button @click="sidebarOpen = true" class="lg:hidden text-white hover:text-emerald-400 transition-colors">
+                            <button @click="sidebarOpen = true" class="lg:hidden text-gray-700 hover:text-emerald-600 transition-colors">
                                 <i class="fas fa-bars text-xl"></i>
                             </button>
 
@@ -306,7 +325,7 @@
                             @if(isset($header))
                                 {{ $header }}
                             @else
-                                <h1 class="text-xl font-semibold text-white">Teacher Dashboard</h1>
+                                <h1 class="text-xl font-semibold text-gray-900">Teacher Dashboard</h1>
                             @endif
                         </div>
 
@@ -315,10 +334,10 @@
                             <!-- Notifications -->
                             <div class="relative" @click.outside="notificationOpen = false">
                                 <button @click="notificationOpen = !notificationOpen" 
-                                        class="relative w-10 h-10 rounded-lg glass flex items-center justify-center text-gray-400 hover:text-white hover:border-emerald-500/50 transition-all duration-200">
+                                        class="relative w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-200">
                                     <i class="fas fa-bell"></i>
                                     @if(auth()->user()->unreadNotifications->count() > 0)
-                                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-rose-500 to-pink-500 rounded-full flex items-center justify-center text-xs text-white">
+                                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-rose-500 to-pink-500 rounded-full flex items-center justify-center text-xs text-white shadow-md pulse-emerald">
                                             {{ auth()->user()->unreadNotifications->count() }}
                                         </span>
                                     @endif
@@ -328,12 +347,12 @@
                                 <div x-show="notificationOpen"
                                      x-cloak
                                      x-transition
-                                     class="absolute right-0 mt-2 w-80 glass rounded-xl overflow-hidden shadow-2xl">
-                                    <div class="p-4 border-b border-white/10">
+                                     class="absolute right-0 mt-2 w-80 bg-white rounded-xl overflow-hidden shadow-2xl border border-gray-200">
+                                    <div class="p-4 border-b border-gray-200 bg-gray-50">
                                         <div class="flex items-center justify-between">
-                                            <h3 class="text-white font-semibold">Notifications</h3>
+                                            <h3 class="text-gray-900 font-semibold">Notifications</h3>
                                             @if(auth()->user()->unreadNotifications->count() > 0)
-                                                <span class="text-xs text-gray-400">{{ auth()->user()->unreadNotifications->count() }} new</span>
+                                                <span class="text-xs text-gray-600 bg-emerald-100 px-2 py-1 rounded-full">{{ auth()->user()->unreadNotifications->count() }} new</span>
                                             @endif
                                         </div>
                                     </div>
@@ -344,16 +363,16 @@
                                                 $evaluationUrl = $evaluationId ? route('teacher.evaluations.show', $evaluationId) : '#';
                                             @endphp
                                             <a href="{{ $evaluationUrl }}" 
-                                               class="block p-4 hover:bg-white/5 transition-colors border-b border-white/5 group">
+                                               class="block p-4 hover:bg-gray-50 transition-colors border-b border-gray-100 group">
                                                 <div class="flex items-start space-x-3">
-                                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                                                    <div class="w-10 h-10 rounded-lg emerald-gradient flex items-center justify-center flex-shrink-0 shadow-sm">
                                                         <i class="fas fa-clipboard-check text-white"></i>
                                                     </div>
                                                     <div class="flex-1 min-w-0">
-                                                        <p class="text-sm text-white font-medium group-hover:text-emerald-400 transition-colors">
+                                                        <p class="text-sm text-gray-900 font-medium group-hover:text-emerald-600 transition-colors">
                                                             {{ $notification->data['title'] ?? 'New Evaluation Request' }}
                                                         </p>
-                                                        <p class="text-xs text-gray-400 mt-1">
+                                                        <p class="text-xs text-gray-600 mt-1">
                                                             {{ $notification->data['message'] ?? 'You have a new evaluation to complete' }}
                                                         </p>
                                                         <p class="text-xs text-gray-500 mt-1">
@@ -362,22 +381,22 @@
                                                     </div>
                                                     @if($evaluationId)
                                                         <div class="flex-shrink-0">
-                                                            <i class="fas fa-chevron-right text-gray-600 group-hover:text-emerald-500 transition-colors"></i>
+                                                            <i class="fas fa-chevron-right text-gray-400 group-hover:text-emerald-600 transition-colors"></i>
                                                         </div>
                                                     @endif
                                                 </div>
                                             </a>
                                         @empty
                                             <div class="p-8 text-center">
-                                                <i class="fas fa-bell-slash text-4xl text-gray-600 mb-3"></i>
-                                                <p class="text-gray-400">No new notifications</p>
+                                                <i class="fas fa-bell-slash text-4xl text-gray-300 mb-3"></i>
+                                                <p class="text-gray-500">No new notifications</p>
                                             </div>
                                         @endforelse
                                     </div>
                                     @if(auth()->user()->unreadNotifications->count() > 0)
-                                        <div class="p-3 border-t border-white/10 text-center">
-                                            <a href="{{ route('teacher.evaluations.pending') }}" class="text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
-                                                View all evaluations
+                                        <div class="p-3 border-t border-gray-200 text-center bg-gray-50">
+                                            <a href="{{ route('teacher.evaluations.pending') }}" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
+                                                View all evaluations →
                                             </a>
                                         </div>
                                     @endif
@@ -387,38 +406,38 @@
                             <!-- Profile Dropdown -->
                             <div class="relative" @click.outside="profileDropdown = false">
                                 <button @click="profileDropdown = !profileDropdown" 
-                                        class="flex items-center space-x-3 px-3 py-2 rounded-lg glass hover:border-emerald-500/50 transition-all duration-200">
+                                        class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-all duration-200">
                                     @if(auth()->user()->avatar_url)
                                         <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}" 
                                              class="w-8 h-8 rounded-lg object-cover">
                                     @else
-                                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold">
+                                        <div class="w-8 h-8 rounded-lg emerald-gradient flex items-center justify-center text-white font-bold text-sm shadow-sm">
                                             {{ substr(auth()->user()->name, 0, 1) }}
                                         </div>
                                     @endif
-                                    <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                    <i class="fas fa-chevron-down text-gray-600 text-xs"></i>
                                 </button>
 
                                 <!-- Profile Menu -->
                                 <div x-show="profileDropdown"
                                      x-cloak
                                      x-transition
-                                     class="absolute right-0 mt-2 w-56 glass rounded-xl overflow-hidden">
-                                    <div class="p-4 border-b border-white/10">
-                                        <p class="text-white font-medium">{{ auth()->user()->name }}</p>
-                                        <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                                     class="absolute right-0 mt-2 w-56 bg-white rounded-xl overflow-hidden shadow-xl border border-gray-200">
+                                    <div class="p-4 border-b border-gray-200 bg-gray-50">
+                                        <p class="text-gray-900 font-medium">{{ auth()->user()->name }}</p>
+                                        <p class="text-xs text-gray-600">{{ auth()->user()->email }}</p>
                                     </div>
                                     <div class="p-2">
-                                        <a href="{{ route('profile.edit') }}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
-                                            <i class="fas fa-user text-gray-400 w-4"></i>
-                                            <span class="text-white text-sm">Profile Settings</span>
+                                        <a href="{{ route('profile.edit') }}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                                            <i class="fas fa-user text-gray-600 w-4"></i>
+                                            <span class="text-gray-900 text-sm font-medium">Profile Settings</span>
                                         </a>
-                                        <hr class="my-2 border-white/10">
+                                        <hr class="my-2 border-gray-200">
                                         <form method="POST" action="{{ route('logout') }}">
                                             @csrf
-                                            <button type="submit" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors text-left">
-                                                <i class="fas fa-sign-out-alt text-gray-400 w-4"></i>
-                                                <span class="text-white text-sm">Sign Out</span>
+                                            <button type="submit" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors text-left">
+                                                <i class="fas fa-sign-out-alt text-red-600 w-4"></i>
+                                                <span class="text-red-600 text-sm font-medium">Sign Out</span>
                                             </button>
                                         </form>
                                     </div>
@@ -438,10 +457,10 @@
                     </div>
                     
                     <!-- Footer -->
-                    <footer class="glass-dark border-t border-white/10 mt-12">
+                    <footer class="bg-white border-t border-gray-200 mt-12">
                         <div class="px-4 sm:px-6 lg:px-8 py-8">
                             <div class="text-center">
-                                <p class="text-gray-400 text-sm">
+                                <p class="text-gray-600 text-sm">
                                     {{ $settings->copyright_text ?? '© ' . date('Y') . ' ' . $settings->site_name . '. All rights reserved.' }}
                                 </p>
                             </div>
@@ -459,15 +478,15 @@
              x-init="setTimeout(() => show = false, 5000)"
              x-transition
              class="fixed bottom-4 right-4 z-50">
-            <div class="glass rounded-xl p-4 flex items-center space-x-3 min-w-[300px] border-emerald-500/50">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
+            <div class="bg-white rounded-xl p-4 flex items-center space-x-3 min-w-[300px] shadow-lg border border-emerald-200">
+                <div class="w-10 h-10 rounded-lg emerald-gradient flex items-center justify-center shadow-sm">
                     <i class="fas fa-check text-white"></i>
                 </div>
                 <div class="flex-1">
-                    <p class="text-white font-medium">Success!</p>
-                    <p class="text-sm text-gray-300">{{ session('success') }}</p>
+                    <p class="text-gray-900 font-medium">Success!</p>
+                    <p class="text-sm text-gray-600">{{ session('success') }}</p>
                 </div>
-                <button @click="show = false" class="text-gray-400 hover:text-white">
+                <button @click="show = false" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -480,15 +499,15 @@
              x-init="setTimeout(() => show = false, 5000)"
              x-transition
              class="fixed bottom-4 right-4 z-50">
-            <div class="glass rounded-xl p-4 flex items-center space-x-3 min-w-[300px] border-red-500/50">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
+            <div class="bg-white rounded-xl p-4 flex items-center space-x-3 min-w-[300px] shadow-lg border border-red-200">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center shadow-sm">
                     <i class="fas fa-exclamation text-white"></i>
                 </div>
                 <div class="flex-1">
-                    <p class="text-white font-medium">Error!</p>
-                    <p class="text-sm text-gray-300">{{ session('error') }}</p>
+                    <p class="text-gray-900 font-medium">Error!</p>
+                    <p class="text-sm text-gray-600">{{ session('error') }}</p>
                 </div>
-                <button @click="show = false" class="text-gray-400 hover:text-white">
+                <button @click="show = false" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
