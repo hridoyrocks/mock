@@ -132,9 +132,20 @@ class LoginController extends Controller
 
     private function redirectPath(): string
     {
-        return auth()->user()->is_admin 
-            ? route('admin.dashboard') 
-            : route('student.dashboard');
+        $user = auth()->user();
+        
+        // Check if admin
+        if ($user->is_admin) {
+            return route('admin.dashboard');
+        }
+        
+        // Check if teacher
+        if ($user->teacher()->exists()) {
+            return route('teacher.dashboard');
+        }
+        
+        // Default to student dashboard
+        return route('student.dashboard');
     }
 
     public function logout(Request $request)
