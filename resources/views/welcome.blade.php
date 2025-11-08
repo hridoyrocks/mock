@@ -396,240 +396,444 @@
         </div>
     </section>
 
-    <!-- Latest IELTS Test Releases Section -->
+    <!-- Practice Section - Full Test & Individual Test -->
     <section class="py-20 bg-gradient-to-b from-gray-50 to-white">
         <div class="container mx-auto px-6">
-            <div class="text-center mb-12">
-                <span class="inline-block text-red-600 font-semibold text-sm uppercase tracking-wider mb-4">
-                    <i class="fas fa-sparkles mr-2"></i>
-                    Fresh Content Daily
-                </span>
-                <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Latest IELTS Test Releases</h2>
-                <p class="text-lg text-gray-600 font-medium max-w-2xl mx-auto">Practice with our newest mock tests across all four skills</p>
+            <!-- Section Header -->
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
+                    Practice Makes <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-pink-600">Perfect</span>
+                </h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                    Master your IELTS skills with our comprehensive practice tests - choose full exam simulation or focus on individual sections.
+                </p>
             </div>
-            
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                <!-- Listening Test Card -->
-                <div class="group">
-                    <div class="bg-white rounded-2xl h-full shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden">
-                        <!-- Card Header -->
-                        <div class="relative p-6 bg-gradient-to-br from-purple-500 to-purple-600">
-                            <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12"></div>
-                            <div class="relative">
-                                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-                                    </svg>
+
+            <!-- Complete Test Experience -->
+            <div class="max-w-7xl mx-auto bg-white rounded-3xl p-12 shadow-lg mb-20">
+                <!-- Content Grid -->
+                <div class="grid lg:grid-cols-2 gap-20 items-center">
+                    <!-- Left Side - Visual Mockup -->
+                    <div class="relative order-2 lg:order-1">
+                        <div class="bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 rounded-2xl p-8 shadow-lg">
+                            <!-- Test Header Card -->
+                            <div class="bg-white rounded-2xl p-6 mb-6 shadow-xl">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <span class="text-sm font-semibold text-gray-500">15,847 Test Takers</span>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-gray-900">IELTS Complete Mock Test 1</h3>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-block bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-bold mb-2">Intermediate</span>
+                                    </div>
                                 </div>
-                                <h4 class="text-white font-bold text-lg uppercase tracking-wide">Listening</h4>
-                                <span class="absolute top-4 right-4 bg-white/20 backdrop-blur text-white text-xs px-2 py-1 rounded-full font-semibold">NEW</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Card Content -->
-                        <div class="p-6">
-                            <h3 class="font-bold text-gray-900 mb-2 text-lg">Academic Test 2025 - Set A</h3>
-                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">Latest Cambridge format with 4 sections, 40 questions</p>
-                            
-                            <div class="space-y-3 mb-6">
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span>Duration: 30 minutes</span>
+                                
+                                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                                    <div class="text-sm text-gray-600">
+                                        <span class="font-semibold text-gray-900">Test Completed</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-2xl font-bold text-green-600">8.0</span>
+                                        <span class="text-gray-400 text-sm">/9.0</span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                    </svg>
-                                    <span>40 Questions</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                                    </svg>
-                                    <span>Academic Module</span>
+                                
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-3">
+                                    <div class="bg-gradient-to-r from-green-500 to-green-600 h-2.5 rounded-full" style="width: 89%"></div>
                                 </div>
                             </div>
-                            
-                            <a href="{{ route('student.listening.index') }}" class="block w-full text-center bg-purple-50 text-purple-600 py-3 rounded-xl font-semibold hover:bg-purple-600 hover:text-white transition-all duration-300">
-                                Start Practice
-                                <svg class="w-4 h-4 ml-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                                </svg>
-                            </a>
+
+                            <!-- Full Test Info Card -->
+                            <div class="bg-white rounded-2xl p-6 shadow-xl">
+                                <div class="flex items-start space-x-4 mb-6">
+                                    <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#C8102E] to-[#A00E27] rounded-xl flex items-center justify-center">
+                                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-gray-900 mb-1">Complete IELTS Exam</h4>
+                                        <p class="text-sm text-gray-600">Duration: 2 hours 45 minutes</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div class="bg-gray-50 rounded-xl p-4">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-semibold text-gray-700">Test Information</span>
+                                        </div>
+                                        <ul class="space-y-2 text-sm text-gray-600">
+                                            <li class="flex items-start">
+                                                <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <span>Simulates official computer-delivered IELTS examination</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <span>4 Sections: Listening, Reading, Writing, Speaking</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <span>Cannot pause during the test session (exam mode)</span>
+                                            </li>
+                                            <li class="flex items-start">
+                                                <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <span>Auto-resume if accidentally closed during test</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Success Badge -->
+                                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 flex items-center space-x-3">
+                                        <div class="flex-shrink-0 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-green-900 text-sm">Test Completed Successfully!</p>
+                                            <p class="text-xs text-green-700">Your results are ready. Click below to view detailed feedback.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Reading Test Card -->
-                <div class="group">
-                    <div class="bg-white rounded-2xl h-full shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden">
-                        <!-- Card Header -->
-                        <div class="relative p-6 bg-gradient-to-br from-blue-500 to-blue-600">
-                            <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12"></div>
-                            <div class="relative">
-                                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                                    </svg>
-                                </div>
-                                <h4 class="text-white font-bold text-lg uppercase tracking-wide">Reading</h4>
-                                <span class="absolute top-4 right-4 bg-white/20 backdrop-blur text-white text-xs px-2 py-1 rounded-full font-semibold">NEW</span>
-                            </div>
-                        </div>
+
+                    <!-- Right Side - Content -->
+                    <div class="order-1 lg:order-2">
                         
-                        <!-- Card Content -->
-                        <div class="p-6">
-                            <h3 class="font-bold text-gray-900 mb-2 text-lg">Academic Test 2025 - Set B</h3>
-                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">3 passages with increasing difficulty levels</p>
-                            
-                            <div class="space-y-3 mb-6">
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span>Duration: 60 minutes</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                    </svg>
-                                    <span>40 Questions</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                                    </svg>
-                                    <span>Academic Module</span>
-                                </div>
-                            </div>
-                            
-                            <a href="{{ route('student.reading.index') }}" class="block w-full text-center bg-blue-50 text-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-600 hover:text-white transition-all duration-300">
-                                Start Practice
-                                <svg class="w-4 h-4 ml-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Writing Test Card -->
-                <div class="group">
-                    <div class="bg-white rounded-2xl h-full shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden">
-                        <!-- Card Header -->
-                        <div class="relative p-6 bg-gradient-to-br from-green-500 to-green-600">
-                            <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12"></div>
-                            <div class="relative">
-                                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </div>
-                                <h4 class="text-white font-bold text-lg uppercase tracking-wide">Writing</h4>
-                                <span class="absolute top-4 right-4 bg-white/20 backdrop-blur text-white text-xs px-2 py-1 rounded-full font-semibold">NEW</span>
-                            </div>
-                        </div>
+                        <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">Complete IELTS Exam Experience</h2>
                         
-                        <!-- Card Content -->
-                        <div class="p-6">
-                            <h3 class="font-bold text-gray-900 mb-2 text-lg">General Training 2025 - Set A</h3>
-                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">Task 1 (Letter) & Task 2 (Essay) with AI evaluation</p>
-                            
-                            <div class="space-y-3 mb-6">
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span>Duration: 60 minutes</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                    <span>2 Writing Tasks</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z"/>
-                                    </svg>
-                                    <span>General Training</span>
-                                </div>
-                            </div>
-                            
-                            <a href="{{ route('student.writing.index') }}" class="block w-full text-center bg-green-50 text-green-600 py-3 rounded-xl font-semibold hover:bg-green-600 hover:text-white transition-all duration-300">
-                                Start Practice
-                                <svg class="w-4 h-4 ml-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        <div class="space-y-4 mb-8">
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                 </svg>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Speaking Test Card -->
-                <div class="group">
-                    <div class="bg-white rounded-2xl h-full shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden">
-                        <!-- Card Header -->
-                        <div class="relative p-6 bg-gradient-to-br from-red-500 to-red-600">
-                            <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12"></div>
-                            <div class="relative">
-                                <div class="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4">
-                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                    </svg>
-                                </div>
-                                <h4 class="text-white font-bold text-lg uppercase tracking-wide">Speaking</h4>
-                                <span class="absolute top-4 right-4 bg-white/20 backdrop-blur text-white text-xs px-2 py-1 rounded-full font-semibold">NEW</span>
+                                <p class="text-gray-700 text-lg leading-relaxed">Complete all 4 sections in one sitting - just like the real IELTS test day.</p>
                             </div>
-                        </div>
-                        
-                        <!-- Card Content -->
-                        <div class="p-6">
-                            <h3 class="font-bold text-gray-900 mb-2 text-lg">Interview Practice 2025</h3>
-                            <p class="text-gray-600 mb-4 text-sm leading-relaxed">3 parts interview with AI-powered feedback</p>
-                            
-                            <div class="space-y-3 mb-6">
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span>Duration: 11-14 minutes</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/>
-                                    </svg>
-                                    <span>3 Parts Interview</span>
-                                </div>
-                                <div class="flex items-center text-sm text-gray-500">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                                    </svg>
-                                    <span>Both Modules</span>
-                                </div>
-                            </div>
-                            
-                            <a href="{{ route('student.speaking.index') }}" class="block w-full text-center bg-red-50 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-600 hover:text-white transition-all duration-300">
-                                Start Practice
-                                <svg class="w-4 h-4 ml-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                 </svg>
-                            </a>
+                                <p class="text-gray-700 text-lg leading-relaxed">Strict timing enforcement helps you build speed and exam-day confidence.</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-gray-700 text-lg leading-relaxed">Test your endurance and concentration across 2 hours 45 minutes.</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-gray-700 text-lg leading-relaxed">Get your overall band score plus breakdown for each module instantly.</p>
+                            </div>
                         </div>
+
+                        <a href="{{ route('register') }}" class="inline-flex items-center px-7 py-3.5 bg-[#C8102E] text-white font-bold text-base rounded-lg hover:bg-[#A00E27] transition-all shadow-md hover:shadow-lg">
+                            Try Full Test Now
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                        </a>
                     </div>
                 </div>
             </div>
-            
-            <!-- View All Tests Button -->
-            <div class="text-center mt-10">
-                <a href="{{ route('student.dashboard') }}" class="inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl">
-                    View All Tests
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                    </svg>
-                </a>
+
+            <!-- Individual Test -->
+            <div class="max-w-7xl mx-auto bg-white rounded-3xl p-12 shadow-lg">
+                <!-- Content Grid -->
+                <div class="grid lg:grid-cols-2 gap-20 items-center">
+                    <!-- Left Side - Compact Visual Card -->
+                    <div class="relative">
+                        <div class="bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-2xl p-8 shadow-lg">
+                            <!-- Video Card -->
+                            <div class="bg-gradient-to-br from-gray-700 to-gray-900 rounded-xl overflow-hidden shadow-xl mb-6">
+                                <div class="aspect-video flex items-center justify-center relative">
+                                    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
+                                    <div class="relative z-10 text-center">
+                                        <div class="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full mx-auto mb-3 flex items-center justify-center">
+                                            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                        </div>
+                                        <p class="text-white font-semibold text-base">Describe your hometown</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Audio/Timer Bar -->
+                            <div class="bg-white rounded-xl p-5 shadow-md">
+                                <div class="flex items-center space-x-4 mb-3">
+                                    <span class="text-[#C8102E] text-sm font-bold">00:32</span>
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-1">
+                                            <div class="w-1 h-4 bg-[#C8102E] rounded-full"></div>
+                                            <div class="w-1 h-5 bg-[#C8102E] rounded-full"></div>
+                                            <div class="w-1 h-6 bg-[#C8102E] rounded-full"></div>
+                                            <div class="w-1 h-5 bg-[#C8102E] rounded-full"></div>
+                                            <div class="w-1 h-7 bg-[#C8102E] rounded-full"></div>
+                                            <div class="w-1 h-4 bg-[#C8102E] rounded-full"></div>
+                                            <div class="w-1 h-6 bg-[#C8102E] rounded-full"></div>
+                                            <div class="w-1 h-5 bg-[#C8102E] rounded-full"></div>
+                                            <div class="flex-1 h-1 bg-gray-200 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded">Recording ●</span>
+                                    <div class="flex space-x-2">
+                                        <button class="px-5 py-2 bg-[#C8102E] text-white text-sm font-semibold rounded-lg">Stop</button>
+                                        <button class="px-5 py-2 bg-gray-200 text-gray-600 text-sm font-semibold rounded-lg">Next</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Side - Content -->
+                    <div>
+                       
+                        <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 leading-tight">Master Each Skill Separately</h2>
+                        
+                        <div class="space-y-4 mb-8">
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-gray-700 text-lg leading-relaxed">Separate tests for Listening, Reading, Writing & Speaking.</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-gray-700 text-lg leading-relaxed">Target your weakest areas with focused practice.</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-gray-700 text-lg leading-relaxed">Get detailed scores and personalized feedback instantly.</p>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <svg class="w-6 h-6 text-gray-700 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <p class="text-gray-700 text-lg leading-relaxed">Build balanced performance across all modules.</p>
+                            </div>
+                        </div>
+
+                        <a href="{{ route('register') }}" class="inline-flex items-center px-7 py-3.5 bg-[#C8102E] text-white font-bold text-base rounded-lg hover:bg-[#A00E27] transition-all shadow-md hover:shadow-lg">
+                            Try Individual Test
+                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Speaking Coaching Session Section - Coming Soon -->
+    <section class="relative py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+        <!-- Animated Background Pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 20% 50%, rgba(239, 68, 68, 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(239, 68, 68, 0.2) 0%, transparent 50%);"></div>
+        </div>
+        
+        <!-- Floating Decorative Elements -->
+        <div class="absolute top-10 left-10 w-20 h-20 bg-red-500/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div class="absolute bottom-10 right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 1s;"></div>
+        
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="max-w-7xl mx-auto">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <!-- Left Content -->
+                    <div class="text-center lg:text-left">
+                        <!-- Main Headline -->
+                        <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-6 leading-tight">
+                            <span class="relative inline-block">
+                                <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-pink-400 to-purple-400">One-on-One Live Sessions</span>
+                                <svg class="absolute -bottom-2 left-0 w-full" height="12" viewBox="0 0 300 12">
+                                    <path d="M0,10 Q75,2 150,10 T300,10" stroke="url(#gradient)" stroke-width="3" fill="none"/>
+                                    <defs>
+                                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.6" />
+                                            <stop offset="100%" style="stop-color:#a855f7;stop-opacity:0.6" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                            </span>
+                        </h2>
+                        
+                        <!-- Description -->
+                        <p class="text-lg text-gray-300 mb-8 leading-relaxed">
+                            Get personalized feedback from <span class="font-bold text-white">IELTS certified examiners</span> through interactive video sessions. Practice real exam scenarios and improve your speaking score with expert guidance.
+                        </p>
+                        
+                        <!-- Key Features Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                            <div class="flex items-center space-x-3 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-white text-sm">Live Video Sessions</h3>
+                                    <p class="text-xs text-gray-400">Real-time practice</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-white text-sm">Certified Examiners</h3>
+                                    <p class="text-xs text-gray-400">Expert guidance</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                    </svg>
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-white text-sm">Detailed Feedback</h3>
+                                    <p class="text-xs text-gray-400">Score improvement tips</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-3 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-white text-sm">Flexible Scheduling</h3>
+                                    <p class="text-xs text-gray-400">Book anytime</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 items-center justify-center lg:justify-start">
+                            <button onclick="notifyMe()" class="inline-flex items-center px-8 py-4 bg-[#C8102E] text-white font-bold text-lg rounded-xl hover:bg-[#A00E27] hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                                <span>Notify Me When Live</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Visual - Video Call Mockup -->
+                    <div class="relative lg:block hidden">
+                        <div class="relative">
+                            <!-- Main Video Frame -->
+                            <div class="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl overflow-hidden border-4 border-gray-700">
+                                <!-- Video Header -->
+                                <div class="bg-gray-900/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-gray-700">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex space-x-2">
+                                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        </div>
+                                        <span class="text-white font-semibold text-sm">IELTS Speaking Session</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                                        <span class="text-red-400 text-xs font-semibold">LIVE</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Video Grid -->
+                                <div class="p-4 space-y-4">
+                                    <!-- Examiner Video (Larger) -->
+                                    <div class="relative bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl overflow-hidden border-2 border-blue-500/30 h-64">
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                    </svg>
+                                                </div>
+                                                <p class="text-white font-semibold">Rocks Mike</p>
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full">
+                                            <span class="text-white text-xs font-semibold">Examiner</span>
+                                        </div>
+                                        <div class="absolute bottom-3 right-3 flex space-x-2">
+                                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Student Video (Smaller) -->
+                                    <div class="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl overflow-hidden border-2 border-gray-600 h-32">
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div class="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-600 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                    </svg>
+                                                </div>
+                                                <p class="text-white text-sm font-semibold">You</p>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                                            <span class="text-white text-xs font-semibold">Student</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Controls Bar -->
+                                <div class="bg-gray-900/80 backdrop-blur-sm px-6 py-4 flex items-center justify-center space-x-4 border-t border-gray-700">
+                                    <button class="w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="w-12 h-12 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="w-14 h-14 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-colors">
+                                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -668,6 +872,19 @@
         <script>
             function watchDemo() {
                 alert('Demo video coming soon! For now, sign up for free to explore.');
+            }
+            
+            function notifyMe() {
+                // Simple notification form
+                const email = prompt('Enter your email to get notified when Speaking Coaching goes live:');
+                if (email && email.trim() !== '') {
+                    // Here you can add AJAX call to save email to database
+                    alert('Thank you! We\'ll notify you at ' + email + ' when Speaking Coaching launches.');
+                    // TODO: Send email to backend
+                    console.log('Waitlist email:', email);
+                } else if (email !== null) {
+                    alert('Please enter a valid email address.');
+                }
             }
             
             // Smooth scroll for anchor links
