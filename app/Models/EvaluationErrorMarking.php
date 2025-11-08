@@ -24,6 +24,8 @@ class EvaluationErrorMarking extends Model
         'task_number' => 'integer'
     ];
     
+    protected $appends = ['note']; // Add note to JSON output
+    
     public function humanEvaluation(): BelongsTo
     {
         return $this->belongsTo(HumanEvaluation::class);
@@ -32,6 +34,22 @@ class EvaluationErrorMarking extends Model
     public function studentAnswer(): BelongsTo
     {
         return $this->belongsTo(StudentAnswer::class);
+    }
+    
+    /**
+     * Accessor for note (alias for comment)
+     */
+    public function getNoteAttribute()
+    {
+        return $this->comment;
+    }
+    
+    /**
+     * Mutator for note (alias for comment)
+     */
+    public function setNoteAttribute($value)
+    {
+        $this->attributes['comment'] = $value;
     }
     
     /**

@@ -80,6 +80,32 @@
         </div>
     </div>
     
+    <!-- Note Edit Modal -->
+    <div class="error-note-modal-overlay" id="noteModalOverlay" onclick="closeNoteModal()"></div>
+    <div class="error-note-modal" id="noteModal">
+        <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px;">
+            <span id="noteModalErrorType"></span>
+        </div>
+        <div style="font-size: 12px; color: #6b7280; margin-bottom: 8px;">
+            "<span id="noteModalText"></span>"
+        </div>
+        <textarea 
+            id="noteModalInput"
+            class="error-note-input" 
+            placeholder="Add note for this error..."
+            rows="3"
+            style="margin-top: 0;"
+        ></textarea>
+        <div class="error-note-buttons">
+            <button class="error-note-btn error-note-save" onclick="saveNoteFromModal()">
+                <i class="fas fa-check" style="font-size: 10px;"></i> Save
+            </button>
+            <button class="error-note-btn" onclick="closeNoteModal()" style="background: #e5e7eb; color: #374151;">
+                Cancel
+            </button>
+        </div>
+    </div>
+    
     <div class="container mx-auto px-6 lg:px-8 py-6">
         @if($evaluationRequest->status === 'completed' && $evaluationRequest->humanEvaluation)
             <!-- Completed Evaluation View -->
@@ -368,63 +394,131 @@
                                 <!-- Scoring Grid -->
                                 <div class="bg-gray-50 rounded-lg p-4">
                                     <p class="text-sm font-medium text-gray-700 mb-3">Band Score Criteria</p>
-                                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                                        <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Overall</label>
-                                            <select name="task_scores[{{ $index }}][score]" 
-                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                                    required>
-                                                <option value="">-</option>
-                                                @for($i = 0; $i <= 9; $i += 0.5)
-                                                    <option value="{{ $i }}">{{ $i }}</option>
-                                                @endfor
-                                            </select>
+                                    @if($index == 0)
+                                        <!-- Task 1 Criteria - 4 fields -->
+                                        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Task Achievement</label>
+                                                <select name="task_scores[{{ $index }}][task_achievement]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Coherence & Cohesion</label>
+                                                <select name="task_scores[{{ $index }}][coherence_cohesion]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Lexical Resource</label>
+                                                <select name="task_scores[{{ $index }}][lexical_resource]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Grammatical Range & Accuracy</label>
+                                                <select name="task_scores[{{ $index }}][grammar]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Overall Band</label>
+                                                <input type="text" 
+                                                       name="task_scores[{{ $index }}][score]" 
+                                                       id="overall_band_{{ $index }}"
+                                                       class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 font-semibold text-center"
+                                                       value=""
+                                                       readonly
+                                                       required>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Task Achievement</label>
-                                            <select name="task_scores[{{ $index }}][task_achievement]" 
-                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                                    required>
-                                                <option value="">-</option>
-                                                @for($i = 0; $i <= 9; $i += 0.5)
-                                                    <option value="{{ $i }}">{{ $i }}</option>
-                                                @endfor
-                                            </select>
+                                    @else
+                                        <!-- Task 2 Criteria -->
+                                        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Task Response</label>
+                                                <select name="task_scores[{{ $index }}][task_achievement]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Coherence & Cohesion</label>
+                                                <select name="task_scores[{{ $index }}][coherence_cohesion]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Lexical Resource</label>
+                                                <select name="task_scores[{{ $index }}][lexical_resource]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Grammatical Range & Accuracy</label>
+                                                <select name="task_scores[{{ $index }}][grammar]" 
+                                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        onchange="calculateOverallBand({{ $index }})"
+                                                        required>
+                                                    <option value="">-</option>
+                                                    @for($i = 0; $i <= 9; $i += 0.5)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs text-gray-600 mb-1">Overall Band</label>
+                                                <input type="text" 
+                                                       name="task_scores[{{ $index }}][score]" 
+                                                       id="overall_band_{{ $index }}"
+                                                       class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 font-semibold text-center"
+                                                       value=""
+                                                       readonly
+                                                       required>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Coherence</label>
-                                            <select name="task_scores[{{ $index }}][coherence_cohesion]" 
-                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                                    required>
-                                                <option value="">-</option>
-                                                @for($i = 0; $i <= 9; $i += 0.5)
-                                                    <option value="{{ $i }}">{{ $i }}</option>
-                                                @endfor
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Vocabulary</label>
-                                            <select name="task_scores[{{ $index }}][lexical_resource]" 
-                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                                    required>
-                                                <option value="">-</option>
-                                                @for($i = 0; $i <= 9; $i += 0.5)
-                                                    <option value="{{ $i }}">{{ $i }}</option>
-                                                @endfor
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Grammar</label>
-                                            <select name="task_scores[{{ $index }}][grammar]" 
-                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                                    required>
-                                                <option value="">-</option>
-                                                @for($i = 0; $i <= 9; $i += 0.5)
-                                                    <option value="{{ $i }}">{{ $i }}</option>
-                                                @endfor
-                                            </select>
-                                        </div>
-                                    </div>
+                                    @endif
                                 </div>
                                 
                                 <!-- Feedback -->
@@ -627,13 +721,135 @@
         
         /* Error marking styles */
         .error-mark {
-            padding: 2px 6px;
+            padding: 1px 3px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            display: inline;
+            margin: 0;
+            line-height: inherit;
+        }
+        
+        /* Error note tooltip */
+        .error-note-tooltip {
+            position: absolute;
+            bottom: calc(100% + 2px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 1px solid #e5e7eb;
             border-radius: 4px;
+            padding: 4px 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            z-index: 10000;
+            display: none;
+            pointer-events: auto;
+            font-size: 10px;
+            color: #6b7280;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+            font-weight: 500;
+        }
+        
+        .error-note-tooltip:hover {
+            background: #f9fafb;
+            color: #3b82f6;
+        }
+        
+        .error-mark:hover .error-note-tooltip {
+            display: block;
+        }
+        
+        .error-note-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: white;
+            filter: drop-shadow(0 2px 1px rgba(0,0,0,0.05));
+        }
+        
+        /* Note editing modal */
+        .error-note-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100000;
+            min-width: 320px;
+            max-width: 400px;
+            display: none;
+        }
+        
+        .error-note-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 99999;
+            display: none;
+        }
+        
+        .error-note-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 6px;
+        }
+        
+        .error-note-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        
+        .error-note-buttons {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .error-note-btn {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
-            position: relative;
-            display: inline-block;
-            margin: 0 1px;
+        }
+        
+        .error-note-save {
+            background: #3b82f6;
+            color: white;
+            border: none;
+        }
+        
+        .error-note-save:hover {
+            background: #2563eb;
+        }
+        
+        .error-note-delete {
+            background: #ef4444;
+            color: white;
+            border: none;
+        }
+        
+        .error-note-delete:hover {
+            background: #dc2626;
+        }
+        
+        .error-has-note {
+            border-bottom: 2px dotted currentColor;
         }
         
         .error-mark.task_achievement {
@@ -666,6 +882,12 @@
             user-select: text;
             line-height: 1.8;
             cursor: text;
+            will-change: contents;
+        }
+        
+        /* Improve scroll performance */
+        .text-marking-container * {
+            will-change: auto;
         }
         
         ::selection {
@@ -695,6 +917,88 @@
         let errorMarkings = [];
         let currentSelection = null;
         let markingIdCounter = 0;
+        let currentEditingMarkingId = null;
+        
+        // Note management functions
+        window.openNoteModal = function(markingId, event) {
+            event.stopPropagation();
+            event.preventDefault();
+            
+            const marking = errorMarkings.find(m => m.id === markingId);
+            if (!marking) return;
+            
+            currentEditingMarkingId = markingId;
+            
+            const errorLabels = {
+                'task_achievement': 'Task Achievement',
+                'coherence_cohesion': 'Coherence & Cohesion',
+                'lexical_resource': 'Lexical Resource',
+                'grammar': 'Grammar'
+            };
+            
+            document.getElementById('noteModalErrorType').textContent = errorLabels[marking.errorType];
+            document.getElementById('noteModalText').textContent = marking.text.substring(0, 50) + (marking.text.length > 50 ? '...' : '');
+            document.getElementById('noteModalInput').value = marking.note || '';
+            
+            document.getElementById('noteModalOverlay').style.display = 'block';
+            document.getElementById('noteModal').style.display = 'block';
+            
+            // Focus on textarea
+            setTimeout(() => {
+                document.getElementById('noteModalInput').focus();
+            }, 100);
+        };
+        
+        window.closeNoteModal = function() {
+            document.getElementById('noteModalOverlay').style.display = 'none';
+            document.getElementById('noteModal').style.display = 'none';
+            currentEditingMarkingId = null;
+        };
+        
+        window.saveNoteFromModal = function() {
+            if (!currentEditingMarkingId) return;
+            
+            const noteValue = document.getElementById('noteModalInput').value;
+            const marking = errorMarkings.find(m => m.id === currentEditingMarkingId);
+            
+            if (marking) {
+                marking.note = noteValue;
+                marking.comment = noteValue; // Save to comment field for database
+                updateErrorMarkingsInput();
+                renderErrorMarkings();
+            }
+            
+            closeNoteModal();
+        };
+        
+        window.deleteNoteFromModal = function() {
+            if (!currentEditingMarkingId) return;
+            window.removeMarking(currentEditingMarkingId);
+            closeNoteModal();
+        };
+        
+        // Calculate Overall Band Score (IELTS Official Formula)
+        window.calculateOverallBand = function(taskIndex) {
+            // Get all 4 criteria values
+            const taskAchievement = parseFloat(document.querySelector(`select[name="task_scores[${taskIndex}][task_achievement]"]`).value);
+            const coherence = parseFloat(document.querySelector(`select[name="task_scores[${taskIndex}][coherence_cohesion]"]`).value);
+            const lexical = parseFloat(document.querySelector(`select[name="task_scores[${taskIndex}][lexical_resource]"]`).value);
+            const grammar = parseFloat(document.querySelector(`select[name="task_scores[${taskIndex}][grammar]"]`).value);
+            
+            // Check if all criteria are filled
+            if (!isNaN(taskAchievement) && !isNaN(coherence) && !isNaN(lexical) && !isNaN(grammar)) {
+                // Calculate average of the 4 criteria (same for both Task 1 and Task 2)
+                const average = (taskAchievement + coherence + lexical + grammar) / 4;
+                
+                // Round to nearest 0.5 (IELTS Official Rounding Rule)
+                const rounded = Math.round(average * 2) / 2;
+                
+                // Set the overall band score
+                document.getElementById(`overall_band_${taskIndex}`).value = rounded.toFixed(1);
+            } else {
+                document.getElementById(`overall_band_${taskIndex}`).value = '';
+            }
+        };
         
         // Make functions available globally
         window.markError = markError;
@@ -711,9 +1015,30 @@
             const modal = document.getElementById('errorTypeModal');
             if (modal) modal.style.display = 'none';
             
-            // Text selection handlers
-            document.querySelectorAll('.text-marking-container').forEach(container => {
-                container.addEventListener('mouseup', handleTextSelection);
+            // Use event delegation for better performance
+            document.body.addEventListener('mouseup', function(event) {
+                const container = event.target.closest('.text-marking-container');
+                if (container) {
+                    // Debounce the selection handler
+                    clearTimeout(window.selectionTimeout);
+                    window.selectionTimeout = setTimeout(() => {
+                        handleTextSelection(event);
+                    }, 100);
+                }
+            });
+            
+            // Left-click on marked error (not tooltip) to remove
+            document.body.addEventListener('click', function(event) {
+                const errorMark = event.target.closest('.error-mark');
+                // Only remove if NOT clicking on the tooltip
+                if (errorMark && !event.target.closest('.error-note-tooltip')) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const markingId = parseInt(errorMark.dataset.markingId);
+                    if (markingId) {
+                        window.removeMarking(markingId);
+                    }
+                }
             });
             
             // Audio error handling
@@ -737,28 +1062,40 @@
             
             // Escape key
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') closeErrorModal();
+                if (e.key === 'Escape') {
+                    closeErrorModal();
+                    closeNoteModal();
+                }
             });
             
-            // Auto-save
+            // Auto-save with debouncing
             let autoSaveTimer;
             document.getElementById('evaluationForm')?.addEventListener('input', function() {
                 clearTimeout(autoSaveTimer);
-                autoSaveTimer = setTimeout(saveDraft, 2000);
+                autoSaveTimer = setTimeout(saveDraft, 3000);
             });
         });
         
         function handleTextSelection(event) {
-            if (event.target.classList.contains('error-mark')) return;
+            // Prevent handling if clicking on tooltip
+            if (event.target.closest('.error-note-tooltip')) {
+                return;
+            }
             
             const selection = window.getSelection();
             const selectedText = selection.toString().trim();
             
-            if (selectedText.length > 0) {
+            if (selectedText.length > 0 && selectedText.length < 500) { // Limit selection size
                 const container = event.target.closest('.text-marking-container');
                 if (!container) return;
                 
                 const range = selection.getRangeAt(0);
+                
+                // Check if selection is within the container
+                if (!container.contains(range.commonAncestorContainer)) {
+                    return;
+                }
+                
                 const startOffset = getTextOffset(container, range.startContainer, range.startOffset);
                 const endOffset = getTextOffset(container, range.endContainer, range.endOffset);
                 
@@ -771,7 +1108,7 @@
                     container: container
                 };
                 
-                document.getElementById('selectedTextDisplay').textContent = selectedText;
+                document.getElementById('selectedTextDisplay').textContent = selectedText.substring(0, 50) + (selectedText.length > 50 ? '...' : '');
                 const modal = document.getElementById('errorTypeModal');
                 modal.style.display = 'flex';
             }
@@ -800,13 +1137,15 @@
             if (!currentSelection) return;
             
             const marking = {
-                id: ++markingIdCounter,
-                text: currentSelection.text,
-                taskNumber: currentSelection.taskNumber,
-                answerId: currentSelection.answerId,
-                startOffset: currentSelection.startOffset,
-                endOffset: currentSelection.endOffset,
-                errorType: errorType
+            id: ++markingIdCounter,
+            text: currentSelection.text,
+            taskNumber: currentSelection.taskNumber,
+            answerId: currentSelection.answerId,
+            startOffset: currentSelection.startOffset,
+            endOffset: currentSelection.endOffset,
+            errorType: errorType,
+            note: '', // Initialize with empty note
+                comment: '' // Database field name
             };
             
             errorMarkings.push(marking);
@@ -817,44 +1156,75 @@
         }
         
         function renderErrorMarkings() {
-            document.querySelectorAll('.text-marking-container').forEach(container => {
-                const taskNumber = container.dataset.taskNumber;
-                const relevantMarkings = errorMarkings
-                    .filter(m => m.taskNumber === taskNumber)
-                    .sort((a, b) => b.startOffset - a.startOffset);
-                
-                if (relevantMarkings.length === 0) {
-                    const originalText = container.getAttribute('data-original-text') || container.textContent;
-                    container.innerHTML = originalText;
-                } else {
-                    if (!container.hasAttribute('data-original-text')) {
-                        container.setAttribute('data-original-text', container.textContent);
+            // Use requestAnimationFrame for smooth rendering
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.text-marking-container').forEach(container => {
+                    const taskNumber = container.dataset.taskNumber;
+                    const relevantMarkings = errorMarkings
+                        .filter(m => m.taskNumber === taskNumber)
+                        .sort((a, b) => b.startOffset - a.startOffset);
+                    
+                    if (relevantMarkings.length === 0) {
+                        const originalText = container.getAttribute('data-original-text') || container.textContent;
+                        container.innerHTML = escapeHtml(originalText);
+                    } else {
+                        if (!container.hasAttribute('data-original-text')) {
+                            container.setAttribute('data-original-text', container.textContent);
+                        }
+                        
+                        const originalText = container.getAttribute('data-original-text');
+                        const fragments = [];
+                        let lastIndex = 0;
+                        
+                        // Sort markings by start offset for sequential processing
+                        const sortedMarkings = [...relevantMarkings].sort((a, b) => a.startOffset - b.startOffset);
+                        
+                        sortedMarkings.forEach(marking => {
+                            // Add text before marking
+                            if (marking.startOffset > lastIndex) {
+                                fragments.push(escapeHtml(originalText.substring(lastIndex, marking.startOffset)));
+                            }
+                            
+                            const hasNote = marking.note && marking.note.trim() !== '';
+                            const noteClass = hasNote ? 'error-has-note' : '';
+                            const noteIcon = hasNote ? '<i class="fas fa-sticky-note" style="font-size: 8px; margin-right: 2px;"></i>' : '<i class="fas fa-plus" style="font-size: 7px; margin-right: 2px;"></i>';
+                            const noteText = hasNote ? 'Note' : 'Add';
+                            
+                            const markedText = escapeHtml(originalText.substring(marking.startOffset, marking.endOffset));
+                            
+                            // Error mark with hover tooltip for adding notes
+                            fragments.push(`<span class="error-mark ${marking.errorType} ${noteClass}" data-marking-id="${marking.id}" title="Click to remove">${markedText}<span class="error-note-tooltip" onclick="openNoteModal(${marking.id}, event)">${noteIcon}${noteText}</span></span>`);
+                            
+                            lastIndex = marking.endOffset;
+                        });
+                        
+                        // Add remaining text
+                        if (lastIndex < originalText.length) {
+                            fragments.push(escapeHtml(originalText.substring(lastIndex)));
+                        }
+                        
+                        container.innerHTML = fragments.join('');
                     }
                     
-                    const originalText = container.getAttribute('data-original-text');
-                    let markedText = originalText;
-                    
-                    relevantMarkings.forEach(marking => {
-                        const before = markedText.substring(0, marking.startOffset);
-                        const marked = markedText.substring(marking.startOffset, marking.endOffset);
-                        const after = markedText.substring(marking.endOffset);
-                        
-                        markedText = before + 
-                            `<span class="error-mark ${marking.errorType}" data-marking-id="${marking.id}" onclick="window.removeMarking(${marking.id})" title="Click to remove">${marked}</span>` + 
-                            after;
-                    });
-                    
-                    container.innerHTML = markedText;
-                }
-                
-                updateErrorSummary(taskNumber - 1);
+                    updateErrorSummary(taskNumber - 1);
+                });
             });
         }
         
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         function removeMarking(markingId) {
-            errorMarkings = errorMarkings.filter(m => m.id !== markingId);
-            updateErrorMarkingsInput();
-            renderErrorMarkings();
+            const markingIndex = errorMarkings.findIndex(m => m.id === markingId);
+            if (markingIndex > -1) {
+                errorMarkings.splice(markingIndex, 1);
+                updateErrorMarkingsInput();
+                renderErrorMarkings();
+            }
         }
         
         function updateErrorSummary(index) {

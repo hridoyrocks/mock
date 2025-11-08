@@ -154,7 +154,7 @@ class EvaluationController extends Controller
                         'start_position' => $marking['startOffset'],
                         'end_position' => $marking['endOffset'],
                         'error_type' => $marking['errorType'],
-                        'comment' => null // Can be added later if needed
+                        'comment' => $marking['comment'] ?? $marking['note'] ?? null // Save teacher's note/comment
                     ]);
                 }
             }
