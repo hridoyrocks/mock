@@ -196,10 +196,7 @@
         <div class="container mx-auto px-6">
             <!-- Header -->
             <div class="text-center mb-12">
-                <div class="inline-flex items-center space-x-2 mb-3">
-                    <i class="fas fa-trophy text-[#C8102E] text-xl"></i>
-                    <span class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Weekly Leaderboard</span>
-                </div>
+                
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Top Performers</h2>
                 <p class="text-gray-600 max-w-xl mx-auto">See who's leading this week and get inspired to achieve your goals!</p>
             </div>

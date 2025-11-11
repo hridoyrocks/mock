@@ -55,9 +55,7 @@
         <div class="container mx-auto px-6">
             <div class="max-w-6xl mx-auto">
                 <div class="text-center mb-12">
-                    <span class="inline-block px-4 py-2 bg-red-100 text-red-600 rounded-full text-sm font-bold mb-4 uppercase tracking-wider">
-                        Quick Navigation
-                    </span>
+                  
                     <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Browse by Category</h2>
                     <p class="text-lg text-gray-600">Select a topic to find relevant information</p>
                 </div>

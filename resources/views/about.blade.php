@@ -160,9 +160,7 @@
         <div class="container mx-auto px-6">
             <div class="max-w-6xl mx-auto">
                 <div class="text-center mb-16">
-                    <span class="inline-block px-4 py-2 bg-red-100 text-red-600 rounded-full text-sm font-bold mb-4 uppercase tracking-wider">
-                        Our Journey
-                    </span>
+                   
                     <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">The Road to Excellence</h2>
                     <p class="text-lg text-gray-600 max-w-2xl mx-auto">From a simple idea to transforming thousands of lives</p>
                 </div>
@@ -278,9 +276,7 @@
         <div class="container mx-auto px-6">
             <div class="max-w-6xl mx-auto">
                 <div class="text-center mb-16">
-                    <span class="inline-block px-4 py-2 bg-red-100 text-red-600 rounded-full text-sm font-bold mb-4 uppercase tracking-wider">
-                        Our Competitive Edge
-                    </span>
+                   
                     <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">What Makes Us Different</h2>
                     <p class="text-lg text-gray-600 max-w-2xl mx-auto">Discover the distinctive features that set us apart from traditional preparation methods</p>
                 </div>

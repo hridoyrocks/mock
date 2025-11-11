@@ -39,7 +39,7 @@
                             <div class="flex items-center">
                                 <div class="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
                                 <div class="flex-1">
-                                    <span class="font-medium text-gray-900">Task Achievement</span>
+                                    <span class="font-medium text-gray-900">Task Response</span>
                                     <p class="text-xs text-gray-600 mt-0.5">Content & addressing the prompt</p>
                                 </div>
                             </div>
@@ -66,7 +66,7 @@
                             <div class="flex items-center">
                                 <div class="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
                                 <div class="flex-1">
-                                    <span class="font-medium text-gray-900">Grammar</span>
+                                    <span class="font-medium text-gray-900">Grammatical Range & Accuracy</span>
                                     <p class="text-xs text-gray-600 mt-0.5">Grammar & sentence structure</p>
                                 </div>
                             </div>
@@ -173,78 +173,82 @@
                 @endphp
                 
                 @if($sectionName === 'speaking')
-                    <!-- Speaking Tasks -->
-                    @foreach($evaluationRequest->studentAttempt->answers as $index => $answer)
+                    <!-- Speaking Tasks - Part Wise Evaluation -->
+                    @php
+                        $answersByPart = $evaluationRequest->studentAttempt->answers->groupBy(function($answer) {
+                            return $answer->question->part_number;
+                        });
+                    @endphp
+                    
+                    @foreach($answersByPart as $partNumber => $partAnswers)
                         <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-                            <!-- Task Header -->
-                            <div class="bg-gray-50 px-6 py-4 border-b">
-                                <h3 class="font-semibold text-gray-900 flex items-center">
-                                    <span class="bg-blue-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold mr-3">
-                                        {{ $index + 1 }}
+                            <!-- Part Header -->
+                            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 border-b">
+                                <h3 class="font-bold text-white flex items-center text-lg">
+                                    <span class="bg-white text-blue-600 w-10 h-10 rounded-lg flex items-center justify-center text-base font-bold mr-3">
+                                        {{ $partNumber }}
                                     </span>
-                                    Question {{ $answer->question->order_number }} (Part {{ $answer->question->part_number }})
+                                    Part {{ $partNumber }}
+                                    @if($partNumber == 1)
+                                        <span class="ml-3 text-sm font-normal text-blue-100">Introduction & Interview</span>
+                                    @elseif($partNumber == 2)
+                                        <span class="ml-3 text-sm font-normal text-blue-100">Individual Long Turn</span>
+                                    @else
+                                        <span class="ml-3 text-sm font-normal text-blue-100">Two-way Discussion</span>
+                                    @endif
                                 </h3>
                             </div>
                             
                             <div class="p-6">
-                                <!-- Question -->
-                                <div class="mb-4">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">Question</p>
-                                    <div class="bg-gray-50 rounded-lg p-4 text-gray-700 text-sm">
-                                        {!! $answer->question->content !!}
-                                    </div>
-                                </div>
-                                
-                                <!-- Audio Recording -->
-                                <div class="mb-6">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">Student's Recording</p>
-                                    
-                                    @if($answer->speakingRecording)
-                                        @php
-                                            $recording = $answer->speakingRecording;
-                                            $audioUrl = $recording->file_url ?? $recording->getFileUrlAttribute();
-                                            $mimeType = $recording->mime_type ?? 'audio/webm';
-                                        @endphp
-                                        
-                                        <div class="audio-player-container">
-                                            <audio controls preload="metadata" class="w-full">
-                                                <source src="{{ $audioUrl }}" type="{{ $mimeType }}">
-                                                Your browser does not support the audio element.
-                                            </audio>
-                                            
-                                            <div class="audio-meta">
-                                                <span>
-                                                    <i class="fas fa-database"></i>
-                                                    {{ strtoupper($recording->storage_disk ?? 'public') }}
-                                                </span>
-                                                @if($recording->file_size)
-                                                    <span>
-                                                        <i class="fas fa-file"></i>
-                                                        {{ $recording->formatted_size }}
-                                                    </span>
-                                                @endif
-                                                <span>
-                                                    <i class="fas fa-music"></i>
-                                                    {{ strtoupper(str_replace('audio/', '', $mimeType)) }}
-                                                </span>
+                                <!-- Questions and Audio Recordings -->
+                                <div class="space-y-4 mb-6">
+                                    @foreach($partAnswers as $answer)
+                                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div class="flex-1">
+                                                    <p class="text-xs font-medium text-gray-500 mb-1">Question {{ $answer->question->order_number }}</p>
+                                                    <div class="text-sm text-gray-700">
+                                                        {!! $answer->question->content !!}
+                                                    </div>
+                                                </div>
                                             </div>
+                                            
+                                            <!-- Audio Recording -->
+                                            @if($answer->speakingRecording)
+                                                @php
+                                                    $recording = $answer->speakingRecording;
+                                                    $audioUrl = $recording->file_url ?? $recording->getFileUrlAttribute();
+                                                    $mimeType = $recording->mime_type ?? 'audio/webm';
+                                                @endphp
+                                                
+                                                <div class="audio-player-container-compact">
+                                                    <audio controls preload="metadata" class="w-full">
+                                                        <source src="{{ $audioUrl }}" type="{{ $mimeType }}">
+                                                        Your browser does not support the audio element.
+                                                    </audio>
+                                                </div>
+                                            @else
+                                                <div class="no-recording-compact">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    No recording
+                                                </div>
+                                            @endif
                                         </div>
-                                    @else
-                                        <div class="no-recording">
-                                            <i class="fas fa-exclamation-triangle"></i>
-                                            No recording available
-                                        </div>
-                                    @endif
+                                    @endforeach
                                 </div>
                                 
-                                <!-- Scoring Grid for Speaking -->
-                                <div class="bg-gray-50 rounded-lg p-4">
-                                    <p class="text-sm font-medium text-gray-700 mb-3">Band Score Criteria</p>
-                                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                                <!-- Part-wise Scoring Grid -->
+                                <div class="bg-blue-50 rounded-lg p-5 border border-blue-200">
+                                    <p class="text-sm font-semibold text-blue-900 mb-4 flex items-center">
+                                        <i class="fas fa-star mr-2"></i>
+                                        Part {{ $partNumber }} Band Score
+                                    </p>
+                                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
                                         <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Overall</label>
-                                            <select name="task_scores[{{ $index }}][score]" 
+                                            <label class="block text-xs font-medium text-gray-700 mb-2">Fluency & Coherence</label>
+                                            <select name="part_scores[{{ $partNumber }}][fluency_coherence]" 
                                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    onchange="calculatePartBand({{ $partNumber }})"
                                                     required>
                                                 <option value="">-</option>
                                                 @for($i = 0; $i <= 9; $i += 0.5)
@@ -253,9 +257,10 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Fluency & Coherence</label>
-                                            <select name="task_scores[{{ $index }}][fluency_coherence]" 
+                                            <label class="block text-xs font-medium text-gray-700 mb-2">Lexical Resource</label>
+                                            <select name="part_scores[{{ $partNumber }}][lexical_resource]" 
                                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    onchange="calculatePartBand({{ $partNumber }})"
                                                     required>
                                                 <option value="">-</option>
                                                 @for($i = 0; $i <= 9; $i += 0.5)
@@ -264,9 +269,10 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Lexical Resource</label>
-                                            <select name="task_scores[{{ $index }}][lexical_resource]" 
+                                            <label class="block text-xs font-medium text-gray-700 mb-2">Grammar Range & Accuracy</label>
+                                            <select name="part_scores[{{ $partNumber }}][grammar]" 
                                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    onchange="calculatePartBand({{ $partNumber }})"
                                                     required>
                                                 <option value="">-</option>
                                                 @for($i = 0; $i <= 9; $i += 0.5)
@@ -275,9 +281,10 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Grammar</label>
-                                            <select name="task_scores[{{ $index }}][grammar]" 
+                                            <label class="block text-xs font-medium text-gray-700 mb-2">Pronunciation</label>
+                                            <select name="part_scores[{{ $partNumber }}][pronunciation]" 
                                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    onchange="calculatePartBand({{ $partNumber }})"
                                                     required>
                                                 <option value="">-</option>
                                                 @for($i = 0; $i <= 9; $i += 0.5)
@@ -286,28 +293,28 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-xs text-gray-600 mb-1">Pronunciation</label>
-                                            <select name="task_scores[{{ $index }}][pronunciation]" 
-                                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                                    required>
-                                                <option value="">-</option>
-                                                @for($i = 0; $i <= 9; $i += 0.5)
-                                                    <option value="{{ $i }}">{{ $i }}</option>
-                                                @endfor
-                                            </select>
+                                            <label class="block text-xs font-medium text-gray-700 mb-2">Overall Part Band</label>
+                                            <input type="text" 
+                                                   name="part_scores[{{ $partNumber }}][score]" 
+                                                   id="part_band_{{ $partNumber }}"
+                                                   class="w-full rounded-lg border-blue-300 text-sm focus:border-blue-500 focus:ring-blue-500 bg-white font-bold text-center text-blue-700"
+                                                   value=""
+                                                   readonly
+                                                   required>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <!-- Feedback -->
-                                <div class="mt-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        Detailed Feedback
+                                <!-- Part Feedback -->
+                                <div class="mt-5">
+                                    <label class="block text-sm font-semibold text-gray-800 mb-2">
+                                        <i class="fas fa-comment-dots mr-1 text-blue-600"></i>
+                                        Part {{ $partNumber }} Detailed Feedback
                                     </label>
-                                    <textarea name="task_scores[{{ $index }}][feedback]" 
-                                              rows="3"
+                                    <textarea name="part_scores[{{ $partNumber }}][feedback]" 
+                                              rows="4"
                                               class="w-full rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-                                              placeholder="Provide specific feedback for this question..."
+                                              placeholder="Provide comprehensive feedback for Part {{ $partNumber }}... Include observations on fluency, vocabulary usage, grammar accuracy, and pronunciation."
                                               required></textarea>
                                 </div>
                             </div>
@@ -356,19 +363,19 @@
                                     <div class="flex flex-wrap gap-2 mb-3">
                                         <span class="inline-flex items-center text-xs">
                                             <span class="w-3 h-3 bg-blue-200 rounded mr-1"></span>
-                                            Task Achievement
+                                            Task Response
                                         </span>
                                         <span class="inline-flex items-center text-xs">
                                             <span class="w-3 h-3 bg-purple-200 rounded mr-1"></span>
-                                            Coherence
+                                            Coherence & Cohesion
                                         </span>
                                         <span class="inline-flex items-center text-xs">
                                             <span class="w-3 h-3 bg-amber-200 rounded mr-1"></span>
-                                            Vocabulary
+                                            Lexical Resource
                                         </span>
                                         <span class="inline-flex items-center text-xs">
                                             <span class="w-3 h-3 bg-red-200 rounded mr-1"></span>
-                                            Grammar
+                                            Grammatical Range & Accuracy
                                         </span>
                                     </div>
                                     
@@ -544,22 +551,61 @@
                         Overall Assessment
                     </h3>
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- Overall Band -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Overall Band Score
-                            </label>
-                            <select name="overall_band_score" 
-                                    class="w-full rounded-lg border-gray-300 text-lg font-semibold focus:border-blue-500 focus:ring-blue-500"
-                                    required>
-                                <option value="">Select Score</option>
-                                @for($i = 0; $i <= 9; $i += 0.5)
-                                    <option value="{{ $i }}">Band {{ $i }}</option>
-                                @endfor
-                            </select>
+                    @if($sectionName === 'speaking')
+                        <!-- Speaking Overall Band Calculation -->
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border-2 border-blue-200">
+                            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                <!-- Part Scores Display -->
+                                <div class="text-center">
+                                    <p class="text-xs font-medium text-gray-600 mb-2">Part 1 Score</p>
+                                    <div class="text-3xl font-bold text-blue-600" id="display_part_1">-</div>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs font-medium text-gray-600 mb-2">Part 2 Score</p>
+                                    <div class="text-3xl font-bold text-blue-600" id="display_part_2">-</div>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs font-medium text-gray-600 mb-2">Part 3 Score</p>
+                                    <div class="text-3xl font-bold text-blue-600" id="display_part_3">-</div>
+                                </div>
+                                <div class="text-center border-l-2 border-blue-300">
+                                    <p class="text-xs font-medium text-gray-600 mb-2">Overall Band Score</p>
+                                    <div class="text-4xl font-bold text-indigo-700" id="speaking_overall_display">-</div>
+                                    <p class="text-xs text-gray-500 mt-1">(Average of 3 parts)</p>
+                                </div>
+                            </div>
                         </div>
                         
+                        <!-- Hidden input for overall band -->
+                        <input type="hidden" name="overall_band_score" id="speaking_overall_band" value="" required>
+                    @else
+                        <!-- Writing Overall Band Calculation -->
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 mb-6 border-2 border-purple-200">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <!-- Task Scores Display -->
+                                <div class="text-center">
+                                    <p class="text-xs font-medium text-gray-600 mb-2">Task 1 Score</p>
+                                    <div class="text-3xl font-bold text-purple-600" id="display_task_0">-</div>
+                                    <p class="text-xs text-gray-500 mt-1">33.33% weight</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs font-medium text-gray-600 mb-2">Task 2 Score</p>
+                                    <div class="text-3xl font-bold text-purple-600" id="display_task_1">-</div>
+                                    <p class="text-xs text-gray-500 mt-1">66.67% weight</p>
+                                </div>
+                                <div class="text-center border-l-2 border-purple-300">
+                                    <p class="text-xs font-medium text-gray-600 mb-2">Overall Band Score</p>
+                                    <div class="text-4xl font-bold text-pink-700" id="writing_overall_display">-</div>
+                                    <p class="text-xs text-gray-500 mt-1">(Task 1×1 + Task 2×2) ÷ 3</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden input for overall band -->
+                        <input type="hidden" name="overall_band_score" id="writing_overall_band" value="" required>
+                    @endif
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- Strengths -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -662,6 +708,21 @@
             outline: none;
         }
         
+        /* Compact Audio Player for Part-wise View */
+        .audio-player-container-compact {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 8px;
+        }
+        
+        .audio-player-container-compact audio {
+            width: 100%;
+            height: 32px;
+            outline: none;
+        }
+        
         .audio-meta {
             display: flex;
             gap: 12px;
@@ -684,6 +745,17 @@
             color: #991b1b;
             font-size: 14px;
             margin-top: 8px;
+        }
+        
+        .no-recording-compact {
+            padding: 6px 10px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+            color: #991b1b;
+            font-size: 12px;
+            margin-top: 6px;
+            text-align: center;
         }
         
         /* Modal styles */
@@ -930,10 +1002,10 @@
             currentEditingMarkingId = markingId;
             
             const errorLabels = {
-                'task_achievement': 'Task Achievement',
+                'task_achievement': 'Task Response',
                 'coherence_cohesion': 'Coherence & Cohesion',
                 'lexical_resource': 'Lexical Resource',
-                'grammar': 'Grammar'
+                'grammar': 'Grammatical Range & Accuracy'
             };
             
             document.getElementById('noteModalErrorType').textContent = errorLabels[marking.errorType];
@@ -977,6 +1049,90 @@
             closeNoteModal();
         };
         
+        // Calculate Part Band Score for Speaking (IELTS Official Formula)
+        window.calculatePartBand = function(partNumber) {
+            // Get all 4 criteria values for speaking
+            const fluency = parseFloat(document.querySelector(`select[name="part_scores[${partNumber}][fluency_coherence]"]`)?.value);
+            const lexical = parseFloat(document.querySelector(`select[name="part_scores[${partNumber}][lexical_resource]"]`)?.value);
+            const grammar = parseFloat(document.querySelector(`select[name="part_scores[${partNumber}][grammar]"]`)?.value);
+            const pronunciation = parseFloat(document.querySelector(`select[name="part_scores[${partNumber}][pronunciation]"]`)?.value);
+            
+            // Check if all criteria are filled
+            if (!isNaN(fluency) && !isNaN(lexical) && !isNaN(grammar) && !isNaN(pronunciation)) {
+                // Calculate average of the 4 criteria
+                const average = (fluency + lexical + grammar + pronunciation) / 4;
+                
+                // Round to nearest 0.5 (IELTS Official Rounding Rule)
+                const rounded = Math.round(average * 2) / 2;
+                
+                // Set the part band score
+                const inputField = document.getElementById(`part_band_${partNumber}`);
+                if (inputField) {
+                    inputField.value = rounded.toFixed(1);
+                }
+                
+                // Update display
+                const displayField = document.getElementById(`display_part_${partNumber}`);
+                if (displayField) {
+                    displayField.textContent = rounded.toFixed(1);
+                }
+            } else {
+                const inputField = document.getElementById(`part_band_${partNumber}`);
+                if (inputField) {
+                    inputField.value = '';
+                }
+                
+                const displayField = document.getElementById(`display_part_${partNumber}`);
+                if (displayField) {
+                    displayField.textContent = '-';
+                }
+            }
+            
+            // Calculate overall speaking band
+            calculateSpeakingOverallBand();
+        };
+        
+        // Calculate Overall Speaking Band (Average of 3 parts)
+        window.calculateSpeakingOverallBand = function() {
+            const part1 = parseFloat(document.getElementById('part_band_1')?.value);
+            const part2 = parseFloat(document.getElementById('part_band_2')?.value);
+            const part3 = parseFloat(document.getElementById('part_band_3')?.value);
+            
+            if (!isNaN(part1) && !isNaN(part2) && !isNaN(part3)) {
+                // Calculate average of 3 parts
+                const average = (part1 + part2 + part3) / 3;
+                
+                // Round to nearest 0.5 (IELTS Official Rounding Rule)
+                const rounded = Math.round(average * 2) / 2;
+                
+                // Set hidden input value
+                const hiddenInput = document.getElementById('speaking_overall_band');
+                if (hiddenInput) {
+                    hiddenInput.value = rounded.toFixed(1);
+                }
+                
+                // Update display
+                const display = document.getElementById('speaking_overall_display');
+                if (display) {
+                    display.textContent = rounded.toFixed(1);
+                    display.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        display.classList.remove('animate-pulse');
+                    }, 500);
+                }
+            } else {
+                const hiddenInput = document.getElementById('speaking_overall_band');
+                if (hiddenInput) {
+                    hiddenInput.value = '';
+                }
+                
+                const display = document.getElementById('speaking_overall_display');
+                if (display) {
+                    display.textContent = '-';
+                }
+            }
+        };
+        
         // Calculate Overall Band Score (IELTS Official Formula)
         window.calculateOverallBand = function(taskIndex) {
             // Get all 4 criteria values
@@ -995,8 +1151,65 @@
                 
                 // Set the overall band score
                 document.getElementById(`overall_band_${taskIndex}`).value = rounded.toFixed(1);
+                
+                // Update display
+                const displayField = document.getElementById(`display_task_${taskIndex}`);
+                if (displayField) {
+                    displayField.textContent = rounded.toFixed(1);
+                }
             } else {
                 document.getElementById(`overall_band_${taskIndex}`).value = '';
+                
+                const displayField = document.getElementById(`display_task_${taskIndex}`);
+                if (displayField) {
+                    displayField.textContent = '-';
+                }
+            }
+            
+            // Calculate writing overall band
+            calculateWritingOverallBand();
+        };
+        
+        // Calculate Overall Writing Band (IELTS Official Weighted Formula)
+        // Task 1 = 33.33% (weight 1), Task 2 = 66.67% (weight 2)
+        // Formula: (Task1×1 + Task2×2) ÷ 3
+        window.calculateWritingOverallBand = function() {
+            const task1 = parseFloat(document.getElementById('overall_band_0')?.value);
+            const task2 = parseFloat(document.getElementById('overall_band_1')?.value);
+            
+            if (!isNaN(task1) && !isNaN(task2)) {
+                // IELTS Official Writing Formula: Weighted average
+                // Task 1 contributes 1/3, Task 2 contributes 2/3
+                const weightedAverage = (task1 * 1 + task2 * 2) / 3;
+                
+                // Round to nearest 0.5 (IELTS Official Rounding Rule)
+                const rounded = Math.round(weightedAverage * 2) / 2;
+                
+                // Set hidden input value
+                const hiddenInput = document.getElementById('writing_overall_band');
+                if (hiddenInput) {
+                    hiddenInput.value = rounded.toFixed(1);
+                }
+                
+                // Update display
+                const display = document.getElementById('writing_overall_display');
+                if (display) {
+                    display.textContent = rounded.toFixed(1);
+                    display.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        display.classList.remove('animate-pulse');
+                    }, 500);
+                }
+            } else {
+                const hiddenInput = document.getElementById('writing_overall_band');
+                if (hiddenInput) {
+                    hiddenInput.value = '';
+                }
+                
+                const display = document.getElementById('writing_overall_display');
+                if (display) {
+                    display.textContent = '-';
+                }
             }
         };
         
@@ -1243,10 +1456,10 @@
                 
                 errorList.innerHTML = Object.entries(grouped).map(([type, count]) => {
                     const labels = {
-                        'task_achievement': 'Task Achievement',
-                        'coherence_cohesion': 'Coherence',
-                        'lexical_resource': 'Vocabulary',
-                        'grammar': 'Grammar'
+                        'task_achievement': 'Task Response',
+                        'coherence_cohesion': 'Coherence & Cohesion',
+                        'lexical_resource': 'Lexical Resource',
+                        'grammar': 'Grammatical Range & Accuracy'
                     };
                     const colors = {
                         'task_achievement': 'bg-blue-100 text-blue-700',
