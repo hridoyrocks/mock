@@ -138,7 +138,14 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('admin.users.create');
+        $roles = \App\Models\Role::with('permissions')->get();
+        
+        // Debug: Check if roles exist
+        if ($roles->isEmpty()) {
+            \Log::warning('No roles found in database');
+        }
+        
+        return view('admin.users.create', compact('roles'));
     }
 
     /**
@@ -151,18 +158,30 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'nullable|string|max:20|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:student,teacher,admin',
+            'role' => 'required|in:student,teacher,admin,custom',
+            'custom_role_id' => 'required_if:role,custom|nullable|exists:roles,id',
             'email_verified' => 'boolean',
         ]);
+
+        // Determine is_admin and role_id based on selection
+        $isAdmin = false;
+        $roleId = null;
+        
+        if ($validated['role'] === 'custom') {
+            $roleId = $validated['custom_role_id'];
+        } elseif ($validated['role'] === 'admin') {
+            $isAdmin = true;
+        }
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'password' => Hash::make($validated['password']),
-            'is_admin' => $validated['role'] === 'admin',
+            'is_admin' => $isAdmin,
+            'role_id' => $roleId,
             'email_verified_at' => $validated['email_verified'] ?? false ? now() : null,
-            'created_by' => 'system', // Mark as system user since created by admin
+            'created_by' => 'system',
         ]);
 
         // If teacher role, create teacher record
@@ -210,7 +229,8 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        $roles = \App\Models\Role::all();
+        return view('admin.users.edit', compact('user', 'roles'));
     }
 
     /**
@@ -224,6 +244,7 @@ class UserController extends Controller
             'phone' => ['nullable', 'string', 'max:20', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|in:student,teacher,admin',
+            'custom_role_id' => 'nullable|exists:roles,id',
             'email_verified' => 'boolean',
         ]);
 
@@ -232,6 +253,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'is_admin' => $validated['role'] === 'admin',
+            'role_id' => $validated['custom_role_id'] ?? null,
             'email_verified_at' => $validated['email_verified'] ?? false ? ($user->email_verified_at ?? now()) : null,
         ]);
 

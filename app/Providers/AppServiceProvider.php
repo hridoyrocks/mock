@@ -33,5 +33,18 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Validator::extend('valid_subscription', function ($attribute, $value, $parameters, $validator) {
             return \App\Models\SubscriptionPlan::where('slug', $value)->where('is_active', true)->exists();
         });
+        
+        // Register Blade directives for permissions
+        \Illuminate\Support\Facades\Blade::if('hasPermission', function ($permission) {
+            return auth()->check() && auth()->user()->hasPermission($permission);
+        });
+        
+        \Illuminate\Support\Facades\Blade::if('hasAnyPermission', function (...$permissions) {
+            return auth()->check() && auth()->user()->hasAnyPermission($permissions);
+        });
+        
+        \Illuminate\Support\Facades\Blade::if('hasAllPermissions', function (...$permissions) {
+            return auth()->check() && auth()->user()->hasAllPermissions($permissions);
+        });
     }
 }

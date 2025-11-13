@@ -18,6 +18,10 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
+        // Check permission
+        if (!auth()->user()->hasPermission('dashboard.view')) {
+            abort(403, 'You do not have permission to access the dashboard.');
+        }
         // Get all statistics
         $stats = [
             'total_sections' => TestSection::count(),
@@ -81,6 +85,10 @@ class DashboardController extends Controller
      */
     public function quickStats()
     {
+        // Check permission
+        if (!auth()->user()->hasPermission('dashboard.stats')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
         return response()->json([
             'total_students' => User::where('is_admin', false)->count(),
             'online_students' => User::where('is_admin', false)

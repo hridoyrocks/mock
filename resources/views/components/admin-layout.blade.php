@@ -382,6 +382,16 @@
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">User Management</h3>
                     
+                    <a href="{{ route('admin.roles.index') }}" 
+                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.roles.*') ? 'active' : 'text-gray-700' }}">
+                        <!-- Shield Icon -->
+                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span>Roles & Permissions</span>
+                        <span class="ml-auto rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">New</span>
+                    </a>
+                    
                     <a href="{{ route('admin.users.index') }}" 
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.ban-appeals.*') && !request()->routeIs('admin.users.system') ? 'active' : 'text-gray-700' }}">
                         <!-- Users Icon -->

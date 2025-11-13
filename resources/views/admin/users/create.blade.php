@@ -73,19 +73,47 @@
                     <!-- Role -->
                     <div>
                         <label for="role" class="block text-sm font-medium text-gray-700">
-                            Role <span class="text-red-500">*</span>
+                            Role Type <span class="text-red-500">*</span>
                         </label>
                         <select name="role" id="role" required
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm @error('role') border-red-300 @enderror">
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm @error('role') border-red-300 @enderror"
+                            onchange="toggleCustomRole()">
                             <option value="">Select a role</option>
                             <option value="student" {{ old('role') === 'student' ? 'selected' : '' }}>Student</option>
                             <option value="teacher" {{ old('role') === 'teacher' ? 'selected' : '' }}>Teacher</option>
                             <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
+                            <option value="custom" {{ old('role') === 'custom' ? 'selected' : '' }}>Custom Role</option>
                         </select>
                         @error('role')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
-                        <p class="mt-1 text-xs text-gray-500">This will determine the user's access level and permissions</p>
+                        <p class="mt-1 text-xs text-gray-500">Select Custom Role to assign specific permissions</p>
+                    </div>
+
+                    <!-- Custom Role Selection -->
+                    <div id="custom_role_section" style="display: none;">
+                        <label for="custom_role_id" class="block text-sm font-medium text-gray-700">
+                            Select Custom Role <span class="text-red-500">*</span>
+                        </label>
+                        <select name="custom_role_id" id="custom_role_id"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm @error('custom_role_id') border-red-300 @enderror">
+                            <option value="">Select a custom role</option>
+                            @if(isset($roles) && $roles->count() > 0)
+                                @foreach($roles as $role)
+                                    @if(!$role->is_system_role)
+                                        <option value="{{ $role->id }}" {{ old('custom_role_id') == $role->id ? 'selected' : '' }}>
+                                            {{ $role->name }} ({{ $role->permissions->count() }} permissions)
+                                        </option>
+                                    @endif
+                                @endforeach
+                            @else
+                                <option value="" disabled>No custom roles created yet</option>
+                            @endif
+                        </select>
+                        @error('custom_role_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-xs text-gray-500">This will replace the default role with your custom permissions</p>
                     </div>
 
                     <!-- Email Verified -->
@@ -113,4 +141,26 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleCustomRole() {
+    const roleSelect = document.getElementById('role');
+    const customRoleSection = document.getElementById('custom_role_section');
+    const customRoleSelect = document.getElementById('custom_role_id');
+    
+    if (roleSelect.value === 'custom') {
+        customRoleSection.style.display = 'block';
+        customRoleSelect.required = true;
+    } else {
+        customRoleSection.style.display = 'none';
+        customRoleSelect.required = false;
+        customRoleSelect.value = '';
+    }
+}
+
+// Show custom role section on page load if custom is selected
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCustomRole();
+});
+</script>
 </x-admin-layout>

@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'maintenance.check' => \App\Http\Middleware\CheckMaintenanceMode::class,
             'teacher' => \App\Http\Middleware\IsTeacher::class,
             'trust.device' => \App\Http\Middleware\CheckTrustedDevice::class,
+            'admin.access' => \App\Http\Middleware\CheckAdminAccess::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
         
         // Set priority - CheckBanned should run early

@@ -28,6 +28,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'role_id',
         'subscription_status',
         'subscription_ends_at',
         'tests_taken_this_month',
@@ -689,5 +690,89 @@ public function activeGoal()
         }
         
         return 'bg-blue-100 text-blue-800';
+    }
+    
+    /**
+     * Get user's role relationship
+     */
+    public function userRole()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+    
+    /**
+     * Check if user has a specific permission
+     */
+    public function hasPermission(string $permissionSlug): bool
+    {
+        // Admin has all permissions
+        if ($this->is_admin) {
+            return true;
+        }
+        
+        // Check through role
+        if ($this->userRole) {
+            return $this->userRole->hasPermission($permissionSlug);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if user has any of the given permissions
+     */
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Check if user has all of the given permissions
+     */
+    public function hasAllPermissions(array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if (!$this->hasPermission($permission)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Get all user permissions
+     */
+    public function getAllPermissions()
+    {
+        if ($this->is_admin) {
+            return Permission::all();
+        }
+        
+        if ($this->userRole) {
+            return $this->userRole->permissions;
+        }
+        
+        return collect([]);
+    }
+    
+    /**
+     * Assign role to user
+     */
+    public function assignRole(Role $role): void
+    {
+        $this->update(['role_id' => $role->id]);
+    }
+    
+    /**
+     * Remove role from user
+     */
+    public function removeRole(): void
+    {
+        $this->update(['role_id' => null]);
     }
 }
