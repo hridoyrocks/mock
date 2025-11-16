@@ -155,6 +155,14 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
         Route::get('/evaluation/{attempt}', [AIEvaluationController::class, 'getEvaluation'])->name('evaluation.get');
     });
 
+    // Notification routes
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\NotificationController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\NotificationController::class, 'show'])->name('show');
+        Route::post('/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::delete('/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('destroy');
+    });
+
     // Subscription routes
     Route::prefix('subscription')->name('subscription.')->group(function () {
         Route::get('/', [SubscriptionController::class, 'index'])->name('index');

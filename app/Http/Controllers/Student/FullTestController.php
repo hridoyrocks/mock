@@ -23,12 +23,8 @@ class FullTestController extends Controller
             ->ordered()
             ->get();
         
-        // Get full tests query based on user's subscription
+        // Get all full tests (premium tests will be shown as locked)
         $query = FullTest::active()->with('testSets');
-        
-        if (!$user->hasFeature('premium_full_tests')) {
-            $query->free();
-        }
         
         // Filter by category if selected
         $selectedCategory = null;
@@ -162,6 +158,12 @@ class FullTestController extends Controller
         // Validate user owns this attempt
         if ($fullTestAttempt->user_id !== auth()->id()) {
             abort(403);
+        }
+
+        // Check if test is premium and user has access
+        if ($fullTestAttempt->fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests')) {
+            return redirect()->route('subscription.plans')
+                ->with('error', 'This full test is available for premium users only.');
         }
         
         // Validate section

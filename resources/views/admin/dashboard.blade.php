@@ -1,24 +1,7 @@
 <x-admin-layout>
     <x-slot:title>Dashboard</x-slot>
 
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Welcome back, {{ auth()->user()->name }}!</h1>
-                <p class="mt-2 text-gray-600">Here's what's happening with your platform today.</p>
-            </div>
-            <div class="mt-4 flex space-x-3 sm:mt-0">
-                <button class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    <i class="lucide-download mr-2"></i>Export
-                </button>
-                <button class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
-                    <i class="lucide-calendar mr-2"></i>Last 30 Days
-                </button>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- Key Metrics Grid -->
     <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         @php

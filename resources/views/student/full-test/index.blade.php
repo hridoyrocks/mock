@@ -102,19 +102,32 @@
                                 $testCategories = $testCategories->unique('id');
                             @endphp
                             
-                            <div class="group relative rounded-lg border transition-all duration-300 hover:shadow-lg" 
+                            <div class="group relative rounded-lg border transition-all duration-300 hover:shadow-lg {{ $fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests') ? 'opacity-90' : '' }}"
                                  x-show="showAll || {{ $index }} < testsPerPage"
                                  x-transition:enter="transition ease-out duration-200"
                                  x-transition:enter-start="opacity-0 transform scale-95"
                                  x-transition:enter-end="opacity-100 transform scale-100"
                                  :class="darkMode ? 'glass border-white/10 hover:border-[#C8102E]/50' : 'bg-white border-gray-200 hover:border-[#C8102E]/30'">
-                                
+
                                 <!-- Premium Badge -->
                                 @if($fullTest->is_premium)
-                                    <div class="absolute -top-2 -right-2 z-10">
-                                        <div class="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
-                                            <i class="fas fa-crown mr-1"></i>
-                                            Premium
+                                    <div class="absolute -top-2 -right-2 z-20">
+                                        <div class="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5">
+                                            <i class="fas fa-crown text-sm"></i>
+                                            <span>Premium</span>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <!-- Lock Overlay for Premium Tests (for free users) -->
+                                @if($fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests'))
+                                    <div class="absolute inset-0 bg-gradient-to-br from-black/50 to-black/30 backdrop-blur-sm rounded-lg flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <div class="text-center p-4">
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center mx-auto mb-3 shadow-2xl transform group-hover:scale-110 transition-transform duration-300">
+                                                <i class="fas fa-lock text-white text-2xl"></i>
+                                            </div>
+                                            <p class="text-white font-bold text-base mb-1">Premium Only</p>
+                                            <p class="text-white/90 text-sm">Upgrade to unlock this test</p>
                                         </div>
                                     </div>
                                 @endif
@@ -124,8 +137,13 @@
                                     <!-- Header -->
                                     <div class="flex items-start justify-between mb-3">
                                         <div class="flex items-center gap-3 flex-1">
-                                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#C8102E] to-[#A00E27] flex items-center justify-center flex-shrink-0">
+                                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#C8102E] to-[#A00E27] flex items-center justify-center flex-shrink-0 relative">
                                                 <i class="fas fa-file-alt text-white text-sm"></i>
+                                                @if($fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests'))
+                                                    <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center border-2 border-white" :class="darkMode ? 'border-gray-900' : 'border-white'">
+                                                        <i class="fas fa-lock text-white text-[8px]"></i>
+                                                    </div>
+                                                @endif
                                             </div>
                                             <h3 class="font-semibold text-base flex-1" :class="darkMode ? 'text-white' : 'text-gray-900'">
                                                 {{ $fullTest->title }}
@@ -184,11 +202,11 @@
 
                                     <!-- Action Buttons -->
                                     @if($fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests'))
-                                        <a href="{{ route('subscription.plans') }}" 
-                                           class="w-full inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all"
-                                           :class="darkMode ? 'glass text-amber-400 hover:bg-amber-400/10 border border-amber-400/30' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'">
-                                            <i class="fas fa-lock mr-1.5"></i>
-                                            Upgrade to Premium
+                                        <a href="{{ route('subscription.plans') }}"
+                                           class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105"
+                                           :class="darkMode ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600' : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white hover:from-amber-600 hover:to-yellow-600'">
+                                            <i class="fas fa-crown"></i>
+                                            <span>Upgrade to Unlock</span>
                                         </a>
                                     @else
                                         @if($completedAttempts->count() > 0)

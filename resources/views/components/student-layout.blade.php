@@ -501,10 +501,25 @@
                                     </div>
                                     <div class="max-h-96 overflow-y-auto">
                                         @forelse(auth()->user()->unreadNotifications->take(5) as $notification)
-                                            <div class="p-4 hover:bg-white/5 transition-colors cursor-pointer border-b border-white/5">
-                                                <p class="text-sm text-white">{{ $notification->data['message'] ?? 'New notification' }}</p>
-                                                <p class="text-xs text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
-                                            </div>
+                                            <a href="{{ route('notifications.show', $notification->id) }}"
+                                               class="block p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                                               @click="notificationOpen = false">
+                                                <div class="flex items-start space-x-3">
+                                                    <div class="flex-shrink-0">
+                                                        <div class="w-8 h-8 rounded-lg bg-[#C8102E] flex items-center justify-center">
+                                                            <i class="fas fa-bell text-white text-xs"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-sm text-white font-medium">{{ $notification->data['title'] ?? 'Notification' }}</p>
+                                                        <p class="text-xs text-gray-400 mt-1">{{ $notification->data['message'] ?? 'New notification' }}</p>
+                                                        <p class="text-xs text-gray-500 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
+                                                    </div>
+                                                    <div class="flex-shrink-0">
+                                                        <span class="w-2 h-2 bg-[#C8102E] rounded-full block"></span>
+                                                    </div>
+                                                </div>
+                                            </a>
                                         @empty
                                             <div class="p-8 text-center">
                                                 <i class="fas fa-bell-slash text-4xl text-gray-600 mb-3"></i>
@@ -512,6 +527,15 @@
                                             </div>
                                         @endforelse
                                     </div>
+                                    @if(auth()->user()->unreadNotifications->count() > 0)
+                                        <div class="p-3 border-t border-white/10">
+                                            <a href="{{ route('notifications.index') }}"
+                                               class="block text-center text-sm text-[#C8102E] hover:text-[#A00E27] font-medium transition-colors"
+                                               @click="notificationOpen = false">
+                                                View All Notifications
+                                            </a>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 
