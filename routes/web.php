@@ -212,7 +212,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
             Route::prefix('listening')->name('listening.')->group(function () {
                 Route::get('/', [ListeningTestController::class, 'index'])->name('index');
                 Route::middleware(['usage.limit:mock_test'])->group(function () {
-                    Route::get('/onboarding/{testSet}', [ListeningTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
+                    Route::get('/confirm/{testSet}', [ListeningTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
                     Route::get('/sound-check/{testSet}', [ListeningTestController::class, 'soundCheck'])->name('onboarding.sound-check');
                     Route::get('/instructions/{testSet}', [ListeningTestController::class, 'instructions'])->name('onboarding.instructions');
                     Route::get('/start/{testSet}', [ListeningTestController::class, 'start'])->name('start');
@@ -223,10 +223,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
             Route::prefix('reading')->name('reading.')->group(function () {
                 Route::get('/', [ReadingTestController::class, 'index'])->name('index');
                 Route::middleware(['usage.limit:mock_test'])->group(function () {
-                    Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                        Route::get('/{testSet}', [ReadingTestController::class, 'confirmDetails'])->name('confirm-details');
-                        Route::get('/instructions/{testSet}', [ReadingTestController::class, 'instructions'])->name('instructions');
-                    });
+                    Route::get('/confirm/{testSet}', [ReadingTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
+                    Route::get('/instructions/{testSet}', [ReadingTestController::class, 'instructions'])->name('onboarding.instructions');
                     Route::get('/start/{testSet}', [ReadingTestController::class, 'start'])->name('start');
                 });
                 Route::post('/submit/{attempt}', [ReadingTestController::class, 'submit'])->name('submit');
@@ -235,10 +233,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
             Route::prefix('writing')->name('writing.')->group(function () {
                 Route::get('/', [WritingTestController::class, 'index'])->name('index');
                 Route::middleware(['usage.limit:mock_test'])->group(function () {
-                    Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                        Route::get('/{testSet}', [WritingTestController::class, 'confirmDetails'])->name('confirm-details');
-                        Route::get('/instructions/{testSet}', [WritingTestController::class, 'instructions'])->name('instructions');
-                    });
+                    Route::get('/confirm/{testSet}', [WritingTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
+                    Route::get('/instructions/{testSet}', [WritingTestController::class, 'instructions'])->name('onboarding.instructions');
                     Route::get('/start/{testSet}', [WritingTestController::class, 'start'])->name('start');
                     Route::post('/autosave/{attempt}/{question}', [WritingTestController::class, 'autosave'])->name('autosave');
                 });
@@ -248,11 +244,9 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
             Route::prefix('speaking')->name('speaking.')->group(function () {
                 Route::get('/', [SpeakingTestController::class, 'index'])->name('index');
                 Route::middleware(['usage.limit:mock_test'])->group(function () {
-                    Route::prefix('onboarding')->name('onboarding.')->group(function () {
-                        Route::get('/{testSet}', [SpeakingTestController::class, 'confirmDetails'])->name('confirm-details');
-                        Route::get('/microphone-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('microphone-check');
-                        Route::get('/instructions/{testSet}', [SpeakingTestController::class, 'instructions'])->name('instructions');
-                    });
+                    Route::get('/confirm/{testSet}', [SpeakingTestController::class, 'confirmDetails'])->name('onboarding.confirm-details');
+                    Route::get('/mic-check/{testSet}', [SpeakingTestController::class, 'microphoneCheck'])->name('onboarding.microphone-check');
+                    Route::get('/instructions/{testSet}', [SpeakingTestController::class, 'instructions'])->name('onboarding.instructions');
                     Route::get('/start/{testSet}', [SpeakingTestController::class, 'start'])->name('start');
                     Route::post('/record/{attempt}/{question}', [SpeakingTestController::class, 'record'])->name('record');
                 });
