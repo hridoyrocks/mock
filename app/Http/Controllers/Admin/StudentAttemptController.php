@@ -34,7 +34,15 @@ class StudentAttemptController extends Controller
         if ($request->filled('user') && $request->user !== '') {
             $query->where('user_id', $request->user);
         }
-        
+
+        // Filter by test type (premium/free)
+        if ($request->filled('test_type') && $request->test_type !== '') {
+            $isPremium = $request->test_type === 'premium';
+            $query->whereHas('testSet', function ($q) use ($isPremium) {
+                $q->where('is_premium', $isPremium);
+            });
+        }
+
         // Calculate statistics
         $totalAttempts = StudentAttempt::count();
         $completedCount = StudentAttempt::where('status', 'completed')->count();

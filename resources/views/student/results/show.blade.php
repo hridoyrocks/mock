@@ -4,11 +4,12 @@
 
     <!-- Header Section -->
     <section class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-transparent to-pink-600/20"></div>
+        <div class="absolute inset-0" :class="darkMode ? 'bg-black/20' : 'bg-gradient-to-br from-[#C8102E]/5 via-transparent to-[#C8102E]/10'"></div>
         <div class="relative px-4 sm:px-6 lg:px-8 py-8">
             <div class="max-w-7xl mx-auto">
                 <!-- Test Info Header -->
-                <div class="glass rounded-2xl p-6 lg:p-8">
+                <div class="rounded-2xl shadow-xl p-6 lg:p-8"
+                     :class="darkMode ? 'glass-dark border border-white/10' : 'bg-white border border-[#C8102E]/10'">
                     <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                         <div class="flex items-center gap-4">
                             @php
@@ -18,38 +19,37 @@
                                     'writing' => 'fa-pen-fancy',
                                     'speaking' => 'fa-microphone'
                                 ];
-                                $sectionColors = [
-                                    'listening' => 'from-violet-500 to-purple-500',
-                                    'reading' => 'from-blue-500 to-cyan-500',
-                                    'writing' => 'from-green-500 to-emerald-500',
-                                    'speaking' => 'from-rose-500 to-pink-500'
-                                ];
                                 $icon = $sectionIcons[$attempt->testSet->section->name] ?? 'fa-question';
-                                $gradient = $sectionColors[$attempt->testSet->section->name] ?? 'from-gray-500 to-gray-600';
                             @endphp
-                            
-                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br {{ $gradient }} flex items-center justify-center">
+
+                            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-[#C8102E] to-[#A00E27] flex items-center justify-center shadow-lg relative">
                                 <i class="fas {{ $icon }} text-white text-2xl"></i>
+                                @if($attempt->testSet->is_premium)
+                                    <div class="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg border-2" :class="darkMode ? 'border-gray-900' : 'border-white'">
+                                        <i class="fas fa-crown text-white text-xs"></i>
+                                    </div>
+                                @endif
                             </div>
-                            
+
                             <div>
-                                <h1 class="text-2xl lg:text-3xl font-bold text-white">
+                                <h1 class="text-2xl lg:text-3xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-800'">
                                     {{ $attempt->testSet->title }}
                                 </h1>
-                                <p class="text-gray-400 capitalize">{{ $attempt->testSet->section->name }} Section</p>
+                                <p class="capitalize" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">{{ $attempt->testSet->section->name }} Section</p>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-4">
                             <!-- Band Score Display -->
                             @if($attempt->band_score)
-                                <div class="glass rounded-xl px-8 py-6 text-center border-purple-500/30">
-                                    <p class="text-gray-400 text-sm mb-1">Band Score</p>
-                                    <p class="text-4xl font-bold text-white">
+                                <div class="rounded-xl px-8 py-6 text-center shadow-lg"
+                                     :class="darkMode ? 'glass border border-[#C8102E]/30' : 'bg-gradient-to-br from-[#C8102E]/10 to-[#C8102E]/5 border border-[#C8102E]/20'">
+                                    <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Band Score</p>
+                                    <p class="text-4xl font-bold text-[#C8102E]">
                                         {{ number_format($attempt->band_score, 1) }}
                                     </p>
                                     @if(isset($answeredQuestions) && isset($totalQuestions) && $answeredQuestions < $totalQuestions)
-                                        <p class="text-xs text-purple-400 mt-1">Based on {{ $answeredQuestions }}/{{ $totalQuestions }} questions</p>
+                                        <p class="text-xs mt-1" :class="darkMode ? 'text-gray-400' : 'text-gray-500'">Based on {{ $answeredQuestions }}/{{ $totalQuestions }} questions</p>
                                     @endif
                                 </div>
                             @endif
@@ -65,18 +65,19 @@
         <div class="max-w-7xl mx-auto">
             {{-- Score Details Alert --}}
             @if(isset($correctAnswers) && isset($totalQuestions) && isset($answeredQuestions) && $answeredQuestions < $totalQuestions)
-                <div class="glass rounded-xl p-4 mb-6 border-yellow-500/30">
+                <div class="rounded-xl p-4 mb-6 shadow-sm"
+                     :class="darkMode ? 'glass border border-yellow-500/30' : 'bg-yellow-50 border border-yellow-200'">
                     <div class="flex items-start gap-3">
-                        <i class="fas fa-info-circle text-yellow-400 text-xl mt-1"></i>
+                        <i class="fas fa-info-circle text-2xl mt-1" :class="darkMode ? 'text-yellow-400' : 'text-yellow-600'"></i>
                         <div class="flex-1">
-                            <h4 class="text-yellow-400 font-semibold mb-1">Test Completion Status</h4>
-                            <p class="text-gray-300 text-sm">
-                                You answered <strong class="text-white">{{ $answeredQuestions }}/{{ $totalQuestions }}</strong> questions 
+                            <h4 class="font-semibold mb-1" :class="darkMode ? 'text-yellow-400' : 'text-yellow-800'">Test Completion Status</h4>
+                            <p class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-yellow-700'">
+                                You answered <strong :class="darkMode ? 'text-white' : 'text-yellow-900'">{{ $answeredQuestions }}/{{ $totalQuestions }}</strong> questions
                                 ({{ round(($answeredQuestions / $totalQuestions) * 100, 1) }}% completion)
                             </p>
-                            <p class="text-gray-300 text-sm mt-1">
-                                Band Score: <strong class="text-white">{{ $attempt->band_score }}</strong> 
-                                (Based on <strong class="text-white">{{ $correctAnswers }}/{{ $totalQuestions }}</strong> correct answers)
+                            <p class="text-sm mt-1" :class="darkMode ? 'text-gray-300' : 'text-yellow-700'">
+                                Band Score: <strong :class="darkMode ? 'text-white' : 'text-yellow-900'">{{ $attempt->band_score }}</strong>
+                                (Based on <strong :class="darkMode ? 'text-white' : 'text-yellow-900'">{{ $correctAnswers }}/{{ $totalQuestions }}</strong> correct answers)
                             </p>
                         </div>
                     </div>
@@ -85,16 +86,18 @@
 
             <!-- Quick Stats Grid -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div class="glass rounded-xl p-6 text-center">
-                    <i class="fas fa-calendar-alt text-purple-400 text-2xl mb-3"></i>
-                    <p class="text-gray-400 text-sm">Date Taken</p>
-                    <p class="text-white font-semibold">{{ $attempt->created_at->format('M d, Y') }}</p>
-                    <p class="text-gray-400 text-xs mt-1">{{ $attempt->created_at->format('g:i A') }}</p>
+                <div class="rounded-xl p-6 text-center shadow-sm"
+                     :class="darkMode ? 'glass border border-white/10' : 'bg-white border border-gray-200'">
+                    <i class="fas fa-calendar-alt text-2xl mb-3 text-[#C8102E]"></i>
+                    <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Date Taken</p>
+                    <p class="font-semibold" :class="darkMode ? 'text-white' : 'text-gray-800'">{{ $attempt->created_at->format('M d, Y') }}</p>
+                    <p class="text-xs mt-1" :class="darkMode ? 'text-gray-400' : 'text-gray-500'">{{ $attempt->created_at->format('g:i A') }}</p>
                 </div>
 
-                <div class="glass rounded-xl p-6 text-center">
-                    <i class="fas fa-stopwatch text-blue-400 text-2xl mb-3"></i>
-                    <p class="text-gray-400 text-sm">Time Spent</p>
+                <div class="rounded-xl p-6 text-center shadow-sm"
+                     :class="darkMode ? 'glass border border-white/10' : 'bg-white border border-gray-200'">
+                    <i class="fas fa-stopwatch text-2xl mb-3 text-[#C8102E]"></i>
+                    <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Time Spent</p>
                     @php
                         $startTime = $attempt->start_time;
                         $endTime = $attempt->end_time ?? $attempt->updated_at;
@@ -102,34 +105,36 @@
                         $minutes = floor($totalSeconds / 60);
                         $seconds = $totalSeconds % 60;
                     @endphp
-                    <p class="text-white font-semibold">{{ $minutes }}m {{ $seconds }}s</p>
+                    <p class="font-semibold" :class="darkMode ? 'text-white' : 'text-gray-800'">{{ $minutes }}m {{ $seconds }}s</p>
                 </div>
 
-                <div class="glass rounded-xl p-6 text-center">
-                    <i class="fas fa-tasks text-green-400 text-2xl mb-3"></i>
-                    <p class="text-gray-400 text-sm">Completion</p>
+                <div class="rounded-xl p-6 text-center shadow-sm"
+                     :class="darkMode ? 'glass border border-white/10' : 'bg-white border border-gray-200'">
+                    <i class="fas fa-tasks text-2xl mb-3 text-[#C8102E]"></i>
+                    <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Completion</p>
                     @if(isset($answeredQuestions) && isset($totalQuestions))
-                        <p class="text-white font-semibold">
+                        <p class="font-semibold" :class="darkMode ? 'text-white' : 'text-gray-800'">
                             {{ $answeredQuestions }}/{{ $totalQuestions }}
-                            <span class="text-sm text-gray-400">({{ round(($answeredQuestions / $totalQuestions) * 100) }}%)</span>
+                            <span class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-500'">({{ round(($answeredQuestions / $totalQuestions) * 100) }}%)</span>
                         </p>
-                        <div class="w-full h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" 
+                        <div class="w-full h-2 rounded-full mt-2 overflow-hidden" :class="darkMode ? 'bg-white/10' : 'bg-gray-200'">
+                            <div class="h-full bg-gradient-to-r from-[#C8102E] to-[#A00E27] rounded-full"
                                  style="width: {{ ($answeredQuestions / $totalQuestions) * 100 }}%"></div>
                         </div>
                     @else
-                        <p class="text-white font-semibold">{{ $attempt->completion_rate }}%</p>
-                        <div class="w-full h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" 
+                        <p class="font-semibold" :class="darkMode ? 'text-white' : 'text-gray-800'">{{ $attempt->completion_rate }}%</p>
+                        <div class="w-full h-2 rounded-full mt-2 overflow-hidden" :class="darkMode ? 'bg-white/10' : 'bg-gray-200'">
+                            <div class="h-full bg-gradient-to-r from-[#C8102E] to-[#A00E27] rounded-full"
                                  style="width: {{ $attempt->completion_rate }}%"></div>
                         </div>
                     @endif
                 </div>
 
-                <div class="glass rounded-xl p-6 text-center">
-                    <i class="fas fa-trophy text-pink-400 text-2xl mb-3"></i>
-                    <p class="text-gray-400 text-sm">Band Level</p>
-                    <p class="text-white font-semibold">{{ \App\Helpers\ScoreCalculator::getBandDescription($attempt->band_score ?? 0) }}</p>
+                <div class="rounded-xl p-6 text-center shadow-sm"
+                     :class="darkMode ? 'glass border border-white/10' : 'bg-white border border-gray-200'">
+                    <i class="fas fa-trophy text-2xl mb-3 text-[#C8102E]"></i>
+                    <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Band Level</p>
+                    <p class="font-semibold" :class="darkMode ? 'text-white' : 'text-gray-800'">{{ \App\Helpers\ScoreCalculator::getBandDescription($attempt->band_score ?? 0) }}</p>
                 </div>
             </div>
             
@@ -141,12 +146,13 @@
             @endphp
             
             @if($canRetake && $isLatestAttempt)
-                <div class="glass rounded-xl p-6 mb-8 text-center">
-                    <p class="text-gray-300 mb-4">Want to improve your score? You can retake this test.</p>
+                <div class="rounded-xl p-6 mb-8 text-center shadow-sm"
+                     :class="darkMode ? 'glass border border-white/10' : 'bg-white border border-gray-200'">
+                    <p class="mb-4" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">Want to improve your score? You can retake this test.</p>
                     <form action="{{ route('student.results.retake', $attempt) }}" method="POST" class="inline-block">
                         @csrf
-                        <button type="submit" 
-                                class="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 flex items-center">
+                        <button type="submit"
+                                class="px-8 py-3 rounded-xl bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white font-medium hover:from-[#A00E27] hover:to-[#8B0C24] transition-all transform hover:scale-105 inline-flex items-center shadow-lg">
                             <i class="fas fa-redo mr-2"></i>
                             Retake This Test
                         </button>
@@ -157,35 +163,40 @@
             {{-- Evaluation Section for Writing/Speaking --}}
             @if(isset($attempt->testSet) && isset($attempt->testSet->section) && in_array($attempt->testSet->section->name, ['writing', 'speaking']))
                 <!-- Evaluation Tabs -->
-                <div class="glass rounded-2xl p-6 mb-8">
-                    <div class="flex border-b border-white/10 mb-6">
-                        <button onclick="switchTab('ai')" id="ai-tab" class="px-6 py-3 text-white font-medium border-b-2 border-purple-500 transition-all">
+                <div class="rounded-2xl p-6 mb-8 shadow-xl"
+                     :class="darkMode ? 'glass-dark border border-white/10' : 'bg-white border border-[#C8102E]/10'">
+                    <div class="flex mb-6" :class="darkMode ? 'border-b border-white/10' : 'border-b border-gray-200'">
+                        <button onclick="switchTab('ai')" id="ai-tab" class="px-6 py-3 font-medium border-b-2 border-[#C8102E] transition-all"
+                                :class="darkMode ? 'text-white' : 'text-gray-800'">
                             <i class="fas fa-robot mr-2"></i> AI Evaluation
                         </button>
-                        <button onclick="switchTab('human')" id="human-tab" class="px-6 py-3 text-gray-400 font-medium border-b-2 border-transparent hover:text-white transition-all">
+                        <button onclick="switchTab('human')" id="human-tab" class="px-6 py-3 font-medium border-b-2 border-transparent transition-all"
+                                :class="darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'">
                             <i class="fas fa-user-tie mr-2"></i> Human Evaluation
                         </button>
                     </div>
-                    
+
                     <!-- AI Evaluation Tab Content -->
                     <div id="ai-content" class="">
-                        <h3 class="text-xl font-bold text-white mb-4">
-                            <i class="fas fa-robot text-purple-400 mr-2"></i>
+                        <h3 class="text-xl font-bold mb-4" :class="darkMode ? 'text-white' : 'text-gray-800'">
+                            <i class="fas fa-robot text-[#C8102E] mr-2"></i>
                             AI Evaluation
                         </h3>
                         
                         @if(auth()->user()->hasFeature('ai_' . $attempt->testSet->section->name . '_evaluation'))
                             @if($attempt->completion_rate == 0)
-                                <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+                                <div class="rounded-xl p-4 shadow-sm"
+                                     :class="darkMode ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-yellow-50 border border-yellow-200'">
                                     <div class="flex items-start gap-3">
-                                        <i class="fas fa-exclamation-circle text-yellow-400 text-xl mt-1"></i>
+                                        <i class="fas fa-exclamation-circle text-xl mt-1" :class="darkMode ? 'text-yellow-400' : 'text-yellow-600'"></i>
                                         <div class="flex-1">
-                                            <h4 class="font-semibold text-yellow-400">Test Not Completed</h4>
-                                            <p class="text-gray-300 text-sm mt-1">
+                                            <h4 class="font-semibold" :class="darkMode ? 'text-yellow-400' : 'text-yellow-800'">Test Not Completed</h4>
+                                            <p class="text-sm mt-1" :class="darkMode ? 'text-gray-300' : 'text-yellow-700'">
                                                 You need to complete the {{ $attempt->testSet->section->name }} test before requesting AI evaluation.
                                             </p>
-                                            <a href="{{ route('student.' . $attempt->testSet->section->name . '.start', $attempt->testSet) }}" 
-                                               class="inline-flex items-center mt-3 glass px-4 py-2 rounded-lg text-yellow-400 hover:border-yellow-500/50 transition-all text-sm">
+                                            <a href="{{ route('student.' . $attempt->testSet->section->name . '.start', $attempt->testSet) }}"
+                                               class="inline-flex items-center mt-3 px-4 py-2 rounded-lg transition-all text-sm shadow-sm"
+                                               :class="darkMode ? 'glass border border-yellow-500/50 text-yellow-400 hover:border-yellow-500' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'">
                                                 <i class="fas fa-arrow-left mr-2"></i>
                                                 Go Back to Test
                                             </a>
@@ -194,31 +205,34 @@
                                 </div>
                             @elseif(!$attempt->ai_evaluated_at)
                                 <div class="text-center py-6">
-                                    <i class="fas fa-robot text-6xl text-purple-400 mb-4"></i>
-                                    <p class="text-gray-300 mb-4">Get instant feedback and band score prediction with our advanced AI evaluator.</p>
-                                    
+                                    <i class="fas fa-robot text-6xl text-[#C8102E] mb-4"></i>
+                                    <p class="mb-4" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">Get instant feedback and band score prediction with our advanced AI evaluator.</p>
+
                                     @if($attempt->completion_rate > 0)
-                                        <div class="inline-flex items-center glass px-4 py-2 rounded-lg text-green-400 border-green-500/30 mb-4">
+                                        <div class="inline-flex items-center px-4 py-2 rounded-lg mb-4 shadow-sm"
+                                             :class="darkMode ? 'glass border border-green-500/30 text-green-400' : 'bg-green-50 border border-green-200 text-green-700'">
                                             <i class="fas fa-check-circle mr-2"></i>
                                             Test completed with {{ $attempt->completion_rate }}% completion rate
                                         </div>
                                     @endif
-                                    
-                                    <button onclick="startAIEvaluation({{ $attempt->id }}, '{{ $attempt->testSet->section->name }}')" 
+
+                                    <button onclick="startAIEvaluation({{ $attempt->id }}, '{{ $attempt->testSet->section->name }}')"
                                             id="ai-eval-btn"
-                                            class="block w-full sm:w-auto mx-auto px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105">
+                                            class="block w-full sm:w-auto mx-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white font-medium hover:from-[#A00E27] hover:to-[#8B0C24] transition-all transform hover:scale-105 shadow-lg">
                                         <i class="fas fa-magic mr-2"></i>
                                         Get Instant Evaluation
                                     </button>
                                 </div>
                             @else
-                                <div class="flex items-center justify-between glass rounded-xl p-4">
+                                <div class="flex items-center justify-between rounded-xl p-4 shadow-sm"
+                                     :class="darkMode ? 'glass border border-white/10' : 'bg-gray-50 border border-gray-200'">
                                     <div>
-                                        <p class="text-gray-400 text-sm">Band Score</p>
-                                        <p class="text-3xl font-bold text-white">{{ $attempt->ai_band_score ?? 'N/A' }}</p>
+                                        <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Band Score</p>
+                                        <p class="text-3xl font-bold text-[#C8102E]">{{ $attempt->ai_band_score ?? 'N/A' }}</p>
                                     </div>
-                                    <a href="{{ route('ai.evaluation.get', $attempt->id) }}" 
-                                       class="glass px-6 py-3 rounded-xl text-white hover:border-purple-500/50 transition-all">
+                                    <a href="{{ route('ai.evaluation.get', $attempt->id) }}"
+                                       class="px-6 py-3 rounded-xl transition-all shadow-sm"
+                                       :class="darkMode ? 'glass border border-[#C8102E]/30 text-white hover:border-[#C8102E]' : 'bg-white border border-gray-200 text-gray-800 hover:border-[#C8102E] hover:text-[#C8102E]'">
                                         <i class="fas fa-chart-line mr-2"></i>
                                         View Detailed Analysis
                                     </a>
@@ -226,10 +240,10 @@
                             @endif
                         @else
                             <div class="text-center py-6">
-                                <i class="fas fa-crown text-6xl text-purple-400 mb-4"></i>
-                                <p class="text-gray-300 mb-4">Upgrade to Premium to unlock Instant evaluation for instant feedback.</p>
-                                <a href="{{ route('subscription.plans') }}" 
-                                   class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                <i class="fas fa-crown text-6xl text-[#C8102E] mb-4"></i>
+                                <p class="mb-4" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">Upgrade to Premium to unlock instant evaluation for instant feedback.</p>
+                                <a href="{{ route('subscription.plans') }}"
+                                   class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-medium hover:from-amber-600 hover:to-yellow-600 transition-all shadow-lg">
                                     <i class="fas fa-rocket mr-2"></i>
                                     Upgrade to Premium
                                 </a>
@@ -239,44 +253,44 @@
                     
                     <!-- Human Evaluation Tab Content -->
                     <div id="human-content" class="hidden">
-                        <h3 class="text-xl font-bold text-white mb-4">
-                            <i class="fas fa-user-tie text-purple-400 mr-2"></i>
+                        <h3 class="text-xl font-bold mb-4" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                            <i class="fas fa-user-tie text-[#C8102E] mr-2"></i>
                             Human Evaluation
                         </h3>
-                        
+
                         @if(isset($humanEvaluationRequest) && $humanEvaluationRequest)
                             @if($humanEvaluationRequest->status === 'completed')
                                 <!-- Completed Evaluation -->
-                                <div class="glass rounded-xl p-6">
+                                <div class="rounded-xl p-6 shadow-sm" :class="darkMode ? 'glass border border-white/10' : 'bg-white border border-gray-200'">
                                     <div class="flex items-center justify-between mb-4">
                                         <div>
-                                            <p class="text-gray-400 text-sm">Evaluated by</p>
-                                            <p class="text-xl font-bold text-white">{{ $humanEvaluationRequest->teacher->user->name }}</p>
+                                            <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Evaluated by</p>
+                                            <p class="text-xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-900'">{{ $humanEvaluationRequest->teacher->user->name }}</p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="text-gray-400 text-sm">Band Score</p>
-                                            <p class="text-3xl font-bold text-white">{{ $humanEvaluationRequest->humanEvaluation->overall_band_score ?? 'N/A' }}</p>
+                                            <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Band Score</p>
+                                            <p class="text-3xl font-bold text-[#C8102E]">{{ $humanEvaluationRequest->humanEvaluation->overall_band_score ?? 'N/A' }}</p>
                                         </div>
                                     </div>
-                                    <a href="{{ route('student.evaluation.result', $attempt->id) }}" 
-                                       class="block w-full text-center py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                    <a href="{{ route('student.evaluation.result', $attempt->id) }}"
+                                       class="block w-full text-center py-3 rounded-xl bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white font-medium hover:from-[#A00E27] hover:to-[#8B0C24] transition-all shadow-lg">
                                         <i class="fas fa-eye mr-2"></i> View Detailed Evaluation
                                     </a>
                                 </div>
                             @else
                                 <!-- Pending Evaluation -->
-                                <div class="glass rounded-xl p-6 bg-yellow-500/10 border-yellow-500/30">
+                                <div class="rounded-xl p-6 border shadow-sm" :class="darkMode ? 'glass bg-yellow-500/10 border-yellow-500/30' : 'bg-yellow-50 border-yellow-200'">
                                     <div class="flex items-start gap-4">
                                         <i class="fas fa-clock text-yellow-400 text-2xl"></i>
                                         <div class="flex-1">
                                             <h4 class="font-semibold text-yellow-400 mb-2">Evaluation In Progress</h4>
-                                            <p class="text-gray-300 mb-2">Your evaluation request has been assigned to <strong>{{ $humanEvaluationRequest->teacher->user->name }}</strong>.</p>
-                                            <p class="text-gray-400 text-sm">Status: <span class="text-yellow-400">{{ ucfirst($humanEvaluationRequest->status) }}</span></p>
-                                            <p class="text-gray-400 text-sm">Deadline: {{ $humanEvaluationRequest->deadline_at->format('M d, Y h:i A') }}</p>
+                                            <p class="mb-2" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">Your evaluation request has been assigned to <strong>{{ $humanEvaluationRequest->teacher->user->name }}</strong>.</p>
+                                            <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Status: <span class="text-yellow-400">{{ ucfirst($humanEvaluationRequest->status) }}</span></p>
+                                            <p class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Deadline: {{ $humanEvaluationRequest->deadline_at->format('M d, Y h:i A') }}</p>
                                         </div>
                                     </div>
-                                    <a href="{{ route('student.evaluation.status', $attempt->id) }}" 
-                                       class="block w-full text-center mt-4 py-3 rounded-xl glass text-white hover:border-purple-500/50 transition-all">
+                                    <a href="{{ route('student.evaluation.status', $attempt->id) }}"
+                                       class="block w-full text-center mt-4 py-3 rounded-xl text-white transition-all" :class="darkMode ? 'glass hover:border-[#C8102E]/50' : 'bg-gray-100 hover:bg-gray-200'">
                                         <i class="fas fa-info-circle mr-2"></i> View Status Details
                                     </a>
                                 </div>
@@ -284,16 +298,16 @@
                         @else
                             <!-- No Evaluation Yet -->
                             <div class="text-center py-8">
-                                <i class="fas fa-user-tie text-6xl text-purple-400 mb-4"></i>
-                                <p class="text-gray-300 mb-4">Get your {{ $attempt->testSet->section->name }} evaluated by certified IELTS teachers for detailed feedback and accurate band score.</p>
-                                
-                                <div class="glass rounded-xl p-4 inline-block mb-6">
-                                    <p class="text-gray-400 text-sm mb-1">Starting from</p>
-                                    <p class="text-2xl font-bold text-white">10 <span class="text-purple-400">tokens</span></p>
+                                <i class="fas fa-user-tie text-6xl text-[#C8102E] mb-4"></i>
+                                <p class="mb-4" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">Get your {{ $attempt->testSet->section->name }} evaluated by certified IELTS teachers for detailed feedback and accurate band score.</p>
+
+                                <div class="rounded-xl p-4 inline-block mb-6 shadow-sm" :class="darkMode ? 'glass border border-white/10' : 'bg-gray-50 border border-gray-200'">
+                                    <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Starting from</p>
+                                    <p class="text-2xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-900'">10 <span class="text-[#C8102E]">tokens</span></p>
                                 </div>
-                                
-                                <a href="{{ route('student.evaluation.teachers', $attempt->id) }}" 
-                                   class="block w-full sm:w-auto mx-auto px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105">
+
+                                <a href="{{ route('student.evaluation.teachers', $attempt->id) }}"
+                                   class="inline-flex items-center px-8 py-3 rounded-xl bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white font-medium hover:from-[#A00E27] hover:to-[#8B0C24] transition-all transform hover:scale-105 shadow-lg">
                                     <i class="fas fa-search mr-2"></i>
                                     Choose Teacher
                                 </a>
@@ -305,48 +319,48 @@
 
             {{-- Score Breakdown for Listening/Reading --}}
             @if(in_array($attempt->testSet->section->name, ['listening', 'reading']))
-                <div class="glass rounded-2xl p-6 mb-8">
-                    <h3 class="text-xl font-bold text-white mb-6">
-                        <i class="fas fa-chart-pie text-blue-400 mr-2"></i>
+                <div class="rounded-2xl p-6 mb-8 shadow-xl" :class="darkMode ? 'glass-dark border border-white/10' : 'bg-white border border-[#C8102E]/10'">
+                    <h3 class="text-xl font-bold mb-6" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                        <i class="fas fa-chart-pie text-[#C8102E] mr-2"></i>
                         Score Breakdown
                     </h3>
-                    
+
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div class="text-center">
-                            <p class="text-gray-400 text-sm mb-2">Questions Attempted</p>
-                            <p class="text-2xl font-bold text-white">
+                            <p class="text-sm mb-2" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Questions Attempted</p>
+                            <p class="text-2xl font-bold" :class="darkMode ? 'text-white' : 'text-gray-900'">
                                 {{ $answeredQuestions }}
-                                <span class="text-lg text-gray-400">/ {{ $totalQuestions }}</span>
+                                <span class="text-lg" :class="darkMode ? 'text-gray-400' : 'text-gray-500'">/ {{ $totalQuestions }}</span>
                             </p>
                         </div>
-                        
+
                         <div class="text-center">
-                            <p class="text-gray-400 text-sm mb-2">Correct Answers</p>
-                            <p class="text-2xl font-bold text-green-400">
+                            <p class="text-sm mb-2" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Correct Answers</p>
+                            <p class="text-2xl font-bold text-green-500">
                                 {{ $correctAnswers }}
                             </p>
                         </div>
-                        
+
                         <div class="text-center">
-                            <p class="text-gray-400 text-sm mb-2">Accuracy</p>
-                            <p class="text-2xl font-bold text-blue-400">
+                            <p class="text-sm mb-2" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Accuracy</p>
+                            <p class="text-2xl font-bold text-blue-500">
                                 {{ number_format($accuracy, 1) }}%
                             </p>
                         </div>
-                        
+
                         <div class="text-center">
-                            <p class="text-gray-400 text-sm mb-2">Band Score</p>
-                            <p class="text-2xl font-bold text-purple-400">
+                            <p class="text-sm mb-2" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Band Score</p>
+                            <p class="text-2xl font-bold text-[#C8102E]">
                                 {{ $attempt->band_score }}
                             </p>
                         </div>
                     </div>
-                    
+
                     {{-- Show calculation method info --}}
                     @if($answeredQuestions < $totalQuestions)
-                        <div class="glass rounded-xl p-4 mb-4 border-purple-500/30">
-                            <p class="text-gray-300 text-sm">
-                                <i class="fas fa-calculator text-purple-400 mr-2"></i>
+                        <div class="rounded-xl p-4 mb-4 border shadow-sm" :class="darkMode ? 'glass border-[#C8102E]/30' : 'bg-[#C8102E]/5 border-[#C8102E]/20'">
+                            <p class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
+                                <i class="fas fa-calculator text-[#C8102E] mr-2"></i>
                                 Band score calculated based on actual correct answers ({{ $correctAnswers }}/{{ $totalQuestions }}) according to IELTS scoring table.
                             </p>
                         </div>
@@ -354,15 +368,15 @@
 
                     {{-- Band Score Visual --}}
                     <div class="mt-6">
-                        <p class="text-gray-400 text-sm mb-3">Band Score Progress</p>
+                        <p class="text-sm mb-3" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Band Score Progress</p>
                         <div class="relative">
                             <div class="flex items-center justify-between mb-2">
                                 @foreach([1, 2, 3, 4, 5, 6, 7, 8, 9] as $band)
-                                    <span class="text-xs {{ $attempt->band_score >= $band ? 'text-purple-400' : 'text-gray-600' }}">{{ $band }}</span>
+                                    <span class="text-xs {{ $attempt->band_score >= $band ? 'text-[#C8102E]' : (darkMode ? 'text-gray-600' : 'text-gray-400') }}">{{ $band }}</span>
                                 @endforeach
                             </div>
-                            <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-1000"
+                            <div class="w-full h-3 rounded-full overflow-hidden" :class="darkMode ? 'bg-white/10' : 'bg-gray-200'">
+                                <div class="h-full bg-gradient-to-r from-[#C8102E] to-[#A00E27] rounded-full transition-all duration-1000"
                                      style="width: {{ ($attempt->band_score / 9) * 100 }}%"></div>
                             </div>
                         </div>
@@ -370,26 +384,26 @@
                 </div>
 
                 {{-- Question Analysis --}}
-                <div id="question-analysis" class="glass rounded-2xl p-6 relative">
-                    <h3 class="text-xl font-bold text-white mb-6">
-                        <i class="fas fa-microscope text-purple-400 mr-2"></i>
+                <div id="question-analysis" class="rounded-2xl p-6 relative shadow-xl" :class="darkMode ? 'glass-dark border border-white/10' : 'bg-white border border-[#C8102E]/10'">
+                    <h3 class="text-xl font-bold mb-6" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                        <i class="fas fa-microscope text-[#C8102E] mr-2"></i>
                         Question Analysis
                     </h3>
 
                     @php
                         $isPremium = auth()->user()->hasActiveSubscription() && !auth()->user()->hasPlan('free');
                     @endphp
-                    
+
                     @if(!$isPremium)
-                        <div class="absolute inset-0 z-10 glass backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                        <div class="absolute inset-0 z-10 backdrop-blur-sm rounded-2xl flex items-center justify-center" :class="darkMode ? 'glass' : 'bg-white/90'">
                             <div class="text-center max-w-md p-6">
-                                <i class="fas fa-lock text-purple-400 text-6xl mb-4"></i>
-                                <h4 class="text-xl font-bold text-white mb-2">Premium Feature</h4>
-                                <p class="text-gray-300 mb-4">
+                                <i class="fas fa-lock text-[#C8102E] text-6xl mb-4"></i>
+                                <h4 class="text-xl font-bold mb-2" :class="darkMode ? 'text-white' : 'text-gray-900'">Premium Feature</h4>
+                                <p class="mb-4" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
                                     Unlock detailed question analysis with correct answers and explanations.
                                 </p>
-                                <a href="{{ route('subscription.plans') }}" 
-                                   class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                <a href="{{ route('subscription.plans') }}"
+                                   class="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white font-medium hover:from-[#A00E27] hover:to-[#8B0C24] transition-all shadow-lg">
                                     <i class="fas fa-crown mr-2"></i>
                                     Upgrade to Premium
                                 </a>
@@ -771,16 +785,16 @@
                                         }
                                     }
                                 @endphp
-                                
-                                <div class="glass rounded-lg p-4 {{ !$isAnswered ? 'opacity-60' : '' }}">
+
+                                <div class="rounded-lg p-4 shadow-sm {{ !$isAnswered ? 'opacity-60' : '' }}" :class="darkMode ? 'glass border border-white/10' : 'bg-gray-50 border border-gray-200'">
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1">
                                             <div class="flex items-start gap-3 mb-2">
-                                                <span class="glass px-3 py-1 rounded-lg text-sm font-medium text-white min-w-[3rem] text-center">
+                                                <span class="px-3 py-1 rounded-lg text-sm font-medium min-w-[3rem] text-center shadow-sm" :class="darkMode ? 'glass text-white' : 'bg-white text-gray-900 border border-gray-200'">
                                                     Q{{ $item['number'] }}
                                                 </span>
                                                 <div class="flex-1">
-                                                    <p class="text-gray-300 text-sm">
+                                                    <p class="text-sm" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">
                                                         @if(isset($item['is_dropdown']) && $item['is_dropdown'])
                                                             @php
                                                                 // For dropdown questions, show full content with dropdown highlighted
@@ -791,7 +805,7 @@
                                                                 $formattedContent = preg_replace_callback('/________/', function($matches) use ($dropdownNum, &$counter) {
                                                                     $counter++;
                                                                     if ($counter == $dropdownNum) {
-                                                                        return '<span class="inline-block px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded font-medium">[blank]</span>';
+                                                                        return '<span class="inline-block px-2 py-0.5 bg-[#C8102E]/20 text-[#C8102E] rounded font-medium">[blank]</span>';
                                                                     }
                                                                     return '________';
                                                                 }, $content);
@@ -803,13 +817,13 @@
                                                     </p>
                                                 </div>
                                             </div>
-                                            
+
                                             <div class="text-sm">
-                                                <p class="text-gray-400">
-                                                    Your answer: 
-                                                    <span class="text-white">
+                                                <p :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+                                                    Your answer:
+                                                    <span :class="darkMode ? 'text-white' : 'text-gray-900'">
                                                         @if(!$isAnswered)
-                                                            <span class="text-orange-400">Not attempted</span>
+                                                            <span class="text-orange-500">Not attempted</span>
                                                         @else
                                                             {{ $displayAnswer }}
                                                         @endif
@@ -818,9 +832,9 @@
                                                 
                                                 {{-- Show correct answer for premium users --}}
                                                 @if($isPremium && $isAnswered && !$isCorrect)
-                                                    <p class="text-gray-400 mt-1">
-                                                        Correct answer: 
-                                                        <span class="text-green-400">
+                                                    <p class="mt-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
+                                                        Correct answer:
+                                                        <span class="text-green-500">
                                                             @if(isset($item['is_drag_drop']) && $item['is_drag_drop'])
                                                                 {{ $item['correct_answer'] ?? 'N/A' }}
                                                             @elseif(isset($item['is_fill_blank']) && $item['is_fill_blank'])
@@ -857,15 +871,15 @@
                                         
                                         <div class="ml-4">
                                             @if(!$isAnswered)
-                                                <span class="text-orange-400">
+                                                <span class="text-orange-500">
                                                     <i class="fas fa-minus-circle text-xl"></i>
                                                 </span>
                                             @elseif($isCorrect)
-                                                <span class="text-green-400">
+                                                <span class="text-green-500">
                                                     <i class="fas fa-check-circle text-xl"></i>
                                                 </span>
                                             @else
-                                                <span class="text-red-400">
+                                                <span class="text-red-500">
                                                     <i class="fas fa-times-circle text-xl"></i>
                                                 </span>
                                             @endif
@@ -883,23 +897,23 @@
                                 $endIndex = min($startIndex + $perPage, count($displayQuestions));
                             @endphp
                             
-                            <div class="mt-6 border-t border-white/10 pt-6">
+                            <div class="mt-6 pt-6" :class="darkMode ? 'border-t border-white/10' : 'border-t border-gray-200'">
                                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                    <p class="text-gray-400 text-sm text-center sm:text-left">
+                                    <p class="text-sm text-center sm:text-left" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">
                                         Showing {{ $startIndex + 1 }} to {{ $endIndex }} of {{ count($displayQuestions) }} questions
                                     </p>
-                                    
+
                                     <div class="flex items-center gap-2">
                                         {{-- Previous Button --}}
                                         @if($currentPage > 1)
-                                            <a href="?page={{ $currentPage - 1 }}" 
-                                               class="glass px-4 py-2 rounded-lg text-white hover:border-purple-500/50 transition-all flex items-center gap-2">
+                                            <a href="?page={{ $currentPage - 1 }}"
+                                               class="px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-sm" :class="darkMode ? 'glass text-white hover:border-[#C8102E]/50' : 'bg-white text-gray-700 border border-gray-200 hover:border-[#C8102E]/50'">
                                                 <i class="fas fa-chevron-left"></i>
                                                 Previous
                                             </a>
                                         @else
-                                            <button disabled 
-                                                    class="glass px-4 py-2 rounded-lg text-gray-500 opacity-50 cursor-not-allowed flex items-center gap-2">
+                                            <button disabled
+                                                    class="px-4 py-2 rounded-lg text-gray-500 opacity-50 cursor-not-allowed flex items-center gap-2 shadow-sm" :class="darkMode ? 'glass' : 'bg-gray-100 border border-gray-200'">
                                                 <i class="fas fa-chevron-left"></i>
                                                 Previous
                                             </button>
@@ -932,12 +946,12 @@
                                                 @endif
                                                 
                                                 @if($pageNum == $currentPage)
-                                                    <span class="glass px-3 py-2 rounded-lg bg-purple-600/30 text-white font-medium">
+                                                    <span class="px-3 py-2 rounded-lg font-medium shadow-sm" :class="darkMode ? 'glass bg-[#C8102E]/30 text-white' : 'bg-[#C8102E] text-white'">
                                                         {{ $pageNum }}
                                                     </span>
                                                 @else
-                                                    <a href="?page={{ $pageNum }}" 
-                                                       class="glass px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:border-purple-500/50 transition-all">
+                                                    <a href="?page={{ $pageNum }}"
+                                                       class="px-3 py-2 rounded-lg transition-all shadow-sm" :class="darkMode ? 'glass text-gray-400 hover:text-white hover:border-[#C8102E]/50' : 'bg-white text-gray-700 border border-gray-200 hover:border-[#C8102E]/50'">
                                                         {{ $pageNum }}
                                                     </a>
                                                 @endif
@@ -946,21 +960,21 @@
                                         
                                         {{-- Mobile Page Indicator --}}
                                         <div class="flex sm:hidden items-center gap-2">
-                                            <span class="glass px-3 py-2 rounded-lg text-white">
+                                            <span class="px-3 py-2 rounded-lg shadow-sm" :class="darkMode ? 'glass text-white' : 'bg-white text-gray-900 border border-gray-200'">
                                                 {{ $currentPage }} / {{ $totalPages }}
                                             </span>
                                         </div>
-                                        
+
                                         {{-- Next Button --}}
                                         @if($currentPage < $totalPages)
-                                            <a href="?page={{ $currentPage + 1 }}" 
-                                               class="glass px-4 py-2 rounded-lg text-white hover:border-purple-500/50 transition-all flex items-center gap-2">
+                                            <a href="?page={{ $currentPage + 1 }}"
+                                               class="px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-sm" :class="darkMode ? 'glass text-white hover:border-[#C8102E]/50' : 'bg-white text-gray-700 border border-gray-200 hover:border-[#C8102E]/50'">
                                                 Next
                                                 <i class="fas fa-chevron-right"></i>
                                             </a>
                                         @else
-                                            <button disabled 
-                                                    class="glass px-4 py-2 rounded-lg text-gray-500 opacity-50 cursor-not-allowed flex items-center gap-2">
+                                            <button disabled
+                                                    class="px-4 py-2 rounded-lg text-gray-500 opacity-50 cursor-not-allowed flex items-center gap-2 shadow-sm" :class="darkMode ? 'glass' : 'bg-gray-100 border border-gray-200'">
                                                 Next
                                                 <i class="fas fa-chevron-right"></i>
                                             </button>
@@ -975,32 +989,32 @@
 
             {{-- Writing/Speaking Submission --}}
             @if(in_array($attempt->testSet->section->name, ['writing', 'speaking']))
-                <div class="glass rounded-2xl p-6">
-                    <h3 class="text-xl font-bold text-white mb-6">
-                        <i class="fas fa-file-alt text-green-400 mr-2"></i>
+                <div class="rounded-2xl p-6 shadow-xl" :class="darkMode ? 'glass-dark border border-white/10' : 'bg-white border border-[#C8102E]/10'">
+                    <h3 class="text-xl font-bold mb-6" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                        <i class="fas fa-file-alt text-[#C8102E] mr-2"></i>
                         Your Submission
                     </h3>
-                    
+
                     @if($attempt->testSet->section->name === 'writing')
                         <div class="space-y-6">
                             @foreach($attempt->answers->sortBy('question.order_number') as $answer)
-                                <div class="glass rounded-xl p-6">
-                                    <h4 class="font-semibold text-white mb-3">
-                                        <i class="fas fa-tasks text-purple-400 mr-2"></i>
+                                <div class="rounded-xl p-6 shadow-sm" :class="darkMode ? 'glass border border-white/10' : 'bg-gray-50 border border-gray-200'">
+                                    <h4 class="font-semibold mb-3" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                                        <i class="fas fa-tasks text-[#C8102E] mr-2"></i>
                                         Task {{ $answer->question->order_number }}
                                     </h4>
                                     @if(!empty($answer->answer))
-                                        <div class="prose prose-invert max-w-none">
-                                            <p class="text-gray-300 whitespace-pre-wrap">{!! nl2br(e($answer->answer)) !!}</p>
+                                        <div class="prose max-w-none" :class="darkMode ? 'prose-invert' : ''">
+                                            <p class="whitespace-pre-wrap" :class="darkMode ? 'text-gray-300' : 'text-gray-700'">{!! nl2br(e($answer->answer)) !!}</p>
                                         </div>
                                         <div class="mt-4 flex items-center gap-4">
-                                            <span class="glass px-3 py-1 rounded-lg text-sm text-gray-400">
+                                            <span class="px-3 py-1 rounded-lg text-sm shadow-sm" :class="darkMode ? 'glass text-gray-400' : 'bg-white text-gray-600 border border-gray-200'">
                                                 <i class="fas fa-file-word mr-1"></i>
                                                 {{ str_word_count($answer->answer) }} words
                                             </span>
                                         </div>
                                     @else
-                                        <p class="text-gray-500 italic">No answer provided for this task.</p>
+                                        <p class="italic" :class="darkMode ? 'text-gray-500' : 'text-gray-400'">No answer provided for this task.</p>
                                     @endif
                                 </div>
                             @endforeach
@@ -1008,48 +1022,26 @@
                     @elseif($attempt->testSet->section->name === 'speaking')
                         <div class="space-y-4">
                             @foreach($attempt->answers->sortBy('question.order_number') as $answer)
-                                <div class="glass rounded-xl p-6">
-                                    <h4 class="font-semibold text-white mb-3">
-                                        <i class="fas fa-microphone text-purple-400 mr-2"></i>
+                                <div class="rounded-xl p-6 shadow-sm" :class="darkMode ? 'glass border border-white/10' : 'bg-gray-50 border border-gray-200'">
+                                    <h4 class="font-semibold mb-3" :class="darkMode ? 'text-white' : 'text-gray-900'">
+                                        <i class="fas fa-microphone text-[#C8102E] mr-2"></i>
                                         Part {{ $answer->question->order_number }}
                                     </h4>
                                     
                                     @if($answer->speakingRecording)
                                         @php
                                             // Get proper audio URL
-                                            // Use proxy route for better compatibility
                                             $audioUrl = route('audio.stream', $answer->speakingRecording->id);
-                                            $directUrl = $answer->speakingRecording->file_url;
-                                            
-                                            // Debug info
-                                            $debugInfo = [
-                                                'file_path' => $answer->speakingRecording->file_path,
-                                                'direct_url' => $directUrl,
-                                                'proxy_url' => $audioUrl,
-                                                'storage_disk' => $answer->speakingRecording->storage_disk,
-                                                'mime_type' => $answer->speakingRecording->mime_type,
-                                            ];
                                         @endphp
-                                        
+
                                         <div class="mb-3">
-                                            <audio controls class="w-full" preload="metadata" id="audio-{{ $answer->id }}">
+                                            <audio controls class="w-full rounded-lg" preload="metadata" id="audio-{{ $answer->id }}">
                                                 <source src="{{ $audioUrl }}" type="{{ $answer->speakingRecording->mime_type ?? 'audio/webm' }}">
                                                 <source src="{{ $audioUrl }}" type="audio/webm">
                                                 <source src="{{ $audioUrl }}" type="audio/mpeg">
                                                 <source src="{{ $audioUrl }}" type="audio/ogg">
                                                 Your browser does not support the audio element.
                                             </audio>
-                                            
-                                            <div class="mt-2 text-xs text-gray-500">
-                                                <p>Storage: {{ strtoupper($answer->speakingRecording->storage_disk) }}</p>
-                                                <p>Size: {{ $answer->speakingRecording->formatted_size }}</p>
-                                                @if(config('app.debug'))
-                                                    <details class="mt-1">
-                                                        <summary class="cursor-pointer text-purple-400">Debug Info</summary>
-                                                        <pre class="text-xs bg-black/20 p-2 rounded mt-1">{{ json_encode($debugInfo, JSON_PRETTY_PRINT) }}</pre>
-                                                    </details>
-                                                @endif
-                                            </div>
                                         </div>
                                         
                                         {{-- Add JavaScript to handle errors --}}
@@ -1061,7 +1053,7 @@
                                             });
                                         </script>
                                     @else
-                                        <p class="text-gray-500 italic">No recording available.</p>
+                                        <p class="italic" :class="darkMode ? 'text-gray-500' : 'text-gray-400'">No recording available.</p>
                                     @endif
                                 </div>
                             @endforeach
@@ -1074,16 +1066,16 @@
 
     {{-- AI Evaluation Modal --}}
     <div id="aiEvalModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="glass rounded-2xl max-w-md w-full p-8">
-            <h3 class="text-2xl font-bold text-white mb-6 text-center">Starting Instant Evaluation</h3>
+        <div class="rounded-2xl max-w-md w-full p-8 shadow-2xl" :class="darkMode ? 'glass-dark border border-white/10' : 'bg-white border border-gray-200'">
+            <h3 class="text-2xl font-bold mb-6 text-center" :class="darkMode ? 'text-white' : 'text-gray-900'">Starting Instant Evaluation</h3>
             <div class="flex items-center justify-center py-8">
                 <div class="relative">
-                    <div class="w-20 h-20 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin"></div>
-                    <i class="fas fa-robot text-purple-400 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                    <div class="w-20 h-20 rounded-full border-4 border-[#C8102E]/20 border-t-[#C8102E] animate-spin"></div>
+                    <i class="fas fa-robot text-[#C8102E] text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
                 </div>
             </div>
-            <p class="text-center text-gray-300" id="eval-status">Analyzing your response...</p>
-            <p class="text-center text-sm text-gray-500 mt-2">This may take 15-30 seconds</p>
+            <p class="text-center" :class="darkMode ? 'text-gray-300' : 'text-gray-700'" id="eval-status">Analyzing your response...</p>
+            <p class="text-center text-sm mt-2" :class="darkMode ? 'text-gray-500' : 'text-gray-400'">This may take 15-30 seconds</p>
         </div>
     </div>
 
@@ -1110,16 +1102,16 @@
     
     function switchTab(tab) {
         // Update tab buttons
-        document.getElementById('ai-tab').classList.toggle('border-purple-500', tab === 'ai');
-        document.getElementById('ai-tab').classList.toggle('text-white', tab === 'ai');
+        document.getElementById('ai-tab').classList.toggle('border-[#C8102E]', tab === 'ai');
+        document.getElementById('ai-tab').classList.toggle('text-[#C8102E]', tab === 'ai');
         document.getElementById('ai-tab').classList.toggle('text-gray-400', tab !== 'ai');
         document.getElementById('ai-tab').classList.toggle('border-transparent', tab !== 'ai');
-        
-        document.getElementById('human-tab').classList.toggle('border-purple-500', tab === 'human');
-        document.getElementById('human-tab').classList.toggle('text-white', tab === 'human');
+
+        document.getElementById('human-tab').classList.toggle('border-[#C8102E]', tab === 'human');
+        document.getElementById('human-tab').classList.toggle('text-[#C8102E]', tab === 'human');
         document.getElementById('human-tab').classList.toggle('text-gray-400', tab !== 'human');
         document.getElementById('human-tab').classList.toggle('border-transparent', tab !== 'human');
-        
+
         // Toggle content
         document.getElementById('ai-content').classList.toggle('hidden', tab !== 'ai');
         document.getElementById('human-content').classList.toggle('hidden', tab !== 'human');
@@ -1155,7 +1147,7 @@
         })
         .then(data => {
             if (data.success) {
-                document.getElementById('eval-status').innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i>Evaluation completed! Redirecting...';
+                document.getElementById('eval-status').innerHTML = '<i class="fas fa-check-circle text-green-500 mr-2"></i>Evaluation completed! Redirecting...';
                 
                 setTimeout(() => {
                     if (data.redirect_url) {
