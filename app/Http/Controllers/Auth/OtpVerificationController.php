@@ -23,13 +23,23 @@ class OtpVerificationController extends Controller
     public function show(Request $request)
     {
         $email = $request->query('email');
-        
+
         if (!$email || !session('otp_session')) {
             return redirect()->route('login');
         }
 
+        // Fetch the latest OTP for this email
+        $otp = OtpVerification::where('identifier', $email)
+            ->where('type', 'email')
+            ->latest()
+            ->first();
+
+        // Calculate expiry timestamp (fallback to 5 minutes if no OTP found)
+        $expiresAt = $otp ? $otp->expires_at->timestamp : now()->addMinutes(5)->timestamp;
+
         return view('auth.verify-otp', [
             'email' => $email,
+            'expiresAt' => $expiresAt,
             'resend_after' => 60, // seconds
         ]);
     }

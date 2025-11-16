@@ -52,7 +52,7 @@
     @endif
 
     <!-- Stats Cards -->
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 transition-all hover:shadow-md">
             <div class="flex items-center justify-between">
                 <div>
@@ -102,6 +102,22 @@
         <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 transition-all hover:shadow-md">
             <div class="flex items-center justify-between">
                 <div>
+                    <p class="text-sm font-medium text-gray-600">Custom Roles</p>
+                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                        {{ \App\Models\User::whereNotNull('role_id')->count() }}
+                    </p>
+                </div>
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
+                    <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 transition-all hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
                     <p class="text-sm font-medium text-gray-600">Banned</p>
                     <p class="mt-2 text-3xl font-bold text-gray-900">
                         {{ \App\Models\User::whereNotNull('banned_at')->count() }}
@@ -109,7 +125,7 @@
                 </div>
                 <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
                     <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 15.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
                 </div>
             </div>
@@ -127,31 +143,44 @@
             </div>
         </div>
         <form method="GET" action="{{ route('admin.users.index') }}" class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                    <input type="text" 
-                           name="search" 
-                           id="search" 
-                           value="{{ request('search') }}" 
-                           placeholder="Name or email" 
+                    <input type="text"
+                           name="search"
+                           id="search"
+                           value="{{ request('search') }}"
+                           placeholder="Name or email"
                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                 </div>
                 <div>
-                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                    <select name="role" 
-                            id="role" 
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-2">User Type</label>
+                    <select name="role"
+                            id="role"
                             class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                        <option value="">All Roles</option>
+                        <option value="">All Types</option>
                         <option value="student" {{ request('role') === 'student' ? 'selected' : '' }}>Student</option>
                         <option value="teacher" {{ request('role') === 'teacher' ? 'selected' : '' }}>Teacher</option>
                         <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
                     </select>
                 </div>
                 <div>
+                    <label for="custom_role" class="block text-sm font-medium text-gray-700 mb-2">Custom Role</label>
+                    <select name="custom_role"
+                            id="custom_role"
+                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        <option value="">All Custom Roles</option>
+                        @foreach(\App\Models\Role::orderBy('name')->get() as $customRole)
+                            <option value="{{ $customRole->id }}" {{ request('custom_role') == $customRole->id ? 'selected' : '' }}>
+                                {{ $customRole->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
                     <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <select name="status" 
-                            id="status" 
+                    <select name="status"
+                            id="status"
                             class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                         <option value="">All Status</option>
                         <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
@@ -159,15 +188,15 @@
                     </select>
                 </div>
                 <div class="flex items-end gap-2">
-                    <button type="submit" 
+                    <button type="submit"
                             class="flex-1 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
                         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                         </svg>
                         Filter
                     </button>
-                    @if(request()->hasAny(['search', 'role', 'status']))
-                        <a href="{{ route('admin.users.index') }}" 
+                    @if(request()->hasAny(['search', 'role', 'custom_role', 'status']))
+                        <a href="{{ route('admin.users.index') }}"
                            class="inline-flex items-center justify-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -219,19 +248,42 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($user->is_admin)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
-                                    Admin
-                                </span>
-                            @elseif($user->teacher)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
-                                    Teacher
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                                    Student
-                                </span>
-                            @endif
+                            <div class="space-y-1">
+                                @if($user->is_admin)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                                        <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Admin
+                                    </span>
+                                @elseif($user->teacher)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
+                                        <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                                        </svg>
+                                        Teacher
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                        <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Student
+                                    </span>
+                                @endif
+
+                                {{-- Custom Role Badge --}}
+                                @if($user->userRole)
+                                    <div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                            <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                            </svg>
+                                            {{ $user->userRole->name }}
+                                        </span>
+                                    </div>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($user->currentSubscription)

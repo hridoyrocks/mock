@@ -26,9 +26,53 @@ class ResetPasswordController extends Controller
      */
     public function showResetForm(Request $request, $token)
     {
+        // Validate token exists and is not expired
+        $email = $request->email;
+
+        if (!$email) {
+            return view('auth.password-reset-expired', [
+                'title' => 'Invalid Reset Link',
+                'message' => 'This password reset link is invalid. Please request a new password reset link from the login page.'
+            ]);
+        }
+
+        // Check if token is valid
+        $tokenData = \DB::table('password_reset_tokens')
+            ->where('email', $email)
+            ->first();
+
+        if (!$tokenData) {
+            return view('auth.password-reset-expired', [
+                'title' => 'Link Expired or Already Used',
+                'message' => 'This password reset link has expired or has already been used. For security reasons, each reset link can only be used once.'
+            ]);
+        }
+
+        // Check if token matches
+        if (!Hash::check($token, $tokenData->token)) {
+            return view('auth.password-reset-expired', [
+                'title' => 'Invalid Reset Link',
+                'message' => 'This password reset link is invalid or corrupted. Please request a new password reset link.'
+            ]);
+        }
+
+        // Check if token is expired (default 60 minutes)
+        $expiration = config('auth.passwords.users.expire', 60);
+        $createdAt = \Carbon\Carbon::parse($tokenData->created_at);
+
+        if ($createdAt->addMinutes($expiration)->isPast()) {
+            // Delete expired token
+            \DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+            return view('auth.password-reset-expired', [
+                'title' => 'Link Expired',
+                'message' => 'This password reset link has expired. Password reset links are valid for 60 minutes only. Please request a new one.'
+            ]);
+        }
+
         return view('auth.reset-password', [
             'token' => $token,
-            'email' => $request->email
+            'email' => $email
         ]);
     }
 
@@ -58,12 +102,19 @@ class ResetPasswordController extends Controller
 
                 // Clear all device sessions except current
                 $user->devices()->delete();
+
+                // Delete the password reset token to prevent reuse
+                \DB::table('password_reset_tokens')
+                    ->where('email', $user->email)
+                    ->delete();
             }
         );
 
-        return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', __($status))
-            : back()->withErrors(['email' => [__($status)]]);
+        if ($status === Password::PASSWORD_RESET) {
+            return redirect()->route('login')->with('status', 'Your password has been reset successfully! Please login with your new password.');
+        }
+
+        return back()->withErrors(['email' => [__($status)]]);
     }
 
     /**

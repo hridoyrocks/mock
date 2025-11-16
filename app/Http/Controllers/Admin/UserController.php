@@ -24,7 +24,7 @@ class UserController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($search) . '%'])
                     ->orWhereRaw('LOWER(email) LIKE ?', ['%' . strtolower($search) . '%'])
-                    ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('phone_number', 'like', "%{$search}%");
             });
         }
 
@@ -43,6 +43,11 @@ class UserController extends Controller
                           ->whereDoesntHave('teacher');
                     break;
             }
+        }
+
+        // Filter by custom role
+        if ($request->filled('custom_role')) {
+            $query->where('role_id', $request->custom_role);
         }
 
         // Filter by status - Fixed to handle ban expiry
@@ -67,7 +72,7 @@ class UserController extends Controller
             }
         }
 
-        $users = $query->with(['teacher', 'currentSubscription.plan'])
+        $users = $query->with(['teacher', 'currentSubscription.plan', 'userRole'])
             ->withCount([
                 'studentAttempts as human_evaluations_count' => function ($query) {
                     $query->whereHas('humanEvaluationRequest', function ($q) {
@@ -92,10 +97,11 @@ class UserController extends Controller
     {
         $query = User::query();
 
-        // Filter for system users - only admins and teachers (no students)
+        // Filter for system users - only admins, teachers, and custom role users (no regular students)
         $query->where(function($q) {
             $q->where('is_admin', true)
-              ->orWhereHas('teacher');
+              ->orWhereHas('teacher')
+              ->orWhereNotNull('role_id');
         });
 
         // Search functionality
@@ -116,6 +122,11 @@ class UserController extends Controller
             }
         }
 
+        // Filter by custom role
+        if ($request->filled('custom_role')) {
+            $query->where('role_id', $request->custom_role);
+        }
+
         // Filter by status
         if ($request->filled('status')) {
             if ($request->status === 'banned') {
@@ -125,7 +136,7 @@ class UserController extends Controller
             }
         }
 
-        $users = $query->with(['teacher'])
+        $users = $query->with(['teacher', 'userRole'])
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->withQueryString();
@@ -156,7 +167,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'nullable|string|max:20|unique:users',
+            'phone_number' => 'nullable|string|max:20|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|in:student,teacher,admin,custom',
             'custom_role_id' => 'required_if:role,custom|nullable|exists:roles,id',
@@ -176,7 +187,7 @@ class UserController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $validated['phone'],
+            'phone_number' => $validated['phone_number'],
             'password' => Hash::make($validated['password']),
             'is_admin' => $isAdmin,
             'role_id' => $roleId,
@@ -241,7 +252,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:20', Rule::unique('users')->ignore($user->id)],
+            'phone_number' => ['nullable', 'string', 'max:20', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
             'role' => 'required|in:student,teacher,admin',
             'custom_role_id' => 'nullable|exists:roles,id',
@@ -251,7 +262,7 @@ class UserController extends Controller
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $validated['phone'],
+            'phone_number' => $validated['phone_number'],
             'is_admin' => $validated['role'] === 'admin',
             'role_id' => $validated['custom_role_id'] ?? null,
             'email_verified_at' => ($request->has('email_verified') && $request->email_verified) ? ($user->email_verified_at ?? now()) : null,
@@ -386,7 +397,7 @@ class UserController extends Controller
                     $user->id,
                     $user->name,
                     $user->email,
-                    $user->phone ?? 'N/A',
+                    $user->phone_number ?? 'N/A',
                     $user->is_admin ? 'Admin' : ($user->teacher ? 'Teacher' : 'Student'),
                     $user->isBanned() ? 'Banned' : 'Active',
                     $user->currentSubscription ? $user->currentSubscription->plan->name : 'Free',

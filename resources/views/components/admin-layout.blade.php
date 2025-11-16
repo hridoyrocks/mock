@@ -209,10 +209,17 @@
             <!-- Navigation -->
             <nav class="flex-1 overflow-y-auto px-4 py-6">
                 <!-- Main Menu -->
+                @php
+                    $user = auth()->user();
+                    $showMainMenu = $user->is_admin || $user->hasPermission('dashboard.view') || $user->hasPermission('questions.view') || $user->hasPermission('test-sets.view') || $user->hasPermission('full-tests.view') || $user->hasPermission('test-categories.view') || $user->hasPermission('attempts.view');
+                @endphp
+
+                @if($showMainMenu)
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Main Menu</h3>
-                    
-                    <a href="{{ route('admin.dashboard') }}" 
+
+                    @if($user->is_admin || $user->hasPermission('dashboard.view'))
+                    <a href="{{ route('admin.dashboard') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'active' : 'text-gray-700' }}">
                         <!-- Dashboard Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,8 +228,10 @@
                         <span>Dashboard</span>
                         <span class="ml-auto rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">New</span>
                     </a>
-                    
-                    <a href="{{ route('admin.questions.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('questions.view'))
+                    <a href="{{ route('admin.questions.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.questions.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Question Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,8 +239,10 @@
                         </svg>
                         <span>Questions</span>
                     </a>
-                    
-                    <a href="{{ route('admin.test-sets.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('test-sets.view'))
+                    <a href="{{ route('admin.test-sets.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.test-sets.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Collection Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,8 +250,10 @@
                         </svg>
                         <span>Test Sets</span>
                     </a>
-                    
-                    <a href="{{ route('admin.full-tests.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('full-tests.view'))
+                    <a href="{{ route('admin.full-tests.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.full-tests.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Document Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,8 +262,10 @@
                         <span>Full Tests</span>
                         <span class="ml-auto rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">New</span>
                     </a>
-                    
-                    <a href="{{ route('admin.test-categories.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('test-categories.view'))
+                    <a href="{{ route('admin.test-categories.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.test-categories.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Folder Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,8 +276,10 @@
                             <span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-0.5">{{ $categoryCount }}</span>
                         @endif
                     </a>
-                    
-                    <a href="{{ route('admin.attempts.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('attempts.view'))
+                    <a href="{{ route('admin.attempts.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.attempts.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Clipboard Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,13 +290,21 @@
                             <span class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">{{ $pendingCount > 9 ? '9+' : $pendingCount }}</span>
                         @endif
                     </a>
+                    @endif
                 </div>
+                @endif
 
                 <!-- Subscription Management -->
+                @php
+                    $showSubscriptions = $user->is_admin || $user->hasPermission('subscriptions.view') || $user->hasPermission('coupons.view');
+                @endphp
+
+                @if($showSubscriptions)
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Subscriptions</h3>
-                    
-                    <a href="{{ route('admin.subscriptions.index') }}" 
+
+                    @if($user->is_admin || $user->hasPermission('subscriptions.view'))
+                    <a href="{{ route('admin.subscriptions.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.subscriptions.index') ? 'active' : 'text-gray-700' }}">
                         <!-- Chart Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,8 +312,8 @@
                         </svg>
                         <span>Analytics</span>
                     </a>
-                    
-                    <a href="{{ route('admin.subscriptions.users') }}" 
+
+                    <a href="{{ route('admin.subscriptions.users') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.subscriptions.users') ? 'active' : 'text-gray-700' }}">
                         <!-- Users Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,8 +321,8 @@
                         </svg>
                         <span>Users</span>
                     </a>
-                    
-                    <a href="{{ route('admin.subscriptions.transactions') }}" 
+
+                    <a href="{{ route('admin.subscriptions.transactions') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.subscriptions.transactions') ? 'active' : 'text-gray-700' }}">
                         <!-- Credit Card Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -305,8 +330,8 @@
                         </svg>
                         <span>Transactions</span>
                     </a>
-                    
-                    <a href="{{ route('admin.subscription-plans.index') }}" 
+
+                    <a href="{{ route('admin.subscription-plans.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.subscription-plans.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Package Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,8 +339,10 @@
                         </svg>
                         <span>Plans</span>
                     </a>
-                    
-                    <a href="{{ route('admin.coupons.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('coupons.view'))
+                    <a href="{{ route('admin.coupons.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.coupons.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Tag Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -326,13 +353,21 @@
                             <span class="ml-auto bg-green-500 text-white text-xs rounded-full px-2 py-0.5">{{ $activeCoupons }}</span>
                         @endif
                     </a>
+                    @endif
                 </div>
+                @endif
 
                 <!-- Human Evaluation Management -->
+                @php
+                    $showHumanEval = $user->is_admin || $user->hasPermission('teachers.view') || $user->hasPermission('token-packages.view') || $user->hasPermission('user-tokens.view');
+                @endphp
+
+                @if($showHumanEval)
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Human Evaluation</h3>
-                    
-                    <a href="{{ route('admin.teachers.index') }}" 
+
+                    @if($user->is_admin || $user->hasPermission('teachers.view'))
+                    <a href="{{ route('admin.teachers.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.teachers.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Teacher Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,8 +380,10 @@
                             <span class="ml-auto bg-green-500 text-white text-xs rounded-full px-2 py-0.5">{{ $teacherCount }}</span>
                         @endif
                     </a>
-                    
-                    <a href="{{ route('admin.token-packages.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('token-packages.view'))
+                    <a href="{{ route('admin.token-packages.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.token-packages.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Coins Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,8 +394,10 @@
                             <span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-0.5">{{ $activePackages }}</span>
                         @endif
                     </a>
-                    
-                    <a href="{{ route('admin.user-tokens.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('user-tokens.view'))
+                    <a href="{{ route('admin.user-tokens.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.user-tokens.*') ? 'active' : 'text-gray-700' }}">
                         <!-- User Coins Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,23 +405,21 @@
                         </svg>
                         <span>User Tokens</span>
                     </a>
-                    
-                    <a href="#" 
-                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700">
-                        <!-- Chart Icon -->
-                        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        <span>Evaluation Stats</span>
-                        <span class="ml-auto text-xs text-gray-400">Soon</span>
-                    </a>
+                    @endif
                 </div>
-                
+                @endif
+
                 <!-- User Management -->
+                @php
+                    $showUserManagement = $user->is_admin || $user->hasPermission('users.view');
+                @endphp
+
+                @if($showUserManagement)
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">User Management</h3>
-                    
-                    <a href="{{ route('admin.roles.index') }}" 
+
+                    @if($user->is_admin)
+                    <a href="{{ route('admin.roles.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.roles.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Shield Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -391,8 +428,10 @@
                         <span>Roles & Permissions</span>
                         <span class="ml-auto rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">New</span>
                     </a>
-                    
-                    <a href="{{ route('admin.users.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('users.view'))
+                    <a href="{{ route('admin.users.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.users.*') && !request()->routeIs('admin.ban-appeals.*') && !request()->routeIs('admin.users.system') ? 'active' : 'text-gray-700' }}">
                         <!-- Users Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,8 +442,8 @@
                             <span class="ml-auto bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">{{ $totalUsers }}</span>
                         @endif
                     </a>
-                    
-                    <a href="{{ route('admin.users.system') }}" 
+
+                    <a href="{{ route('admin.users.system') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.users.system') ? 'active' : 'text-gray-700' }}">
                         <!-- System Users Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -415,8 +454,10 @@
                             <span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-0.5">{{ $systemUsers }}</span>
                         @endif
                     </a>
-                    
-                    <a href="{{ route('admin.ban-appeals.index') }}" 
+                    @endif
+
+                    @if($user->is_admin || $user->hasPermission('users.view'))
+                    <a href="{{ route('admin.ban-appeals.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.ban-appeals.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Ban Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,13 +468,21 @@
                             <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{{ $pendingAppeals }}</span>
                         @endif
                     </a>
+                    @endif
                 </div>
-                
+                @endif
+
                 <!-- Marketing & Communication -->
+                @php
+                    $showMarketing = $user->is_admin || $user->hasPermission('announcements.view');
+                @endphp
+
+                @if($showMarketing)
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Marketing</h3>
-                    
-                    <a href="{{ route('admin.announcements.index') }}" 
+
+                    @if($user->is_admin || $user->hasPermission('announcements.view'))
+                    <a href="{{ route('admin.announcements.index') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.announcements.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Megaphone Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,13 +493,21 @@
                             <span class="ml-auto bg-purple-500 text-white text-xs rounded-full px-2 py-0.5">{{ $activeAnnouncements }}</span>
                         @endif
                     </a>
+                    @endif
                 </div>
+                @endif
 
                 <!-- Settings -->
+                @php
+                    $showSettings = $user->is_admin || $user->hasPermission('settings.view');
+                @endphp
+
+                @if($showSettings)
                 <div class="mb-8">
                     <h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Settings</h3>
-                    
-                    <a href="{{ route('admin.settings.website') }}" 
+
+                    @if($user->is_admin || $user->hasPermission('settings.view'))
+                    <a href="{{ route('admin.settings.website') }}"
                        class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.settings.*') ? 'active' : 'text-gray-700' }}">
                         <!-- Settings Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -459,24 +516,18 @@
                         </svg>
                         <span>Website Settings</span>
                     </a>
-    
-    <a href="{{ route('admin.maintenance.index') }}" 
-       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.maintenance.*') ? 'active' : 'text-gray-700' }}">
-        <!-- Tools Icon -->
-        <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
-        </svg>
-        <span>Maintenance Mode</span>
-    </a>
-    
-                    <a href="#" class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700">
-                        <!-- Shield Icon -->
+
+                    <a href="{{ route('admin.maintenance.index') }}"
+                       class="sidebar-link mb-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.maintenance.*') ? 'active' : 'text-gray-700' }}">
+                        <!-- Tools Icon -->
                         <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
                         </svg>
-                        <span>Security</span>
+                        <span>Maintenance Mode</span>
                     </a>
+                    @endif
                 </div>
+                @endif
             </nav>
             
             <!-- Footer Actions -->

@@ -38,12 +38,12 @@
 
                     <!-- Phone -->
                     <div>
-                        <label for="phone" class="block text-sm font-medium text-gray-700">
+                        <label for="phone_number" class="block text-sm font-medium text-gray-700">
                             Phone Number
                         </label>
-                        <input type="tel" name="phone" id="phone" value="{{ old('phone') }}"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm @error('phone') border-red-300 @enderror">
-                        @error('phone')
+                        <input type="tel" name="phone_number" id="phone_number" value="{{ old('phone_number') }}"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm @error('phone_number') border-red-300 @enderror">
+                        @error('phone_number')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>

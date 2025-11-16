@@ -439,9 +439,26 @@
 
                         <!-- Right Section -->
                         <div class="flex items-center space-x-3">
+                            <!-- Switch to Admin/Teacher Panel -->
+                            @if(auth()->user()->is_admin)
+                                <a href="{{ route('admin.dashboard') }}"
+                                   class="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                                   :class="darkMode ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/30' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 shadow-md hover:shadow-lg'">
+                                    <i class="fas fa-user-shield"></i>
+                                    <span>Switch to Admin</span>
+                                </a>
+                            @elseif(auth()->user()->teacher)
+                                <a href="{{ route('teacher.dashboard') }}"
+                                   class="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                                   :class="darkMode ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/30' : 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white hover:from-emerald-700 hover:to-emerald-800 shadow-md hover:shadow-lg'">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                    <span>Switch to Teacher</span>
+                                </a>
+                            @endif
+
                             <!-- Upgrade to Pro Button (Only for free users) -->
                             @if(auth()->user()->subscription_status === 'free')
-                                <a href="{{ route('subscription.plans') }}" 
+                                <a href="{{ route('subscription.plans') }}"
                                    class="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200"
                                    :class="darkMode ? 'bg-[#C8102E] text-white hover:bg-[#A00E27] shadow-lg shadow-[#C8102E]/30 hover:shadow-[#C8102E]/50' : 'bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white hover:from-[#A00E27] hover:to-[#8A0C20] shadow-md hover:shadow-lg'">
                                     <i class="fas fa-rocket"></i>

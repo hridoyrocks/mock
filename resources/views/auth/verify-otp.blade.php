@@ -194,16 +194,18 @@
             verifyBtn.disabled = otpValue.length !== 6;
         }
 
-        // Timer
-        let timeLeft = 300;
+        // Timer - Calculate from actual database expiry time
+        const expiresAt = {{ $expiresAt }};
+        const now = Math.floor(Date.now() / 1000);
+        let timeLeft = Math.max(0, expiresAt - now);
         const timerElement = document.getElementById('timer');
         let timerInterval;
-        
+
         function updateTimer() {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
             timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            
+
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 timerElement.textContent = 'Expired';
@@ -213,7 +215,7 @@
                 timeLeft--;
             }
         }
-        
+
         timerInterval = setInterval(updateTimer, 1000);
         updateTimer();
 
@@ -248,25 +250,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Reset timer
-                    timeLeft = 300;
-                    clearInterval(timerInterval);
-                    timerInterval = setInterval(updateTimer, 1000);
-                    
-                    // Clear fields
-                    for (let i = 1; i <= 6; i++) {
-                        document.getElementById('otp_' + i).value = '';
-                    }
-                    document.getElementById('otp').value = '';
-                    document.getElementById('otp_1').focus();
-                    
-                    resendMessage.textContent = '✓ New code sent successfully!';
-                    resendMessage.className = 'text-xs mt-1 text-green-600';
-                    
-                    setTimeout(() => {
-                        resendBtn.disabled = false;
-                        resendMessage.textContent = '';
-                    }, 60000);
+                    // Reload page to get new expiry time from server
+                    window.location.reload();
                 } else {
                     resendMessage.textContent = data.message || 'Failed to send';
                     resendMessage.className = 'text-xs mt-1 text-red-600';
