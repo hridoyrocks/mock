@@ -136,17 +136,6 @@
                             </div>
                         </div>
                     </div>
-
-                    {{-- Debug Info --}}
-                    @if(config('app.debug'))
-                        <div class="mt-4 text-center">
-                            <details class="text-xs text-gray-400">
-                                <summary class="cursor-pointer">Debug Info</summary>
-                                <p class="mt-1">Check logs: storage/logs/laravel.log</p>
-                                <p>Database: otp_verifications table</p>
-                            </details>
-                        </div>
-                    @endif
                 </div>
 
                 {{-- Footer Info --}}

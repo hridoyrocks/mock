@@ -63,6 +63,15 @@
                     <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
                         Email Unverified
                     </span>
+                    <form method="POST" action="{{ route('admin.users.verify-email', $user) }}" class="inline-block ml-2">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Verify Now
+                        </button>
+                    </form>
                 @endif
                 @if($user->phone_verified_at)
                     <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">

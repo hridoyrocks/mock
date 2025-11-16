@@ -180,7 +180,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'is_admin' => $isAdmin,
             'role_id' => $roleId,
-            'email_verified_at' => $validated['email_verified'] ?? false ? now() : null,
+            'email_verified_at' => ($request->has('email_verified') && $request->email_verified) ? now() : null,
             'created_by' => 'system',
         ]);
 
@@ -254,7 +254,7 @@ class UserController extends Controller
             'phone' => $validated['phone'],
             'is_admin' => $validated['role'] === 'admin',
             'role_id' => $validated['custom_role_id'] ?? null,
-            'email_verified_at' => $validated['email_verified'] ?? false ? ($user->email_verified_at ?? now()) : null,
+            'email_verified_at' => ($request->has('email_verified') && $request->email_verified) ? ($user->email_verified_at ?? now()) : null,
         ]);
 
         if (!empty($validated['password'])) {
