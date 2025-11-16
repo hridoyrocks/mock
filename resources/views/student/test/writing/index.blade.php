@@ -99,6 +99,11 @@
                                 $latestAttempt = $userAttempts->first();
                                 $totalAttempts = $userAttempts->count();
                                 $testCategories = $testSet->categories;
+
+                                // Get total attempts count for this test (all users)
+                                $totalTestAttempts = \App\Models\StudentAttempt::where('test_set_id', $testSet->id)
+                                    ->where('status', 'completed')
+                                    ->count();
                             @endphp
                             
                             <div class="group relative rounded-lg border transition-all duration-300 hover:shadow-lg"
@@ -185,6 +190,10 @@
                                             <span class="flex items-center">
                                                 <i class="fas fa-tasks mr-1 text-[#C8102E]"></i>
                                                 2 tasks
+                                            </span>
+                                            <span class="flex items-center" title="{{ $totalTestAttempts }} total attempts">
+                                                <i class="fas fa-users mr-1 text-[#C8102E]"></i>
+                                                {{ $totalTestAttempts }}
                                             </span>
                                         </div>
                                         @if($userCompleted && $latestAttempt->band_score)

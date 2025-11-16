@@ -93,13 +93,18 @@
                                 $userAttempts = $attempts->get($fullTest->id) ?? collect();
                                 $completedAttempts = $userAttempts->where('status', 'completed');
                                 $inProgressAttempt = $userAttempts->where('status', 'in_progress')->first();
-                                
+
                                 // Get categories for this full test
                                 $testCategories = collect();
                                 foreach ($fullTest->testSets as $testSet) {
                                     $testCategories = $testCategories->merge($testSet->categories);
                                 }
                                 $testCategories = $testCategories->unique('id');
+
+                                // Get total attempts count for this full test (all users)
+                                $totalFullTestAttempts = \App\Models\FullTestAttempt::where('full_test_id', $fullTest->id)
+                                    ->where('status', 'completed')
+                                    ->count();
                             @endphp
                             
                             <div class="group relative rounded-lg border transition-all duration-300 hover:shadow-lg {{ $fullTest->is_premium && !auth()->user()->hasFeature('premium_full_tests') ? 'opacity-90' : '' }}"
@@ -191,6 +196,10 @@
                                             <span class="flex items-center">
                                             <i class="fas fa-layer-group mr-1 text-[#C8102E]"></i>
                                             {{ $fullTest->getAvailableSections() ? count($fullTest->getAvailableSections()) : 0 }} sections
+                                            </span>
+                                            <span class="flex items-center" title="{{ $totalFullTestAttempts }} total attempts">
+                                                <i class="fas fa-users mr-1 text-[#C8102E]"></i>
+                                                {{ $totalFullTestAttempts }}
                                             </span>
                                         </div>
                                         @if($completedAttempts->count() > 0 && $completedAttempts->first()->overall_band_score)
