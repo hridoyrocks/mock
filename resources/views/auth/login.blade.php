@@ -48,7 +48,7 @@
             <div class="w-full max-w-md">
                 {{-- Logo for Mobile and Desktop Form --}}
                 <div class="text-center mb-6">
-                    <a href="{{ route('home') }}" class="inline-block">
+                    <a href="{{ url('/') }}" class="inline-block">
                         @if($logo)
                             <img src="{{ $logo }}" alt="{{ $siteName }}" class="h-12 w-auto mx-auto">
                         @else
@@ -74,6 +74,23 @@
                         <h2 class="text-2xl font-bold text-gray-900">Sign In</h2>
                         <p class="text-sm text-gray-600 mt-1">Enter your credentials to continue</p>
                     </div>
+
+                    {{-- Error Alert (Redirected from Admin Login) --}}
+                    @if(session('error'))
+                        <div class="mb-5 bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                                    @if(session('info'))
+                                        <p class="text-xs text-red-600 mt-1">{{ session('info') }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- Social Login --}}
                     <div class="grid grid-cols-2 gap-3 mb-5">
@@ -187,7 +204,7 @@
                             <div class="flex justify-center space-x-4 text-xs">
                                 <a href="{{ route('password.request') }}" class="text-red-600 hover:text-red-500">Reset Password</a>
                                 <span class="text-gray-300">•</span>
-                                <a href="#" class="text-red-600 hover:text-red-500">Contact Support</a>
+                                <a href="{{ route('contact') }}" class="text-red-600 hover:text-red-500">Contact Support</a>
                             </div>
                         </div>
                     </div>
@@ -195,11 +212,11 @@
 
                 {{-- Footer Links --}}
                 <div class="mt-6 text-center text-xs text-gray-500">
-                    <a href="#" class="hover:text-gray-700 transition">Terms</a>
+                    <a href="{{ route('terms-of-service') }}" class="hover:text-gray-700 transition">Terms</a>
                     <span class="mx-2">•</span>
-                    <a href="#" class="hover:text-gray-700 transition">Privacy</a>
+                    <a href="{{ route('privacy-policy') }}" class="hover:text-gray-700 transition">Privacy</a>
                     <span class="mx-2">•</span>
-                    <a href="#" class="hover:text-gray-700 transition">Support</a>
+                    <a href="{{ route('contact') }}" class="hover:text-gray-700 transition">Support</a>
                 </div>
             </div>
         </div>

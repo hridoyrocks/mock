@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\SubscriptionManagementController;
 use App\Http\Controllers\Admin\TestSectionController;
 use App\Http\Controllers\Admin\TestSetController;
 use App\Http\Controllers\AIEvaluationController;
+use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OtpVerificationController;
@@ -67,9 +68,13 @@ Route::middleware(['web', \App\Http\Middleware\TrackReferral::class])->group(fun
 
     // AUTHENTICATION ROUTES (Guest only)
     Route::middleware(['guest'])->group(function () {
-        // Login Routes
+        // Student Login Routes
         Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
         Route::post('/login', [LoginController::class, 'login']);
+
+        // Admin Login Routes
+        Route::get('/auth/admin/login', [AdminLoginController::class, 'showLoginForm'])->name('admin.login');
+        Route::post('/auth/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit');
 
         // Registration Routes
         Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
@@ -277,6 +282,14 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
     Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\Teacher\EvaluationController::class, 'dashboard'])->name('dashboard');
         Route::patch('/toggle-availability', [App\Http\Controllers\Teacher\EvaluationController::class, 'toggleAvailability'])->name('toggle-availability');
+
+        // Teacher Profile Routes
+        Route::get('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [App\Http\Controllers\Teacher\ProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/profile/password', [App\Http\Controllers\Teacher\ProfileController::class, 'updatePassword'])->name('profile.password');
+        Route::post('/profile/avatar', [App\Http\Controllers\Teacher\ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+        Route::delete('/profile/avatar', [App\Http\Controllers\Teacher\ProfileController::class, 'deleteAvatar'])->name('profile.avatar.delete');
+
         Route::prefix('evaluations')->name('evaluations.')->group(function () {
             Route::get('/pending', [App\Http\Controllers\Teacher\EvaluationController::class, 'pending'])->name('pending');
             Route::get('/completed', [App\Http\Controllers\Teacher\EvaluationController::class, 'completed'])->name('completed');
@@ -287,11 +300,18 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
 
     // Admin routes - WITH PERMISSION MIDDLEWARE
     Route::middleware(['admin.access'])->prefix('admin')->name('admin.')->group(function () {
-        
+
         // Dashboard - No permission required (all admin users)
         Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/dashboard/quick-stats', [App\Http\Controllers\Admin\DashboardController::class, 'quickStats'])->name('dashboard.quick-stats');
         Route::get('/test-tinymce', function () { return view('admin.test-tinymce'); })->name('test-tinymce');
+
+        // Admin Profile Routes
+        Route::get('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
+        Route::patch('/profile/password', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.password');
+        Route::post('/profile/avatar', [App\Http\Controllers\Admin\ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+        Route::delete('/profile/avatar', [App\Http\Controllers\Admin\ProfileController::class, 'deleteAvatar'])->name('profile.avatar.delete');
 
         // TEST MANAGEMENT - tests permissions
         Route::middleware(['permission:tests.view,tests.create,tests.edit,tests.delete'])->group(function () {

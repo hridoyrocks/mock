@@ -50,7 +50,7 @@
             <div class="w-full max-w-md">
                 {{-- Logo for Mobile and Desktop Form --}}
                 <div class="text-center mb-6">
-                    <a href="{{ route('home') }}" class="inline-block">
+                    <a href="{{ url('/') }}" class="inline-block">
                         @if($logo)
                             <img src="{{ $logo }}" alt="{{ $siteName }}" class="h-12 w-auto mx-auto">
                         @else
@@ -142,10 +142,12 @@
                             <label for="phone_number" class="block text-xs font-medium text-gray-700 mb-1">Phone</label>
                             <div class="flex rounded-lg overflow-hidden border border-gray-300 focus-within:ring-2 focus-within:ring-red-500 focus-within:border-transparent">
                                 <select name="country_phone_code" class="px-2 text-sm bg-gray-50 border-r border-gray-300 focus:outline-none">
-                                    <option value="+880">🇧🇩 +880</option>
-                                    <option value="+91">🇮🇳 +91</option>
-                                    <option value="+1">🇺🇸 +1</option>
-                                    <option value="+44">🇬🇧 +44</option>
+                                    @foreach($phoneCodes as $countryCode => $phoneData)
+                                        <option value="{{ $phoneData['code'] }}"
+                                                {{ old('country_phone_code', $locationData['country_code'] ?? 'BD') == $countryCode ? 'selected' : '' }}>
+                                            {{ $phoneData['flag'] }} {{ $phoneData['code'] }}
+                                        </option>
+                                    @endforeach
                                 </select>
                                 <input type="tel" 
                                        name="phone_number" 
@@ -257,8 +259,8 @@
                                    required
                                    class="w-4 h-4 mt-0.5 text-red-500 border-gray-300 rounded focus:ring-red-500">
                             <label for="terms" class="ml-2 text-xs text-gray-700">
-                                I agree to the <a href="#" class="text-red-600 hover:underline">Terms</a> 
-                                and <a href="#" class="text-red-600 hover:underline">Privacy Policy</a>
+                                I agree to the <a href="{{ route('terms-of-service') }}" class="text-red-600 hover:underline" target="_blank">Terms</a>
+                                and <a href="{{ route('privacy-policy') }}" class="text-red-600 hover:underline" target="_blank">Privacy Policy</a>
                             </label>
                         </div>
                         @error('terms')
@@ -273,10 +275,19 @@
 
                         {{-- Login Link --}}
                         <p class="text-center text-xs text-gray-600 pt-2">
-                            Already have an account? 
+                            Already have an account?
                             <a href="{{ route('login') }}" class="text-red-600 hover:text-red-500 font-medium">Sign in</a>
                         </p>
                     </form>
+                </div>
+
+                {{-- Footer Links --}}
+                <div class="mt-6 text-center text-xs text-gray-500">
+                    <a href="{{ route('terms-of-service') }}" class="hover:text-gray-700 transition">Terms</a>
+                    <span class="mx-2">•</span>
+                    <a href="{{ route('privacy-policy') }}" class="hover:text-gray-700 transition">Privacy</a>
+                    <span class="mx-2">•</span>
+                    <a href="{{ route('contact') }}" class="hover:text-gray-700 transition">Support</a>
                 </div>
             </div>
         </div>

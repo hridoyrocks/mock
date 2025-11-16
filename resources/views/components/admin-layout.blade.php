@@ -482,7 +482,7 @@
             <!-- Footer Actions -->
             <div class="p-4 border-t border-gray-200 mt-auto">
                 <div class="space-y-2">
-                    <a href="{{ route('profile.edit') }}" 
+                    <a href="{{ route('admin.profile.edit') }}"
                        class="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
                         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -606,7 +606,7 @@
                              x-transition:leave-end="opacity-0 scale-95"
                              class="absolute right-0 mt-2 w-56 rounded-lg bg-white shadow-lg ring-1 ring-gray-200">
                             <div class="p-1">
-                                <a href="{{ route('profile.edit') }}" class="flex items-center rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <a href="{{ route('admin.profile.edit') }}" class="flex items-center rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                                     <!-- User Icon -->
                                     <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>

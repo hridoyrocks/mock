@@ -274,7 +274,7 @@
                 <div class="px-4 mb-6">
                     <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">Settings</h4>
                     
-                    <a href="{{ route('profile.edit') }}" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 mb-2">
+                    <a href="{{ route('teacher.profile.edit') }}" class="group flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 mb-2">
                         <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center shadow-sm">
                             <i class="fas fa-user-cog text-white"></i>
                         </div>
@@ -428,7 +428,7 @@
                                         <p class="text-xs text-gray-600">{{ auth()->user()->email }}</p>
                                     </div>
                                     <div class="p-2">
-                                        <a href="{{ route('profile.edit') }}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                                        <a href="{{ route('teacher.profile.edit') }}" class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                                             <i class="fas fa-user text-gray-600 w-4"></i>
                                             <span class="text-gray-900 text-sm font-medium">Profile Settings</span>
                                         </a>
