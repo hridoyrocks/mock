@@ -51,14 +51,16 @@ class TestSetController extends Controller
             'title' => 'required|string|max:255',
             'section_id' => 'required|exists:test_sections,id',
             'active' => 'boolean',
+            'is_premium' => 'boolean',
         ]);
-        
+
         TestSet::create([
             'title' => $request->title,
             'section_id' => $request->section_id,
             'active' => $request->has('active'),
+            'is_premium' => $request->has('is_premium'),
         ]);
-        
+
         return redirect()->route('admin.test-sets.index')
             ->with('success', 'Test set created successfully.');
     }
@@ -94,14 +96,16 @@ class TestSetController extends Controller
             'title' => 'required|string|max:255',
             'section_id' => 'required|exists:test_sections,id',
             'active' => 'boolean',
+            'is_premium' => 'boolean',
         ]);
-        
+
         $testSet->update([
             'title' => $request->title,
             'section_id' => $request->section_id,
             'active' => $request->has('active'),
+            'is_premium' => $request->has('is_premium'),
         ]);
-        
+
         return redirect()->route('admin.test-sets.index')
             ->with('success', 'Test set updated successfully.');
     }

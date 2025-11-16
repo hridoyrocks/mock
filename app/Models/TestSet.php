@@ -9,11 +9,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TestSet extends Model
 {
-    protected $fillable = ['title', 'section_id', 'active'];
-    
+    protected $fillable = ['title', 'section_id', 'active', 'is_premium'];
+
     protected $casts = [
         'active' => 'boolean',
+        'is_premium' => 'boolean',
     ];
+
+    /**
+     * Scope for free test sets
+     */
+    public function scopeFree($query)
+    {
+        return $query->where('is_premium', false);
+    }
+
+    /**
+     * Scope for premium test sets
+     */
+    public function scopePremium($query)
+    {
+        return $query->where('is_premium', true);
+    }
     
     public function section(): BelongsTo
     {

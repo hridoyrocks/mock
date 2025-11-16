@@ -65,7 +65,13 @@ class SpeakingTestController extends Controller
         if ($testSet->section->name !== 'speaking') {
             abort(404);
         }
-        
+
+        // Check if test is premium and user has access
+        if ($testSet->is_premium && !auth()->user()->hasFeature('premium_test_sets')) {
+            return redirect()->route('subscription.plans')
+                ->with('error', 'This test is available for premium users only.');
+        }
+
         // Get all attempts for this test
         $attempts = StudentAttempt::getAllAttemptsForUserAndTest(auth()->id(), $testSet->id);
         
@@ -107,11 +113,17 @@ class SpeakingTestController extends Controller
      */
     public function start(TestSet $testSet)
     {
+        // Check if test is premium and user has access
+        if ($testSet->is_premium && !auth()->user()->hasFeature('premium_test_sets')) {
+            return redirect()->route('subscription.plans')
+                ->with('error', 'This test is available for premium users only.');
+        }
+
         // Check if the test belongs to speaking section
         if ($testSet->section->name !== 'speaking') {
             abort(404);
         }
-        
+
         // Check if there's an ongoing attempt
         $attempt = StudentAttempt::where('user_id', auth()->id())
             ->where('test_set_id', $testSet->id)

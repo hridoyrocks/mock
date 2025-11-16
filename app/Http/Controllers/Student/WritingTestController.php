@@ -60,14 +60,20 @@ class WritingTestController extends Controller
         if ($testSet->section->name !== 'writing') {
             abort(404);
         }
-        
+
+        // Check if test is premium and user has access
+        if ($testSet->is_premium && !auth()->user()->hasFeature('premium_test_sets')) {
+            return redirect()->route('subscription.plans')
+                ->with('error', 'This test is available for premium users only.');
+        }
+
         // Get all attempts for this test
         $attempts = StudentAttempt::getAllAttemptsForUserAndTest(auth()->id(), $testSet->id);
-        
+
         // Show previous attempts if any exist
         $latestAttempt = $attempts->first();
         $canRetake = $latestAttempt && $latestAttempt->canRetake();
-        
+
         return view('student.test.writing.onboarding.confirm-details', compact('testSet', 'attempts', 'canRetake'));
     }
 
@@ -95,6 +101,12 @@ class WritingTestController extends Controller
             'section' => $testSet->section->name ?? 'no section',
             'user_id' => auth()->id()
         ]);
+
+        // Check if test is premium and user has access
+        if ($testSet->is_premium && !auth()->user()->hasFeature('premium_test_sets')) {
+            return redirect()->route('subscription.plans')
+                ->with('error', 'This test is available for premium users only.');
+        }
 
         // Check if the test belongs to writing section
         if ($testSet->section->name !== 'writing') {
