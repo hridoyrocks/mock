@@ -2,6 +2,7 @@
 <x-student-layout>
     <x-slot:title>Test Result Details</x-slot>
 
+    <div x-data="{ darkMode: false }">
     <!-- Header Section -->
     <section class="relative overflow-hidden">
         <div class="absolute inset-0" :class="darkMode ? 'bg-black/20' : 'bg-gradient-to-br from-[#C8102E]/5 via-transparent to-[#C8102E]/10'"></div>
@@ -1170,4 +1171,5 @@
     }
     </script>
     @endpush
+    </div>
 </x-student-layout>
