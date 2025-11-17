@@ -97,21 +97,40 @@ window.AlternativeSubmit = {
                 if (match) {
                     const questionId = match[1];
                     const dropdownNum = match[2];
-                    
+
                     if (!answers[questionId]) {
                         answers[questionId] = {};
                     }
-                    
+
                     if (typeof answers[questionId] !== 'object') {
                         answers[questionId] = {};
                     }
-                    
+
                     answers[questionId][`dropdown_${dropdownNum}`] = select.value;
                 }
             }
         });
 
-        console.log('Collected answers:', answers);
+        // ⭐ CRITICAL: Collect passage answer inputs (matching headings drag & drop)
+        document.querySelectorAll('.passage-answer-input').forEach(input => {
+            if (input.value && input.value.trim() !== '') {
+                console.log('📋 Found passage answer:', input.name, '=', input.value);
+
+                // Parse the name format: answers[questionId_qNumber]
+                const match = input.name.match(/answers\[(\d+)_q(\d+)\]/);
+                if (match) {
+                    const questionId = match[1];
+                    const subQuestion = match[2];
+                    const key = `${questionId}_q${subQuestion}`;
+
+                    // Store with the full key format
+                    answers[key] = input.value;
+                    console.log('✅ Added passage answer:', key, '=', input.value);
+                }
+            }
+        });
+
+        console.log('📊 Collected answers:', answers);
         return answers;
     },
 
