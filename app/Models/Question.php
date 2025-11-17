@@ -332,9 +332,67 @@ public function checkBlankAnswer($blankNumber, $studentAnswer): bool
 {
     $blankAnswers = $this->getBlankAnswers();
     $correctAnswer = $blankAnswers[$blankNumber] ?? '';
-    
-    // Case-insensitive comparison, trimmed
-    return strtolower(trim($studentAnswer)) === strtolower(trim($correctAnswer));
+
+    // Normalize student answer
+    $studentAnswer = trim($studentAnswer);
+    $correctAnswer = trim($correctAnswer);
+
+    // Check for multiple acceptable answers (separated by /)
+    $acceptableAnswers = array_map('trim', explode('/', $correctAnswer));
+
+    foreach ($acceptableAnswers as $acceptable) {
+        // Case-insensitive comparison
+        if (strtolower($studentAnswer) === strtolower($acceptable)) {
+            return true;
+        }
+
+        // Check number-word equivalence
+        if ($this->areEquivalentNumberWord($studentAnswer, $acceptable)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Check if two answers are equivalent considering number-word conversions
+ */
+private function areEquivalentNumberWord($answer1, $answer2): bool
+{
+    $numberWordMap = [
+        // Basic numbers
+        '0' => 'zero', '1' => 'one', '2' => 'two', '3' => 'three', '4' => 'four',
+        '5' => 'five', '6' => 'six', '7' => 'seven', '8' => 'eight', '9' => 'nine',
+        '10' => 'ten', '11' => 'eleven', '12' => 'twelve', '13' => 'thirteen',
+        '14' => 'fourteen', '15' => 'fifteen', '16' => 'sixteen', '17' => 'seventeen',
+        '18' => 'eighteen', '19' => 'nineteen', '20' => 'twenty',
+        '30' => 'thirty', '40' => 'forty', '50' => 'fifty', '60' => 'sixty',
+        '70' => 'seventy', '80' => 'eighty', '90' => 'ninety', '100' => 'hundred',
+        '1000' => 'thousand', '1000000' => 'million',
+
+        // Ordinal numbers
+        '1st' => 'first', '2nd' => 'second', '3rd' => 'third', '4th' => 'fourth',
+        '5th' => 'fifth', '6th' => 'sixth', '7th' => 'seventh', '8th' => 'eighth',
+        '9th' => 'ninth', '10th' => 'tenth', '11th' => 'eleventh', '12th' => 'twelfth',
+        '13th' => 'thirteenth', '14th' => 'fourteenth', '15th' => 'fifteenth',
+        '16th' => 'sixteenth', '17th' => 'seventeenth', '18th' => 'eighteenth',
+        '19th' => 'nineteenth', '20th' => 'twentieth', '21st' => 'twenty-first',
+        '22nd' => 'twenty-second', '23rd' => 'twenty-third', '30th' => 'thirtieth',
+        '40th' => 'fortieth', '50th' => 'fiftieth', '100th' => 'hundredth',
+    ];
+
+    $ans1 = strtolower(trim($answer1));
+    $ans2 = strtolower(trim($answer2));
+
+    // Check direct number to word mapping
+    foreach ($numberWordMap as $number => $word) {
+        if (($ans1 === $number && $ans2 === $word) || ($ans1 === $word && $ans2 === $number)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 public function checkDropdownAnswer($dropdownNumber, $selectedIndex): bool

@@ -847,7 +847,7 @@
                                                 if ($question->section_specific_data && isset($question->section_specific_data['blank_answers'])) {
                                                     foreach ($question->section_specific_data['blank_answers'] as $num => $correctAnswer) {
                                                         $studentAnswer = $answerData['blank_' . $num] ?? '';
-                                                        if (strtolower(trim($studentAnswer)) !== strtolower(trim($correctAnswer))) {
+                                                        if (!$question->checkBlankAnswer($num, $studentAnswer)) {
                                                             $allCorrect = false;
                                                             break;
                                                         }
