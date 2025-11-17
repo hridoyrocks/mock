@@ -952,7 +952,6 @@
                                                                             const input = target.nextElementSibling;
                                                                             if (input && input.classList.contains('passage-answer-input')) {
                                                                                 input.value = letter;
-                                                                                console.log('💾 Set value:', input.name, '=', letter, '(input exists:', !!input, ')');
                                                                                 // Save to localStorage
                                                                                 const attemptId = '{{ $attempt->id }}';
                                                                                 const storageKey = `reading_test_${attemptId}_answers`;
@@ -1022,11 +1021,8 @@
                                                                                         });
 
                                                                                         countEl.textContent = count;
-                                                                                        console.log('📊 Updated count to:', count);
                                                                                     }
                                                                                 }, 100);
-                                                                            } else {
-                                                                                console.error('❌ Hidden input not found! Target:', target, 'NextSibling:', target.nextElementSibling);
                                                                             }
                                                                         }
                                                                         
@@ -1772,41 +1768,24 @@ select[name*="_q"] {
 // CRITICAL FIX: Copy passage answer inputs to form before submission
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('reading-form');
-    console.log('🔍 Form element found:', !!form, form);
 
     if (form) {
         // Intercept form submission
         form.addEventListener('submit', function(e) {
-            console.log('📋 Form submitting - copying passage answers...');
-            
-            // ⭐ REMOVE beforeunload listener to prevent "Leave page?" popup
+            // Remove beforeunload listener to prevent "Leave page?" popup
             window.removeEventListener('beforeunload', preventLeave);
             window.onbeforeunload = null;
-            
+
             // Find all passage answer inputs (outside form)
             const passageInputs = document.querySelectorAll('.passage-answer-input');
-            console.log('📊 Found', passageInputs.length, 'passage inputs');
-
-            let copiedCount = 0;
-            let emptyCount = 0;
 
             // Copy each to form
             passageInputs.forEach(input => {
-                console.log('🔍 Checking input:', input.name, 'value:', input.value);
-
                 if (input.value && input.value !== '') {
-                    // Create a clone and append to form
                     const clone = input.cloneNode(true);
                     form.appendChild(clone);
-                    console.log('✅ Copied:', input.name, '=', input.value);
-                    copiedCount++;
-                } else {
-                    console.log('⚠️ Skipped (empty):', input.name);
-                    emptyCount++;
                 }
             });
-
-            console.log('📋 Summary: Copied', copiedCount, 'answers, skipped', emptyCount, 'empty inputs');
         });
     }
     

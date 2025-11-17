@@ -511,17 +511,30 @@
                                         if (!in_array($question->id, $masterQuestionIds)) {
                                             $masterQuestionIds[] = $question->id;
                                             $mappings = $question->section_specific_data['mappings'] ?? [];
-                                            
+                                            $headings = $question->section_specific_data['headings'] ?? [];
+
                                             // Get all answers for this master question
                                             $masterAnswers = $attempt->answers->filter(function($answer) use ($question) {
                                                 return $answer->question_id == $question->id;
                                             });
-                                            
+
                                             // Create display for each sub-question
                                             foreach ($mappings as $mapping) {
                                                 $subQuestionNum = $mapping['question'] ?? $mapping['number'] ?? $currentNumber;
                                                 $paragraphLabel = $mapping['paragraph'] ?? chr(65 + array_search($mapping, $mappings));
-                                                
+                                                $correctLetter = $mapping['correct'] ?? null;
+
+                                                // Find correct heading text
+                                                $correctHeadingText = null;
+                                                if ($correctLetter) {
+                                                    foreach ($headings as $heading) {
+                                                        if ($heading['id'] === $correctLetter) {
+                                                            $correctHeadingText = $heading['text'] ?? null;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+
                                                 // Find the specific answer for this sub-question
                                                 $specificAnswer = $masterAnswers->first(function($answer) use ($subQuestionNum) {
                                                     if ($answer->answer) {
@@ -530,7 +543,7 @@
                                                     }
                                                     return false;
                                                 });
-                                                
+
                                                 $displayQuestions[] = [
                                                     'number' => $currentNumber,
                                                     'question' => $question,
@@ -538,7 +551,9 @@
                                                     'answer' => $specificAnswer,
                                                     'is_master_sub' => true,
                                                     'sub_question' => $subQuestionNum,
-                                                    'correct_letter' => $mapping['correct'] ?? null
+                                                    'correct_letter' => $correctLetter,
+                                                    'correct_heading_text' => $correctHeadingText,
+                                                    'all_headings' => $headings
                                                 ];
                                                 $currentNumber++;
                                             }
@@ -785,7 +800,19 @@
                                             // Master matching heading sub-question
                                             $decoded = json_decode($answer->answer, true);
                                             $selectedLetter = $decoded['selected_letter'] ?? null;
-                                            $displayAnswer = $selectedLetter ? "Option {$selectedLetter}" : 'No answer';
+
+                                            // Find selected heading text
+                                            $selectedHeadingText = null;
+                                            if ($selectedLetter && isset($item['all_headings'])) {
+                                                foreach ($item['all_headings'] as $heading) {
+                                                    if ($heading['id'] === $selectedLetter) {
+                                                        $selectedHeadingText = $heading['text'] ?? null;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+
+                                            $displayAnswer = $selectedHeadingText ? $selectedHeadingText : ($selectedLetter ? "Option {$selectedLetter}" : 'No answer');
                                             $isCorrect = $selectedLetter && $selectedLetter === $item['correct_letter'];
                                         } elseif ($answer->selectedOption) {
                                             $displayAnswer = $answer->selectedOption->content;
@@ -938,7 +965,7 @@
                                                                 @endphp
                                                                 {{ $correctAnswer }}
                                                             @elseif(isset($item['is_master_sub']) && $item['is_master_sub'])
-                                                                Option {{ $item['correct_letter'] }}
+                                                                {{ $item['correct_heading_text'] ?? 'Option ' . $item['correct_letter'] }}
                                                             @elseif(isset($item['is_sentence_completion']) && $item['is_sentence_completion'])
                                                                 Option {{ $item['correct_answer'] }}
                                                             @else
