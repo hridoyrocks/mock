@@ -467,7 +467,7 @@
                             @endif
                             
                             <!-- Theme Toggle -->
-                            <button @click="darkMode = !darkMode" 
+                            <button @click="darkMode = !darkMode; window.dispatchEvent(new CustomEvent('darkModeChanged', { detail: !darkMode }))"
                                     class="w-10 h-10 rounded-lg glass flex items-center justify-center hover:border-[#C8102E]/50 transition-all duration-200"
                                     :class="darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-[#C8102E]'">
                                 <i class="fas" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>

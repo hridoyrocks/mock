@@ -2,7 +2,52 @@
 <x-student-layout>
     <x-slot:title>Test Result Details</x-slot>
 
-    <div x-data="{ darkMode: false }">
+    <style>
+        /* Dark Mode Glass Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        /* Smooth transitions */
+        body.dark {
+            background: linear-gradient(to bottom, #1a1a1a, #0a0a0a);
+        }
+
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+    </style>
+
+    <div x-data="{
+        darkMode: localStorage.getItem('darkMode') === 'false' ? false : true,
+        init() {
+            // Listen for storage changes from other tabs/components
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'darkMode') {
+                    this.darkMode = e.newValue === 'false' ? false : true;
+                }
+            });
+
+            // Listen for custom darkMode event from header
+            window.addEventListener('darkModeChanged', (e) => {
+                this.darkMode = e.detail;
+            });
+
+            // Watch for darkMode changes and update body class
+            this.$watch('darkMode', value => {
+                document.body.classList.toggle('dark', value);
+            });
+        }
+    }">
+
     <!-- Header Section -->
     <section class="relative overflow-hidden">
         <div class="absolute inset-0" :class="darkMode ? 'bg-black/20' : 'bg-gradient-to-br from-[#C8102E]/5 via-transparent to-[#C8102E]/10'"></div>
@@ -64,8 +109,43 @@
     <!-- Main Content -->
     <section class="px-4 sm:px-6 lg:px-8 pb-12 -mt-4">
         <div class="max-w-7xl mx-auto">
+            {{-- No Answers Alert --}}
+            @if(isset($answeredQuestions) && $answeredQuestions === 0)
+                <div class="rounded-xl p-6 mb-6 shadow-lg"
+                     :class="darkMode ? 'glass border border-red-500/30' : 'bg-red-50 border border-red-200'">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                                 :class="darkMode ? 'bg-red-500/20' : 'bg-red-100'">
+                                <i class="fas fa-exclamation-triangle text-2xl" :class="darkMode ? 'text-red-400' : 'text-red-600'"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-lg mb-2" :class="darkMode ? 'text-red-400' : 'text-red-800'">No Questions Answered</h4>
+                            <p class="text-sm mb-3" :class="darkMode ? 'text-gray-300' : 'text-red-700'">
+                                You did not answer any questions in this test. Your band score is 0.0 as no answers were submitted.
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ route('student.' . $attempt->testSet->section->name . '.onboarding.confirm-details', $attempt->testSet->id) }}"
+                                   class="inline-flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                                   :class="darkMode ? 'bg-[#C8102E] text-white hover:bg-[#A00E27]' : 'bg-gradient-to-r from-[#C8102E] to-[#A00E27] text-white hover:from-[#A00E27] hover:to-[#8A0C20]'">
+                                    <i class="fas fa-redo mr-2"></i>
+                                    Retake Test
+                                </a>
+                                <a href="{{ route('student.' . $attempt->testSet->section->name . '.index') }}"
+                                   class="inline-flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                                   :class="darkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'">
+                                    <i class="fas fa-list mr-2"></i>
+                                    View All Tests
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Score Details Alert --}}
-            @if(isset($correctAnswers) && isset($totalQuestions) && isset($answeredQuestions) && $answeredQuestions < $totalQuestions)
+            @if(isset($correctAnswers) && isset($totalQuestions) && isset($answeredQuestions) && $answeredQuestions > 0 && $answeredQuestions < $totalQuestions)
                 <div class="rounded-xl p-4 mb-6 shadow-sm"
                      :class="darkMode ? 'glass border border-yellow-500/30' : 'bg-yellow-50 border border-yellow-200'">
                     <div class="flex items-start gap-3">
@@ -113,7 +193,7 @@
                      :class="darkMode ? 'glass border border-white/10' : 'bg-white border border-gray-200'">
                     <i class="fas fa-tasks text-2xl mb-3 text-[#C8102E]"></i>
                     <p class="text-sm mb-1" :class="darkMode ? 'text-gray-400' : 'text-gray-600'">Completion</p>
-                    @if(isset($answeredQuestions) && isset($totalQuestions))
+                    @if(isset($answeredQuestions) && isset($totalQuestions) && $totalQuestions > 0)
                         <p class="font-semibold" :class="darkMode ? 'text-white' : 'text-gray-800'">
                             {{ $answeredQuestions }}/{{ $totalQuestions }}
                             <span class="text-sm" :class="darkMode ? 'text-gray-400' : 'text-gray-500'">({{ round(($answeredQuestions / $totalQuestions) * 100) }}%)</span>
@@ -373,7 +453,7 @@
                         <div class="relative">
                             <div class="flex items-center justify-between mb-2">
                                 @foreach([1, 2, 3, 4, 5, 6, 7, 8, 9] as $band)
-                                    <span class="text-xs {{ $attempt->band_score >= $band ? 'text-[#C8102E]' : (darkMode ? 'text-gray-600' : 'text-gray-400') }}">{{ $band }}</span>
+                                    <span class="text-xs {{ $attempt->band_score >= $band ? 'text-[#C8102E]' : '' }}" :class="darkMode ? 'text-gray-600' : 'text-gray-400'">{{ $band }}</span>
                                 @endforeach
                             </div>
                             <div class="w-full h-3 rounded-full overflow-hidden" :class="darkMode ? 'bg-white/10' : 'bg-gray-200'">
