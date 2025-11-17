@@ -357,7 +357,7 @@ window.ListeningDragDrop = {
         // Get the actual zone number from data attribute for backend matching
         const zoneNumber = box.dataset.zoneNumber;
         let inputName;
-        
+
         if (zoneNumber !== undefined) {
             // Use zone number from [DRAG_X] for backend matching
             inputName = `answers[${questionId}][zone_${zoneNumber}]`;
@@ -372,25 +372,42 @@ window.ListeningDragDrop = {
             return;
         }
 
-        const hiddenInput = document.querySelector(`input[name="${inputName}"]`);
-        if (hiddenInput) {
-            hiddenInput.value = optionValue;
-            console.log('💾 Updated input:', inputName, '=', optionValue);
+        let hiddenInput = document.querySelector(`input[name="${inputName}"]`);
 
-            // Update navigation button for THIS specific zone - INSTANT
-            const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
-            if (navButton && !navButton.classList.contains('answered')) {
-                navButton.classList.add('answered');
-                
-                // INSTANT BOTTOM COUNT UPDATE
-                const totalAnswered = document.querySelectorAll('.number-btn.answered').length;
-                const answeredSpan = document.getElementById('answered-count');
-                if (answeredSpan) {
-                    answeredSpan.textContent = totalAnswered;
-                }
+        // ⭐ CREATE HIDDEN INPUT IF IT DOESN'T EXIST
+        if (!hiddenInput) {
+            console.log('🔧 Creating hidden input:', inputName);
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = inputName;
+            hiddenInput.value = '';
+
+            // Append to form
+            const form = document.getElementById('listening-form');
+            if (form) {
+                form.appendChild(hiddenInput);
+                console.log('✅ Hidden input created and added to form');
+            } else {
+                console.error('Form not found!');
+                return;
             }
-        } else {
-            console.error('Hidden input not found:', inputName);
+        }
+
+        // Update the value
+        hiddenInput.value = optionValue;
+        console.log('💾 Updated input:', inputName, '=', optionValue);
+
+        // Update navigation button for THIS specific zone - INSTANT
+        const navButton = document.querySelector(`.number-btn[data-display-number="${questionNumber}"]`);
+        if (navButton && !navButton.classList.contains('answered')) {
+            navButton.classList.add('answered');
+
+            // INSTANT BOTTOM COUNT UPDATE
+            const totalAnswered = document.querySelectorAll('.number-btn.answered').length;
+            const answeredSpan = document.getElementById('answered-count');
+            if (answeredSpan) {
+                answeredSpan.textContent = totalAnswered;
+            }
         }
     },
 
