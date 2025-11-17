@@ -1,217 +1,159 @@
 <x-admin-layout>
     <x-slot:title>Add Question - Listening</x-slot>
-    
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-        <div class="w-full px-4 sm:px-6 lg:px-8">
-            <div class="py-4 sm:py-6">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 class="text-xl sm:text-2xl font-semibold">Add Listening Question</h1>
-                        <p class="text-purple-100 text-sm mt-1">{{ $testSet->title }}</p>
+
+    <!-- Page Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">Add Listening Question</h1>
+                <p class="text-sm text-gray-600 mt-1">{{ $testSet->title }}</p>
+            </div>
+            <a href="{{ route('admin.test-sets.show', $testSet) }}"
+               class="inline-flex items-center rounded-lg border border-gray-200 p-3 hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-900">Back to Test Set</span>
+            </a>
+        </div>
+    </div>
+
+    @include('admin.questions.partials.question-header')
+
+    <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm">
+        @csrf
+        <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
+
+        <div class="space-y-6">
+            <!-- Question Content -->
+            <div class="rounded-xl bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Question Content</h3>
+
+                <!-- Top Settings Row - 4 Columns -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+                            <!-- Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Question Type <span class="text-red-500">*</span>
+                                </label>
+                                <select id="question_type" name="question_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" required>
+                                    <option value="">Select type...</option>
+                                    <option value="fill_blanks">Fill in the Blanks</option>
+                                    <option value="single_choice">Single Choice</option>
+                                    <option value="multiple_choice">Multiple Choice</option>
+                                    <option value="dropdown_selection">Dropdown Selection</option>
+                                    <option value="drag_drop">Drag & Drop</option>
+                                </select>
+                            </div>
+
+                            <!-- Number -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Question Number <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" name="order_number" value="{{ old('order_number', $nextQuestionNumber) }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" min="0" required>
+                            </div>
+
+                            <!-- Part -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Part <span class="text-red-500">*</span>
+                                </label>
+                                <select name="part_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" required>
+                                    <option value="1">Part 1 (Social)</option>
+                                    <option value="2">Part 2 (Monologue)</option>
+                                    <option value="3">Part 3 (Discussion)</option>
+                                    <option value="4">Part 4 (Lecture)</option>
+                                </select>
+                            </div>
+
+                            <!-- Marks -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Marks</label>
+                                <input type="number" name="marks" value="{{ old('marks', 1) }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" min="0" max="40">
+                            </div>
+                </div>
+
+                <!-- Audio Transcript - Full Width -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Audio Transcript</label>
+                    <textarea name="audio_transcript" rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
+                              placeholder="Enter the transcript of the audio...">{{ old('audio_transcript') }}</textarea>
+                </div>
+
+                <!-- Instructions -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
+                    <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions') }}</textarea>
+                </div>
+
+                <!-- Question Content -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Question <span class="text-red-500">*</span>
+                    </label>
+
+                    <!-- Insert Buttons -->
+                    <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
+                        <button type="button" onclick="insertListeningBlank()" class="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 transition-colors">
+                            Insert Blank
+                        </button>
+                        <span class="text-xs text-gray-500 flex items-center">
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
+                        </span>
                     </div>
-                    <a href="{{ route('admin.test-sets.show', $testSet) }}" 
-                       class="inline-flex items-center px-3 sm:px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                        </svg>
-                        Back
-                    </a>
+
+                    <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
+                        <button type="button" onclick="insertListeningDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
+                            Insert Dropdown
+                        </button>
+                        <span class="text-xs text-gray-500 flex items-center">
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
+                        </span>
+                    </div>
+
+                    <div class="mb-3 flex flex-wrap gap-2" id="drag-zone-buttons" style="display: none;">
+                        <button type="button" onclick="insertDragZone()" class="px-3 py-1 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors">
+                            Insert Drag Zone
+                        </button>
+                        <span class="text-xs text-gray-500 flex items-center">
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+G</kbd>
+                        </span>
+                    </div>
+
+                    <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
+                </div>
+            </div>
+
+            @include('admin.questions.partials.listening-question-types')
+
+            {{-- Type-specific panels --}}
+            <div id="type-specific-panels">
+                {{-- Existing panels will be handled by respective handlers --}}
+            </div>
+
+            <!-- Audio Management -->
+            <div class="rounded-xl bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Audio Settings</h3>
+                <div id="part-audio-status"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="rounded-xl bg-white p-6 shadow-sm">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button type="submit" name="action" value="save" class="flex-1 py-2.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors">
+                        Save Question
+                    </button>
+                    <button type="submit" name="action" value="save_and_new" class="flex-1 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        Save & Add Another
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="bg-gray-50 min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-            
-            @include('admin.questions.partials.question-header')
-            
-            <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm">
-                @csrf
-                <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
-                
-                <div class="space-y-4 sm:space-y-6">
-                    <!-- Question Content -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-                            <h3 class="text-base sm:text-lg font-medium text-gray-900">Question Content</h3>
-                        </div>
-                        
-                        <div class="p-4 sm:p-6">
-                            <!-- Top Settings Row - 4 Columns -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                                <!-- Type -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Type <span class="text-red-500">*</span></label>
-                                    <select id="question_type" name="question_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" required>
-                                        <option value="">Select type...</option>
-                                        <option value="fill_blanks">Fill in the Blanks</option>
-                                        <option value="single_choice">Single Choice (Radio)</option>
-                                        <option value="multiple_choice">Multiple Choice (Checkbox)</option>
-                                        <option value="dropdown_selection">Dropdown Selection</option>
-                                        <option value="drag_drop">Drag & Drop</option>
-                                    </select>
-                                </div>
-
-                                <!-- Number -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Number <span class="text-red-500">*</span></label>
-                                    <input type="number" name="order_number" value="{{ old('order_number', $nextQuestionNumber) }}" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" min="0" required>
-                                </div>
-
-                                <!-- Part -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Part <span class="text-red-500">*</span></label>
-                                    <select name="part_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" required>
-                                        <option value="1">Part 1 (Social)</option>
-                                        <option value="2">Part 2 (Monologue)</option>
-                                        <option value="3">Part 3 (Discussion)</option>
-                                        <option value="4">Part 4 (Lecture)</option>
-                                    </select>
-                                </div>
-
-                                <!-- Marks -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Marks</label>
-                                    <input type="number" name="marks" value="{{ old('marks', 1) }}" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" min="0" max="40">
-                                </div>
-                            </div>
-
-                            <!-- Audio Transcript - Full Width -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Audio Transcript</label>
-                                <textarea name="audio_transcript" rows="4" 
-                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
-                                          placeholder="Enter the transcript of the audio...">{{ old('audio_transcript') }}</textarea>
-                            </div>
-                            
-                            <!-- Instructions -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
-                                <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions') }}</textarea>
-                            </div>
-                            
-                            <!-- Question Content -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Question <span class="text-red-500">*</span>
-                                </label>
-                                
-                                <!-- Insert Buttons -->
-                                <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
-                                    <button type="button" onclick="insertListeningBlank()" class="px-3 py-1 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 transition-colors">
-                                        Insert Blank
-                                    </button>
-                                    <span class="text-xs text-gray-500 flex items-center">
-                                        <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
-                                    </span>
-                                </div>
-                                
-                                <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
-                                    <button type="button" onclick="insertListeningDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
-                                        Insert Dropdown
-                                    </button>
-                                    <span class="text-xs text-gray-500 flex items-center">
-                                        <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
-                                    </span>
-                                </div>
-                                
-                                <div class="mb-3 flex flex-wrap gap-2" id="drag-zone-buttons" style="display: none;">
-                                    <button type="button" onclick="insertDragZone()" class="px-3 py-1 bg-indigo-600 text-white text-xs font-medium rounded hover:bg-indigo-700 transition-colors">
-                                        Insert Drag Zone
-                                    </button>
-                                    <span class="text-xs text-gray-500 flex items-center">
-                                        <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+G</kbd>
-                                    </span>
-                                </div>
-                                
-                                <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
-                            </div>
-
-                            <!-- Blanks Manager -->
-                            <div id="blanks-manager-listening" class="hidden mb-6">
-                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div class="flex items-center">
-                                            <h4 class="text-sm font-medium text-gray-900">Fill in the Blanks Configuration</h4>
-                                            <span id="blank-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">0</span>
-                                        </div>
-                                    </div>
-                                    <div id="blanks-list-listening" class="space-y-2 max-h-64 overflow-y-auto">
-                                        <!-- Dynamically populated -->
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Dropdown Manager -->
-                            <div id="dropdown-manager-listening" class="hidden mb-6">
-                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div class="flex items-center">
-                                            <h4 class="text-sm font-medium text-gray-900">Dropdown Configuration</h4>
-                                            <span id="dropdown-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">0</span>
-                                        </div>
-                                    </div>
-                                    <div id="dropdown-list-listening" class="space-y-3">
-                                        <!-- Dynamically populated -->
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Drag Zones Manager -->
-                            <div id="drag-zones-manager" class="hidden mb-6">
-                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div class="flex items-center">
-                                            <h4 class="text-sm font-medium text-gray-900">Drag Zones Configuration</h4>
-                                            <span id="drag-zone-counter" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">0</span>
-                                        </div>
-                                    </div>
-                                    <div id="drag-zones-list" class="space-y-3 max-h-96 overflow-y-auto">
-                                        <!-- Dynamically populated -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {{-- Include listening question type panels --}}
-                    @include('admin.questions.partials.listening-question-types')
-                    
-                    {{-- Type-specific panels --}}
-                    <div id="type-specific-panels">
-                        {{-- Existing panels will be handled by respective handlers --}}
-                    </div>
-                    
-                    <!-- Audio Management -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-purple-50">
-                            <h3 class="text-base sm:text-lg font-medium text-gray-900">Audio Settings</h3>
-                        </div>
-                        
-                        <div class="p-4 sm:p-6">
-                            <div id="part-audio-status"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <button type="submit" name="action" value="save" class="flex-1 py-2.5 sm:py-3 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 transition-colors text-sm sm:text-base">
-                                Save Question
-                            </button>
-                            <button type="submit" name="action" value="save_and_new" class="flex-1 py-2.5 sm:py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors text-sm sm:text-base">
-                                Save & Add Another
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+    </form>
 
     @include('admin.questions.partials.modals')
     

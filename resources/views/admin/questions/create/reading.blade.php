@@ -1,66 +1,56 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>Add Question - Reading</x-slot>
-    
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-green-600 to-green-700 text-white">
-        <div class="w-full px-4 sm:px-6 lg:px-8">
-            <div class="py-4 sm:py-6">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 class="text-xl sm:text-2xl font-semibold">Add Reading Question</h1>
-                        <p class="text-green-100 text-sm mt-1">{{ $testSet->title }}</p>
-                    </div>
-                    <a href="{{ route('admin.test-sets.show', $testSet) }}" 
-                       class="inline-flex items-center px-3 sm:px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                        </svg>
-                        Back
-                    </a>
-                </div>
+
+    <!-- Page Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">Add Reading Question</h1>
+                <p class="text-sm text-gray-600 mt-1">{{ $testSet->title }}</p>
             </div>
+            <a href="{{ route('admin.test-sets.show', $testSet) }}"
+               class="inline-flex items-center rounded-lg border border-gray-200 p-3 hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-900">Back to Test Set</span>
+            </a>
         </div>
     </div>
 
-    <div class="bg-gray-50 min-h-screen">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-            
-            @include('admin.questions.partials.question-header')
-            
-            <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm">
-                @csrf
-                <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
-                
-                <div class="space-y-4 sm:space-y-6">
-                    <!-- Question Content -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-                            <h3 class="text-base sm:text-lg font-medium text-gray-900">Question Content</h3>
+    @include('admin.questions.partials.question-header')
+
+    <form action="{{ route('admin.questions.store') }}" method="POST" enctype="multipart/form-data" id="questionForm">
+        @csrf
+        <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
+
+        <div class="space-y-6">
+            <!-- Question Content -->
+            <div class="rounded-xl bg-white p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-900 mb-6">Question Content</h3>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div class="space-y-6">
+                        <!-- Instructions -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Instructions / Notes
+                            </label>
+                            <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions') }}</textarea>
                         </div>
-                        
-                        <div class="p-4 sm:p-6">
-                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-                                <div class="space-y-4 sm:space-y-6">
-                                    <!-- Instructions -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Instructions / Notes
-                                        </label>
-                                        <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions') }}</textarea>
-                                    </div>
-                                    
-                                    <!-- Passage Title Field (for passages only) -->
-                                    <div id="passage-title-field" class="hidden">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Passage Title
-                                        </label>
-                                        <input type="text" name="passage_title" id="passage_title" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                               placeholder="e.g., The History of Aviation">
-                                    </div>
-                                    
-                                    <!-- Question Content -->
-                                    <div id="question-content-field">
+
+                        <!-- Passage Title Field (for passages only) -->
+                        <div id="passage-title-field" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Passage Title
+                            </label>
+                            <input type="text" name="passage_title" id="passage_title"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500"
+                                   placeholder="e.g., The History of Aviation">
+                        </div>
+
+                        <!-- Question Content -->
+                        <div id="question-content-field">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
                                             Question <span class="text-red-500">*</span>
                                         </label>
@@ -176,9 +166,8 @@
                         </div>
                     </div>
                 </div>
-            </form>
         </div>
-    </div>
+    </form>
 
     @include('admin.questions.partials.modals')
     
@@ -1781,4 +1770,4 @@
     });
     </script>
     @endpush
-</x-layout>
+</x-admin-layout>

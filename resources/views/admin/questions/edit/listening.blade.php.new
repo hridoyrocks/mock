@@ -24,32 +24,11 @@
 
     <div class="bg-gray-50 min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-
-            <!-- Question Info Card -->
-            <div class="bg-white rounded-lg shadow-sm mb-6 border-l-4 border-purple-500">
-                <div class="p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">Editing Question</h3>
-                            <p class="text-sm text-gray-600 mt-1">
-                                <span class="font-medium text-purple-600">{{ ucfirst(str_replace('_', ' ', $question->question_type)) }}</span>
-                                <span class="mx-2">•</span>
-                                <span>Part {{ $question->part_number }}</span>
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-3xl font-bold text-purple-600">
-                                #{{ $question->order_number }}
-                            </div>
-                            <p class="text-xs text-gray-500">Question Number</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            
+            @include('admin.questions.partials.question-header')
+            
             <form action="{{ route('admin.questions.update', $question) }}" method="POST" enctype="multipart/form-data" id="questionForm">
                 @csrf
-                @method('PUT')
                 <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
                 
                 <div class="space-y-4 sm:space-y-6">
@@ -67,18 +46,18 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Type <span class="text-red-500">*</span></label>
                                     <select id="question_type" name="question_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" required>
                                         <option value="">Select type...</option>
-                                        <option value="fill_blanks" {{ old('question_type', $question->question_type) == 'fill_blanks' ? 'selected' : '' }}>Fill in the Blanks</option>
-                                        <option value="single_choice" {{ old('question_type', $question->question_type) == 'single_choice' ? 'selected' : '' }}>Single Choice (Radio)</option>
-                                        <option value="multiple_choice" {{ old('question_type', $question->question_type) == 'multiple_choice' ? 'selected' : '' }}>Multiple Choice (Checkbox)</option>
-                                        <option value="dropdown_selection" {{ old('question_type', $question->question_type) == 'dropdown_selection' ? 'selected' : '' }}>Dropdown Selection</option>
-                                        <option value="drag_drop" {{ old('question_type', $question->question_type) == 'drag_drop' ? 'selected' : '' }}>Drag & Drop</option>
+                                        <option value="fill_blanks">Fill in the Blanks</option>
+                                        <option value="single_choice">Single Choice (Radio)</option>
+                                        <option value="multiple_choice">Multiple Choice (Checkbox)</option>
+                                        <option value="dropdown_selection">Dropdown Selection</option>
+                                        <option value="drag_drop">Drag & Drop</option>
                                     </select>
                                 </div>
 
                                 <!-- Number -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Number <span class="text-red-500">*</span></label>
-                                    <input type="number" name="order_number" value="{{ old('order_number', $question->order_number) }}" 
+                                    <input type="number" name="order_number" value="{{ old('order_number', $nextQuestionNumber) }}" 
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" min="0" required>
                                 </div>
 
@@ -86,17 +65,17 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Part <span class="text-red-500">*</span></label>
                                     <select name="part_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" required>
-                                        <option value="1" {{ old('part_number', $question->part_number) == 1 ? 'selected' : '' }}>Part 1 (Social)</option>
-                                        <option value="2" {{ old('part_number', $question->part_number) == 2 ? 'selected' : '' }}>Part 2 (Monologue)</option>
-                                        <option value="3" {{ old('part_number', $question->part_number) == 3 ? 'selected' : '' }}>Part 3 (Discussion)</option>
-                                        <option value="4" {{ old('part_number', $question->part_number) == 4 ? 'selected' : '' }}>Part 4 (Lecture)</option>
+                                        <option value="1">Part 1 (Social)</option>
+                                        <option value="2">Part 2 (Monologue)</option>
+                                        <option value="3">Part 3 (Discussion)</option>
+                                        <option value="4">Part 4 (Lecture)</option>
                                     </select>
                                 </div>
 
                                 <!-- Marks -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Marks</label>
-                                    <input type="number" name="marks" value="{{ old('marks', $question->marks) }}" 
+                                    <input type="number" name="marks" value="{{ old('marks', 1) }}" 
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm" min="0" max="40">
                                 </div>
                             </div>
@@ -106,13 +85,13 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Audio Transcript</label>
                                 <textarea name="audio_transcript" rows="4" 
                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
-                                          placeholder="Enter the transcript of the audio...">{{ old('audio_transcript', $question->audio_transcript) }}</textarea>
+                                          placeholder="Enter the transcript of the audio...">{{ old('audio_transcript') }}</textarea>
                             </div>
                             
                             <!-- Instructions -->
                             <div class="mb-6">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
-                                <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions', $question->instructions) }}</textarea>
+                                <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions') }}</textarea>
                             </div>
                             
                             <!-- Question Content -->
@@ -149,9 +128,53 @@
                                     </span>
                                 </div>
                                 
-                                <textarea id="content" name="content" class="tinymce-editor">{{ old('content', $question->content) }}</textarea>
+                                <textarea id="content" name="content" class="tinymce-editor">{{ old('content') }}</textarea>
                             </div>
 
+                            <!-- Blanks Manager -->
+                            <div id="blanks-manager-listening" class="hidden mb-6">
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <h4 class="text-sm font-medium text-gray-900">Fill in the Blanks Configuration</h4>
+                                            <span id="blank-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">0</span>
+                                        </div>
+                                    </div>
+                                    <div id="blanks-list-listening" class="space-y-2 max-h-64 overflow-y-auto">
+                                        <!-- Dynamically populated -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Dropdown Manager -->
+                            <div id="dropdown-manager-listening" class="hidden mb-6">
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <h4 class="text-sm font-medium text-gray-900">Dropdown Configuration</h4>
+                                            <span id="dropdown-counter-listening" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">0</span>
+                                        </div>
+                                    </div>
+                                    <div id="dropdown-list-listening" class="space-y-3">
+                                        <!-- Dynamically populated -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Drag Zones Manager -->
+                            <div id="drag-zones-manager" class="hidden mb-6">
+                                <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <h4 class="text-sm font-medium text-gray-900">Drag Zones Configuration</h4>
+                                            <span id="drag-zone-counter" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">0</span>
+                                        </div>
+                                    </div>
+                                    <div id="drag-zones-list" class="space-y-3 max-h-96 overflow-y-auto">
+                                        <!-- Dynamically populated -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -162,7 +185,18 @@
                     <div id="type-specific-panels">
                         {{-- Existing panels will be handled by respective handlers --}}
                     </div>
-
+                    
+                    <!-- Audio Management -->
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-purple-50">
+                            <h3 class="text-base sm:text-lg font-medium text-gray-900">Audio Settings</h3>
+                        </div>
+                        
+                        <div class="p-4 sm:p-6">
+                            <div id="part-audio-status"></div>
+                        </div>
+                    </div>
+                    
                     <!-- Action Buttons -->
                     <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
                         <div class="flex flex-col sm:flex-row gap-3">
@@ -410,13 +444,13 @@
                 if (typeof tinymce !== 'undefined') {
                     tinymce.triggerSave();
                 }
-
+                
                 if (window.ListeningQuestionTypes) {
                     window.ListeningQuestionTypes.prepareSubmissionData();
                 }
             });
         }
-
+        
         // Part audio check
         function checkPartAudio(partNumber) {
             fetch(`/admin/test-sets/{{ $testSet->id }}/check-part-audio/${partNumber}`)
@@ -461,24 +495,6 @@
                 }
             }
         });
-        
-        // Load existing question data
-        const questionData = {
-            question_type: '{{ $question->question_type }}',
-            section_specific_data: @json($question->section_specific_data ?? []),
-            options: @json($question->options ?? []),
-            order_number: {{ $question->order_number }},
-            part_number: {{ $question->part_number }}
-        };
-        
-        // Wait for ListeningQuestionTypes to be available and load data
-        const loadDataInterval = setInterval(() => {
-            if (window.ListeningQuestionTypes && tinymce.activeEditor) {
-                clearInterval(loadDataInterval);
-                console.log('Loading existing question data...');
-                window.ListeningQuestionTypes.loadExistingData(questionData);
-            }
-        }, 200);
     });
     
     // Global functions

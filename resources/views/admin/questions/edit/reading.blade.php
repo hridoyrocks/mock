@@ -1,17 +1,17 @@
 <x-layout>
-    <x-slot:title>Edit Reading Question</x-slot>
-    
+    <x-slot:title>Edit Question - Reading</x-slot>
+
     <!-- Header -->
     <div class="bg-gradient-to-r from-green-600 to-green-700 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <div class="flex items-center justify-between">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+            <div class="py-4 sm:py-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h1 class="text-2xl font-semibold">📖 Edit Reading Question #{{ $question->order_number }}</h1>
+                        <h1 class="text-xl sm:text-2xl font-semibold">Edit Reading Question</h1>
                         <p class="text-green-100 text-sm mt-1">{{ $testSet->title }}</p>
                     </div>
-                    <a href="{{ route('admin.test-sets.show', $testSet) }}" 
-                       class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
+                    <a href="{{ route('admin.test-sets.show', $testSet) }}"
+                       class="inline-flex items-center px-3 sm:px-4 py-2 bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium rounded-md hover:bg-white/20 transition-all">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
@@ -23,921 +23,1900 @@
     </div>
 
     <div class="bg-gray-50 min-h-screen">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+
+            <!-- Question Info Card -->
+            <div class="bg-white rounded-lg shadow-sm mb-6 border-l-4 border-green-500">
+                <div class="p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Editing Question</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                <span class="font-medium text-green-600">{{ ucfirst(str_replace('_', ' ', $question->question_type)) }}</span>
+                                <span class="mx-2">•</span>
+                                <span>Passage {{ $question->part_number }}</span>
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold text-green-600">
+                                #{{ $question->order_number }}
+                            </div>
+                            <p class="text-xs text-gray-500">Question Number</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <form action="{{ route('admin.questions.update', $question) }}" method="POST" enctype="multipart/form-data" id="questionForm">
                 @csrf
                 @method('PUT')
-                
-                <div class="space-y-6">
+                <input type="hidden" name="test_set_id" value="{{ $testSet->id }}">
+
+                <div class="space-y-4 sm:space-y-6">
                     <!-- Question Content -->
-                    <div class="bg-white rounded-lg shadow-sm">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Question Content</h3>
+                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                        <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                            <h3 class="text-base sm:text-lg font-medium text-gray-900">Question Content</h3>
                         </div>
-                        
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-6">
+
+                        <div class="p-4 sm:p-6">
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+                                <div class="space-y-4 sm:space-y-6">
                                     <!-- Instructions -->
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Instructions / Passage Title
+                                            Instructions / Notes
                                         </label>
                                         <textarea id="instructions" name="instructions" class="tinymce-editor-simple">{{ old('instructions', $question->instructions) }}</textarea>
                                     </div>
-                                    
+
+                                    <!-- Passage Title Field (for passages only) -->
+                                    <div id="passage-title-field" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Passage Title
+                                        </label>
+                                        <input type="text" name="passage_title" id="passage_title" value="{{ old('passage_title', $question->passage_title ?? '') }}"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                               placeholder="e.g., The History of Aviation">
+                                    </div>
+
                                     <!-- Question Content -->
+                                    <div id="question-content-field">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Question <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="mb-3 flex flex-wrap gap-2" id="blank-buttons" style="display: none;">
+                                            <button type="button" onclick="insertBlank()" class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors">
+                                                Insert Blank
+                                            </button>
+                                            <span class="text-xs text-gray-500 flex items-center">
+                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+B</kbd>
+                                            </span>
+                                        </div>
+
+                                        <div class="mb-3 flex flex-wrap gap-2" id="dropdown-buttons" style="display: none;">
+                                            <button type="button" onclick="insertDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors">
+                                                Insert Dropdown
+                                            </button>
+                                            <span class="text-xs text-gray-500 flex items-center">
+                                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded">Alt+D</kbd>
+                                            </span>
+                                        </div>
+
+
+                                        <textarea id="content" name="content" class="tinymce-editor">{{ old('content', $question->content) }}</textarea>
+                                    </div>
+
+                                    <!-- Passage Content (Hidden by default) -->
+                                    <div id="passage-content-field" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Passage Content <span class="text-red-500">*</span>
+                                        </label>
+                                        <textarea id="passage_text" name="passage_text" class="tinymce-editor">{{ old('passage_text', $question->passage_text ?? '') }}</textarea>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4 sm:space-y-6">
+                                    @include('admin.questions.partials.question-settings', [
+                                        'questionTypes' => [
+                                            'passage' => '📄 Reading Passage',
+                                            'single_choice' => 'Single Choice (Radio)',
+                                            'multiple_choice' => 'Multiple Choice (Checkbox)',
+                                            'true_false' => 'True/False/Not Given',
+                                            'yes_no' => 'Yes/No/Not Given',
+                                            'matching_headings' => 'Matching Headings',
+                                            'matching_information' => 'Matching Information',
+                                            'matching_features' => 'Matching Features',
+                                            'sentence_completion' => 'Sentence Completion',
+                                            'summary_completion' => 'Summary Completion',
+                                            'short_answer' => 'Short Answer',
+                                            'fill_blanks' => 'Fill in the Blanks',
+                                            'dropdown_selection' => 'Dropdown Selection'
+                                        ],
+                                        'question' => $question
+                                    ])
+
+                                    <!-- Question Group Field -->
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            {{ $question->question_type === 'passage' ? 'Passage Content' : 'Question' }} <span class="text-red-500">*</span>
+                                            Question Group (Optional)
                                         </label>
-                                        @if($question->question_type === 'fill_blanks')
-                                        <div class="mb-3 flex space-x-2">
-                                            <button type="button" onclick="insertBlank()" class="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700">
-                                                Insert Blank ____
-                                            </button>
-                                            <button type="button" onclick="insertDropdown()" class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">
-                                                Insert Dropdown ▼
-                                            </button>
-                                        </div>
-                                        @endif
-                    
-                    <!-- Enhanced Sentence Completion Manager -->
-                    @if($question->question_type === 'sentence_completion')
-                    @include('admin.questions.partials.sentence-completion-enhanced')
-                    @endif
-                    
-                    <!-- Blank Answers Display (for fill-in-the-blank questions) -->
-                    @if(in_array($question->question_type, ['sentence_completion', 'note_completion', 'summary_completion', 'form_completion']))
-                    <div class="bg-white rounded-lg shadow-sm" id="blank-answers-section">
-                        <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
-                            <h3 class="text-lg font-medium text-gray-900">
-                                <i class="fas fa-fill-drip mr-2"></i>Fill in the Blank Answers
-                            </h3>
-                        </div>
-                        
-                        <div class="p-6">
-                            <div id="blank-answers-container" class="space-y-3">
-                                @php
-                                    // Extract blanks from content
-                                    preg_match_all('/\[____(\d+)____\]/', $question->content, $matches);
-                                    $blankNumbers = array_unique($matches[1]);
-                                    sort($blankNumbers);
-                                @endphp
-                                
-                                @if(count($blankNumbers) > 0)
-                                    @foreach($blankNumbers as $index => $blankNum)
-                                        @php
-                                            $blank = $question->blanks()->where('blank_number', $blankNum)->first();
-                                            $answer = '';
-                                            
-                                            if ($blank) {
-                                                $answer = $blank->correct_answer;
-                                                if ($blank->alternate_answers) {
-                                                    $answer .= '|' . implode('|', $blank->alternate_answers);
-                                                }
-                                            }
-                                        @endphp
-                                        
-                                        <div class="flex items-center gap-3 bg-white p-3 rounded border border-gray-200">
-                                            <label class="text-sm font-medium text-gray-700 w-24">
-                                                Blank {{ $blankNum }}:
-                                            </label>
-                                            <input type="text" 
-                                                   name="blank_answers[]" 
-                                                   value="{{ $answer }}"
-                                                   class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                                                   placeholder="Answer (use | for alternatives: answer1|answer2)"
-                                                   required>
-                                            <span class="text-xs text-gray-500">[____{{ $blankNum }}____]</span>
-                                            
-                                            @if($blank)
-                                                <span class="text-green-600" title="Saved in database">
-                                                    <i class="fas fa-check-circle"></i>
-                                                </span>
-                                            @else
-                                                <span class="text-red-600" title="Not saved">
-                                                    <i class="fas fa-exclamation-circle"></i>
-                                                </span>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                    
-                                    <div class="mt-3 p-3 bg-blue-50 rounded">
-                                        <p class="text-sm text-blue-800">
-                                            <i class="fas fa-info-circle mr-1"></i>
-                                            <strong>Tips:</strong> Use pipe (|) to separate alternative correct answers. 
-                                            Example: <code class="bg-white px-1 rounded">color|colour</code>
+                                        <input type="text" name="question_group" value="{{ old('question_group', $question->question_group ?? '') }}"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                               placeholder="e.g., Questions 1-5">
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            Group related questions together
                                         </p>
                                     </div>
-                                @else
-                                    <p class="text-gray-500 text-sm">
-                                        No blanks found. Use [____1____] format in content to create blanks.
-                                    </p>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-                                        <textarea id="content" name="content" class="tinymce-editor" required>{{ old('content', $question->content) }}</textarea>
-                                        @if($question->question_type === 'passage')
-                                        <input type="hidden" name="passage_text" value="{{ old('passage_text', $question->passage_text ?? $question->content) }}">
-                                        @endif
-                                    </div>
-                                </div>
-                                
-                                <div class="space-y-6">
-                                    <!-- Question Type (Read-only) -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                        <input type="text" value="{{ $question->question_type }}" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" readonly>
-                                        <input type="hidden" name="question_type" value="{{ $question->question_type }}">
-                                    </div>
-                                    
-                                    <!-- Question Number -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Number <span class="text-red-500">*</span></label>
-                                        <input type="number" name="order_number" value="{{ old('order_number', $question->order_number) }}" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" min="0" required>
-                                    </div>
-                                    
-                                    <!-- Part Selection -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Passage <span class="text-red-500">*</span></label>
-                                        <select name="part_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required>
-                                            <option value="1" {{ $question->part_number == 1 ? 'selected' : '' }}>Passage 1</option>
-                                            <option value="2" {{ $question->part_number == 2 ? 'selected' : '' }}>Passage 2</option>
-                                            <option value="3" {{ $question->part_number == 3 ? 'selected' : '' }}>Passage 3</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <!-- Marks -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Marks</label>
-                                        <input type="number" name="marks" value="{{ old('marks', $question->marks) }}" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" min="0" max="40">
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Options Manager (if applicable) -->
-                    @if(in_array($question->question_type, ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching_information', 'matching_features']))
-                    <div class="bg-white rounded-lg shadow-sm">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Answer Options</h3>
-                        </div>
-                        
-                        <div class="p-6">
-                            <div id="options-container" class="space-y-3">
-                                @foreach($question->options as $index => $option)
-                                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                    @if($question->question_type === 'multiple_choice')
-                                        <input type="checkbox" name="correct_options[]" value="{{ $index }}" 
-                                               class="h-4 w-4 text-blue-600" {{ $option->is_correct ? 'checked' : '' }}>
-                                    @else
-                                        <input type="radio" name="correct_option" value="{{ $index }}" 
-                                               class="h-4 w-4 text-blue-600" {{ $option->is_correct ? 'checked' : '' }}>
-                                    @endif
-                                    <span class="font-medium text-gray-700">{{ chr(65 + $index) }}.</span>
-                                    <input type="text" name="options[{{ $index }}][content]" value="{{ $option->content }}" 
-                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" required>
-                                    <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                                @endforeach
-                            </div>
-                            
-                            @if($question->question_type === 'multiple_choice')
-                                @php
-                                    $correctCount = $question->options->where('is_correct', true)->count();
-                                @endphp
-                                @if($correctCount > 0)
-                                    <div class="mt-3 p-3 bg-blue-50 rounded text-sm text-blue-800">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        This question has {{ $correctCount }} correct {{ Str::plural('option', $correctCount) }}. 
-                                        Students will need to select all correct options to get full marks.
-                                    </div>
-                                @endif
-                            @endif
-                            
-                            <button type="button" id="add-option-btn" onclick="addOption()"
-                                    class="mt-4 w-full px-4 py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-md hover:border-gray-400 hover:text-gray-600 transition-all">
-                                + Add Option
+
+                    <!-- Options Manager -->
+                    @include('admin.questions.partials.options-manager')
+
+                    <!-- Enhanced Matching Headings Manager -->
+                    @include('admin.questions.partials.matching-headings-enhanced')
+
+    <!-- Enhanced Sentence Completion Manager -->
+    @include('admin.questions.partials.sentence-completion-enhanced')
+
+                    <!-- Action Buttons -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky bottom-0 z-10 border-t sm:border-t-0 sm:relative">
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button type="submit" name="action" value="save" class="flex-1 py-2.5 sm:py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-base">
+                                Save Question
                             </button>
-                        </div>
-                    </div>
-                    @endif
-                    
-                    @if($question->question_type === 'matching_headings')
-                    <div class="bg-white rounded-lg shadow-sm" id="matching-headings-card">
-                        <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
-                            <h3 class="text-lg font-medium text-gray-900">
-                                <svg class="w-5 h-5 inline mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-                                </svg>
-                                Matching Headings Configuration
-                            </h3>
-                        </div>
-                        
-                        <div class="p-6 space-y-6">
-                            <!-- Step 1: Headings List -->
-                            <div>
-                                <div class="flex items-center justify-between mb-3">
-                                    <h4 class="font-medium text-gray-900">
-                                        <span class="inline-flex items-center justify-center w-6 h-6 bg-blue-600 text-white text-xs rounded-full mr-2">1</span>
-                                        List of Headings
-                                    </h4>
-                                    <span class="text-sm text-gray-500" id="heading-count">{{ $question->options->count() }} headings</span>
-                                </div>
-                                <div id="matching-headings-container" class="space-y-2">
-                                    @foreach($question->options->sortBy('order') as $index => $option)
-                                        <div class="flex items-center gap-2 p-3 bg-white rounded border border-gray-200" data-heading-index="{{ $index }}">
-                                            <span class="font-semibold text-gray-700 min-w-[30px]">{{ chr(65 + $index) }}.</span>
-                                            <input type="text" 
-                                                   data-heading-id="{{ chr(65 + $index) }}"
-                                                   name="options[{{ $index }}][content]" 
-                                                   value="{{ $option->content }}" 
-                                                   class="heading-input flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                   placeholder="Enter heading text..." 
-                                                   onkeyup="MatchingHeadingsManager.updateDropdowns()"
-                                                   required>
-                                            <button type="button" onclick="MatchingHeadingsManager.removeHeading({{ $index }})" 
-                                                    class="text-red-500 hover:text-red-700 p-1">
-                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                <button type="button" id="add-heading-btn" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium">
-                                    + Add Heading
-                                </button>
-                            </div>
-                            
-                            <!-- Step 2: Question Mappings -->
-                            <div class="border-t pt-6">
-                                <div class="flex items-center justify-between mb-3">
-                                    <h4 class="font-medium text-gray-900">
-                                        <span class="inline-flex items-center justify-center w-6 h-6 bg-green-600 text-white text-xs rounded-full mr-2">2</span>
-                                        Question Mappings
-                                    </h4>
-                                    <span class="text-sm text-gray-500" id="question-count">
-                                        {{ isset($question->section_specific_data['mappings']) ? count($question->section_specific_data['mappings']) : 0 }} questions
-                                    </span>
-                                </div>
-                                <div id="question-mappings-container" class="space-y-2">
-                                    @if(isset($question->section_specific_data['mappings']))
-                                        @foreach($question->section_specific_data['mappings'] as $index => $mapping)
-                                            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200" data-question-index="{{ $index }}">
-                                                <span class="font-medium text-gray-700 min-w-[140px]">
-                                                    Question {{ $mapping['question'] }} - Paragraph {{ $mapping['paragraph'] }}:
-                                                </span>
-                                                <select class="question-select flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                                                        data-question-index="{{ $index }}"
-                                                        onchange="MatchingHeadingsManager.updateMappingData()">
-                                                    <option value="">Select correct heading</option>
-                                                    @foreach($question->options as $optionIndex => $option)
-                                                        <option value="{{ chr(65 + $optionIndex) }}" 
-                                                                {{ $mapping['correct'] == chr(65 + $optionIndex) ? 'selected' : '' }}>
-                                                            {{ chr(65 + $optionIndex) }}. {{ $option->content }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                                <button type="button" onclick="MatchingHeadingsManager.removeQuestionMapping({{ $index }})" 
-                                                        class="text-red-500 hover:text-red-700 p-1">
-                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        @endforeach
-                                    @endif
-                                </div>
-                                <button type="button" id="add-question-mapping-btn" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium" {{ $question->options->count() >= 2 ? '' : 'disabled' }}>
-                                    + Add Question
-                                </button>
-                            </div>
-                            
-                            <!-- Hidden input for storing JSON data -->
-                            <input type="hidden" id="matching_headings_data" name="matching_headings_data" 
-                                   value='{{ json_encode($question->section_specific_data ?? ["headings" => [], "mappings" => []]) }}'>
-                            
-                            <!-- Hidden JSON input for submission -->
-                            <input type="hidden" id="matching_headings_json" name="matching_headings_json">
-                        </div>
-                    </div>
-                    @endif
-                    
-                    <!-- Fill in the Blanks Configuration (if applicable) -->
-                    @if($question->question_type === 'fill_blanks' && $question->section_specific_data)
-                    <div class="bg-white rounded-lg shadow-sm">
-                        <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
-                            <h3 class="text-lg font-medium text-gray-900">Fill in the Blanks Configuration</h3>
-                        </div>
-                        
-                        <div class="p-6">
-                            <div id="blanks-manager">
-                                <div id="blanks-list" class="space-y-2">
-                                    @if(isset($question->section_specific_data['blank_answers']))
-                                        @foreach($question->section_specific_data['blank_answers'] as $num => $answer)
-                                        <div class="flex items-center space-x-2 p-2 bg-white rounded border border-gray-200">
-                                            <span class="text-sm font-medium text-gray-700 w-20">Blank {{ $num }}:</span>
-                                            <input type="text" 
-                                                   name="blank_answers[{{ $num }}]" 
-                                                   class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
-                                                   value="{{ $answer }}"
-                                                   required>
-                                        </div>
-                                        @endforeach
-                                    @endif
-                                    
-                                    @if(isset($question->section_specific_data['dropdown_options']))
-                                        @foreach($question->section_specific_data['dropdown_options'] as $num => $options)
-                                        <div class="flex items-center space-x-2 p-2 bg-white rounded border border-gray-200">
-                                            <span class="text-sm font-medium text-gray-700 w-20">Dropdown {{ $num }}:</span>
-                                            <input type="text" 
-                                                   value="{{ $options }}" 
-                                                   name="dropdown_options[{{ $num }}]" 
-                                                   class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
-                                            <select name="dropdown_correct[{{ $num }}]" 
-                                                    class="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
-                                                @foreach(explode(',', $options) as $idx => $opt)
-                                                <option value="{{ $idx }}" {{ ($question->section_specific_data['dropdown_correct'][$num] ?? 0) == $idx ? 'selected' : '' }}>
-                                                    {{ trim($opt) }}
-                                                </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        @endforeach
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-                    
-                    <!-- Actions -->
-                    <div class="bg-white rounded-lg shadow-sm">
-                        <div class="p-6">
-                            <div class="flex flex-col sm:flex-row gap-3">
-                                <button type="submit" class="flex-1 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
-                                    Update Question
-                                </button>
-                                <a href="{{ route('admin.test-sets.show', $testSet) }}" 
-                                   class="flex-1 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 text-center transition-colors">
-                                    Cancel
-                                </a>
-                            </div>
+                            <button type="submit" name="action" value="save_and_new" class="flex-1 py-2.5 sm:py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors text-sm sm:text-base">
+                                Save & Add Another
+                            </button>
+                            <button type="button" onclick="previewQuestion()" class="flex-1 py-2.5 sm:py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition-colors text-sm sm:text-base">
+                                Preview
+                            </button>
                         </div>
                     </div>
                 </div>
             </form>
         </div>
     </div>
-    
+
+    @include('admin.questions.partials.modals')
+
+    @push('styles')
+    <style>
+        /* Matching Headings Styles */
+        #matching-headings-card {
+            transition: all 0.3s ease;
+        }
+
+        #matching-headings-container .heading-input:focus,
+        #question-mappings-container .question-select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .heading-input {
+            transition: all 0.2s ease;
+        }
+
+        .question-select {
+            cursor: pointer;
+        }
+
+        #matching-headings-container > div:hover,
+        #question-mappings-container > div:hover {
+            transform: translateX(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Professional styles */
+        .blank-placeholder {
+            background-color: #FEF3C7;
+            padding: 2px 8px;
+            margin: 0 4px;
+            border-bottom: 2px solid #F59E0B;
+            border-radius: 2px;
+            font-weight: 500;
+            color: #92400E;
+            cursor: not-allowed;
+            user-select: none;
+            display: inline-block;
+            min-width: 60px;
+            transition: background-color 0.2s ease;
+        }
+
+        .blank-placeholder:hover {
+            background-color: #FDE68A;
+        }
+
+        .dropdown-placeholder {
+            background-color: #D1FAE5;
+            border: 1px solid #10B981;
+            padding: 2px 8px;
+            margin: 0 4px;
+            border-radius: 4px;
+            font-weight: 500;
+            color: #064E3B;
+            cursor: not-allowed;
+            user-select: none;
+            display: inline-block;
+            min-width: 80px;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-placeholder:hover {
+            background-color: #A7F3D0;
+        }
+
+        /* Hide order field for passages */
+        .passage-type #order-number-wrapper {
+            display: none !important;
+        }
+
+        /* Professional success indicator */
+        .blank-answer-input {
+            transition: all 0.2s ease;
+        }
+
+        .blank-answer-input.validated {
+            border-color: #10B981;
+            background-color: #F0FDF4;
+        }
+
+        /* Clean notification style */
+        .success-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10B981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .success-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+    @endpush
+
     @push('scripts')
-    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js"></script>
-    <script src="{{ asset('js/admin/question-common.js') }}"></script>
-    <script src="{{ asset('js/admin/sentence-completion-enhanced.js') }}"></script>
+    <!-- TinyMCE CDN -->
+    <script src="https://cdn.tiny.cloud/1/{{ config('services.tinymce.api_key', 'no-api-key') }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+    <!-- Matching Headings Fix -->
+    <script src="{{ asset('js/admin/matching-headings-fix.js') }}" defer></script>
+    <script src="{{ asset('js/admin/matching-headings-enhanced-fix.js') }}" defer></script>
+
+    <!-- Sentence Completion Enhanced - FIXED VERSION -->
+    <script src="{{ asset('js/admin/sentence-completion-enhanced.js') }}" defer></script>
+
     <script>
-        // Store question type for reference
-        const questionType = '{{ $question->question_type }}';
-        
-        // Add option function
-        function addOption(content = '', isCorrect = false) {
-            const container = document.getElementById('options-container');
-            if (!container) return;
-            
-            const index = container.children.length;
-            
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
-            
-            if (questionType === 'multiple_choice') {
-                // Checkbox for multiple choice
-                optionDiv.innerHTML = `
-                    <input type="checkbox" name="correct_options[]" value="${index}" 
-                           class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
-                    <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
-                    <input type="text" name="options[${index}][content]" value="${content}" 
-                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                           placeholder="Enter option text..." required>
-                    <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                `;
-            } else {
-                // Radio button for single choice
-                optionDiv.innerHTML = `
-                    <input type="radio" name="correct_option" value="${index}" 
-                           class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
-                    <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
-                    <input type="text" name="options[${index}][content]" value="${content}" 
-                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                           placeholder="Enter option text..." required>
-                    <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                `;
-            }
-            
-            container.appendChild(optionDiv);
-        }
-        
-        // Remove option function
-        function removeOption(btn) {
-            btn.parentElement.remove();
-            reindexOptions();
-        }
-        
-        // Reindex options after removal
-        function reindexOptions() {
-            const options = document.querySelectorAll('#options-container > div');
-            options.forEach((option, index) => {
-                const radio = option.querySelector('input[type="radio"]');
-                const checkbox = option.querySelector('input[type="checkbox"]');
-                
-                if (radio) radio.value = index;
-                if (checkbox) checkbox.value = index;
-                
-                option.querySelector('input[type="text"]').name = `options[${index}][content]`;
-                option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
-            });
-            
-            updateMarksInfo();
-        }
-        
-        // Update marks info for multiple choice
-        function updateMarksInfo() {
-            if (questionType === 'multiple_choice') {
-                const checkedCount = document.querySelectorAll('#options-container input[type="checkbox"]:checked').length;
-                const marksInput = document.querySelector('input[name="marks"]');
-                if (marksInput && checkedCount > 0) {
-                    marksInput.value = checkedCount;
-                    
-                    // Update info message if exists
-                    let infoDiv = document.querySelector('.marks-info');
-                    if (!infoDiv) {
-                        infoDiv = document.createElement('div');
-                        infoDiv.className = 'marks-info mt-2 text-sm text-blue-600';
-                        marksInput.parentElement.appendChild(infoDiv);
-                    }
-                    infoDiv.textContent = `Auto-calculated: ${checkedCount} marks (based on correct options)`;
+    // Pass question data to JavaScript
+    window.questionData = {
+        question_type: '{{ $question->question_type }}',
+        order_number: {{ $question->order_number }},
+        part_number: {{ $question->part_number }},
+        marks: {{ $question->marks }},
+        section_specific_data: @json($question->section_specific_data ?? []),
+        options: @json($question->options ?? [])
+    };
+
+    // Global variables
+    let contentEditor = null;
+    let passageEditor = null;
+    let instructionEditor = null;
+    let blankCounter = 0;
+    let dropdownCounter = 0;
+
+
+    // Initialize simple TinyMCE for instructions
+    function initSimpleTinyMCE(selector) {
+        const config = {
+            selector: selector,
+            height: 150,
+            menubar: false,
+            plugins: [
+                'lists', 'link', 'charmap', 'code', 'table'
+            ],
+            toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | table tableprops tabledelete | link | removeformat code',
+            table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+            table_appearance_options: true,
+            table_grid: true,
+            table_default_styles: {
+                'width': '100%',
+                'borderCollapse': 'collapse',
+                'border': '1px solid #000000'
+            },
+            table_default_attributes: {
+                'border': '1'
+            },
+            table_class_list: [
+                {title: 'None', value: ''},
+                {title: 'With Border', value: 'table-bordered'}
+            ],
+            extended_valid_elements: 'table[border|cellpadding|cellspacing|width|style|class],td[style|class],th[style|class],tr[style|class]',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+            content_css: '//www.tiny.cloud/css/codepen.min.css',
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+                });
+
+                if (selector.includes('instructions')) {
+                    instructionEditor = editor;
                 }
             }
-        }
-        
-        // Initialize TinyMCE
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add event listeners for checkbox changes (multiple choice)
-            if (questionType === 'multiple_choice') {
-                document.addEventListener('change', function(e) {
-                    if (e.target.type === 'checkbox' && e.target.name === 'correct_options[]') {
-                        updateMarksInfo();
+        };
+
+        tinymce.init(config);
+    }
+
+    // Initialize TinyMCE
+    function initTinyMCE(selector, fillBlanksMode = false) {
+        const config = {
+            selector: selector,
+            height: selector.includes('passage') ? 500 : 400,
+            menubar: false,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+            ],
+            toolbar: fillBlanksMode ?
+                'undo redo | bold italic underline | fontsize | alignleft aligncenter alignright | bullist numlist | table tableprops tabledelete | removeformat code' :
+                'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | table tableprops tabledelete | link image | removeformat code',
+            table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+            table_appearance_options: true,
+            table_grid: true,
+            table_default_styles: {
+                'width': '100%',
+                'borderCollapse': 'collapse',
+                'border': '1px solid #000000'
+            },
+            table_default_attributes: {
+                'border': '1'
+            },
+            table_class_list: [
+                {title: 'None', value: ''},
+                {title: 'With Border', value: 'table-bordered'}
+            ],
+            extended_valid_elements: 'table[border|cellpadding|cellspacing|width|style|class],td[style|class],th[style|class],tr[style|class]',
+            font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+            images_upload_url: '{{ route("admin.questions.upload.image") }}',
+            images_upload_base_path: '/',
+            images_upload_credentials: true,
+            automatic_uploads: true,
+            images_upload_handler: function (blobInfo, success, failure, progress) {
+                return new Promise(function(resolve, reject) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.withCredentials = false;
+                    xhr.open('POST', '{{ route("admin.questions.upload.image") }}');
+
+                    // Set the X-CSRF-TOKEN header
+                    xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+
+                    xhr.upload.onprogress = function (e) {
+                        progress(e.loaded / e.total * 100);
+                    };
+
+                    xhr.onload = function() {
+                        if (xhr.status < 200 || xhr.status >= 300) {
+                            reject('HTTP Error: ' + xhr.status);
+                            return;
+                        }
+
+                        try {
+                            const json = JSON.parse(xhr.responseText);
+
+                            if (!json || !json.success) {
+                                reject('Upload failed: ' + (json.message || 'Unknown error'));
+                                return;
+                            }
+
+                            // Return the URL directly
+                            resolve(json.url);
+                        } catch (e) {
+                            reject('Invalid JSON response: ' + xhr.responseText);
+                        }
+                    };
+
+                    xhr.onerror = function () {
+                        reject('Image upload failed due to a network error.');
+                    };
+
+                    const formData = new FormData();
+                    formData.append('image', blobInfo.blob(), blobInfo.filename());
+
+                    xhr.send(formData);
+                });
+            },
+            setup: function(editor) {
+                editor.on('change', function() {
+                    editor.save();
+
+                    // Check for fill blanks or dropdown selection
+                    const questionType = document.getElementById('question_type')?.value;
+                    if (fillBlanksMode || questionType === 'dropdown_selection') {
+                        updateBlanks();
                     }
                 });
-                
-                // Initial marks update
-                updateMarksInfo();
+
+                // Store editor reference
+                if (selector.includes('content')) {
+                    contentEditor = editor;
+                } else if (selector.includes('passage')) {
+                    passageEditor = editor;
+                }
             }
-            
-            // Initialize TinyMCE for instructions (simple editor)
-            tinymce.init({
-                selector: '.tinymce-editor-simple',
-                height: 150,
-                menubar: false,
-                plugins: [
-                    'lists', 'link', 'charmap', 'code'
-                ],
-                toolbar: 'bold italic underline | fontsize | bullist numlist | alignleft aligncenter alignright | link | removeformat code',
-                font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
-                content_css: '//www.tiny.cloud/css/codepen.min.css',
-                setup: function(editor) {
-                    editor.on('change', function() {
-                        editor.save();
-                    });
-                }
+        };
+
+        tinymce.init(config);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize TinyMCE for content
+        const questionType = document.getElementById('question_type');
+        const isFillBlanks = questionType && questionType.value === 'fill_blanks';
+        const isDropdownSelection = questionType && questionType.value === 'dropdown_selection';
+
+        initTinyMCE('#content', isFillBlanks || isDropdownSelection);
+
+        // Initialize simple editor for instructions
+        initSimpleTinyMCE('#instructions');
+
+        // Setup question type handler
+        if (questionType) {
+            questionType.addEventListener('change', handleReadingQuestionTypeChange);
+            if (questionType.value) {
+                handleReadingQuestionTypeChange.call(questionType);
+            }
+        }
+
+        // Add option button handler
+        const addOptionBtn = document.getElementById('add-option-btn');
+        if (addOptionBtn) {
+            addOptionBtn.addEventListener('click', function() {
+                addOption();
             });
-            
-            // Initialize TinyMCE for main content
-            tinymce.init({
-                selector: '.tinymce-editor',
-                height: 350,
-                menubar: false,
-                plugins: [
-                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
-                    'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                    'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                ],
-                toolbar: 'undo redo | formatselect | fontsize | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | removeformat code',
-                font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
-                content_css: '//www.tiny.cloud/css/codepen.min.css',
-                setup: function(editor) {
-                    editor.on('change', function() {
-                        editor.save();
-                    });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.altKey) {
+                const questionType = document.getElementById('question_type')?.value;
+
+                if ((questionType === 'fill_blanks' || questionType === 'sentence_completion') && (e.key === 'b' || e.key === 'B')) {
+                    e.preventDefault();
+                    insertBlank();
                 }
-            });
-            
-            @if($question->question_type === 'fill_blanks')
-            // Re-scan blanks after TinyMCE loads
-            setTimeout(function() {
-                if (typeof updateBlanks === 'function') {
-                    updateBlanks();
+
+                if (questionType === 'dropdown_selection' && (e.key === 'd' || e.key === 'D')) {
+                    e.preventDefault();
+                    insertDropdown();
                 }
-            }, 1000);
-            @endif
-            
-            @if($question->question_type === 'matching_headings')
-            // Initialize matching headings manager
-            setTimeout(function() {
-                if (window.MatchingHeadingsManager) {
-                    window.MatchingHeadingsManager.init();
+
+                if (questionType === 'dropdown_selection' && (e.key === 'b' || e.key === 'B')) {
+                    e.preventDefault();
+                    insertDropdown(); // For dropdown_selection, Alt+B also inserts dropdown
                 }
-            }, 100);
-            
-            // Add form submission handler for matching headings
-            const form = document.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    if ('{{ $question->question_type }}' === 'matching_headings') {
-                        // Ensure the JSON data is updated
-                        if (window.MatchingHeadingsManager) {
-                            window.MatchingHeadingsManager.updateMappingData();
-                            
-                            // Double-check data is in form
-                            const jsonInput = document.getElementById('matching_headings_json');
-                            const dataInput = document.getElementById('matching_headings_data');
-                            
-                            if (jsonInput && dataInput) {
-                                const data = JSON.parse(dataInput.value || '{}');
-                                console.log('Submitting matching headings data:', data);
-                                
-                                // Validate before submission
-                                if (!data.headings || data.headings.length < 2) {
-                                    e.preventDefault();
-                                    alert('Please add at least 2 headings');
-                                    return false;
-                                }
+            }
+        });
+
+        // Form submission handler
+        const form = document.getElementById('questionForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                const questionType = document.getElementById('question_type').value;
+
+                if (!questionType) {
+                    e.preventDefault();
+                    alert('Please select a question type');
+                    return false;
+                }
+
+                // Save TinyMCE content
+                if (contentEditor) {
+                    contentEditor.save();
+                }
+
+                if (passageEditor) {
+                    passageEditor.save();
+                }
+
+                if (instructionEditor) {
+                    instructionEditor.save();
+                }
+
+                if (questionType === 'passage') {
+                    const passageContent = document.getElementById('passage_text').value;
+                    if (!passageContent.trim()) {
+                        e.preventDefault();
+                        alert('Please enter passage content');
+                        return false;
+                    }
+                    document.getElementById('content').value = passageContent;
+                }
+
+                // Handle matching headings data
+                if (questionType === 'matching_headings') {
+                    const dataInput = document.getElementById('matching_headings_data');
+                    if (dataInput) {
+                        const data = JSON.parse(dataInput.value || '{}');
+
+                        // Validate headings
+                        if (!data.headings || data.headings.length < 2) {
+                            e.preventDefault();
+                            alert('Please add at least 2 headings');
+                            return false;
+                        }
+
+                        // Validate mappings
+                        if (!data.mappings || data.mappings.length === 0) {
+                            e.preventDefault();
+                            alert('Please map all questions to headings');
+                            return false;
+                        }
+
+                        // Check if all headings have text
+                        const emptyHeadings = data.headings.filter(h => !h.text.trim());
+                        if (emptyHeadings.length > 0) {
+                            e.preventDefault();
+                            alert('Please fill in all heading texts');
+                            return false;
+                        }
+
+                        // Check if all mappings have correct answers
+                        const incompleteMappings = data.mappings.filter(m => !m.correct);
+                        if (incompleteMappings.length > 0) {
+                            e.preventDefault();
+                            alert('Please select correct heading for all questions');
+                            return false;
+                        }
+
+                        // Store headings in options format for backward compatibility
+                        data.headings.forEach((heading, index) => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = `options[${index}][content]`;
+                            input.value = heading.text;
+                            form.appendChild(input);
+                        });
+
+                        // Store the complete JSON data
+                        const jsonInput = document.createElement('input');
+                        jsonInput.type = 'hidden';
+                        jsonInput.name = 'matching_headings_json';
+                        jsonInput.value = JSON.stringify(data);
+                        form.appendChild(jsonInput);
+
+                        // Add a dummy correct_option to satisfy validation (not used for matching_headings)
+                        const dummyCorrectOption = document.createElement('input');
+                        dummyCorrectOption.type = 'hidden';
+                        dummyCorrectOption.name = 'correct_option';
+                        dummyCorrectOption.value = '0';
+                        form.appendChild(dummyCorrectOption);
+
+                        // Set marks based on number of questions
+                        const marksInput = document.querySelector('input[name="marks"]');
+                        if (marksInput) {
+                            marksInput.value = data.mappings.length;
+                        }
+
+                        // IMPORTANT: Set content field if empty
+                        const contentField = document.getElementById('content');
+                        if (contentField) {
+                            const startNum = parseInt(document.getElementById('mh_start_number')?.value) || 1;
+                            const count = data.mappings.length || 5;
+                            const endNum = startNum + count - 1;
+                            const defaultContent = `Questions ${startNum}-${endNum}\n\nChoose the correct heading for each paragraph from the list of headings below.`;
+
+                            // Set content in TinyMCE if exists
+                            if (contentEditor) {
+                                contentEditor.setContent(defaultContent);
+                                contentEditor.save();
+                            } else {
+                                contentField.value = defaultContent;
                             }
                         }
-                    }
+                        }
+                        }
+
+        // Handle sentence completion data
+        if (questionType === 'sentence_completion') {
+            const dataInput = document.getElementById('sentence_completion_data');
+            if (dataInput) {
+                const data = JSON.parse(dataInput.value || '{}');
+
+                // Validate options
+                if (!data.options || data.options.length < 2) {
+                    e.preventDefault();
+                    alert('Please add at least 2 answer options');
+                    return false;
+                }
+
+                // Validate sentences
+                if (!data.sentences || data.sentences.length === 0) {
+                    e.preventDefault();
+                    alert('Please add at least one sentence');
+                    return false;
+                }
+
+                // Check if all sentences have correct answers
+                const incompleteSentences = data.sentences.filter(s => !s.correctAnswer);
+                if (incompleteSentences.length > 0) {
+                    e.preventDefault();
+                    alert('Please select correct answer for all sentences');
+                    return false;
+                }
+
+                // Generate question content
+                const content = SentenceCompletionManager.generateQuestionContent();
+
+                // Set content field
+                if (contentEditor) {
+                    contentEditor.setContent(content);
+                    contentEditor.save();
+                } else {
+                    document.getElementById('content').value = content;
+                }
+
+                // Store options in the format expected by backend
+                data.options.forEach((option, index) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = `options[${index}][content]`;
+                    input.value = option.text;
+                    form.appendChild(input);
                 });
+
+                // Store correct answers as blank_answers
+                data.sentences.forEach((sentence, index) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = `blank_answers[]`;
+                    input.value = sentence.correctAnswer;
+                    form.appendChild(input);
+                });
+
+                // Set marks based on number of sentences
+                const marksInput = document.querySelector('input[name="marks"]');
+                if (marksInput) {
+                    marksInput.value = data.sentences.length;
+                }
+
+                // Add dummy correct_option
+                const dummyCorrectOption = document.createElement('input');
+                dummyCorrectOption.type = 'hidden';
+                dummyCorrectOption.name = 'correct_option';
+                dummyCorrectOption.value = '0';
+                form.appendChild(dummyCorrectOption);
             }
-            @endif
-            
-            @if($question->question_type === 'sentence_completion')
-            // Initialize sentence completion manager
-            setTimeout(function() {
-                if (window.SentenceCompletionManager) {
-                    // Load existing data
-                    const existingData = @json($question->section_specific_data['sentence_completion'] ?? null);
-                    if (existingData) {
-                        window.SentenceCompletionManager.init();
-                        
-                        // Clear default data
-                        document.getElementById('answer-options-container').innerHTML = '';
-                        document.getElementById('sentences-container').innerHTML = '';
-                        window.SentenceCompletionManager.optionCount = 0;
-                        window.SentenceCompletionManager.sentenceCount = 0;
-                        
-                        // Load options
-                        if (existingData.options) {
-                            existingData.options.forEach(option => {
-                                window.SentenceCompletionManager.addOption(option.text);
-                            });
+        }
+
+                return true;
+            });
+        }
+    });
+
+    // Handle question type changes
+    function handleReadingQuestionTypeChange() {
+        const type = this.value;
+        const questionContentField = document.getElementById('question-content-field');
+        const passageContentField = document.getElementById('passage-content-field');
+        const passageTitleField = document.getElementById('passage-title-field');
+        const blanksManager = document.getElementById('blanks-manager');
+        const blankButtons = document.getElementById('blank-buttons');
+        const dropdownButtons = document.getElementById('dropdown-buttons');
+
+        const optionsCard = document.getElementById('options-card');
+        const matchingHeadingsCard = document.getElementById('matching-headings-card');
+        const sentenceCompletionCard = document.getElementById('sentence-completion-card');
+
+        // Find order number wrapper correctly
+        const orderNumberInput = document.querySelector('input[name="order_number"]');
+        const orderNumberWrapper = orderNumberInput ? orderNumberInput.closest('div') : null;
+
+        // Reset displays
+        questionContentField?.classList.remove('hidden');
+        passageContentField?.classList.add('hidden');
+        passageTitleField?.classList.add('hidden');
+        blanksManager?.classList.add('hidden');
+        if (blankButtons) blankButtons.style.display = 'none';
+        if (dropdownButtons) dropdownButtons.style.display = 'none';
+
+        if (orderNumberWrapper) orderNumberWrapper.style.display = 'block';
+        if (matchingHeadingsCard) matchingHeadingsCard.style.display = 'none';
+        if (sentenceCompletionCard) sentenceCompletionCard.style.display = 'none';
+
+        // Add/remove passage class to form
+        const form = document.getElementById('questionForm');
+        if (type === 'passage') {
+            form?.classList.add('passage-type');
+        } else {
+            form?.classList.remove('passage-type');
+        }
+
+        // Reset counters when changing type
+        blankCounter = 0;
+        dropdownCounter = 0;
+
+        // Define option types that need the options card
+        const optionTypes = ['single_choice', 'multiple_choice', 'true_false', 'yes_no', 'matching',
+            'matching_information', 'matching_features'];
+
+        // Handle options card visibility
+        if (optionsCard) {
+            if (optionTypes.includes(type)) {
+                optionsCard.classList.remove('hidden');
+                setupDefaultOptions(type);
+            } else {
+                optionsCard.classList.add('hidden');
+            }
+        }
+
+        // Special handling for matching_headings
+        if (type === 'matching_headings') {
+
+            if (optionsCard) {
+                optionsCard.classList.add('hidden');
+            }
+
+            // Hide order number, marks and question content fields for matching headings
+            const orderNumberWrapper = document.querySelector('input[name="order_number"]')?.closest('div');
+            const marksWrapper = document.querySelector('input[name="marks"]')?.closest('div');
+
+            if (orderNumberWrapper) {
+                orderNumberWrapper.style.display = 'none';
+            }
+            if (marksWrapper) {
+                marksWrapper.style.display = 'none';
+            }
+            if (questionContentField) {
+                questionContentField.style.display = 'none';
+            }
+
+            if (matchingHeadingsCard) {
+                matchingHeadingsCard.style.display = 'block';
+
+                // Small delay to ensure DOM is ready
+                setTimeout(() => {
+                    // Initialize matching headings manager
+                    if (window.MatchingHeadingsEnhanced) {
+                        window.MatchingHeadingsEnhanced.init();
+                    } else if (window.MatchingHeadingsManager) {
+
+                        // Reset before init to prevent duplicates
+                        window.MatchingHeadingsManager.headingCount = 0;
+                        window.MatchingHeadingsManager.questionCount = 0;
+                        window.MatchingHeadingsManager.headings = [];
+                        window.MatchingHeadingsManager.mappings = [];
+
+                        // Clear containers
+                        const headingsContainer = document.getElementById('matching-headings-container');
+                        const mappingsContainer = document.getElementById('question-mappings-container');
+                        if (headingsContainer) headingsContainer.innerHTML = '';
+                        if (mappingsContainer) mappingsContainer.innerHTML = '';
+
+                        window.MatchingHeadingsManager.init();
+
+                        // Hide fallback button if shown
+                        const fallbackBtn = document.getElementById('matching-headings-init-fallback');
+                        if (fallbackBtn) {
+                            fallbackBtn.style.display = 'none';
                         }
-                        
-                        // Load sentences
-                        if (existingData.sentences) {
-                            existingData.sentences.forEach(sentence => {
-                                window.SentenceCompletionManager.addSentence(sentence.text, sentence.correctAnswer);
-                            });
-                        }
-                        
-                        // Set start number
-                        const startNumInput = document.getElementById('sc_start_number');
-                        if (startNumInput && existingData.startNumber) {
-                            startNumInput.value = existingData.startNumber;
-                        }
-                        
-                        window.SentenceCompletionManager.updatePreview();
                     } else {
+                        console.error('No matching headings manager found in window!');
+
+                        // Show fallback button
+                        const fallbackBtn = document.getElementById('matching-headings-init-fallback');
+                        if (fallbackBtn) {
+                            fallbackBtn.style.display = 'block';
+                        }
+                    }
+                }, 100);
+            } else {
+                console.error('Matching headings card element not found!');
+            }
+        } else {
+            // Show order number and marks fields for other question types
+            const orderNumberWrapper = document.querySelector('input[name="order_number"]')?.closest('div');
+            const marksWrapper = document.querySelector('input[name="marks"]')?.closest('div');
+
+            if (orderNumberWrapper && type !== 'passage') {
+                orderNumberWrapper.style.display = 'block';
+            }
+            if (marksWrapper) {
+                marksWrapper.style.display = 'block';
+            }
+            if (questionContentField && type !== 'passage') {
+                questionContentField.style.display = 'block';
+            }
+        }
+
+        if (type === 'passage') {
+            // Hide order number for passages
+            if (orderNumberWrapper) {
+                orderNumberWrapper.style.display = 'none';
+            }
+
+            questionContentField?.classList.add('hidden');
+            passageContentField?.classList.remove('hidden');
+            passageTitleField?.classList.remove('hidden');
+
+            // Initialize passage editor with TinyMCE
+            if (!passageEditor) {
+                setTimeout(() => {
+                    initTinyMCE('#passage_text', false);
+                }, 100);
+            }
+
+            // Set defaults for passage
+            const orderInput = document.querySelector('input[name="order_number"]');
+            const marksInput = document.querySelector('input[name="marks"]');
+            if (orderInput) orderInput.value = '0';
+            if (marksInput) marksInput.value = '0';
+
+        } else if (type === 'dropdown_selection') {
+            // Show dropdown buttons and manager
+            if (dropdownButtons) dropdownButtons.style.display = 'flex';
+            blanksManager?.classList.remove('hidden');
+
+            // Initial update to show any existing dropdowns
+            setTimeout(updateBlanks, 500);
+        } else if (type === 'fill_blanks') {
+            // Show blank buttons and manager
+            if (blankButtons) blankButtons.style.display = 'flex';
+            blanksManager?.classList.remove('hidden');
+
+            // Re-initialize editor for fill blanks mode
+            if (contentEditor) {
+                contentEditor.destroy();
+                setTimeout(() => {
+                    initTinyMCE('#content', true);
+                }, 100);
+            }
+
+            // Initial update
+            setTimeout(updateBlanks, 500);
+        } else if (type === 'sentence_completion') {
+
+            // Hide regular options card
+            if (optionsCard) {
+                optionsCard.classList.add('hidden');
+            }
+
+            // Hide order number, marks and question content fields
+            const orderNumberWrapper = document.querySelector('input[name="order_number"]')?.closest('div');
+            const marksWrapper = document.querySelector('input[name="marks"]')?.closest('div');
+
+            if (orderNumberWrapper) {
+                orderNumberWrapper.style.display = 'none';
+            }
+            if (marksWrapper) {
+                marksWrapper.style.display = 'none';
+            }
+            if (questionContentField) {
+                questionContentField.style.display = 'none';
+            }
+
+            // Set default instruction for sentence completion if empty
+            if (instructionEditor) {
+                const currentContent = instructionEditor.getContent();
+                if (!currentContent || currentContent.trim() === '') {
+                    instructionEditor.setContent('Complete the sentences below. Choose NO MORE THAN ONE WORD from the list for each answer.');
+                }
+            } else {
+                const instructionField = document.getElementById('instructions');
+                if (instructionField && (!instructionField.value || instructionField.value.trim() === '')) {
+                    instructionField.value = 'Complete the sentences below. Choose NO MORE THAN ONE WORD from the list for each answer.';
+                }
+            }
+
+            // Show sentence completion card
+            if (sentenceCompletionCard) {
+                sentenceCompletionCard.style.display = 'block';
+
+                // Initialize sentence completion manager
+                setTimeout(() => {
+                    if (window.SentenceCompletionManager) {
                         window.SentenceCompletionManager.init();
+                    } else {
+                        console.error('SentenceCompletionManager not found!');
                     }
-                }
-            }, 100);
-            @endif
+                }, 100);
+            }
+        } else {
+            // Re-initialize normal editor if coming from fill blanks
+            if (contentEditor && blankButtons && blankButtons.style.display === 'flex') {
+                const content = contentEditor.getContent();
+                contentEditor.destroy();
+                setTimeout(() => {
+                    initTinyMCE('#content', false);
+                    if (contentEditor) {
+                        contentEditor.setContent(content);
+                    }
+                }, 100);
+            }
+        }
+    }
+
+    // Setup default options based on question type
+    function setupDefaultOptions(type) {
+        const container = document.getElementById('options-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (type === 'true_false') {
+            addOption('TRUE', true);
+            addOption('FALSE', false);
+            addOption('NOT GIVEN', false);
+            const addBtn = document.getElementById('add-option-btn');
+            if (addBtn) addBtn.style.display = 'none';
+        } else if (type === 'yes_no') {
+            addOption('YES', true);
+            addOption('NO', false);
+            addOption('NOT GIVEN', false);
+            const addBtn = document.getElementById('add-option-btn');
+            if (addBtn) addBtn.style.display = 'none';
+        } else if (type === 'sentence_completion') {
+            // Add default options for sentence completion
+            // These will be the choices available in dropdowns
+            for (let i = 0; i < 8; i++) {
+                addOption('', false);
+            }
+            const addBtn = document.getElementById('add-option-btn');
+            if (addBtn) {
+                addBtn.style.display = 'inline-block';
+                addBtn.textContent = 'Add Option';
+            }
+        } else {
+            // Default to 4 empty options
+            for (let i = 0; i < 4; i++) {
+                addOption('', i === 0);
+            }
+            const addBtn = document.getElementById('add-option-btn');
+            if (addBtn) addBtn.style.display = 'inline-block';
+        }
+    }
+
+    // Add option function
+    function addOption(content = '', isCorrect = false) {
+        const container = document.getElementById('options-container');
+        if (!container) return;
+
+        const index = container.children.length;
+        const questionType = document.getElementById('question_type').value;
+
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'option-item flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+
+        if (questionType === 'multiple_choice') {
+            // Checkbox for multiple choice
+            optionDiv.innerHTML = `
+                <input type="checkbox" name="correct_options[]" value="${index}"
+                       class="h-4 w-4 text-blue-600">
+                <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
+                <input type="text" name="options[${index}][content]" value="${content}"
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                       placeholder="Enter option text..." required>
+                <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+        } else {
+            // Radio button for single choice
+            optionDiv.innerHTML = `
+                <input type="radio" name="correct_option" value="${index}"
+                       class="h-4 w-4 text-blue-600" ${isCorrect ? 'checked' : ''}>
+                <span class="font-medium text-gray-700">${String.fromCharCode(65 + index)}.</span>
+                <input type="text" name="options[${index}][content]" value="${content}"
+                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                       placeholder="Enter option text..." required>
+                <button type="button" onclick="removeOption(this)" class="text-red-500 hover:text-red-700">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+        }
+
+        container.appendChild(optionDiv);
+    }
+
+    // Remove option
+    window.removeOption = function(btn) {
+        btn.parentElement.remove();
+        reindexOptions();
+    };
+
+    // Reindex options after removal
+    function reindexOptions() {
+        const options = document.querySelectorAll('#options-container > div');
+        options.forEach((option, index) => {
+            const radio = option.querySelector('input[type="radio"]');
+            const checkbox = option.querySelector('input[type="checkbox"]');
+
+            if (radio) radio.value = index;
+            if (checkbox) checkbox.value = index;
+
+            option.querySelector('input[type="text"]').name = `options[${index}][content]`;
+            option.querySelector('span.font-medium').textContent = String.fromCharCode(65 + index) + '.';
         });
-        
-        @if($question->question_type === 'fill_blanks')
-        // Basic fill blanks functionality
-        let blankCounter = {{ $question->blank_count ?? 0 }};
-        let dropdownCounter = 0;
-        
-        window.insertBlank = function() {
-            const editor = tinymce.get('content');
-            if (editor) {
-                blankCounter++;
-                const blankHtml = `<span class="blank-placeholder" data-blank="${blankCounter}" contenteditable="false">[____${blankCounter}____]</span>&nbsp;`;
-                editor.insertContent(blankHtml);
-            }
-        };
-        
-        window.insertDropdown = function() {
-            const editor = tinymce.get('content');
-            if (editor) {
-                const options = prompt('Enter dropdown options separated by comma:');
-                if (options) {
-                    dropdownCounter++;
-                    const dropdownHtml = `<span class="dropdown-placeholder" data-dropdown="${dropdownCounter}" data-options="${options}" contenteditable="false">[DROPDOWN_${dropdownCounter}]</span>&nbsp;`;
-                    editor.insertContent(dropdownHtml);
-                }
-            }
-        };
-        @endif
-        
-        // Enhanced Matching Headings Manager for Edit Page
-        const MatchingHeadingsManager = {
-            headingCount: {{ $question->question_type === 'matching_headings' ? $question->options->count() : 0 }},
-            questionCount: {{ $question->question_type === 'matching_headings' && isset($question->section_specific_data['mappings']) ? count($question->section_specific_data['mappings']) : 0 }},
-            headings: [],
-            mappings: [],
-            
-            init() {
-                const addHeadingBtn = document.getElementById('add-heading-btn');
-                const addQuestionBtn = document.getElementById('add-question-mapping-btn');
-                
-                if (addHeadingBtn) {
-                    addHeadingBtn.addEventListener('click', () => this.addHeading());
-                }
-                
-                if (addQuestionBtn) {
-                    addQuestionBtn.addEventListener('click', () => this.addQuestionMapping());
-                }
-                
-                // Load existing data
-                const dataInput = document.getElementById('matching_headings_data');
-                if (dataInput && dataInput.value) {
-                    try {
-                        const data = JSON.parse(dataInput.value);
-                        this.headings = data.headings || [];
-                        this.mappings = data.mappings || [];
-                    } catch (e) {
-                        console.error('Error parsing existing data:', e);
-                    }
-                }
-                
-                // Update initial state
-                this.updateMappingData();
-            },
-            
-            addHeading(content = '') {
-                const container = document.getElementById('matching-headings-container');
-                if (!container) return;
-                
-                const index = this.headingCount;
-                const letter = String.fromCharCode(65 + index);
-                
-                const headingDiv = document.createElement('div');
-                headingDiv.className = 'flex items-center gap-2 p-3 bg-white rounded border border-gray-200';
-                headingDiv.setAttribute('data-heading-index', index);
-                headingDiv.innerHTML = `
-                    <span class="font-semibold text-gray-700 min-w-[30px]">${letter}.</span>
-                    <input type="text" 
-                           data-heading-id="${letter}"
-                           name="options[${index}][content]" 
-                           value="${content}" 
-                           class="heading-input flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                           placeholder="Enter heading text..." 
-                           onkeyup="MatchingHeadingsManager.updateDropdowns()"
+    }
+
+    // Insert blank function
+    window.insertBlank = function() {
+        if (!contentEditor) {
+            return;
+        }
+
+        blankCounter++;
+        const blankText = `[____${blankCounter}____]`;
+
+        contentEditor.insertContent(blankText);
+
+        showNotification(`Blank ${blankCounter} added`, 'success');
+
+        setTimeout(updateBlanks, 100);
+    };
+
+    // Insert dropdown function for dropdown_selection question type
+    window.insertDropdown = function() {
+        if (!contentEditor) {
+            console.error('No content editor!');
+            return;
+        }
+
+        dropdownCounter++;
+        const dropdownText = `[DROPDOWN_${dropdownCounter}]`;
+
+        contentEditor.insertContent(dropdownText);
+
+        showNotification(`Dropdown ${dropdownCounter} added`, 'success');
+
+        setTimeout(updateBlanks, 100);
+    };
+
+    // Professional notification function
+    function showNotification(message, type = 'info') {
+        const existing = document.querySelector('.success-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.className = 'success-notification';
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+    }
+
+    // Store blank answers
+    const blankAnswersStore = {};
+    const dropdownStore = {
+        options: {},
+        correct: {}
+    };
+
+    // Update blanks display
+    window.updateBlanks = function() {
+        if (!contentEditor) {
+            return;
+        }
+
+        saveCurrentBlankValues();
+
+        const content = contentEditor.getContent({ format: 'text' });
+
+        // Find all blanks, dropdowns, and heading dropdowns using regex
+        const blankMatches = content.match(/\[____\d+____\]/g) || [];
+        const dropdownMatches = content.match(/\[DROPDOWN_\d+\]/g) || [];
+
+        const blanksManager = document.getElementById('blanks-manager');
+        const blanksList = document.getElementById('blanks-list');
+
+        if (!blanksManager || !blanksList) return;
+
+        if (blankMatches.length > 0 || dropdownMatches.length > 0) {
+            blanksManager.classList.remove('hidden');
+            blanksList.innerHTML = '';
+
+            // Process blanks
+            blankMatches.forEach((match) => {
+                const num = match.match(/\d+/)[0];
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
+
+                const storedValue = blankAnswersStore[num] || '';
+
+                itemDiv.innerHTML = `
+                    <span class="text-sm font-medium text-gray-700 min-w-[80px]">Blank ${num}:</span>
+                    <input type="text"
+                           id="blank_answer_${num}"
+                           name="blank_answers[]"
+                           class="blank-answer-input flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter correct answer"
+                           value="${storedValue}"
+                           data-blank-num="${num}"
                            required>
-                    <button type="button" onclick="MatchingHeadingsManager.removeHeading(${index})" 
-                            class="text-red-500 hover:text-red-700 p-1">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button type="button" onclick="removeBlank(${num})" class="text-red-500 hover:text-red-700 p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 `;
-                
-                container.appendChild(headingDiv);
-                this.headingCount++;
-                
-                // Update counter
-                document.getElementById('heading-count').textContent = `${this.headingCount} headings`;
-                
-                // Enable question mapping button
-                const addQuestionBtn = document.getElementById('add-question-mapping-btn');
-                if (addQuestionBtn && this.headingCount >= 2) {
-                    addQuestionBtn.disabled = false;
-                }
-                
-                // Update all dropdowns
-                this.updateDropdowns();
-            },
-            
-            removeHeading(index) {
-                if (this.headingCount <= 2) {
-                    alert('You must have at least 2 headings.');
-                    return;
-                }
-                
-                const container = document.getElementById('matching-headings-container');
-                const headingDiv = container.querySelector(`[data-heading-index="${index}"]`);
-                if (headingDiv) {
-                    headingDiv.remove();
-                    this.reindexHeadings();
-                }
-            },
-            
-            reindexHeadings() {
-                const container = document.getElementById('matching-headings-container');
-                const headings = container.querySelectorAll('div');
-                this.headingCount = 0;
-                
-                headings.forEach((heading, index) => {
-                    const letter = String.fromCharCode(65 + index);
-                    heading.setAttribute('data-heading-index', index);
-                    heading.querySelector('span').textContent = letter + '.';
-                    heading.querySelector('.heading-input').setAttribute('data-heading-id', letter);
-                    heading.querySelector('.heading-input').name = `options[${index}][content]`;
-                    
-                    const btn = heading.querySelector('button');
-                    btn.setAttribute('onclick', `MatchingHeadingsManager.removeHeading(${index})`);
-                    
-                    this.headingCount++;
-                });
-                
-                // Update counter
-                document.getElementById('heading-count').textContent = `${this.headingCount} headings`;
-                
-                // Update all dropdowns
-                this.updateDropdowns();
-                
-                // Disable add question button if less than 2 headings
-                const addQuestionBtn = document.getElementById('add-question-mapping-btn');
-                if (addQuestionBtn && this.headingCount < 2) {
-                    addQuestionBtn.disabled = true;
-                }
-            },
-            
-            addQuestionMapping() {
-                const container = document.getElementById('question-mappings-container');
-                if (!container) return;
-                
-                const index = this.questionCount;
-                const paragraphLetter = String.fromCharCode(65 + index);
-                
-                const mappingDiv = document.createElement('div');
-                mappingDiv.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
-                mappingDiv.setAttribute('data-question-index', index);
-                mappingDiv.innerHTML = `
-                    <span class="font-medium text-gray-700 min-w-[140px]">
-                        Question ${index + 1} - Paragraph ${paragraphLetter}:
-                    </span>
-                    <select class="question-select flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                            data-question-index="${index}"
-                            onchange="MatchingHeadingsManager.updateMappingData()">
-                        <option value="">Select correct heading</option>
-                        ${this.getHeadingOptions()}
-                    </select>
-                    <button type="button" onclick="MatchingHeadingsManager.removeQuestionMapping(${index})" 
-                            class="text-red-500 hover:text-red-700 p-1">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                `;
-                
-                container.appendChild(mappingDiv);
-                this.questionCount++;
-                
-                // Update counter
-                document.getElementById('question-count').textContent = `${this.questionCount} questions`;
-                
-                // Update mapping data
-                this.updateMappingData();
-            },
-            
-            removeQuestionMapping(index) {
-                const container = document.getElementById('question-mappings-container');
-                const mappingDiv = container.querySelector(`[data-question-index="${index}"]`);
-                if (mappingDiv) {
-                    mappingDiv.remove();
-                    this.reindexQuestions();
-                }
-            },
-            
-            reindexQuestions() {
-                const container = document.getElementById('question-mappings-container');
-                const questions = container.querySelectorAll('div');
-                this.questionCount = 0;
-                
-                questions.forEach((question, index) => {
-                    const paragraphLetter = String.fromCharCode(65 + index);
-                    question.setAttribute('data-question-index', index);
-                    question.querySelector('span').textContent = `Question ${index + 1} - Paragraph ${paragraphLetter}:`;
-                    question.querySelector('.question-select').setAttribute('data-question-index', index);
-                    
-                    const btn = question.querySelector('button');
-                    btn.setAttribute('onclick', `MatchingHeadingsManager.removeQuestionMapping(${index})`);
-                    
-                    this.questionCount++;
-                });
-                
-                // Update counter
-                document.getElementById('question-count').textContent = `${this.questionCount} questions`;
-                
-                // Update mapping data
-                this.updateMappingData();
-            },
-            
-            getHeadingOptions() {
-                const headings = document.querySelectorAll('.heading-input');
-                let options = '';
-                
-                headings.forEach((heading, index) => {
-                    const letter = String.fromCharCode(65 + index);
-                    const text = heading.value || `Heading ${letter}`;
-                    options += `<option value="${letter}">${letter}. ${text}</option>`;
-                });
-                
-                return options;
-            },
-            
-            updateDropdowns() {
-                const selects = document.querySelectorAll('.question-select');
-                const newOptions = '<option value="">Select correct heading</option>' + this.getHeadingOptions();
-                
-                selects.forEach(select => {
-                    const currentValue = select.value;
-                    select.innerHTML = newOptions;
-                    select.value = currentValue; // Restore previous selection
-                });
-                
-                // Update mapping data
-                this.updateMappingData();
-            },
-            
-            updateMappingData() {
-                // Collect all headings
-                this.headings = [];
-                document.querySelectorAll('.heading-input').forEach((input, index) => {
-                    const letter = String.fromCharCode(65 + index);
-                    this.headings.push({
-                        id: letter,
-                        text: input.value || ''
+
+                blanksList.appendChild(itemDiv);
+
+                const input = itemDiv.querySelector(`#blank_answer_${num}`);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        blankAnswersStore[num] = this.value;
+
+                        if (this.value.trim()) {
+                            this.classList.add('validated');
+                        } else {
+                            this.classList.remove('validated');
+                        }
                     });
-                });
-                
-                // Collect all mappings
-                this.mappings = [];
-                document.querySelectorAll('.question-select').forEach((select, index) => {
-                    const paragraphLetter = String.fromCharCode(65 + index);
-                    if (select.value) {
-                        this.mappings.push({
-                            question: index + 1,
-                            paragraph: paragraphLetter,
-                            correct: select.value
-                        });
+
+                    if (input.value.trim()) {
+                        input.classList.add('validated');
                     }
+                }
+            });
+
+            // Process dropdowns
+            dropdownMatches.forEach((match) => {
+                const num = match.match(/\d+/)[0];
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex items-center space-x-2 p-2 bg-white rounded border border-gray-200';
+
+                const storedOptions = dropdownStore.options[num] || '';
+                const storedCorrect = dropdownStore.correct[num] || '0';
+
+                itemDiv.innerHTML = `
+                    <span class="text-sm font-medium text-gray-700 min-w-[80px]">Dropdown ${num}:</span>
+                    <input type="text"
+                           id="dropdown_options_${num}"
+                           value="${storedOptions}"
+                           name="dropdown_options[]"
+                           class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Options (comma separated, e.g: good, better, best)"
+                           data-dropdown-num="${num}" required>
+                    <select id="dropdown_correct_${num}" name="dropdown_correct[]"
+                            class="px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            data-dropdown-num="${num}">
+                        ${storedOptions ? storedOptions.split(',').map((opt, idx) => `<option value="${idx}" ${idx == storedCorrect ? 'selected' : ''}>${opt.trim()}</option>`).join('') : '<option value="">Enter options first</option>'}
+                    </select>
+                    <button type="button" onclick="removeDropdown(${num})" class="text-red-500 hover:text-red-700 p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+
+                blanksList.appendChild(itemDiv);
+
+                const optionsInput = itemDiv.querySelector(`#dropdown_options_${num}`);
+                const correctSelect = itemDiv.querySelector(`#dropdown_correct_${num}`);
+
+                if (optionsInput) {
+                    optionsInput.addEventListener('input', function() {
+                        dropdownStore.options[num] = this.value;
+                        updateDropdownSelect(num, this.value);
+                    });
+                }
+
+                if (correctSelect) {
+                    correctSelect.addEventListener('change', function() {
+                        dropdownStore.correct[num] = this.value;
+                    });
+                }
+            });
+
+            const counterBadge = document.getElementById('blank-counter');
+            if (counterBadge) {
+                const total = blankMatches.length + dropdownMatches.length;
+                counterBadge.textContent = total;
+                counterBadge.style.display = total > 0 ? 'inline-flex' : 'none';
+            }
+
+            // Update counters
+            if (blankMatches.length > 0) {
+                blankCounter = Math.max(...blankMatches.map(m => parseInt(m.match(/\d+/)[0])));
+            }
+            if (dropdownMatches.length > 0) {
+                dropdownCounter = Math.max(...dropdownMatches.map(m => parseInt(m.match(/DROPDOWN_(\d+)/)[1])));
+            }
+
+        } else {
+            blanksManager.classList.add('hidden');
+            const counterBadge = document.getElementById('blank-counter');
+            if (counterBadge) {
+                counterBadge.style.display = 'none';
+            }
+        }
+    };
+
+    // Save current blank values
+    function saveCurrentBlankValues() {
+        document.querySelectorAll('.blank-answer-input').forEach(input => {
+            const num = input.getAttribute('data-blank-num');
+            if (num) {
+                blankAnswersStore[num] = input.value;
+            }
+        });
+
+        document.querySelectorAll('[id^="dropdown_options_"]').forEach(input => {
+            const num = input.getAttribute('data-dropdown-num');
+            if (num) {
+                dropdownStore.options[num] = input.value;
+            }
+        });
+
+        document.querySelectorAll('[id^="dropdown_correct_"]').forEach(select => {
+            const num = select.getAttribute('data-dropdown-num');
+            if (num) {
+                dropdownStore.correct[num] = select.value;
+            }
+        });
+    }
+
+    // Update dropdown select options
+    function updateDropdownSelect(num, optionsString) {
+        const select = document.querySelector(`#dropdown_correct_${num}`);
+        if (select) {
+            const currentValue = select.value;
+            const options = optionsString.split(',').map(opt => opt.trim());
+
+            select.innerHTML = options.map((opt, idx) =>
+                `<option value="${idx}" ${idx == currentValue ? 'selected' : ''}>${opt}</option>`
+            ).join('');
+        }
+    }
+
+    // Remove blank
+    window.removeBlank = function(num) {
+        if (contentEditor) {
+            delete blankAnswersStore[num];
+
+            let content = contentEditor.getContent();
+            const regex = new RegExp(`\\[____${num}____\\]`, 'g');
+            content = content.replace(regex, '');
+            contentEditor.setContent(content);
+
+            renumberBlanks();
+            showNotification('Blank removed', 'info');
+        }
+    };
+
+    // Remove dropdown
+    window.removeDropdown = function(num) {
+        if (contentEditor) {
+            delete dropdownStore.options[num];
+            delete dropdownStore.correct[num];
+
+            let content = contentEditor.getContent();
+            const regex = new RegExp(`\\[DROPDOWN_${num}\\]`, 'g');
+            content = content.replace(regex, '');
+            contentEditor.setContent(content);
+
+            renumberDropdowns();
+            showNotification('Dropdown removed', 'info');
+        }
+    };
+
+
+    // Renumber blanks after deletion
+    function renumberBlanks() {
+        if (!contentEditor) return;
+
+        let content = contentEditor.getContent();
+
+        // Find all blank patterns
+        const blankRegex = /\[____\d+____\]/g;
+        const matches = content.match(blankRegex) || [];
+
+        // Create a new mapping for renumbering
+        const newAnswersStore = {};
+
+        // Renumber blanks
+        matches.forEach((match, index) => {
+            const oldNum = match.match(/\d+/)[0];
+            const newNum = index + 1;
+            content = content.replace(match, `[____${newNum}____]`);
+
+            // Transfer answer data to new number
+            if (blankAnswersStore[oldNum]) {
+                newAnswersStore[newNum] = blankAnswersStore[oldNum];
+            }
+        });
+
+        Object.assign(blankAnswersStore, newAnswersStore);
+        blankCounter = matches.length;
+        contentEditor.setContent(content);
+
+        setTimeout(updateBlanks, 100);
+    }
+
+    // Renumber dropdowns after deletion
+    function renumberDropdowns() {
+        if (!contentEditor) return;
+
+        let content = contentEditor.getContent();
+
+        // Find all dropdown patterns
+        const dropdownRegex = /\[DROPDOWN_\d+\]/g;
+        const matches = content.match(dropdownRegex) || [];
+
+        const newOptionsStore = {};
+        const newCorrectStore = {};
+
+        // Renumber dropdowns
+        matches.forEach((match, index) => {
+            const oldNum = match.match(/\d+/)[0];
+            const newNum = index + 1;
+
+            content = content.replace(match, `[DROPDOWN_${newNum}]`);
+
+            // Transfer dropdown data to new number
+            if (dropdownStore.options[oldNum]) {
+                newOptionsStore[newNum] = dropdownStore.options[oldNum];
+            }
+            if (dropdownStore.correct[oldNum]) {
+                newCorrectStore[newNum] = dropdownStore.correct[oldNum];
+            }
+        });
+
+        dropdownStore.options = newOptionsStore;
+        dropdownStore.correct = newCorrectStore;
+
+        dropdownCounter = matches.length;
+        contentEditor.setContent(content);
+
+        setTimeout(updateBlanks, 100);
+    }
+
+
+    // Refresh blanks
+    window.refreshBlanks = function() {
+        updateBlanks();
+        showNotification('Configuration refreshed', 'info');
+    };
+
+    // Make add option available globally
+    window.addOption = addOption;
+
+    // Enhanced Matching Headings Implementation
+    const MatchingHeadingsManager = {
+        headingCount: 0,
+        questionCount: 0,
+        headings: [],
+        mappings: [],
+
+        init() {
+            // Clear any existing event listeners
+            const addHeadingBtn = document.getElementById('add-heading-btn');
+            const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+
+            if (addHeadingBtn) {
+                // Remove existing listeners
+                const newBtn = addHeadingBtn.cloneNode(true);
+                addHeadingBtn.parentNode.replaceChild(newBtn, addHeadingBtn);
+
+                // Add new listener
+                document.getElementById('add-heading-btn').addEventListener('click', () => {
+                    this.addHeading();
                 });
-                
-                // Update hidden inputs with JSON data
-                const dataInput = document.getElementById('matching_headings_data');
-                const jsonInput = document.getElementById('matching_headings_json');
-                
-                const data = {
+            }
+
+            if (addQuestionBtn) {
+                // Remove existing listeners
+                const newBtn = addQuestionBtn.cloneNode(true);
+                addQuestionBtn.parentNode.replaceChild(newBtn, addQuestionBtn);
+
+                // Add new listener
+                document.getElementById('add-question-mapping-btn').addEventListener('click', () => {
+                    this.addQuestionMapping();
+                });
+            }
+
+            // Add default items only if containers are empty
+            const headingsContainer = document.getElementById('matching-headings-container');
+            const mappingsContainer = document.getElementById('question-mappings-container');
+
+            if (headingsContainer && headingsContainer.children.length === 0) {
+                // Add 5 headings by default
+                for (let i = 0; i < 5; i++) {
+                    this.addHeading();
+                }
+            }
+
+            if (mappingsContainer && mappingsContainer.children.length === 0) {
+                // Add 3 question mappings by default
+                for (let i = 0; i < 3; i++) {
+                    this.addQuestionMapping();
+                }
+            }
+        },
+
+        addHeading(content = '') {
+            const container = document.getElementById('matching-headings-container');
+            if (!container) return;
+
+            const index = this.headingCount;
+            const letter = String.fromCharCode(65 + index);
+
+            const headingDiv = document.createElement('div');
+            headingDiv.className = 'flex items-center gap-2 p-3 bg-white rounded border border-gray-200';
+            headingDiv.setAttribute('data-heading-index', index);
+            headingDiv.innerHTML = `
+                <span class="font-semibold text-gray-700 min-w-[30px]">${letter}.</span>
+                <input type="text"
+                       data-heading-id="${letter}"
+                       value="${content}"
+                       class="heading-input flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                       placeholder="Enter heading text..."
+                       onkeyup="MatchingHeadingsManager.updateDropdowns()"
+                       required>
+                <button type="button" onclick="MatchingHeadingsManager.removeHeading(${index})"
+                        class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+
+            container.appendChild(headingDiv);
+            this.headingCount++;
+
+            // Update counter
+            document.getElementById('heading-count').textContent = `${this.headingCount} headings`;
+
+            // Enable question mapping button
+            const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+            if (addQuestionBtn && this.headingCount >= 2) {
+                addQuestionBtn.disabled = false;
+            }
+
+            // Update all dropdowns
+            this.updateDropdowns();
+        },
+
+        removeHeading(index) {
+            if (this.headingCount <= 2) {
+                alert('You must have at least 2 headings.');
+                return;
+            }
+
+            const container = document.getElementById('matching-headings-container');
+            const headingDiv = container.querySelector(`[data-heading-index="${index}"]`);
+            if (headingDiv) {
+                headingDiv.remove();
+                this.reindexHeadings();
+            }
+        },
+
+        reindexHeadings() {
+            const container = document.getElementById('matching-headings-container');
+            const headings = container.querySelectorAll('div');
+            this.headingCount = 0;
+
+            headings.forEach((heading, index) => {
+                const letter = String.fromCharCode(65 + index);
+                heading.setAttribute('data-heading-index', index);
+                heading.querySelector('span').textContent = letter + '.';
+                heading.querySelector('.heading-input').setAttribute('data-heading-id', letter);
+
+                const btn = heading.querySelector('button');
+                btn.setAttribute('onclick', `MatchingHeadingsManager.removeHeading(${index})`);
+
+                this.headingCount++;
+            });
+
+            // Update counter
+            document.getElementById('heading-count').textContent = `${this.headingCount} headings`;
+
+            // Update all dropdowns
+            this.updateDropdowns();
+
+            // Disable add question button if less than 2 headings
+            const addQuestionBtn = document.getElementById('add-question-mapping-btn');
+            if (addQuestionBtn && this.headingCount < 2) {
+                addQuestionBtn.disabled = true;
+            }
+        },
+
+        addQuestionMapping() {
+            const container = document.getElementById('question-mappings-container');
+            if (!container) return;
+
+            const index = this.questionCount;
+            const paragraphLetter = String.fromCharCode(65 + index);
+
+            const mappingDiv = document.createElement('div');
+            mappingDiv.className = 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200';
+            mappingDiv.setAttribute('data-question-index', index);
+            mappingDiv.innerHTML = `
+                <span class="font-medium text-gray-700 min-w-[140px]">
+                    Question ${index + 1} - Paragraph ${paragraphLetter}:
+                </span>
+                <select class="question-select flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        data-question-index="${index}"
+                        onchange="MatchingHeadingsManager.updateMappingData()">
+                    <option value="">Select correct heading</option>
+                    ${this.getHeadingOptions()}
+                </select>
+                <button type="button" onclick="MatchingHeadingsManager.removeQuestionMapping(${index})"
+                        class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            `;
+
+            container.appendChild(mappingDiv);
+            this.questionCount++;
+
+            // Update counter
+            document.getElementById('question-count').textContent = `${this.questionCount} questions`;
+
+            // Update mapping data
+            this.updateMappingData();
+
+            // Auto-generate content for matching headings
+            const dataInput = document.getElementById('matching_headings_data');
+            if (dataInput) {
+                const data = JSON.parse(dataInput.value || '{}');
+                if (data.mappings && data.mappings.length > 0) {
+                    // Generate content based on mappings
+                    const questionNumbers = data.mappings.map(m => m.question).join('-');
+                    const paragraphs = data.mappings.map(m => `Paragraph ${m.paragraph}`).join(', ');
+
+                    const content = `Questions ${questionNumbers}\n\nChoose the correct heading for ${paragraphs} from the list of headings below.`;
+
+                    // Update content field
+                    if (window.contentEditor) {
+                        window.contentEditor.setContent(content);
+                    } else {
+                        const contentField = document.getElementById('content');
+                        if (contentField) {
+                            contentField.value = content;
+                        }
+                    }
+                }
+            }
+        },
+
+        removeQuestionMapping(index) {
+            const container = document.getElementById('question-mappings-container');
+            const mappingDiv = container.querySelector(`[data-question-index="${index}"]`);
+            if (mappingDiv) {
+                mappingDiv.remove();
+                this.reindexQuestions();
+            }
+        },
+
+        reindexQuestions() {
+            const container = document.getElementById('question-mappings-container');
+            const questions = container.querySelectorAll('div');
+            this.questionCount = 0;
+
+            questions.forEach((question, index) => {
+                const paragraphLetter = String.fromCharCode(65 + index);
+                question.setAttribute('data-question-index', index);
+                question.querySelector('span').textContent = `Question ${index + 1} - Paragraph ${paragraphLetter}:`;
+                question.querySelector('.question-select').setAttribute('data-question-index', index);
+
+                const btn = question.querySelector('button');
+                btn.setAttribute('onclick', `MatchingHeadingsManager.removeQuestionMapping(${index})`);
+
+                this.questionCount++;
+            });
+
+            // Update counter
+            document.getElementById('question-count').textContent = `${this.questionCount} questions`;
+
+            // Update mapping data
+            this.updateMappingData();
+        },
+
+        getHeadingOptions() {
+            const headings = document.querySelectorAll('.heading-input');
+            let options = '';
+
+            headings.forEach((heading, index) => {
+                const letter = String.fromCharCode(65 + index);
+                const text = heading.value || `Heading ${letter}`;
+                options += `<option value="${letter}">${letter}. ${text}</option>`;
+            });
+
+            return options;
+        },
+
+        updateDropdowns() {
+            const selects = document.querySelectorAll('.question-select');
+            const newOptions = '<option value="">Select correct heading</option>' + this.getHeadingOptions();
+
+            selects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = newOptions;
+                select.value = currentValue; // Restore previous selection
+            });
+
+            // Update mapping data
+            this.updateMappingData();
+        },
+
+        updateMappingData() {
+            // Collect all headings
+            this.headings = [];
+            document.querySelectorAll('.heading-input').forEach((input, index) => {
+                const letter = String.fromCharCode(65 + index);
+                this.headings.push({
+                    id: letter,
+                    text: input.value || ''
+                });
+            });
+
+            // Collect all mappings
+            this.mappings = [];
+            document.querySelectorAll('.question-select').forEach((select, index) => {
+                const paragraphLetter = String.fromCharCode(65 + index);
+                if (select.value) {
+                    this.mappings.push({
+                        question: index + 1,
+                        paragraph: paragraphLetter,
+                        correct: select.value
+                    });
+                }
+            });
+
+            // Update hidden input with JSON data
+            const dataInput = document.getElementById('matching_headings_data');
+            if (dataInput) {
+                dataInput.value = JSON.stringify({
                     headings: this.headings,
                     mappings: this.mappings
-                };
-                
-                if (dataInput) {
-                    dataInput.value = JSON.stringify(data);
-                }
-                
-                if (jsonInput) {
-                    jsonInput.value = JSON.stringify(data);
-                }
-                
-                console.log('Updated matching headings data:', data);
+                });
             }
-        };
-        
-        // Make it globally available
-        window.MatchingHeadingsManager = MatchingHeadingsManager;
+        }
+    };
+
+    // Make it globally available
+    window.MatchingHeadingsManager = MatchingHeadingsManager;
+
+    // Fix initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionType = document.getElementById('question_type');
+        if (questionType) {
+            // Load existing question data based on type
+            const existingType = window.questionData?.question_type;
+
+            // Trigger question type change to initialize UI
+            if (existingType && questionType.value === existingType) {
+                // Manually trigger the change handler
+                handleReadingQuestionTypeChange.call(questionType);
+
+                // Load existing options for single/multiple choice
+                if ((existingType === 'single_choice' || existingType === 'multiple_choice') && window.questionData?.options) {
+                    setTimeout(() => {
+                        loadExistingOptions(existingType, window.questionData.options);
+                    }, 500);
+                }
+
+                // Load existing blank answers for fill_blanks
+                if (existingType === 'fill_blanks' && window.questionData?.section_specific_data?.blank_answers) {
+                    setTimeout(() => {
+                        loadExistingBlankAnswers(window.questionData.section_specific_data.blank_answers);
+                    }, 500);
+                }
+
+                // Load existing dropdown data
+                if (existingType === 'dropdown_selection' && window.questionData?.section_specific_data) {
+                    setTimeout(() => {
+                        loadExistingDropdownData(window.questionData.section_specific_data);
+                    }, 500);
+                }
+
+                // Load existing matching headings data
+                if (existingType === 'matching_headings' && window.questionData?.section_specific_data) {
+                    setTimeout(() => {
+                        loadExistingMatchingHeadingsData(window.questionData.section_specific_data);
+                    }, 500);
+                }
+
+                // Load existing sentence completion data
+                if (existingType === 'sentence_completion' && window.questionData?.section_specific_data?.sentence_completion) {
+                    setTimeout(() => {
+                        loadExistingSentenceCompletionData(window.questionData.section_specific_data.sentence_completion);
+                    }, 500);
+                }
+            }
+
+            // Check if matching_headings is already selected
+            if (questionType.value === 'matching_headings') {
+                setTimeout(() => {
+                    const card = document.getElementById('matching-headings-card');
+                    if (card) {
+                        card.style.display = 'block';
+                        window.MatchingHeadingsManager.init();
+                    }
+                }, 100);
+            }
+        }
+    });
+
+    // Helper function to load existing options
+    function loadExistingOptions(questionType, options) {
+        if (!options || !Array.isArray(options)) return;
+
+        const container = document.getElementById('options-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        options.forEach((option, index) => {
+            const isCorrect = option.is_correct || false;
+            addOption(option.content || '', isCorrect);
+        });
+
+        console.log(`Loaded ${options.length} existing options for ${questionType}`);
+    }
+
+    // Helper function to load existing blank answers
+    function loadExistingBlankAnswers(blankAnswers) {
+        if (!blankAnswers) return;
+
+        console.log('Loading existing blank answers:', blankAnswers);
+
+        // Store answers in the global store
+        Object.keys(blankAnswers).forEach(key => {
+            blankAnswersStore[key] = blankAnswers[key];
+        });
+
+        // Trigger update to display blanks
+        setTimeout(() => {
+            if (typeof updateBlanks === 'function') {
+                updateBlanks();
+            }
+        }, 300);
+    }
+
+    // Helper function to load existing dropdown data
+    function loadExistingDropdownData(sectionData) {
+        if (!sectionData) return;
+
+        const dropdownOptions = sectionData.dropdown_options || {};
+        const dropdownCorrect = sectionData.dropdown_correct || {};
+
+        console.log('Loading existing dropdown data:', { dropdownOptions, dropdownCorrect });
+
+        // Store in global store
+        Object.keys(dropdownOptions).forEach(key => {
+            dropdownStore.options[key] = dropdownOptions[key];
+        });
+
+        Object.keys(dropdownCorrect).forEach(key => {
+            dropdownStore.correct[key] = dropdownCorrect[key];
+        });
+
+        // Trigger update
+        setTimeout(() => {
+            if (typeof updateBlanks === 'function') {
+                updateBlanks();
+            }
+        }, 300);
+    }
+
+    // Helper function to load existing matching headings data
+    function loadExistingMatchingHeadingsData(sectionData) {
+        if (!sectionData || !sectionData.headings || !sectionData.mappings) return;
+
+        console.log('Loading existing matching headings data:', sectionData);
+
+        const card = document.getElementById('matching-headings-card');
+        if (!card) return;
+
+        card.style.display = 'block';
+
+        setTimeout(() => {
+            if (!window.MatchingHeadingsManager) return;
+
+            // Clear existing
+            const headingsContainer = document.getElementById('matching-headings-container');
+            const mappingsContainer = document.getElementById('question-mappings-container');
+
+            if (headingsContainer) headingsContainer.innerHTML = '';
+            if (mappingsContainer) mappingsContainer.innerHTML = '';
+
+            window.MatchingHeadingsManager.headingCount = 0;
+            window.MatchingHeadingsManager.questionCount = 0;
+
+            // Load headings
+            sectionData.headings.forEach(heading => {
+                window.MatchingHeadingsManager.addHeading(heading.text || '');
+            });
+
+            // Load mappings
+            sectionData.mappings.forEach(mapping => {
+                window.MatchingHeadingsManager.addQuestionMapping();
+            });
+
+            // Set correct answers
+            setTimeout(() => {
+                sectionData.mappings.forEach((mapping, index) => {
+                    const select = document.querySelector(`select[data-question-index="${index}"]`);
+                    if (select && mapping.correct) {
+                        select.value = mapping.correct;
+                    }
+                });
+
+                window.MatchingHeadingsManager.updateMappingData();
+            }, 200);
+
+            console.log('Loaded matching headings data successfully');
+        }, 300);
+    }
+
+    // Helper function to load existing sentence completion data
+    function loadExistingSentenceCompletionData(scData) {
+        if (!scData || !scData.options || !scData.sentences) return;
+
+        console.log('Loading existing sentence completion data:', scData);
+
+        setTimeout(() => {
+            if (!window.SentenceCompletionManager) return;
+
+            const card = document.getElementById('sentence-completion-card');
+            if (!card) return;
+
+            card.style.display = 'block';
+
+            // Clear existing
+            const optionsContainer = document.getElementById('sc-options-container');
+            const sentencesContainer = document.getElementById('sc-sentences-container');
+
+            if (optionsContainer) optionsContainer.innerHTML = '';
+            if (sentencesContainer) sentencesContainer.innerHTML = '';
+
+            window.SentenceCompletionManager.optionCount = 0;
+            window.SentenceCompletionManager.sentenceCount = 0;
+
+            // Load options
+            scData.options.forEach(option => {
+                window.SentenceCompletionManager.addOption(option.text || '');
+            });
+
+            // Load sentences
+            scData.sentences.forEach(sentence => {
+                window.SentenceCompletionManager.addSentence(sentence.text || '', sentence.correctAnswer || '');
+            });
+
+            window.SentenceCompletionManager.updateData();
+
+            console.log('Loaded sentence completion data successfully');
+        }, 300);
+    }
     </script>
     @endpush
 </x-layout>

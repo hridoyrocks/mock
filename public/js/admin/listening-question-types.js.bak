@@ -829,21 +829,17 @@ window.ListeningQuestionTypes = {
         console.log('Loading fill blanks data');
         
         // Parse blank answers from listening_data
-        if (questionData.section_specific_data) {
+        if (questionData.listening_data) {
             try {
-                const data = typeof questionData.section_specific_data === 'string' 
-                    ? JSON.parse(questionData.section_specific_data) 
-                    : questionData.section_specific_data;
+                const data = typeof questionData.listening_data === 'string' 
+                    ? JSON.parse(questionData.listening_data) 
+                    : questionData.listening_data;
                     
-                console.log('Parsed section specific data:', data);
-
-                // Try different possible data structures
+                console.log('Parsed listening data:', data);
+                
                 if (data && data.blanks) {
                     this.blankAnswers = data.blanks;
-                    console.log('Loaded blank answers from blanks:', this.blankAnswers);
-                } else if (data && data.blank_answers) {
-                    this.blankAnswers = data.blank_answers;
-                    console.log('Loaded blank answers from blank_answers:', this.blankAnswers);
+                    console.log('Loaded blank answers:', this.blankAnswers);
                 }
             } catch (e) {
                 console.error('Error parsing listening data:', e);
@@ -861,8 +857,8 @@ window.ListeningQuestionTypes = {
     loadSingleChoiceData(questionData) {
         console.log('========== LOADING SINGLE CHOICE ==========');
         console.log('Full question data:', questionData);
-        console.log('listening_data type:', typeof questionData.section_specific_data);
-        console.log('listening_data value:', questionData.section_specific_data);
+        console.log('listening_data type:', typeof questionData.listening_data);
+        console.log('listening_data value:', questionData.listening_data);
         
         const container = document.getElementById('single-choice-options-container');
         if (!container) {
@@ -870,31 +866,19 @@ window.ListeningQuestionTypes = {
             return;
         }
         
-        // Parse options from questionData.options or section_specific_data
+        // Parse options from listening_data
         let options = [];
         let correctOption = 0;
-
-        // First try to get from questionData.options (from database options relationship)
-        if (questionData.options && Array.isArray(questionData.options) && questionData.options.length > 0) {
-            options = questionData.options;
-            // Find correct option
-            const correctOpt = options.find(opt => opt.is_correct);
-            if (correctOpt) {
-                correctOption = options.indexOf(correctOpt);
-            }
-            console.log('Loaded options from questionData.options:', options);
-            console.log('Correct option index:', correctOption);
-        }
-        // Fallback to section_specific_data
-        else if (questionData.section_specific_data) {
+        
+        if (questionData.listening_data) {
             try {
-                const data = typeof questionData.section_specific_data === 'string'
-                    ? JSON.parse(questionData.section_specific_data)
-                    : questionData.section_specific_data;
-
-                console.log('Parsed section specific data:', data);
+                const data = typeof questionData.listening_data === 'string' 
+                    ? JSON.parse(questionData.listening_data) 
+                    : questionData.listening_data;
+                    
+                console.log('Parsed listening data:', data);
                 console.log('Data structure:', JSON.stringify(data, null, 2));
-
+                
                 // Try different possible data structures
                 if (data && data.options) {
                     options = data.options;
@@ -903,11 +887,11 @@ window.ListeningQuestionTypes = {
                     // Maybe options are stored as array
                     options = data;
                 }
-
-                console.log('Found options from section_specific_data:', options);
+                
+                console.log('Found options:', options);
                 console.log('Correct option index:', correctOption);
             } catch (e) {
-                console.error('Error parsing section specific data:', e);
+                console.error('Error parsing listening data:', e);
             }
         }
         
@@ -947,8 +931,8 @@ window.ListeningQuestionTypes = {
     loadMultipleChoiceData(questionData) {
         console.log('========== LOADING MULTIPLE CHOICE ==========');
         console.log('Full question data:', questionData);
-        console.log('listening_data type:', typeof questionData.section_specific_data);
-        console.log('listening_data value:', questionData.section_specific_data);
+        console.log('listening_data type:', typeof questionData.listening_data);
+        console.log('listening_data value:', questionData.listening_data);
         
         const container = document.getElementById('multiple-choice-options-container');
         if (!container) {
@@ -956,30 +940,19 @@ window.ListeningQuestionTypes = {
             return;
         }
         
-        // Parse options from questionData.options or section_specific_data
+        // Parse options from listening_data
         let options = [];
         let correctOptions = [];
-
-        // First try to get from questionData.options (from database options relationship)
-        if (questionData.options && Array.isArray(questionData.options) && questionData.options.length > 0) {
-            options = questionData.options;
-            // Find correct options
-            correctOptions = options
-                .map((opt, index) => opt.is_correct ? index : null)
-                .filter(index => index !== null);
-            console.log('Loaded options from questionData.options:', options);
-            console.log('Correct options indices:', correctOptions);
-        }
-        // Fallback to section_specific_data
-        else if (questionData.section_specific_data) {
+        
+        if (questionData.listening_data) {
             try {
-                const data = typeof questionData.section_specific_data === 'string'
-                    ? JSON.parse(questionData.section_specific_data)
-                    : questionData.section_specific_data;
-
-                console.log('Parsed section specific data:', data);
+                const data = typeof questionData.listening_data === 'string' 
+                    ? JSON.parse(questionData.listening_data) 
+                    : questionData.listening_data;
+                    
+                console.log('Parsed listening data:', data);
                 console.log('Data structure:', JSON.stringify(data, null, 2));
-
+                
                 // Try different possible data structures
                 if (data && data.options) {
                     options = data.options;
@@ -987,11 +960,11 @@ window.ListeningQuestionTypes = {
                 } else if (Array.isArray(data)) {
                     options = data;
                 }
-
-                console.log('Found options from section_specific_data:', options);
+                
+                console.log('Found options:', options);
                 console.log('Correct options:', correctOptions);
             } catch (e) {
-                console.error('Error parsing section specific data:', e);
+                console.error('Error parsing listening data:', e);
             }
         }
         
@@ -1030,33 +1003,20 @@ window.ListeningQuestionTypes = {
     // Load Dropdown Data
     loadDropdownData(questionData) {
         console.log('Loading dropdown data');
-
-        // Parse dropdown data from section_specific_data
-        if (questionData.section_specific_data) {
+        
+        // Parse dropdown data from listening_data
+        if (questionData.listening_data) {
             try {
-                const data = typeof questionData.section_specific_data === 'string'
-                    ? JSON.parse(questionData.section_specific_data)
-                    : questionData.section_specific_data;
-
-                console.log('Parsed section specific data for dropdown:', data);
-
-                // Try different possible data structures
-                if (data && data.dropdowns) {
+                const data = JSON.parse(questionData.listening_data);
+                if (data.dropdowns) {
                     this.dropdownData = data.dropdowns;
-                    console.log('Loaded dropdown data from dropdowns:', this.dropdownData);
-                } else if (data && data.dropdown_options && data.dropdown_correct) {
-                    // Convert to expected format
-                    this.dropdownData = {
-                        options: data.dropdown_options,
-                        correct: data.dropdown_correct
-                    };
-                    console.log('Loaded dropdown data from dropdown_options/dropdown_correct:', this.dropdownData);
+                    console.log('Loaded dropdown data:', this.dropdownData);
                 }
             } catch (e) {
-                console.error('Error parsing section specific data:', e);
+                console.error('Error parsing listening data:', e);
             }
         }
-
+        
         // Trigger update to show dropdowns
         setTimeout(() => this.updateDropdowns(), 200);
     },
@@ -1064,35 +1024,24 @@ window.ListeningQuestionTypes = {
     // Load Drag Drop Data
     loadDragDropData(questionData) {
         console.log('Loading drag drop data');
-
-        // Parse drag drop data from section_specific_data
-        if (questionData.section_specific_data) {
+        
+        // Parse drag drop data from listening_data
+        if (questionData.listening_data) {
             try {
-                const data = typeof questionData.section_specific_data === 'string'
-                    ? JSON.parse(questionData.section_specific_data)
-                    : questionData.section_specific_data;
-
-                console.log('Parsed section specific data for drag drop:', data);
-
-                // Try different possible data structures
-                if (data && data.dragDrop) {
+                const data = JSON.parse(questionData.listening_data);
+                if (data.dragDrop) {
                     this.dragDropData = data.dragDrop;
-                    console.log('Loaded drag drop data from dragDrop:', this.dragDropData);
-                } else if (data && data.drag_options) {
-                    this.dragDropData = { options: data.drag_options };
-                    console.log('Loaded drag drop data from drag_options:', this.dragDropData);
-                }
-
-                // Load drag zones
-                if (data && data.dragZones) {
-                    this.dragZoneData = data.dragZones;
-                    console.log('Loaded drag zone data from dragZones:', this.dragZoneData);
-                } else if (data && data.drop_zones) {
-                    this.dragZoneData = data.drop_zones;
-                    console.log('Loaded drag zone data from drop_zones:', this.dragZoneData);
+                    
+                    // Load drag zones
+                    if (data.dragZones) {
+                        this.dragZoneData = data.dragZones;
+                    }
+                    
+                    console.log('Loaded drag drop data:', this.dragDropData);
+                    console.log('Loaded drag zone data:', this.dragZoneData);
                 }
             } catch (e) {
-                console.error('Error parsing section specific data:', e);
+                console.error('Error parsing listening data:', e);
             }
         }
         

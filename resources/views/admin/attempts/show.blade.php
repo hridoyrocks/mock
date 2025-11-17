@@ -1,4 +1,4 @@
-<x-layout>
+<x-admin-layout>
     <x-slot:title>View Attempt - Admin</x-slot>
     
     <x-slot:header>
@@ -486,4 +486,4 @@
         });
     </script>
     @endpush
-</x-layout>
+</x-admin-layout>

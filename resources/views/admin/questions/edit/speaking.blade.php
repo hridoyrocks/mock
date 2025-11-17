@@ -24,7 +24,29 @@
 
     <div class="bg-gray-50 min-h-screen">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            
+
+            <!-- Question Info Card -->
+            <div class="bg-white rounded-lg shadow-sm mb-6 border-l-4 border-orange-500">
+                <div class="p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Editing Question</h3>
+                            <p class="text-sm text-gray-600 mt-1">
+                                <span class="font-medium text-orange-600">{{ ucfirst(str_replace('_', ' ', $question->question_type)) }}</span>
+                                <span class="mx-2">•</span>
+                                <span>Part {{ $question->part_number }}</span>
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold text-orange-600">
+                                #{{ $question->order_number }}
+                            </div>
+                            <p class="text-xs text-gray-500">Question Number</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <form action="{{ route('admin.questions.update', $question) }}" method="POST" enctype="multipart/form-data" id="questionForm">
                 @csrf
                 @method('PUT')
