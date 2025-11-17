@@ -76,13 +76,15 @@ class SubscriptionController extends Controller
     public function plans()
     {
         // Eager load features to prevent N+1 queries
+        // Only show public plans (exclude institute-only plans)
         $plans = SubscriptionPlan::active()
+            ->public()
             ->with(['features' => function($query) {
                 $query->orderBy('subscription_features.id');
             }])
             ->orderBy('sort_order')
             ->get();
-        
+
         $currentPlan = auth()->user()->activeSubscription()?->plan;
 
         return view('subscription.plans', compact('plans', 'currentPlan'));

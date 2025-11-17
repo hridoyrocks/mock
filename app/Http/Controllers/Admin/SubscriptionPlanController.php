@@ -58,6 +58,7 @@ class SubscriptionPlanController extends Controller
             'sort_order' => $request->sort_order,
             'is_active' => $request->boolean('is_active', true),
             'is_featured' => $request->boolean('is_featured', false),
+            'is_institute_only' => $request->boolean('is_institute_only', false),
         ]);
 
         // Attach features
@@ -142,6 +143,7 @@ class SubscriptionPlanController extends Controller
             'sort_order' => $request->sort_order,
             'is_active' => $request->boolean('is_active', true),
             'is_featured' => $request->boolean('is_featured', false),
+            'is_institute_only' => $request->boolean('is_institute_only', false),
         ]);
 
         // Log features before processing

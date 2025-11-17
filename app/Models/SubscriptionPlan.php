@@ -18,15 +18,17 @@ class SubscriptionPlan extends Model
         'sort_order',
         'is_active',
         'is_free',
-        'is_featured'
+        'is_featured',
+        'is_institute_only'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
         'is_active' => 'boolean',
-        'is_free' => 'boolean', 
+        'is_free' => 'boolean',
         'is_featured' => 'boolean',
+        'is_institute_only' => 'boolean',
     ];
 
     /**
@@ -75,6 +77,22 @@ class SubscriptionPlan extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)->orderBy('sort_order');
+    }
+
+    /**
+     * Get public plans (exclude institute-only plans).
+     */
+    public function scopePublic($query)
+    {
+        return $query->where('is_institute_only', false);
+    }
+
+    /**
+     * Get institute-only plans.
+     */
+    public function scopeInstituteOnly($query)
+    {
+        return $query->where('is_institute_only', true);
     }
 
     /**

@@ -18,9 +18,9 @@ class SubscriptionManager
     /**
      * Subscribe user to a plan
      */
-    public function subscribe(User $user, SubscriptionPlan $plan, array $paymentDetails = []): UserSubscription
+    public function subscribe(User $user, SubscriptionPlan $plan, array $paymentDetails = [], ?int $customDurationDays = null): UserSubscription
     {
-        return DB::transaction(function () use ($user, $plan, $paymentDetails) {
+        return DB::transaction(function () use ($user, $plan, $paymentDetails, $customDurationDays) {
             // Cancel existing active subscriptions
             $this->cancelExistingSubscriptions($user);
 
@@ -28,10 +28,10 @@ class SubscriptionManager
             $coupon = null;
             $finalPrice = $plan->current_price;
             $discountAmount = 0;
-            
+
             if (isset($paymentDetails['coupon_code'])) {
                 $coupon = Coupon::where('code', $paymentDetails['coupon_code'])->first();
-                
+
                 if ($coupon && $coupon->canBeUsedByUser($user) && $coupon->plan_id === $plan->id) {
                     $discount = $coupon->calculateDiscount($plan->current_price);
                     $finalPrice = $discount['final_price'];
@@ -40,8 +40,9 @@ class SubscriptionManager
             }
 
             // Determine subscription duration
-            $durationDays = $plan->duration_days;
-            if ($coupon && $coupon->discount_type === 'trial' && $coupon->duration_days) {
+            // Priority: custom duration > coupon duration > plan duration
+            $durationDays = $customDurationDays ?? $plan->duration_days;
+            if (!$customDurationDays && $coupon && $coupon->discount_type === 'trial' && $coupon->duration_days) {
                 $durationDays = $coupon->duration_days;
             }
 

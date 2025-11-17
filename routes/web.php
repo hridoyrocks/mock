@@ -504,6 +504,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
                 Route::post('/{user}/ban', [App\Http\Controllers\Admin\UserController::class, 'ban'])->name('ban');
                 Route::post('/{user}/unban', [App\Http\Controllers\Admin\UserController::class, 'unban'])->name('unban');
                 Route::post('/{user}/verify-email', [App\Http\Controllers\Admin\UserController::class, 'verifyEmail'])->name('verify-email');
+                Route::get('/{user}/assign-subscription', [App\Http\Controllers\Admin\UserController::class, 'showAssignSubscriptionForm'])->name('assign-subscription-form');
+                Route::post('/{user}/assign-subscription', [App\Http\Controllers\Admin\UserController::class, 'assignSubscription'])->name('assign-subscription');
             });
 
             Route::prefix('ban-appeals')->name('ban-appeals.')->group(function () {

@@ -157,6 +157,20 @@
                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <span class="ml-2 text-gray-700">Featured (highlight as most popular)</span>
                         </label>
+
+                        <label class="flex items-center p-4 bg-amber-50 border-2 border-amber-200 rounded-lg">
+                            <input type="checkbox" name="is_institute_only" value="1" {{ $subscriptionPlan->is_institute_only ? 'checked' : '' }}
+                                   class="rounded border-amber-300 text-amber-600 shadow-sm focus:border-amber-500 focus:ring-amber-500">
+                            <div class="ml-2">
+                                <span class="text-gray-900 font-semibold flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                    Institute Only
+                                </span>
+                                <p class="text-sm text-amber-700 mt-1">This plan will only be visible in admin panel for manual assignment to institutes</p>
+                            </div>
+                        </label>
                     </div>
                 </div>
             </div>

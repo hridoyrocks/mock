@@ -644,4 +644,54 @@ class UserController extends Controller
             return back()->with('error', 'Failed to delete user. ' . ($e->getMessage() ?: 'Please try again.'));
         }
     }
+
+    /**
+     * Show form to manually assign subscription to user.
+     */
+    public function showAssignSubscriptionForm(User $user)
+    {
+        // Get all active plans (including institute-only plans for admin)
+        $plans = \App\Models\SubscriptionPlan::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('admin.users.assign-subscription', compact('user', 'plans'));
+    }
+
+    /**
+     * Manually assign subscription to a user.
+     */
+    public function assignSubscription(Request $request, User $user)
+    {
+        $request->validate([
+            'plan_id' => 'required|exists:subscription_plans,id',
+            'duration_days' => 'nullable|integer|min:1',
+        ]);
+
+        $plan = \App\Models\SubscriptionPlan::findOrFail($request->plan_id);
+
+        // Use custom duration if provided, otherwise use plan's default duration
+        $durationDays = $request->duration_days ?? $plan->duration_days;
+
+        // Create payment details for manual assignment
+        $paymentDetails = [
+            'payment_method' => 'manual_admin',
+            'assigned_by' => auth()->id(),
+            'admin_note' => $request->admin_note ?? 'Manually assigned by admin',
+        ];
+
+        // Cancel existing active subscriptions
+        $user->subscriptions()
+            ->where('status', 'active')
+            ->where('ends_at', '>', now())
+            ->each(function ($sub) {
+                $sub->cancel();
+            });
+
+        // Subscribe user to the plan
+        $subscription = $user->subscribeTo($plan, $paymentDetails, $durationDays);
+
+        return redirect()->route('admin.users.show', $user)
+            ->with('success', "Successfully assigned {$plan->name} plan to {$user->name} for {$durationDays} days.");
+    }
 }

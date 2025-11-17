@@ -27,8 +27,9 @@ class ReferralController extends Controller
         $history = $this->referralService->getReferralHistory($user);
         $redemptionHistory = $this->referralService->getRedemptionHistory($user);
         
-        // Get available subscription plans for redemption
+        // Get available subscription plans for redemption (exclude institute-only plans)
         $subscriptionPlans = SubscriptionPlan::where('is_active', true)
+            ->where('is_institute_only', false)
             ->where('slug', '!=', 'free')
             ->select('id', 'name', 'price')
             ->get()

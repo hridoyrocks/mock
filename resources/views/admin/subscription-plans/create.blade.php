@@ -224,6 +224,20 @@
                                 <p class="text-sm text-gray-600">Highlight this plan as most popular</p>
                             </div>
                         </label>
+
+                        <label class="flex items-center p-4 bg-amber-50 border-2 border-amber-200 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
+                            <input type="checkbox" name="is_institute_only" value="1"
+                                   class="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500">
+                            <div class="ml-3">
+                                <span class="font-bold text-gray-900 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                    </svg>
+                                    Institute Only
+                                </span>
+                                <p class="text-sm text-amber-700">This plan will only be visible in admin panel for manual assignment to institutes</p>
+                            </div>
+                        </label>
                     </div>
                 </div>
             </div>

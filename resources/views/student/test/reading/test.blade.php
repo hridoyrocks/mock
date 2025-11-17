@@ -1492,6 +1492,32 @@
     @push('scripts')
     <script>
     // ====================================
+    // Prevent Back Navigation During Test
+    // ====================================
+    (function() {
+        // Push a dummy state to prevent going back
+        history.pushState(null, null, location.href);
+
+        window.addEventListener('popstate', function(event) {
+            // Push state again to keep user on the test page
+            history.pushState(null, null, location.href);
+
+            // Show submit modal instead of allowing back navigation
+            const submitModal = document.getElementById('submit-modal');
+            if (submitModal) {
+                submitModal.style.display = 'flex';
+            }
+        });
+
+        // Also prevent on initial load
+        window.addEventListener('load', function() {
+            history.pushState(null, null, location.href);
+        });
+    })();
+    </script>
+
+    <script>
+    // ====================================
     // AGGRESSIVE Ctrl+F Find Disabler
     // ====================================
     

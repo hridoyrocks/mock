@@ -510,6 +510,11 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         
         setupNavigationPrevention: function() {
+            // Note: beforeunload and popstate prevention are now handled
+            // directly in each test page to show custom submit modal
+            // This prevents the default browser alert
+
+            // Keep beforeunload for external navigation (closing tab, typing new URL)
             this.beforeUnloadHandler = (e) => {
                 if (this.isRunning) {
                     e.preventDefault();
@@ -517,26 +522,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     return 'Your test is in progress. Are you sure you want to leave?';
                 }
             };
-            
+
             window.addEventListener('beforeunload', this.beforeUnloadHandler);
-            
-            history.pushState(null, null, location.href);
-            this.popstateHandler = (e) => {
-                if (this.isRunning) {
-                    history.pushState(null, null, location.href);
-                    alert('Please use the Submit button to finish your test properly.');
-                }
-            };
-            window.addEventListener('popstate', this.popstateHandler);
+
+            // Removed popstate handler - now handled in individual test pages
+            // to show submit modal instead of alert
         },
         
         removeNavigationPrevention: function() {
             if (this.beforeUnloadHandler) {
                 window.removeEventListener('beforeunload', this.beforeUnloadHandler);
             }
-            if (this.popstateHandler) {
-                window.removeEventListener('popstate', this.popstateHandler);
-            }
+            // popstateHandler removed - now handled in individual test pages
         },
         
         showTimeUpNotification: function() {

@@ -336,11 +336,11 @@ public function hasTrustedDevice(string $fingerprint): bool
     /**
      * Subscribe to a plan.
      */
-     public function subscribeTo(SubscriptionPlan $plan, array $paymentDetails = []): UserSubscription
+     public function subscribeTo(SubscriptionPlan $plan, array $paymentDetails = [], ?int $customDurationDays = null): UserSubscription
     {
         // Use SubscriptionManager service
         $subscriptionManager = app(\App\Services\Subscription\SubscriptionManager::class);
-        return $subscriptionManager->subscribe($this, $plan, $paymentDetails);
+        return $subscriptionManager->subscribe($this, $plan, $paymentDetails, $customDurationDays);
     }
 
 
