@@ -481,7 +481,7 @@
                             
                             {{-- Show instruction once per unique instruction --}}
                             @if($hasInstruction && !isset($globalShownInstructions[$instructionKey]))
-                                <div class="question-instructions" style="margin-bottom: 16px; font-weight: 600; color: #1f2937;">
+                                <div class="question-instructions" style="margin-bottom: 16px; font-weight: normal; color: #1f2937;">
                                     {!! $instructionText !!}
                                 </div>
                                 @php $globalShownInstructions[$instructionKey] = true; @endphp

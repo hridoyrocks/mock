@@ -173,7 +173,7 @@
             line-height: 1.5;
             color: #111827;
             margin-bottom: 30px;
-            font-weight: 500;
+            font-weight: normal; /* Changed from 500 to normal so TinyMCE bold tags work properly */
             letter-spacing: -0.02em;
         }
         

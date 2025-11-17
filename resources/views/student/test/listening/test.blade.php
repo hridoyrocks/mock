@@ -172,7 +172,7 @@
             font-size: 14px;
             color: #1f2937;
             margin-bottom: 16px;
-            font-weight: 600;
+            font-weight: normal; /* Changed from 600 to normal so TinyMCE bold tags work properly */
             line-height: 1.6;
         }
         
@@ -216,7 +216,7 @@
             line-height: 1.6;
             color: #1f2937;
             font-size: 15px;
-            font-weight: 500;
+            font-weight: normal; /* Changed from 500 to normal so TinyMCE bold tags work properly */
         }
         
         /* Options will be styled by external CSS */
