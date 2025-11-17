@@ -788,7 +788,7 @@ const SubmitHandler = {
                     window.removeEventListener('beforeunload', SubmitHandler.preventLeaveHandler);
                 }
                 window.onbeforeunload = null;
-                
+
                 // Stop timer if exists
                 if (window.UniversalTimer) {
                     window.UniversalTimer.stop();
@@ -800,6 +800,30 @@ const SubmitHandler = {
                 // Save annotations before submit
                 if (annotationSystem && annotationSystem.storage) {
                     annotationSystem.storage.save();
+                }
+
+                // ⭐ CRITICAL: Add passage answer inputs to form before submission
+                console.log('📋 Collecting passage answers before submission...');
+                const form = document.getElementById('reading-form');
+                if (form) {
+                    const passageInputs = document.querySelectorAll('.passage-answer-input');
+                    console.log('📊 Found', passageInputs.length, 'passage inputs');
+
+                    let addedCount = 0;
+                    passageInputs.forEach(input => {
+                        if (input.value && input.value.trim() !== '') {
+                            console.log('✅ Adding passage answer:', input.name, '=', input.value);
+
+                            // Clone and append to form
+                            const clone = input.cloneNode(true);
+                            form.appendChild(clone);
+                            addedCount++;
+                        } else {
+                            console.log('⚠️ Skipping empty passage input:', input.name);
+                        }
+                    });
+
+                    console.log('📋 Added', addedCount, 'passage answers to form');
                 }
 
                 // Show loading state
