@@ -1771,8 +1771,9 @@ select[name*="_q"] {
 <script>
 // CRITICAL FIX: Copy passage answer inputs to form before submission
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    
+    const form = document.getElementById('reading-form');
+    console.log('🔍 Form element found:', !!form, form);
+
     if (form) {
         // Intercept form submission
         form.addEventListener('submit', function(e) {
