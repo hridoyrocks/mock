@@ -363,7 +363,7 @@ class ResultController extends Controller
                             $zoneKey = 'zone_' . $zoneIndex;
                             if (isset($answerData[$zoneKey]) && !empty($answerData[$zoneKey])) {
                                 $answeredQuestions++;
-                                $correctAnswer = $zone['correct_answer'] ?? null;
+                                $correctAnswer = $zone['correct_answer'] ?? $zone['answer'] ?? null;
                                 if ($correctAnswer && $answerData[$zoneKey] === $correctAnswer) {
                                     $correctAnswers++;
                                 }

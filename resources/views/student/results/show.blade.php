@@ -603,7 +603,7 @@
                                                 'answer' => $answer,
                                                 'is_drag_drop' => true,
                                                 'zone_index' => $zoneIndex,
-                                                'correct_answer' => $zone['correct_answer'] ?? null
+                                                'correct_answer' => $zone['correct_answer'] ?? $zone['answer'] ?? null
                                             ];
                                             $currentNumber++;
                                         }
