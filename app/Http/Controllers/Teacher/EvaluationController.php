@@ -17,7 +17,7 @@ class EvaluationController extends Controller
     public function dashboard()
     {
         $teacher = Teacher::where('user_id', auth()->id())->firstOrFail();
-        
+
         // Get statistics
         $stats = [
             'pending' => $teacher->evaluationRequests()->where('status', 'assigned')->count(),
@@ -32,14 +32,14 @@ class EvaluationController extends Controller
                 ->whereMonth('completed_at', now()->month)
                 ->sum('tokens_used')
         ];
-        
+
         // Get recent evaluations
         $recentEvaluations = $teacher->evaluationRequests()
-            ->with(['studentAttempt.testSet.section', 'student'])
+            ->with(['studentAttempt.testSet.section', 'studentAttempt.fullTestSectionAttempt', 'student'])
             ->latest()
             ->take(10)
             ->get();
-        
+
         return view('teacher.dashboard', compact('teacher', 'stats', 'recentEvaluations'));
     }
     
@@ -49,14 +49,14 @@ class EvaluationController extends Controller
     public function pending()
     {
         $teacher = Teacher::where('user_id', auth()->id())->firstOrFail();
-        
+
         $evaluations = $teacher->evaluationRequests()
             ->whereIn('status', ['assigned', 'in_progress'])
-            ->with(['studentAttempt.testSet.section', 'student'])
+            ->with(['studentAttempt.testSet.section', 'studentAttempt.fullTestSectionAttempt', 'student'])
             ->orderBy('priority', 'desc')
             ->orderBy('deadline_at', 'asc')
             ->paginate(20);
-        
+
         return view('teacher.evaluations.pending', compact('evaluations'));
     }
     
@@ -161,11 +161,22 @@ class EvaluationController extends Controller
             
             // Mark request as completed
             $evaluationRequest->markCompleted();
-            
+
             // Update student attempt with human evaluation band score
             $evaluationRequest->studentAttempt->update([
                 'band_score' => $request->overall_band_score
             ]);
+
+            // If this is part of a full test, update the full test section score
+            $fullTestSectionAttempt = \App\Models\FullTestSectionAttempt::where('student_attempt_id', $evaluationRequest->student_attempt_id)->first();
+
+            if ($fullTestSectionAttempt) {
+                $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
+                $sectionType = $fullTestSectionAttempt->section_type;
+
+                // Update the full test attempt with the evaluated score
+                $fullTestAttempt->updateSectionScore($sectionType, (float) $request->overall_band_score);
+            }
         });
         
         return redirect()->route('teacher.evaluations.pending')
@@ -178,13 +189,13 @@ class EvaluationController extends Controller
     public function completed()
     {
         $teacher = Teacher::where('user_id', auth()->id())->firstOrFail();
-        
+
         $evaluations = $teacher->evaluationRequests()
             ->where('status', 'completed')
-            ->with(['studentAttempt.testSet.section', 'student', 'humanEvaluation'])
+            ->with(['studentAttempt.testSet.section', 'studentAttempt.fullTestSectionAttempt', 'student', 'humanEvaluation'])
             ->latest('completed_at')
             ->paginate(20);
-        
+
         return view('teacher.evaluations.completed', compact('evaluations'));
     }
     

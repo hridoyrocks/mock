@@ -129,4 +129,12 @@ class StudentAttempt extends Model
     {
         return $this->hasOne(HumanEvaluationRequest::class, 'student_attempt_id');
     }
+
+    /**
+     * Get full test section attempt if this is part of a full test
+     */
+    public function fullTestSectionAttempt(): HasOne
+    {
+        return $this->hasOne(FullTestSectionAttempt::class, 'student_attempt_id');
+    }
 }

@@ -205,9 +205,14 @@
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             <div class="flex space-x-2">
-                                                <a href="/admin/full-tests/user/{{ $attempt->user->id }}/attempts" 
-                                                   class="text-indigo-600 hover:text-indigo-900 text-sm">
-                                                    View All Attempts
+                                                <a href="{{ route('admin.full-test-attempts.show', $attempt) }}"
+                                                   class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                                                    View Details
+                                                </a>
+                                                <span class="text-gray-300">|</span>
+                                                <a href="{{ route('admin.full-tests.user-attempts', $attempt->user->id) }}"
+                                                   class="text-gray-600 hover:text-gray-900 text-sm">
+                                                    All Attempts
                                                 </a>
                                             </div>
                                         </td>

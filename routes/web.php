@@ -207,6 +207,9 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
                 Route::post('/attempt/{fullTestAttempt}/complete-section', [App\Http\Controllers\Student\FullTestController::class, 'completeSection'])->name('complete-section');
                 Route::get('/attempt/{fullTestAttempt}/results', [App\Http\Controllers\Student\FullTestController::class, 'results'])->name('results');
                 Route::post('/attempt/{fullTestAttempt}/abandon', [App\Http\Controllers\Student\FullTestController::class, 'abandon'])->name('abandon');
+                Route::get('/attempt/{fullTestAttempt}/request-evaluation', [App\Http\Controllers\Student\FullTestController::class, 'requestEvaluation'])->name('request-evaluation');
+                Route::post('/attempt/{fullTestAttempt}/submit-evaluation', [App\Http\Controllers\Student\FullTestController::class, 'submitEvaluationRequest'])->name('submit-evaluation');
+                Route::get('/attempt/{fullTestAttempt}/evaluation-details', [App\Http\Controllers\Student\FullTestController::class, 'evaluationDetails'])->name('evaluation-details');
             });
 
             Route::prefix('listening')->name('listening.')->group(function () {
@@ -323,6 +326,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckBanned::class])->group(func
             Route::patch('/full-tests/{fullTest}/toggle-status', [App\Http\Controllers\Admin\FullTestController::class, 'toggleStatus'])->name('full-tests.toggle-status');
             Route::post('/full-tests/reorder', [App\Http\Controllers\Admin\FullTestController::class, 'reorder'])->name('full-tests.reorder');
             Route::get('/full-tests/user/{userId}/attempts', [App\Http\Controllers\Admin\FullTestController::class, 'userAttempts'])->name('full-tests.user-attempts');
+            Route::get('/full-test-attempts/{fullTestAttempt}', [App\Http\Controllers\Admin\FullTestController::class, 'showAttempt'])->name('full-test-attempts.show');
+            Route::patch('/full-test-attempts/{fullTestAttempt}/update-score', [App\Http\Controllers\Admin\FullTestController::class, 'updateScore'])->name('full-test-attempts.update-score');
 
             Route::prefix('test-sets/{testSet}')->name('test-sets.')->group(function () {
                 Route::get('/part-audios', [App\Http\Controllers\Admin\TestPartAudioController::class, 'index'])->name('part-audios');

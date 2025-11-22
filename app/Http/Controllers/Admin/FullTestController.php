@@ -319,4 +319,51 @@ class FullTestController extends Controller
         
         return view('admin.full-tests.user-attempts', compact('attempts', 'user', 'fullTests', 'stats'));
     }
+
+    /**
+     * Show detailed view of a full test attempt with all sections and answers.
+     */
+    public function showAttempt(\App\Models\FullTestAttempt $fullTestAttempt)
+    {
+        // Load all necessary relationships
+        $fullTestAttempt->load([
+            'fullTest',
+            'user',
+            'sectionAttempts.studentAttempt' => function($query) {
+                $query->with([
+                    'testSet.section',
+                    'testSet.questions' => function($q) {
+                        $q->where('question_type', '!=', 'passage')
+                          ->orderBy('order_number');
+                    },
+                    'answers.question',
+                    'answers.selectedOption',
+                    'answers.speakingRecording',
+                    'humanEvaluationRequest.humanEvaluation'
+                ]);
+            }
+        ]);
+
+        return view('admin.full-tests.show-attempt', compact('fullTestAttempt'));
+    }
+
+    /**
+     * Update section score for a full test attempt.
+     */
+    public function updateScore(Request $request, \App\Models\FullTestAttempt $fullTestAttempt)
+    {
+        $validated = $request->validate([
+            'section' => 'required|in:listening,reading,writing,speaking',
+            'score' => 'required|numeric|min:0|max:9',
+        ]);
+
+        $section = $validated['section'];
+        $score = (float) $validated['score'];
+
+        // Update the section score
+        $fullTestAttempt->updateSectionScore($section, $score);
+
+        return redirect()->route('admin.full-test-attempts.show', $fullTestAttempt)
+            ->with('success', ucfirst($section) . ' score updated successfully to ' . number_format($score, 1));
+    }
 }

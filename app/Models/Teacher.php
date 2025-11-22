@@ -52,26 +52,15 @@ class Teacher extends Model
      */
     public function calculateTokenPrice(string $section, bool $isPriority = false): int
     {
-        $basePrice = $this->evaluation_price_tokens;
-        
-        // Section multiplier (case-insensitive)
-        $sectionLower = strtolower($section);
-        $sectionMultipliers = [
-            'writing' => 1.2,
-            'speaking' => 1.1,
-            'reading' => 1.0,
-            'listening' => 1.0
-        ];
-        
-        $sectionMultiplier = $sectionMultipliers[$sectionLower] ?? 1.0;
-        $price = round($basePrice * $sectionMultiplier);
-        
-        // Add priority fee
+        // Fixed base price of 10 tokens per section
+        $basePrice = 10;
+
+        // Add priority fee (50% extra for urgent)
         if ($isPriority) {
-            $price += 5;
+            $basePrice = (int) round($basePrice * 1.5);
         }
-        
-        return $price;
+
+        return $basePrice;
     }
     
     /**

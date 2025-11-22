@@ -289,19 +289,56 @@ class FullTestController extends Controller
         if ($fullTestAttempt->user_id !== auth()->id()) {
             abort(403);
         }
-        
+
+        // Refresh to get latest scores from database
+        $fullTestAttempt->refresh();
+
         // Load all related data
         $fullTestAttempt->load([
             'fullTest',
             'sectionAttempts.studentAttempt.testSet.section'
         ]);
-        
+
         // Ensure test is completed
         if (!$fullTestAttempt->isCompleted()) {
             $fullTestAttempt->markAsCompleted();
+            $fullTestAttempt->refresh();
         }
-        
+
+        \Log::info("Full test results - Overall: " . ($fullTestAttempt->overall_band_score ?? 'null') .
+                   ", L: " . ($fullTestAttempt->listening_score ?? 'null') .
+                   ", R: " . ($fullTestAttempt->reading_score ?? 'null') .
+                   ", W: " . ($fullTestAttempt->writing_score ?? 'null') .
+                   ", S: " . ($fullTestAttempt->speaking_score ?? 'null'));
+
         return view('student.full-test.results', compact('fullTestAttempt'));
+    }
+
+    /**
+     * Show detailed evaluation results for full test.
+     */
+    public function evaluationDetails(FullTestAttempt $fullTestAttempt)
+    {
+        // Validate user owns this attempt
+        if ($fullTestAttempt->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Load all necessary relationships
+        $fullTestAttempt->load([
+            'fullTest',
+            'sectionAttempts.studentAttempt' => function($query) {
+                $query->with([
+                    'testSet.section',
+                    'answers.question',
+                    'answers.selectedOption',
+                    'answers.speakingRecording',
+                    'humanEvaluationRequest.humanEvaluation.errorMarkings'
+                ]);
+            }
+        ]);
+
+        return view('student.full-test.evaluation-details', compact('fullTestAttempt'));
     }
 
     /**
@@ -313,14 +350,211 @@ class FullTestController extends Controller
         if ($fullTestAttempt->user_id !== auth()->id()) {
             abort(403);
         }
-        
+
         $fullTestAttempt->update([
             'status' => 'abandoned',
             'end_time' => now()
         ]);
-        
+
         return redirect()->route('student.full-test.index')
             ->with('info', 'Test has been abandoned. You can start a new attempt anytime.');
+    }
+
+    /**
+     * Show teacher selection page for full test evaluation.
+     */
+    public function requestEvaluation(FullTestAttempt $fullTestAttempt)
+    {
+        // Validate user owns this attempt
+        if ($fullTestAttempt->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Load section attempts with student attempts and evaluation requests
+        $fullTestAttempt->load(['sectionAttempts.studentAttempt.humanEvaluationRequest', 'fullTest']);
+
+        // Get writing and speaking sections that need evaluation
+        $sectionsNeedingEvaluation = [];
+        foreach ($fullTestAttempt->sectionAttempts as $sectionAttempt) {
+            if (in_array($sectionAttempt->section_type, ['writing', 'speaking'])) {
+                // Check if already requested
+                if (!$sectionAttempt->studentAttempt->humanEvaluationRequest) {
+                    $sectionsNeedingEvaluation[] = [
+                        'type' => $sectionAttempt->section_type,
+                        'student_attempt' => $sectionAttempt->studentAttempt
+                    ];
+                }
+            }
+        }
+
+        if (empty($sectionsNeedingEvaluation)) {
+            return redirect()->route('student.full-test.results', $fullTestAttempt)
+                ->with('info', 'Evaluation already requested for all sections.');
+        }
+
+        // Get available teachers who can evaluate writing or speaking
+        $teachers = \App\Models\Teacher::with('user')
+            ->where('is_available', true)
+            ->get()
+            ->filter(function ($teacher) {
+                $specializations = $teacher->specialization ?? [];
+                return collect($specializations)->contains(function ($spec) {
+                    return in_array(strtolower($spec), ['writing', 'speaking']);
+                });
+            })
+            ->values();
+
+        // Get user's token balance
+        $tokenBalance = \App\Models\UserEvaluationToken::getOrCreateForUser(auth()->user());
+
+        return view('student.full-test.request-evaluation', compact(
+            'fullTestAttempt',
+            'sectionsNeedingEvaluation',
+            'teachers',
+            'tokenBalance'
+        ));
+    }
+
+    /**
+     * Submit full test evaluation request.
+     */
+    public function submitEvaluationRequest(Request $request, FullTestAttempt $fullTestAttempt)
+    {
+        $request->validate([
+            'teacher_id' => 'required|exists:teachers,id',
+            'priority' => 'required|in:normal,urgent',
+            'sections' => 'required|array|min:1',
+            'sections.*' => 'required|exists:student_attempts,id'
+        ]);
+
+        // Validate user owns this attempt
+        if ($fullTestAttempt->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Load section attempts
+        $fullTestAttempt->load(['sectionAttempts.studentAttempt.humanEvaluationRequest', 'fullTest']);
+
+        // Get selected sections to evaluate
+        $selectedStudentAttemptIds = $request->sections;
+        $sectionsNeedingEvaluation = [];
+
+        foreach ($fullTestAttempt->sectionAttempts as $sectionAttempt) {
+            // Check if this section's student attempt was selected
+            if (in_array($sectionAttempt->student_attempt_id, $selectedStudentAttemptIds)) {
+                // Verify it's writing or speaking and not already requested
+                if (in_array($sectionAttempt->section_type, ['writing', 'speaking'])) {
+                    if (!$sectionAttempt->studentAttempt->humanEvaluationRequest) {
+                        $sectionsNeedingEvaluation[] = $sectionAttempt;
+                    }
+                }
+            }
+        }
+
+        if (empty($sectionsNeedingEvaluation)) {
+            return redirect()->route('student.full-test.results', $fullTestAttempt)
+                ->with('info', 'Selected sections have already been requested for evaluation.');
+        }
+
+        $teacher = \App\Models\Teacher::findOrFail($request->teacher_id);
+        $isPriority = $request->priority === 'urgent';
+
+        // Calculate total token cost
+        $totalTokenCost = 0;
+        foreach ($sectionsNeedingEvaluation as $sectionAttempt) {
+            $sectionType = $sectionAttempt->section_type;
+            $sectionTokenCost = $teacher->calculateTokenPrice($sectionType, $isPriority);
+            $totalTokenCost += $sectionTokenCost;
+
+            \Log::info("Token calculation for {$sectionType}: {$sectionTokenCost} tokens (Priority: " . ($isPriority ? 'Yes' : 'No') . ")");
+        }
+
+        \Log::info("Total token cost for full test evaluation: {$totalTokenCost} tokens");
+
+        // Check token balance
+        $tokenBalance = \App\Models\UserEvaluationToken::getOrCreateForUser(auth()->user());
+        \Log::info("User token balance before deduction: {$tokenBalance->available_tokens} tokens");
+
+        if (!$tokenBalance->hasTokens($totalTokenCost)) {
+            return redirect()->route('student.tokens.purchase')
+                ->with('error', "You need {$totalTokenCost} tokens for this evaluation. Your balance: {$tokenBalance->available_tokens}");
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Deduct tokens
+            $tokenBalance->useTokens($totalTokenCost);
+            \Log::info("Tokens deducted successfully. New balance: {$tokenBalance->available_tokens} tokens");
+
+            // Create evaluation requests for each section
+            foreach ($sectionsNeedingEvaluation as $sectionAttempt) {
+                $studentAttempt = $sectionAttempt->studentAttempt;
+                $sectionType = $sectionAttempt->section_type;
+                $sectionTokenCost = $teacher->calculateTokenPrice($sectionType, $isPriority);
+
+                $evaluationRequest = \App\Models\HumanEvaluationRequest::create([
+                    'student_attempt_id' => $studentAttempt->id,
+                    'student_id' => auth()->id(),
+                    'teacher_id' => $teacher->id,
+                    'tokens_used' => $sectionTokenCost,
+                    'status' => 'assigned',
+                    'priority' => $isPriority ? 'urgent' : 'normal',
+                    'requested_at' => now(),
+                    'assigned_at' => now(),
+                    'deadline_at' => now()->addHours($isPriority ? 12 : 48)
+                ]);
+
+                // Log token transaction
+                DB::table('token_transactions')->insert([
+                    'user_id' => auth()->id(),
+                    'type' => 'usage',
+                    'amount' => -$sectionTokenCost,
+                    'balance_after' => $tokenBalance->available_tokens,
+                    'reason' => "Full test evaluation - {$sectionType} section ({$fullTestAttempt->fullTest->title})",
+                    'evaluation_request_id' => $evaluationRequest->id,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+
+            DB::commit();
+
+            // Send notification to teacher
+            try {
+                $teacher->user->notify(new \App\Notifications\NewEvaluationRequest(
+                    \App\Models\HumanEvaluationRequest::where('teacher_id', $teacher->id)
+                        ->whereIn('student_attempt_id', collect($sectionsNeedingEvaluation)->pluck('student_attempt_id'))
+                        ->latest()
+                        ->first()
+                ));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send notification to teacher', [
+                    'teacher_id' => $teacher->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            $sectionCount = count($sectionsNeedingEvaluation);
+            $sectionNames = collect($sectionsNeedingEvaluation)->pluck('section_type')->map(function($type) {
+                return ucfirst($type);
+            })->join(' and ');
+
+            return redirect()->route('student.full-test.results', $fullTestAttempt)
+                ->with('success', "Evaluation request submitted successfully! Your {$sectionNames} " .
+                       ($sectionCount > 1 ? 'sections are' : 'section is') . " now being evaluated.");
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            \Log::error('Failed to submit full test evaluation request', [
+                'error' => $e->getMessage(),
+                'full_test_attempt_id' => $fullTestAttempt->id
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to submit evaluation request. Please try again.');
+        }
     }
     
     /**
@@ -332,23 +566,27 @@ class FullTestController extends Controller
         if ($fullTestAttempt->user_id !== auth()->id()) {
             abort(403);
         }
-        
+
         // Validate section name
         if (!in_array($section, ['listening', 'reading', 'writing', 'speaking'])) {
             abort(404);
         }
-        
+
+        // Refresh to get latest scores from database
+        $fullTestAttempt->refresh();
+
         // Store completed section name
         $completedSection = $section;
-        
+
         // Load full test with sections
         $fullTestAttempt->load('fullTest', 'sectionAttempts');
-        
+
         // Get section score if available
         $sectionScore = null;
         if (in_array($completedSection, ['listening', 'reading'])) {
             $scoreField = $completedSection . '_score';
             $sectionScore = $fullTestAttempt->$scoreField;
+            \Log::info("Section completed - {$completedSection} score: " . ($sectionScore ?? 'null'));
         }
         
         // Get available sections and completed sections

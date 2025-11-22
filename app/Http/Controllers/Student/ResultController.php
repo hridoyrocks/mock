@@ -19,14 +19,17 @@ class ResultController extends Controller
     {
         $query = StudentAttempt::where('user_id', auth()->id())
             ->with(['testSet', 'testSet.section']);
-        
+
+        // Exclude attempts that are part of full tests (only show standalone section attempts)
+        $query->whereDoesntHave('fullTestSectionAttempt');
+
         // Filter by section - exclude full-test filter from regular attempts
         if ($request->has('section') && $request->section !== 'all' && $request->section !== 'full-test') {
             $query->whereHas('testSet.section', function($q) use ($request) {
                 $q->where('name', $request->section);
             });
         }
-        
+
         // If filtering for full tests only, return empty collection for regular attempts
         if ($request->has('section') && $request->section === 'full-test') {
             // Create an empty paginator for consistency
@@ -52,7 +55,7 @@ class ResultController extends Controller
                         break;
                 }
             }
-            
+
             $attempts = $query->latest()->paginate(10)->withQueryString();
         }
         

@@ -263,15 +263,17 @@ class SpeakingTestController extends Controller
             'total_questions' => $totalQuestions,
             'answered_questions' => $recordedAnswers,
             'is_complete_attempt' => ($completionRate >= 80),
+            'band_score' => null, // Speaking scores are set when teacher evaluates
         ]);
-        
+
         // INCREMENT TEST COUNT
         auth()->user()->incrementTestCount();
-        
-        // If part of full test, redirect to section completed screen
+
+        // If part of full test, DON'T update score yet
+        // Speaking needs human evaluation, score will be set when teacher evaluates
         if ($isPartOfFullTest && $fullTestSectionAttempt) {
             $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
-            
+
             return redirect()->route('student.full-test.section-completed', [
                 'fullTestAttempt' => $fullTestAttempt->id,
                 'section' => 'speaking'

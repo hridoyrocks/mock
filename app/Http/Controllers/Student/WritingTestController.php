@@ -331,13 +331,9 @@ class WritingTestController extends Controller
             // Increment test count
             auth()->user()->incrementTestCount();
             
-            // If part of full test, update full test attempt with placeholder score
-            // Writing needs human evaluation, so we'll set a placeholder score of 0
-            if ($isPartOfFullTest && $fullTestSectionAttempt) {
-                $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
-                // Set placeholder score - will be updated after evaluation
-                $fullTestAttempt->updateSectionScore('writing', 0.0);
-            }
+            // If part of full test, DON'T update score yet
+            // Writing needs human evaluation, score will be set when teacher evaluates
+            // No need to call updateSectionScore here - keep it null until evaluation
         });
         
         // If part of full test, redirect to section completed screen

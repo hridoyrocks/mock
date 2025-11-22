@@ -24,6 +24,7 @@
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Type</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Set</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
@@ -34,6 +35,9 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse($evaluations as $evaluation)
+                            @php
+                                $isFullTest = $evaluation->studentAttempt->fullTestSectionAttempt !== null;
+                            @endphp
                             <tr class="{{ $evaluation->priority === 'high' ? 'bg-amber-50' : '' }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div>
@@ -45,6 +49,15 @@
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                         {{ ucfirst($evaluation->studentAttempt->testSet->section->name) }}
                                     </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if($isFullTest)
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                            <i class="fas fa-clipboard-list mr-1"></i>Full Test
+                                        </span>
+                                    @else
+                                        <span class="text-sm text-gray-500">Single Section</span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {{ $evaluation->studentAttempt->testSet->title }}
@@ -96,7 +109,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-12 text-center">
+                                <td colspan="9" class="px-6 py-12 text-center">
                                     <div class="text-gray-500">
                                         <i class="fas fa-clipboard-check text-4xl mb-3"></i>
                                         <p class="text-lg font-medium">No pending evaluations</p>

@@ -709,8 +709,11 @@ class ReadingTestController extends Controller
         
         // If part of full test, redirect to section completed screen
         if ($isPartOfFullTest && $fullTestSectionAttempt) {
+            // Refresh to get updated full test attempt with scores
+            $fullTestSectionAttempt->refresh();
             $fullTestAttempt = $fullTestSectionAttempt->fullTestAttempt;
-            
+            $fullTestAttempt->refresh();
+
             return redirect()->route('student.full-test.section-completed', [
                 'fullTestAttempt' => $fullTestAttempt->id,
                 'section' => 'reading'

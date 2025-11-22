@@ -157,15 +157,30 @@ class FullTestAttempt extends Model
      */
     public function updateSectionScore(string $section, float $score): void
     {
+        \Log::info("Updating {$section} score to {$score} for full test attempt #{$this->id}");
+
         $this->update([
             "{$section}_score" => $score
         ]);
 
+        // Refresh model to get updated values
+        $this->refresh();
+
+        \Log::info("After update: {$section}_score = " . $this->{$section . '_score'});
+
         // Recalculate overall score if all sections completed
         if ($this->hasAllSectionScores()) {
+            $overallScore = $this->calculateOverallScore();
+            \Log::info("All sections have scores. Calculating overall: {$overallScore}");
+
             $this->update([
-                'overall_band_score' => $this->calculateOverallScore()
+                'overall_band_score' => $overallScore
             ]);
+
+            $this->refresh();
+            \Log::info("Overall band score updated to: {$this->overall_band_score}");
+        } else {
+            \Log::info("Not all sections have scores yet.");
         }
     }
 
